@@ -1,7 +1,7 @@
 # 수정 작업 로그
 
 - 작업일: 2026-08-03
-- 수정 대상: `docs/ai-orchestration-broad-literature-review.md`
+- 수정 대상: `docs/research/ai-orchestration-broad-literature-review.md`
 - 수정 전 줄 수 / 수정 후 줄 수: 1,111줄 / 1,238줄
 
 ## 완료 항목
@@ -30,7 +30,7 @@
 | P2-20 | 13장, 14.7, 이후 장 번호 | 기존 오해 장을 각 법칙의 `흔한 오해`로 흡수하고 분석 질문 장을 14.7 체크리스트로 병합한 뒤 장 번호와 참조를 재정렬했다. | 해당 없음(문서 구조 편집) |
 | P2-21 | 초록, 3.2, 8.4 및 상호 참조 | 상태 저장소와 상관 다양성 명제를 지정 절에서만 근거와 함께 완전 서술하고 나머지는 요약 또는 상호 참조로 바꿨다. | 해당 없음(중복 편집) |
 | P2-22 | 3장 Mermaid | 각 역사적 계보에서 전이된 상태·제어·실패 처리·독립성·자원 배분을 엣지 라벨로 표시했다. | 해당 없음(도식 편집) |
-| P2-23 | 4.6·4.8, 6.2·6.4, 7.5, 8.2, 9.1·9.2 | 두 문서에 겹치는 9개 사례마다 운영 수치와 상세 사례를 보조 문서에서 읽도록 절 수준 단방향 링크를 추가했다. | [실용 사례와 구축 방법론](./ai-orchestration-practical-cases-and-methods.md) |
+| P2-23 | 4.6·4.8, 6.2·6.4, 7.5, 8.2, 9.1·9.2 | 두 문서에 겹치는 9개 사례마다 운영 수치와 상세 사례를 보조 문서에서 읽도록 절 수준 단방향 링크를 추가했다. | [실용 사례와 구축 방법론](../research/ai-orchestration-practical-cases-and-methods.md) |
 
 ## 미완료 또는 보류 항목
 
@@ -130,7 +130,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위와 상태
 
 - 작업일: 2026-08-03.
-- 수정 대상: `docs/ai-orchestration-practical-cases-and-methods.md`와 이 작업 로그뿐이다.
+- 수정 대상: `docs/research/ai-orchestration-practical-cases-and-methods.md`와 이 작업 로그뿐이다.
 - 작업 전 보조 문서: 772줄, SHA-256 `41766BA96D98149C4B8D33DB6D331227D7CED231004E868F881CC261A2C868AE`.
 - 작업 후 보조 문서: 787줄, SHA-256 `A6328DC9F02D77709B27B8F2FA07870F8A3DED68AD602F9FE0DA0A584F2EEF6A`.
 - 지정된 동결 헤더, 판본 오류 1건, 중복 사례 참조 8개, §12 서지 보강 외에는 사례·수치·구조를 고치지 않았다. 이 작업 완료 후 보조 문서는 다시 수정 금지 대상으로 둔다.
@@ -205,7 +205,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위
 
 - 작업일: 2026-08-03.
-- 새 문서 `docs/home-codex-handoff.md`를 작성했다.
+- 새 문서 `docs/operations/home-codex-handoff.md`를 작성했다.
 - 목적은 집 PC의 새 Codex 작업에 연구 결과와 목표를 전달하고, 범용 Codex 세션 오케스트레이터의 설계 작업을 이어가는 것이다.
 - EU4 전용 세션 컨트롤러는 참고 사례 하나로만 기록하고 범용 설계의 기반이나 고정 역할 구조로 두지 않았다.
 - 개별 파일 설명보다 범용 폴더 책임, 실행별 상태, 세션 수명 주기, 통신 구조와 다음 설계 범위를 중심으로 정리했다.
@@ -213,7 +213,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 ### 생성 결과
 
-- `docs/home-codex-handoff.md`: 263줄.
+- `docs/operations/home-codex-handoff.md`: 263줄.
 - 작성 직후 SHA-256: `C3CB9A44419E91634B1B4F671820534449E66A0E50EDE88A726D5D0FCBE05A07`.
 - 범용 오케스트레이터의 구현은 아직 시작하지 않았다. 다음 세션은 문헌 결론을 구현 요구사항으로 변환하고 범용 코어와 프로젝트 전용 구성의 경계를 설계하는 단계부터 시작한다.
 
@@ -246,7 +246,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ## Fork 기반 구조 독립 심사 프롬프트
 
 - 작업일: 2026-08-04.
-- 새 문서 `docs/claude-review-prompt-fork-based-session-orchestrator.md`를 작성했다.
+- 새 문서 `docs/archive/fork-based/claude-review-prompt-fork-based-session-orchestrator.md`를 작성했다.
 - 목적은 “하나의 범용 엔진이 여러 프로젝트를 등록·관리한다”는 이전 가정을 배제하고, 검증된 범용 원본에서 프로젝트별 전용 오케스트레이터가 fork·복사되어 나오는 구조를 클로드에게 설명받고 독립 평가받는 것이다.
 - 클로드에게 구조 재설명, 전체 Git fork·template·공용 core package·plugin·멀티프로젝트 플랫폼 비교, fork drift와 upstream 병합 비용, 팀·세션 수명, 통신, 검증, 성능 기준선과 MVP를 검토하도록 요구했다.
 - 심사는 읽기 전용으로 지정했으며 구현이나 파일 수정을 요청하지 않았다.
@@ -258,7 +258,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위
 
 - 작업일: 2026-08-04.
-- 새 문서 `docs/general-local-session-orchestrator-design.md`를 작성했다.
+- 새 문서 `docs/design/general-local-session-orchestrator-design.md`를 작성했다.
 - 구현은 수행하지 않았다. 설계 문서만 작성했다.
 - 검증 문헌, `C:\Users\SSAFY\Documents\이어서 작업`의 schema v1 코드·운영 문서·0-3/0-4 실행 기록, 사용자 제공 schema v2 복원 자료, Claude의 fork 구조 심사, 현재 Codex 공식 문서를 근거 수준별로 구분해 종합했다.
 
@@ -274,7 +274,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 ### 생성 결과
 
-- `docs/general-local-session-orchestrator-design.md`: 1,028줄.
+- `docs/design/general-local-session-orchestrator-design.md`: 1,028줄.
 - 작성·검사 직후 SHA-256: `0102C2F6B520EDFB5C14E8C21FA63C0D71DF9A831B6952A35D24F83680E388C0`.
 - Markdown 코드 펜스 30개가 짝을 이루며, 상대 링크 2개가 모두 실제 문서를 가리키는 것을 확인했다.
 
@@ -309,11 +309,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ## 범용 설계 Claude 심사 프롬프트
 
 - 작업일: 2026-08-04.
-- 새 문서 `docs/claude-review-prompt-general-local-session-orchestrator-design.md`를 작성했다.
+- 새 문서 `docs/prompts/general-design/claude-review-prompt-general-local-session-orchestrator-design.md`를 작성했다.
 - 현재 사용자 상황, EU4 schema v1의 실제 구현·0-3/0-4 실행 경험, schema v2의 미구현 상태, 범용 원본 선검증과 프로젝트 독립성 요구를 심사 배경으로 요약했다.
 - Claude에게 맥락을 가장 강하게 이해하는 심사와 역사·매몰비용을 정당화 근거로 인정하지 않는 맥락 비의존 심사를 분리해 수행하도록 했다.
 - 기존 Codex 기능만으로 충분한지, 프로젝트를 만들지 않는 편이 나은지, clean-room 대안이 무엇인지까지 검토하도록 했다.
-- 심사 대상 문서와 기존 자료는 읽기 전용으로 고정하고, 결과는 `docs/claude-review-general-local-session-orchestrator-design.md` 새 파일 하나에만 저장하도록 했다.
+- 심사 대상 문서와 기존 자료는 읽기 전용으로 고정하고, 결과는 `docs/reviews/general-design/claude-review-general-local-session-orchestrator-design.md` 새 파일 하나에만 저장하도록 했다.
 - 프롬프트는 389줄이며 SHA-256은 `7F6B301041059659E61CE5F10677D675B9E38816821673E8A1AEDBC7F6773A6F`다.
 - Markdown 코드 펜스 4개가 짝을 이루고 trailing whitespace가 없음을 확인했다.
 
@@ -321,7 +321,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 - 작업일: 2026-08-04.
 - Claude의 701줄 심사 보고서와 범용 설계 문서를 대조하고, 주요 P0·P1 근거를 Codex 공식 문서와 기존 v1 코드로 재확인했다.
-- 새 문서 `docs/codex-response-to-claude-review-general-local-session-orchestrator-design.md`를 작성했다.
+- 새 문서 `docs/reviews/general-design/codex-response-to-claude-review-general-local-session-orchestrator-design.md`를 작성했다.
 - 심사 14건 중 10건은 그대로 수용하고, 인증 경계·실제 프로젝트 검증 순서·Worktree 경계·SDK `interrupt()` 증거 수준 4건은 취지를 수용하되 근거 또는 적용 순서를 정정해 재검토하도록 요청했다.
 - 현재 Codex 공식 문서상 Worktree root는 Settings에서 변경할 수 있으므로 심사의 “생성 위치 지정 불가” 근거를 사실 오류로 기록했다.
 - `openai-codex==0.144.4`를 사용한 기존 v1의 `turn.interrupt()` 코드와 usage 테스트를 확인해, 완전 미확인이 아니라 “고정 베타 버전 로컬 증거 있음 / 현재 공개 계약 미확인”으로 구분했다.
@@ -333,7 +333,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위
 
 - 작업일: 2026-08-04.
-- 사용자 지시에 따라 `docs/general-local-session-orchestrator-design.md`에 Claude 원심과 Claude·Codex 교차 재검토의 합의사항을 반영하고 설계를 동결했다.
+- 사용자 지시에 따라 `docs/design/general-local-session-orchestrator-design.md`에 Claude 원심과 Claude·Codex 교차 재검토의 합의사항을 반영하고 설계를 동결했다.
 - 구현, 패키지 설치, SDK 통제 실행, 성능 시험은 수행하지 않았다.
 - 원래 설계는 1,028줄, SHA-256 `0102C2F6B520EDFB5C14E8C21FA63C0D71DF9A831B6952A35D24F83680E388C0`였다.
 - 동결 설계는 1,088줄, 52,111바이트, SHA-256 `F1722A3344F69EF9B85DF3FBF280F9B1BE027D3EAFFA20CDE4BC8AF816A102F3`다.
@@ -374,7 +374,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 - 작업일: 2026-08-04.
 - 동결 설계 §16.6 가설 1 가운데 비용 없이 확인할 수 있는 인증 방식, 공식 지원 범위, 로컬 SDK 계약, 계정 사용량 기준선을 점검했다.
-- 결과는 `docs/codex-auth-usage-preflight.md`에 기록했다.
+- 결과는 `docs/experiments/codex-auth-usage-preflight.md`에 기록했다.
 - 실제 Codex SDK turn은 실행하지 않았다. 이번 점검의 AI 실행 횟수는 0회다.
 
 ### 확인 결과
@@ -395,7 +395,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 ### 동결 문서 무결성
 
-- `docs/general-local-session-orchestrator-design.md`는 수정하지 않았다.
+- `docs/design/general-local-session-orchestrator-design.md`는 수정하지 않았다.
 - 점검 직전 SHA-256은 동결 시점과 같은 `F1722A3344F69EF9B85DF3FBF280F9B1BE027D3EAFFA20CDE4BC8AF816A102F3`였다.
 
 ## Codex SDK 최소 turn 1회 실험
@@ -404,7 +404,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 - 작업일: 2026-08-04.
 - 사용자 승인 후 `gpt-5.6-luna` SDK turn을 정확히 1회 실행했다. 재시도는 0회다.
-- fail-closed 실행기는 `experiments/codex_sdk_single_turn_precheck.py`, 결과 보고서는 `docs/codex-sdk-single-turn-experiment.md`에 저장했다.
+- fail-closed 실행기는 `experiments/codex_sdk_single_turn_precheck.py`, 결과 보고서는 `docs/experiments/codex-sdk-single-turn-experiment.md`에 저장했다.
 - 동결 설계 문서는 수정하지 않았다.
 
 ### 결과
@@ -428,7 +428,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위
 
 - 작업일: 2026-08-04.
-- 사용자 요청에 따라 코드 구현 없이 `docs/b1-minimum-orchestrator-implementation-spec.md`를 작성했다.
+- 사용자 요청에 따라 코드 구현 없이 `docs/design/b1-minimum-orchestrator-implementation-spec.md`를 작성했다.
 - 동결 설계를 수정하지 않고 B1 범위의 디렉터리, 기술 선택, Project Pack, 공개 계약, SQLite DDL, 상태 기계, 실행 의사코드, 복구, FakeRuntime, CLI, 시험, 완료 기준을 구체화했다.
 - B1 reference 언어는 Python 3.12, controller는 동기식 단일 프로세스, 상태 정본은 SQLite, 실제 Worker는 한 번에 하나로 확정했다.
 - 병렬 Worker, Reviewer, Coordinator·Integrator, worktree, 외부 행동, UI는 B1 명세에서 제외했다.
@@ -447,14 +447,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 명세 안의 schema version 1 DDL을 in-memory SQLite에서 실행했고 10개 규범 테이블 생성과 `foreign_key_check=[]`를 확인했다.
 - Markdown 코드 fence는 짝이 맞고 trailing whitespace는 0건이다.
 - 구현 파일과 패키지 구조는 생성하지 않았다. 기존 1회 SDK 사전 실험 스크립트 외 B1 코드는 없다.
-- `docs/general-local-session-orchestrator-design.md`는 1,088줄, SHA-256 `F1722A3344F69EF9B85DF3FBF280F9B1BE027D3EAFFA20CDE4BC8AF816A102F3`로 동결 상태와 같다.
+- `docs/design/general-local-session-orchestrator-design.md`는 1,088줄, SHA-256 `F1722A3344F69EF9B85DF3FBF280F9B1BE027D3EAFFA20CDE4BC8AF816A102F3`로 동결 상태와 같다.
 
 ## B1 구현 명세 Claude 심사 프롬프트
 
 - 작업일: 2026-08-04.
-- `docs/claude-review-prompt-b1-minimum-orchestrator-implementation-spec.md`를 작성했다.
+- `docs/prompts/b1/claude-review-prompt-b1-minimum-orchestrator-implementation-spec.md`를 작성했다.
 - Claude가 B1 명세의 구현 가능성, B2 범위 유입, DDL·상태 전이, 중단·복구, 포트 책임, 보안, FakeRuntime 시험, Codex SDK 경계를 집중 심사하도록 했다.
-- 결과 저장 경로는 `docs/claude-review-b1-minimum-orchestrator-implementation-spec.md`로 지정했다.
+- 결과 저장 경로는 `docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md`로 지정했다.
 - 주 대상과 동결 설계를 수정하지 않도록 명시했다.
 
 ## B1 구현 명세 심사 반영·동결
@@ -462,7 +462,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 ### 작업 범위
 
 - 작업일: 2026-08-04.
-- Claude 심사 보고서 `docs/claude-review-b1-minimum-orchestrator-implementation-spec.md`의 P0 2건, P1 6건, P2 6건, P3 2건을 모두 `docs/b1-minimum-orchestrator-implementation-spec.md`에 반영했다.
+- Claude 심사 보고서 `docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md`의 P0 2건, P1 6건, P2 6건, P3 2건을 모두 `docs/design/b1-minimum-orchestrator-implementation-spec.md`에 반영했다.
 - B1 코드 구현, 패키지 설치, 추가 Codex live turn은 수행하지 않았다.
 - 수정 전 명세는 1,236줄, SHA-256 `476AC496915999313733C82D65C1A0211CDD9046FFC005B7D441FC6355BB5A5D`였다.
 - 동결 명세는 1,415줄, 56,894바이트, SHA-256 `8011161CCCF842F90D853B8383AD8457C1C51CBF7FC81E1F77ECBAC0B9CDD7A7`이다.
@@ -514,3 +514,34 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 | `codex-sdk-single-turn-experiment.md` | 111 | `B4144CEC3F7C083411BBAE46452D5CA17CF5071D70CF052ED8D59FF63E72F8AE` |
 
 상위 설계와 Claude 심사 보고서는 이번 심사 반영 작업에서 수정하지 않았다. SDK 실험 보고서는 커밋 전 `git diff --check`가 지적한 EOF 빈 줄 1개만 제거했으며 내용은 바꾸지 않았다. B1 명세는 구현 전 상태로 동결했으며 다음 작업은 §17의 S0 vertical slice 구현이다.
+
+## docs 디렉터리 구조 정리
+
+### 작업 범위
+
+- 작업일: 2026-08-04.
+- `docs/` 루트에 섞여 있던 기존 Markdown 문서 18개를 역할별 디렉터리로 이동했다.
+- `docs/README.md`를 새로 만들어 현재 문서, 권장 읽기 순서, 각 디렉터리의 역할을 한곳에서 찾을 수 있게 했다.
+- 문헌조사·설계·실험·심사·심사 프롬프트·운영 기록·폐기된 fork 설계를 각각 `research/`, `design/`, `experiments/`, `reviews/`, `prompts/`, `operations/`, `archive/`로 분리했다.
+- 구현 코드와 문서의 의미 내용은 수정하지 않았다. 이동으로 깨지는 파일 경로와 상대 링크만 새 위치에 맞게 고쳤다.
+
+### 이동·참조 검증
+
+- 기존 문서 18개를 `HEAD`의 원본과 파일별로 비교했다. 새 경로 치환과 필요한 상대 링크 조정만 적용한 예상 결과에 18개 전부 정확히 일치했다.
+- 경로 참조가 실제로 바뀐 문서는 15개이고, 나머지 3개는 내용 변경 없이 이동만 했다.
+- `docs/` 아래 Markdown 19개에서 로컬 링크 37개를 파일 기준으로 해석해 확인했으며 누락 대상은 0개였다.
+- 예전 `docs/<파일명>.md` 평면 경로 18종을 전수 검색했으며 잔존 참조는 0개였다.
+- `docs/` 최상위 파일은 안내용 `README.md` 하나만 남겼다.
+
+### 동결·보호 문서 해시 영향
+
+문서 이동 자체는 파일 해시를 바꾸지 않는다. 다만 현재 위치를 가리키는 경로 문자열이나 상대 링크를 가진 동결·보호 문서는 경로만 고치면서 해시가 바뀌었다. 이전 로그의 해시는 당시 판본을 확인하는 역사적 값으로 유지하고, 구조 정리 직후 값을 아래에 기록한다.
+
+| 문서 | 구조 정리 직후 줄 수 | 구조 정리 직후 SHA-256 | 변경 성격 |
+|---|---:|---|---|
+| `docs/design/general-local-session-orchestrator-design.md` | 1,088 | `9E8BC884A42D9D1EE44C369A75B1D7B8B408273C31D696C0C2835B725D797BFE` | 문헌조사 상대 링크와 문서 경로만 조정 |
+| `docs/design/b1-minimum-orchestrator-implementation-spec.md` | 1,415 | `40BDBB81DABEDBCCA0D3400590E1E224E14B9DFBE961EA57AEF078703005B900` | 심사 보고서 경로만 조정 |
+| `docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md` | 523 | `A21EE022357035F3EE995C99CDFA093894FCEA4B5973A5CEEF2CF493878C07FB` | 대상·관련 문서 경로만 조정 |
+| `docs/experiments/codex-sdk-single-turn-experiment.md` | 111 | `43072BF20D1A1FFC365E46F8540C57C16FB8226E22FE6B3EB8E30EEDAA0FFD5A` | 저장소 루트의 실험 스크립트 상대 링크만 조정 |
+
+문헌조사 두 문서는 내용 변경 없이 이동됐다. SHA-256은 각각 `912A4A2C0B6F53B04A3404929D3B7A81F970E1FAC7DBA36C3565351FC492A89F`, `A6328DC9F02D77709B27B8F2FA07870F8A3DED68AD602F9FE0DA0A584F2EEF6A`로 구조 정리 전과 같다.

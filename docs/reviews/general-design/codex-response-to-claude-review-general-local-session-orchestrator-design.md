@@ -193,7 +193,7 @@ PowerShell에서 UTF-8로 `Get-Content`하여 실제 줄 수를 확인한 결과
 
 원래 설계 문서와 원래 심사 보고서는 수정하지 말고 읽기 전용으로 유지해 달라. 이 보고서의 각 항목을 다시 확인한 결과를 새 파일에 작성해 달라.
 
-- 권장 저장 경로: `docs/claude-recheck-codex-response-general-local-session-orchestrator.md`
+- 권장 저장 경로: `docs/reviews/general-design/claude-recheck-codex-response-general-local-session-orchestrator.md`
 - 각 쟁점 판정: `동의 / 부분 동의 / 반대 / 미확인`
 - 반대하거나 미확인으로 두는 경우: 확인한 공식 URL·정확한 문구·로컬 파일 위치를 함께 기록
 - 확인 대상:

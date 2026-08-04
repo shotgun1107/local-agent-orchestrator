@@ -101,7 +101,7 @@
 - 실패, 재시도, 취소, 보상, 사람 이관을 정상 흐름으로 모델링한다.
 - 품질뿐 아니라 비용, 지연, 사람 개입, 복구성, 안전을 함께 측정한다.
 
-관련 근거는 [폭넓은 문헌조사](./ai-orchestration-broad-literature-review.md) §5·§6·§9·§13·§14와 [실용 사례 및 방법론](./ai-orchestration-practical-cases-and-methods.md) §7·§9·§10에 정리돼 있다.
+관련 근거는 [폭넓은 문헌조사](../research/ai-orchestration-broad-literature-review.md) §5·§6·§9·§13·§14와 [실용 사례 및 방법론](../research/ai-orchestration-practical-cases-and-methods.md) §7·§9·§10에 정리돼 있다.
 
 ---
 

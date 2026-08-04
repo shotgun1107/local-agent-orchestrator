@@ -13,11 +13,11 @@
 
 ## 먼저 읽을 자료
 
-1. docs/ai-orchestration-broad-literature-review.md
-2. docs/ai-orchestration-practical-cases-and-methods.md의 상단 동결·검증 상태와 목차 및 관련 절
-3. docs/codex-revision-log.md의 문헌 검증 범위와 마지막 작업 기록
+1. docs/research/ai-orchestration-broad-literature-review.md
+2. docs/research/ai-orchestration-practical-cases-and-methods.md의 상단 동결·검증 상태와 목차 및 관련 절
+3. docs/operations/codex-revision-log.md의 문헌 검증 범위와 마지막 작업 기록
 
-주의: docs/home-codex-handoff.md에는 이전 대화에서 잘못 가정한 “하나의 범용 엔진이 여러 프로젝트를 등록·관리한다”는 관점이 일부 들어 있다. 그 문서의 구조를 정답으로 사용하지 말고, 아래 ‘심사 대상 구조’를 이번 평가의 정본으로 사용하라. EU4 전용 세션 컨트롤러 역시 참고 사례 하나일 뿐이며 이번 범용 구조의 기반이나 고정 역할 모델이 아니다.
+주의: docs/operations/home-codex-handoff.md에는 이전 대화에서 잘못 가정한 “하나의 범용 엔진이 여러 프로젝트를 등록·관리한다”는 관점이 일부 들어 있다. 그 문서의 구조를 정답으로 사용하지 말고, 아래 ‘심사 대상 구조’를 이번 평가의 정본으로 사용하라. EU4 전용 세션 컨트롤러 역시 참고 사례 하나일 뿐이며 이번 범용 구조의 기반이나 고정 역할 모델이 아니다.
 
 ## 심사 대상 구조
 

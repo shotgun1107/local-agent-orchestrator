@@ -1,8 +1,8 @@
 # 동료 심사 보고서: 「AI 오케스트레이션: 폭넓은 문헌조사와 분야 간 종합」
 
 - 심사일: 2026-08-03
-- 심사 대상: `docs/ai-orchestration-broad-literature-review.md` (1,111줄)
-- 보조 참조: `docs/ai-orchestration-practical-cases-and-methods.md` (772줄)
+- 심사 대상: `docs/research/ai-orchestration-broad-literature-review.md` (1,111줄)
+- 보조 참조: `docs/research/ai-orchestration-practical-cases-and-methods.md` (772줄)
 - 심사 방식: 주 문서 전문 정독 → 보조 문서 구조·중복 확인 → 핵심 출처 15건 원문 직접 확인
 - 원문 수정 없음
 

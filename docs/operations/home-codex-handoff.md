@@ -40,7 +40,7 @@
 
 ### 주 문헌조사
 
-`docs/ai-orchestration-broad-literature-review.md`
+`docs/research/ai-orchestration-broad-literature-review.md`
 
 - 1,242줄
 - 동료 심사, 개정, 링크·서지 전수 점검 완료
@@ -50,7 +50,7 @@
 
 ### 실용 사례 보조 문서
 
-`docs/ai-orchestration-practical-cases-and-methods.md`
+`docs/research/ai-orchestration-practical-cases-and-methods.md`
 
 - 787줄
 - 운영 사례와 구축 방법을 빠르게 찾기 위한 보조 문서
@@ -59,9 +59,9 @@
 
 ### 심사·검증 기록
 
-- `docs/claude-review-ai-orchestration-broad-literature-review.md`: 주 문서의 개정 전 문제를 기록한 심사 이력
-- `docs/claude-review-prompt.md`: 재사용 가능한 문헌 심사 프롬프트
-- `docs/codex-revision-log.md`: 주 문서 개정, 링크 전수 점검, 보조 문서 동결 이력. 앞으로 이 저장소에서 문서 작업을 하면 여기에 이어서 기록한다
+- `docs/reviews/literature/claude-review-ai-orchestration-broad-literature-review.md`: 주 문서의 개정 전 문제를 기록한 심사 이력
+- `docs/prompts/literature/claude-review-prompt.md`: 재사용 가능한 문헌 심사 프롬프트
+- `docs/operations/codex-revision-log.md`: 주 문서 개정, 링크 전수 점검, 보조 문서 동결 이력. 앞으로 이 저장소에서 문서 작업을 하면 여기에 이어서 기록한다
 
 심사 보고서는 현재 문서 상태의 설명이 아니라 개정 이력이다. 이미 해결된 지적을 현재 문제로 오인하지 않는다.
 
@@ -217,10 +217,10 @@ SQLite 상태 저장
 
 먼저 현재 작업 경로와 Git 상태를 확인하고 다음 문서를 읽어라.
 
-1. docs/home-codex-handoff.md
-2. docs/ai-orchestration-broad-literature-review.md
-3. docs/ai-orchestration-practical-cases-and-methods.md의 상단 동결·검증 상태와 목차
-4. docs/codex-revision-log.md의 마지막 두 절
+1. docs/operations/home-codex-handoff.md
+2. docs/research/ai-orchestration-broad-literature-review.md
+3. docs/research/ai-orchestration-practical-cases-and-methods.md의 상단 동결·검증 상태와 목차
+4. docs/operations/codex-revision-log.md의 마지막 두 절
 
 목표는 특정 EU4 프로젝트나 고정된 P1/P2/P3/V1 구조를 일반화하는 것이 아니다. 여러 프로젝트에서 재사용할 수 있는 범용 세션 오케스트레이터를 만들고, 각 프로젝트에는 지식·역할·워크플로·권한·검증 조건만 구성으로 추가할 수 있게 하는 것이다.
 
@@ -242,7 +242,7 @@ SQLite 상태 저장
 3. 세션 수명 주기, 작업 상태 머신, 작업 계약, 병렬 실행 조건, 검증·복구·사용량 통제를 설계한다.
 4. 단일 작업, 병렬 조사, 격리된 코드 수정, 검수 실패, 사용자 판단 필요의 실행 흐름을 제시한다.
 5. 과도한 기능을 제외한 로컬 단일 사용자 MVP 범위를 정한다.
-6. 결과를 새 설계 문서로 저장하고 docs/codex-revision-log.md에 작업 범위와 확인하지 못한 사항을 기록한다.
+6. 결과를 새 설계 문서로 저장하고 docs/operations/codex-revision-log.md에 작업 범위와 확인하지 못한 사항을 기록한다.
 
 각 파일을 장황하게 설명하기보다 폴더의 책임, 세션 구조, 실행 흐름과 설계 판단을 중심으로 작성하라. 확인한 것과 추론한 것을 구분하고, 구현을 시작하기 전에 설계안과 선택이 필요한 쟁점을 사용자에게 설명하라.
 ```

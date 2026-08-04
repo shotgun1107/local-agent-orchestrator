@@ -1,8 +1,8 @@
 # B1 최소 오케스트레이터 구현 명세 심사
 
 - 심사일: 2026-08-04
-- 주 대상: `docs/b1-minimum-orchestrator-implementation-spec.md` (1,237줄)
-- 참고: `docs/general-local-session-orchestrator-design.md`, `docs/codex-sdk-single-turn-experiment.md`
+- 주 대상: `docs/design/b1-minimum-orchestrator-implementation-spec.md` (1,237줄)
+- 참고: `docs/design/general-local-session-orchestrator-design.md`, `docs/experiments/codex-sdk-single-turn-experiment.md`
 - 방식: 읽기 전용. 대상 문서와 상위 설계를 수정하지 않았다.
 - **SDK 검증 방식**: `openai-codex==0.144.4` wheel을 실제로 내려받아 `api.py`, `client.py`, `_message_router.py`, `_run.py`, `_approval_mode.py` 소스를 직접 읽었다. 아래 SDK 관련 주장은 전부 소스 확인이다.
 
