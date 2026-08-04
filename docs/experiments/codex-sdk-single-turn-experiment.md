@@ -5,7 +5,7 @@
 - 재시도: 0회
 - 결과: 성공
 - 관련 사전 점검: [Codex SDK 인증·사용량 사전 점검](./codex-auth-usage-preflight.md)
-- 실행 스크립트: [`experiments/codex_sdk_single_turn_precheck.py`](../experiments/codex_sdk_single_turn_precheck.py)
+- 실행 스크립트: [`experiments/codex_sdk_single_turn_precheck.py`](../../experiments/codex_sdk_single_turn_precheck.py)
 
 ## 1. 결론
 

@@ -8,9 +8,9 @@ C:\Users\SSAFY\Documents\간단한 ai 오케스트라 구축하기
 
 다음 파일을 심사해라.
 
-- 주 대상: `docs/b1-minimum-orchestrator-implementation-spec.md`
-- 상위 동결 설계: `docs/general-local-session-orchestrator-design.md`
-- 실행 증거: `docs/codex-sdk-single-turn-experiment.md`
+- 주 대상: `docs/design/b1-minimum-orchestrator-implementation-spec.md`
+- 상위 동결 설계: `docs/design/general-local-session-orchestrator-design.md`
+- 실행 증거: `docs/experiments/codex-sdk-single-turn-experiment.md`
 
 상황은 간단하다.
 
@@ -58,5 +58,5 @@ C:\Users\SSAFY\Documents\간단한 ai 오케스트라 구축하기
 주 대상과 상위 설계는 수정하지 마라. 결과만 다음 파일에 저장해라.
 
 ```text
-docs/claude-review-b1-minimum-orchestrator-implementation-spec.md
+docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md
 ```

@@ -1,9 +1,9 @@
 # Codex 확인 보고에 대한 재검토
 
 - 작성일: 2026-08-04
-- 대상: `docs/codex-response-to-claude-review-general-local-session-orchestrator-design.md` (209줄)
-- 원 심사: `docs/claude-review-general-local-session-orchestrator-design.md` (701줄, 수정하지 않음)
-- 원 설계: `docs/general-local-session-orchestrator-design.md` (1,028줄, 수정하지 않음)
+- 대상: `docs/reviews/general-design/codex-response-to-claude-review-general-local-session-orchestrator-design.md` (209줄)
+- 원 심사: `docs/reviews/general-design/claude-review-general-local-session-orchestrator-design.md` (701줄, 수정하지 않음)
+- 원 설계: `docs/design/general-local-session-orchestrator-design.md` (1,028줄, 수정하지 않음)
 - 방식: 쟁점별 재확인. 공식 문서 재조회 3건. 설계 수정안은 제안만 하고 적용하지 않았다.
 
 ---
@@ -345,7 +345,7 @@ Codex 보고에서 6건 중 3건(순서 게이트, 줄 수, P0-1 제목 범위)�
 
 | 대상 | 결과 |
 |---|---|
-| `docs/general-local-session-orchestrator-design.md` | `wc -l` = 1,028. 마지막 바이트 `0x0a`. 비어 있지 않은 마지막 줄 1,027 |
+| `docs/design/general-local-session-orchestrator-design.md` | `wc -l` = 1,028. 마지막 바이트 `0x0a`. 비어 있지 않은 마지막 줄 1,027 |
 | `C:\Users\SSAFY\Documents\이어서 작업` | 접근 불가. 마운트된 폴더는 `간단한 ai 오케스트라 구축하기` 하나 |
 
 **여전히 `미확인`인 항목**

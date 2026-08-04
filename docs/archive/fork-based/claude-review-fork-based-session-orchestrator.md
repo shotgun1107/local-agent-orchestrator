@@ -1,7 +1,7 @@
 # 아키텍처 심사 — Fork 기반 범용 로컬 세션 오케스트레이터
 
 - 심사일: 2026-08-04
-- 심사 대상: `docs/claude-review-prompt-fork-based-session-orchestrator.md`의 ‘심사 대상 구조’
+- 심사 대상: `docs/archive/fork-based/claude-review-prompt-fork-based-session-orchestrator.md`의 ‘심사 대상 구조’
 - 읽은 자료: 주 문헌조사(1,242줄), 보조 문서 동결 헤더·목차·관련 절, `codex-revision-log.md`, `home-codex-handoff.md`
 - 방식: 읽기 전용. 저장소 파일을 수정하지 않았다.
 - 사실 확인: OpenAI 공식 Codex 문서 2건을 직접 열었다. 확인하지 못한 것은 `미확인`으로 표시했다.
@@ -629,7 +629,7 @@ orchestrator-for-<project>/
 
 ### 근거 구분
 
-- **문헌 근거**: 3절의 유지 판단, 4절 [높음-6]의 병렬 위험, 7.2절 검토 세션 경고는 `docs/ai-orchestration-broad-literature-review.md`의 §9.0·§9.1·§9.2·§9.5·§5.2와 법칙 1·3·7·11·12에 근거한다.
+- **문헌 근거**: 3절의 유지 판단, 4절 [높음-6]의 병렬 위험, 7.2절 검토 세션 경고는 `docs/research/ai-orchestration-broad-literature-review.md`의 §9.0·§9.1·§9.2·§9.5·§5.2와 법칙 1·3·7·11·12에 근거한다.
 - **공식 문서 근거**: 4절 [높음-3]의 중복 표와 부록 표.
 - **일반적 설계 판단**: 5절 비교표의 유지보수 비용 평가, 6절 폴더 책임, [높음-4]의 "두 사례 전에는 추상화하지 않는다"는 소프트웨어 공학의 통상적 원칙이며 특정 문헌을 인용하지 않았다.
 - **내 추론**: 1.4절에서 당신의 의도를 재구성한 부분, [중간-7]의 Team이 task type의 은유적 확장이라는 해석, 8.4절의 구체적 임계값(50%, 1.5배, 30%, 2배, 2주)은 근거가 있는 추정이지 실측이 아니다. 실행하면서 조정하라.

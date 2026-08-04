@@ -1391,7 +1391,7 @@ Run Spec 입력
 
 ## 20. Claude 심사 반영표
 
-기준 심사: `docs/claude-review-b1-minimum-orchestrator-implementation-spec.md`
+기준 심사: `docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md`
 
 | 번호 | 심각도 | 반영 결과 |
 |---|---|---|

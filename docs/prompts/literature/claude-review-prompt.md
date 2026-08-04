@@ -8,8 +8,8 @@
 
 현재 프로젝트 폴더에 있는 다음 문서를 평가하라.
 
-- 주 평가 대상: `docs/ai-orchestration-broad-literature-review.md`
-- 비교·범위 확인용 보조 문서: `docs/ai-orchestration-practical-cases-and-methods.md`
+- 주 평가 대상: `docs/research/ai-orchestration-broad-literature-review.md`
+- 비교·범위 확인용 보조 문서: `docs/research/ai-orchestration-practical-cases-and-methods.md`
 
 ## 평가 목적
 
@@ -216,9 +216,9 @@
 
 평가 결과 전체를 다음 파일에 Markdown으로 저장하라.
 
-`docs/claude-review-ai-orchestration-broad-literature-review.md`
+`docs/reviews/literature/claude-review-ai-orchestration-broad-literature-review.md`
 
-원본인 `docs/ai-orchestration-broad-literature-review.md`와 보조 문서는 수정하지 말라.
+원본인 `docs/research/ai-orchestration-broad-literature-review.md`와 보조 문서는 수정하지 말라.
 
 파일 저장 후 채팅에는 다음만 간단히 알려라.
 

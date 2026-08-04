@@ -17,7 +17,7 @@
 
 반드시 처음부터 끝까지 읽어라.
 
-- `docs/general-local-session-orchestrator-design.md`
+- `docs/design/general-local-session-orchestrator-design.md`
 
 문서 상태:
 
@@ -33,25 +33,25 @@
 
 ### 검증된 주 문헌조사
 
-- `docs/ai-orchestration-broad-literature-review.md`
+- `docs/research/ai-orchestration-broad-literature-review.md`
 
 이 문서는 동료 심사와 링크 전수 점검을 거쳤다. 상태·계약·폐루프·검증·권한·다중 에이전트의 조건부 효과에 관한 설계 근거를 확인할 때 사용한다.
 
 ### 동결된 실용 사례 보조 문서
 
-- `docs/ai-orchestration-practical-cases-and-methods.md`
+- `docs/research/ai-orchestration-practical-cases-and-methods.md`
 
 이 문서는 동료 심사와 링크 전수 점검을 거치지 않았다. 지정된 사실 오류 1건과 우선 문헌 일부만 확인됐다. 같은 자료가 주 문서에도 있으면 서지는 주 문서를 우선한다.
 
 ### 이전 fork 구조 심사
 
-- `docs/claude-review-fork-based-session-orchestrator.md`
+- `docs/archive/fork-based/claude-review-fork-based-session-orchestrator.md`
 
 이 문서는 전체 fork의 유지보수 위험, 공용 core 패키지와 프로젝트 팩, Codex 기본 기능과의 중복을 검토한 이전 심사다. 현재 설계가 그 지적을 제대로 반영했는지 확인하되, 이전 심사의 결론을 권위로 받아들이지 말고 다시 판단하라.
 
 ### 검증·변경 이력
 
-- `docs/codex-revision-log.md`
+- `docs/operations/codex-revision-log.md`
 
 ## 3. 현재 상황 요약
 
@@ -366,16 +366,16 @@ DAG, ready queue, 동적 worker, P4~P6, worktree는 후반 확장 제안이며 v
 
 다음 파일은 읽기 전용이다. 수정하지 마라.
 
-- `docs/general-local-session-orchestrator-design.md`
-- `docs/ai-orchestration-broad-literature-review.md`
-- `docs/ai-orchestration-practical-cases-and-methods.md`
-- `docs/claude-review-fork-based-session-orchestrator.md`
-- `docs/codex-revision-log.md`
+- `docs/design/general-local-session-orchestrator-design.md`
+- `docs/research/ai-orchestration-broad-literature-review.md`
+- `docs/research/ai-orchestration-practical-cases-and-methods.md`
+- `docs/archive/fork-based/claude-review-fork-based-session-orchestrator.md`
+- `docs/operations/codex-revision-log.md`
 - 그 밖의 기존 파일 전체
 
 심사 결과만 다음 새 파일에 저장하라.
 
-`docs/claude-review-general-local-session-orchestrator-design.md`
+`docs/reviews/general-design/claude-review-general-local-session-orchestrator-design.md`
 
 파일 저장 후 채팅에는 다음만 간단히 알려라.
 

@@ -1,7 +1,7 @@
 # 아키텍처 심사 — 범용 로컬 세션 오케스트레이터 설계안
 
 - 심사일: 2026-08-04
-- 주 심사 대상: `docs/general-local-session-orchestrator-design.md` (1,029줄, 설계 초안, 구현 0건)
+- 주 심사 대상: `docs/design/general-local-session-orchestrator-design.md` (1,029줄, 설계 초안, 구현 0건)
 - 참고: 주 문헌조사, 동결된 보조 문서, 이전 fork 구조 심사, `codex-revision-log.md`
 - 방식: 읽기 전용. 심사 결과만 이 새 파일에 저장했다.
 - 공식 문서 직접 확인 4건, `미확인` 6항목
