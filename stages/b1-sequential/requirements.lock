@@ -1,0 +1,16 @@
+# Python 3.12 dependency lock captured on 2026-08-04.
+# Install with: python -m pip install --constraint requirements.lock -e ".[all]"
+annotated-types==0.8.0
+colorama==0.4.6
+iniconfig==2.3.0
+openai-codex==0.144.4
+openai-codex-cli-bin==0.144.4
+packaging==26.2
+pluggy==1.6.0
+pydantic==2.13.4
+pydantic-core==2.46.4
+Pygments==2.20.0
+pytest==8.4.2
+PyYAML==6.0.3
+typing-extensions==4.16.0
+typing-inspection==0.4.2

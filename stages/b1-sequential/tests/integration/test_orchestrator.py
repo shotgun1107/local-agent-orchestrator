@@ -1,0 +1,213 @@
+from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
+
+import pytest
+
+from orchestrator.ledger import Ledger
+from orchestrator.recover import ControllerLock, ControllerLockError, backup_run, check_integrity, verify_backup
+from orchestrator.schedule import ConfigurationError, Orchestrator, load_project
+from tests.conftest import make_spec
+
+
+def execute(root: Path, state: Path, spec, *, scenario="complete", fixture=None):
+    orchestrator = Orchestrator(
+        load_project(root), state_root=state, runtime_kind="fake",
+        fake_scenario=scenario, fake_fixture=fixture,
+    )
+    try:
+        run_id = orchestrator.start(spec)
+    finally:
+        orchestrator.close()
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    return run_id, snapshot
+
+
+def test_read_only_run_completes_and_report_is_deterministic(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    state = tmp_path / "state"
+    run_id, snapshot = execute(root, state, make_spec())
+    assert snapshot["run"]["state"] == "COMPLETED"
+    assert snapshot["tasks"][0]["state"] == "SUCCEEDED"
+    assert snapshot["checks"][0]["state"] == "PASSED"
+    report = json.loads((state / "runs" / run_id / "report" / "summary.json").read_text(encoding="utf-8"))
+    assert report["state"] == "COMPLETED"
+    assert report["metrics"]["attempts"] == 1
+    assert report["metrics"]["checks_failed"] == 0
+    assert report["metrics"]["checks_passed"] == 1
+    assert report["metrics"]["sessions"] == 1
+    assert report["metrics"]["token_usage"] == {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
+
+
+def test_shared_write_is_verified_and_two_tasks_are_sequential(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    spec = make_spec(workspace_mode="shared_serial_write", write_scope=["src/**"], tasks=2)
+    fixture = {
+        "effects": [{"type": "write_file", "path": "src/generated.txt", "content": "generated\n"}],
+    }
+    _, snapshot = execute(root, tmp_path / "state", spec, fixture=fixture)
+    assert [task["state"] for task in snapshot["tasks"]] == ["SUCCEEDED", "SUCCEEDED"]
+    assert all(task["active_attempt_id"] is None for task in snapshot["tasks"])
+    assert (root / "src" / "generated.txt").read_text(encoding="utf-8") == "generated\n"
+
+
+def test_worker_completed_claim_cannot_override_failed_check(tmp_path: Path, project_factory) -> None:
+    root = project_factory(check_fails=True)
+    _, snapshot = execute(root, tmp_path / "state", make_spec())
+    assert snapshot["run"]["state"] == "FAILED"
+    assert snapshot["tasks"][0]["state"] == "FAILED"
+    assert len(snapshot["tasks"][0]["attempts"]) == 2
+    assert all(attempt["failure_kind"] == "check_failed" for attempt in snapshot["tasks"][0]["attempts"])
+
+
+def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    _, snapshot = execute(root, tmp_path / "state", make_spec(), scenario="transient_failure")
+    attempts = snapshot["tasks"][0]["attempts"]
+    assert [attempt["state"] for attempt in attempts] == ["RETRYABLE_FAILED", "SUCCEEDED"]
+    paths = [artifact["relative_path"] for artifact in snapshot["artifacts"]]
+    assert any("attempts/001/" in path for path in paths)
+    assert any("attempts/002/" in path for path in paths)
+    assert len(paths) == len(set(paths))
+
+
+def test_malformed_result_resumes_same_session_once(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    _, snapshot = execute(root, tmp_path / "state", make_spec(), scenario="malformed_result")
+    attempt = snapshot["tasks"][0]["attempts"][0]
+    assert snapshot["run"]["state"] == "COMPLETED"
+    assert attempt["resume_count"] == 1
+    assert snapshot["run"]["turns_used"] == 2
+    result_paths = [artifact["relative_path"] for artifact in snapshot["artifacts"] if artifact["kind"] == "result_envelope"]
+    assert any("turns/001/" in path for path in result_paths)
+    assert any("turns/002/" in path for path in result_paths)
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected_run", "expected_failure"),
+    [
+        ("out_of_scope_write", "BLOCKED", "scope_violation"),
+        ("terminal_unknown", "BLOCKED", "terminal_unknown"),
+        ("dispatch_uncertain", "BLOCKED", "dispatch_uncertain"),
+        ("duplicate_conflicting_result", "BLOCKED", "artifact_corrupt"),
+        ("artifact_corrupt", "BLOCKED", "artifact_corrupt"),
+    ],
+)
+def test_unsafe_scenarios_are_never_adopted(
+    tmp_path: Path, project_factory, scenario: str, expected_run: str, expected_failure: str
+) -> None:
+    root = project_factory()
+    _, snapshot = execute(root, tmp_path / "state", make_spec(), scenario=scenario)
+    attempt = snapshot["tasks"][0]["attempts"][0]
+    assert snapshot["run"]["state"] == expected_run
+    assert snapshot["tasks"][0]["state"] != "SUCCEEDED"
+    assert attempt["failure_kind"] == expected_failure
+
+
+def test_duplicate_same_result_is_idempotent(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    _, snapshot = execute(root, tmp_path / "state", make_spec(), scenario="duplicate_same_result")
+    assert snapshot["run"]["state"] == "COMPLETED"
+
+
+@pytest.mark.parametrize(
+    ("scenario", "task_state", "attempt_state"),
+    [
+        ("timeout_interrupt_supported", "FAILED", "FAILED"),
+        ("timeout_interrupt_unsupported", "BLOCKED", "QUARANTINED"),
+    ],
+)
+def test_timeout_paths_are_bounded_and_never_adopted(
+    tmp_path: Path, project_factory, scenario: str, task_state: str, attempt_state: str
+) -> None:
+    root = project_factory(task_timeout=1)
+    started = time.monotonic()
+    _, snapshot = execute(
+        root, tmp_path / "state", make_spec(), scenario=scenario, fixture={"delay_ms": 10_000}
+    )
+    assert time.monotonic() - started < 2.0
+    assert snapshot["tasks"][0]["state"] == task_state
+    assert snapshot["tasks"][0]["attempts"][0]["state"] == attempt_state
+
+
+def test_stale_input_retries_then_fails_without_adoption(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    spec = make_spec(workspace_mode="shared_serial_write", write_scope=["README.md"])
+    fixture = {"stale_path": "README.md"}
+    _, snapshot = execute(root, tmp_path / "state", spec, scenario="stale_input", fixture=fixture)
+    assert snapshot["run"]["state"] == "FAILED"
+    assert len(snapshot["tasks"][0]["attempts"]) == 2
+    assert all(attempt["failure_kind"] == "stale_input" for attempt in snapshot["tasks"][0]["attempts"])
+
+
+def test_artifact_corruption_is_reported_and_backup_verifies(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    state = tmp_path / "state"
+    run_id, snapshot = execute(root, state, make_spec())
+    with ControllerLock(state):
+        with Ledger(state / "ledger.sqlite") as ledger:
+            destination = backup_run(ledger, state, run_id)
+            assert verify_backup(destination)["ok"] is True
+            artifact = next(item for item in snapshot["artifacts"] if item["kind"] == "result_envelope")
+            (state / artifact["relative_path"]).write_text("corrupt", encoding="utf-8")
+            integrity = check_integrity(ledger, state, run_id)
+            assert integrity["ok"] is False
+            assert artifact["relative_path"] in integrity["corrupt_artifacts"]
+
+
+def test_second_controller_is_rejected(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    first = ControllerLock(state).acquire()
+    try:
+        with pytest.raises(ControllerLockError):
+            ControllerLock(state).acquire()
+    finally:
+        first.release()
+
+
+def test_dirty_worktree_is_rejected_before_run_creation(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    (root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+    state = tmp_path / "state"
+    orchestrator = Orchestrator(load_project(root), state_root=state, runtime_kind="fake")
+    try:
+        with pytest.raises(ConfigurationError, match="clean"):
+            orchestrator.start(make_spec())
+    finally:
+        orchestrator.close()
+    assert not (state / "ledger.sqlite").exists()
+
+
+def test_controller_restart_resumes_from_reported_without_new_session(tmp_path: Path, project_factory) -> None:
+    root = project_factory()
+    state = tmp_path / "state"
+
+    class CrashAfterReport(Orchestrator):
+        def _verify_and_finish(self, *args, **kwargs):
+            raise RuntimeError("simulated controller crash after REPORTED")
+
+    first = CrashAfterReport(load_project(root), state_root=state, runtime_kind="fake")
+    try:
+        with pytest.raises(RuntimeError, match="simulated controller crash"):
+            first.start(make_spec())
+    finally:
+        first.close()
+    with Ledger(state / "ledger.sqlite") as ledger:
+        run_id = ledger.connection.execute("SELECT run_id FROM runs").fetchone()[0]
+        snapshot = ledger.load_run_snapshot(run_id)
+        assert snapshot["tasks"][0]["attempts"][0]["state"] == "REPORTED"
+        assert len(snapshot["sessions"]) == 1
+
+    second = Orchestrator(load_project(root), state_root=state, runtime_kind="fake")
+    try:
+        second.resume(run_id, make_spec())
+    finally:
+        second.close()
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+        assert snapshot["run"]["state"] == "COMPLETED"
+        assert snapshot["tasks"][0]["state"] == "SUCCEEDED"
+        assert len(snapshot["sessions"]) == 1

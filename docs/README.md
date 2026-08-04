@@ -30,7 +30,7 @@ docs/
 ### `design/`
 
 - [범용 설계](./design/general-local-session-orchestrator-design.md) — 심사 반영 후 동결
-- [B1 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — SDK 0.144.4 대조와 Claude 심사를 반영한 구현 전 동결 명세
+- [B1 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — SDK 0.144.4 대조와 Claude 심사를 반영한 동결 명세와 reference 구현 기준
 
 ### `experiments/`
 
@@ -53,6 +53,7 @@ docs/
 
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [로컬 인수인계](./operations/home-codex-handoff.md) — 다른 PC에서 이어서 작업할 때의 배경
+- [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
 
 ### `archive/`
 
@@ -60,9 +61,10 @@ docs/
 
 ## 현재 상태
 
-- 범용 설계: 동결, 구현 전
-- B1 구현 명세: 동결, 구현 전
-- 실제 B1 코드: 없음
-- 다음 단계: B1 명세 §17의 S0 FakeRuntime vertical slice
+- 범용 설계: 동결
+- B1 구현 명세: 동결, reference 구현 완료
+- 실제 B1 코드: `stages/b1-sequential/`
+- 비라이브 검증: 완료
+- 다음 단계: 집 PC에서 실제 Codex smoke 1회와 B0/B1 비교
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

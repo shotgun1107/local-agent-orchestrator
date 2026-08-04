@@ -1,0 +1,8 @@
+schema_version: 1
+checks:
+  diff_check:
+    kind: command
+    argv: ["git", "diff", "--check"]
+    cwd: "."
+    timeout_seconds: 60
+    expected_exit_codes: [0]

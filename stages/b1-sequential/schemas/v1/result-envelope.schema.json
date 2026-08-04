@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "ResultArtifact": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "kind",
+        "description"
+      ],
+      "title": "ResultArtifact",
+      "type": "object"
+    },
+    "StatusClaim": {
+      "enum": [
+        "completed",
+        "blocked",
+        "failed"
+      ],
+      "title": "StatusClaim",
+      "type": "string"
+    },
+    "WorkerCheckClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "check_name": {
+          "title": "Check Name",
+          "type": "string"
+        },
+        "claimed_status": {
+          "title": "Claimed Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_name",
+        "claimed_status"
+      ],
+      "title": "WorkerCheckClaim",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "items": {
+        "$ref": "#/$defs/ResultArtifact"
+      },
+      "title": "Artifacts",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "changed_paths": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Changed Paths",
+      "type": "array"
+    },
+    "checks_run_by_worker": {
+      "items": {
+        "$ref": "#/$defs/WorkerCheckClaim"
+      },
+      "title": "Checks Run By Worker",
+      "type": "array"
+    },
+    "requested_followup": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Requested Followup"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status_claim": {
+      "$ref": "#/$defs/StatusClaim"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status_claim",
+    "summary",
+    "artifacts",
+    "changed_paths",
+    "checks_run_by_worker",
+    "assumptions",
+    "warnings",
+    "requested_followup"
+  ],
+  "title": "ResultEnvelope",
+  "type": "object"
+}
