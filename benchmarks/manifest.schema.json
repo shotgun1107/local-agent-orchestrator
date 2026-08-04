@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "B0B1BenchmarkManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "fixtures", "variants", "repetitions", "budgets", "human_intervention", "metrics"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "frozen_before_execution"},
+    "fixtures": {"type": "array", "minItems": 2},
+    "variants": {"type": "array", "items": {"enum": ["b0", "b1"]}, "minItems": 2},
+    "repetitions": {"type": "integer", "minimum": 1},
+    "budgets": {"type": "object"},
+    "human_intervention": {"type": "object"},
+    "metrics": {"type": "array", "minItems": 1}
+  }
+}

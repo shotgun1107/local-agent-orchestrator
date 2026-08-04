@@ -1,0 +1,12 @@
+schema_version: 1
+profiles:
+  code_change:
+    runtime: codex
+    runtime_profile: local_default
+    sandbox: workspace_write
+    workspace_mode: shared_serial_write
+  document_read:
+    runtime: codex
+    runtime_profile: local_default
+    sandbox: read_only
+    workspace_mode: read_only

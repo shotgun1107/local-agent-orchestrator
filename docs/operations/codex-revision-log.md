@@ -545,3 +545,34 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 | `docs/experiments/codex-sdk-single-turn-experiment.md` | 111 | `43072BF20D1A1FFC365E46F8540C57C16FB8226E22FE6B3EB8E30EEDAA0FFD5A` | 저장소 루트의 실험 스크립트 상대 링크만 조정 |
 
 문헌조사 두 문서는 내용 변경 없이 이동됐다. SHA-256은 각각 `912A4A2C0B6F53B04A3404929D3B7A81F970E1FAC7DBA36C3565351FC492A89F`, `A6328DC9F02D77709B27B8F2FA07870F8A3DED68AD602F9FE0DA0A584F2EEF6A`로 구조 정리 전과 같다.
+
+## B1 순차 세션 오케스트레이터 구현
+
+### 구현 범위
+
+- 작업일: 2026-08-04.
+- 구현 위치: `stages/b1-sequential/`.
+- 기능 코어는 `contract.py`, `ledger.py`, `runtime.py`, `verify.py`, `schedule.py`, `recover.py`, `cli.py`의 7개 모듈로 제한했다.
+- Pydantic 계약과 JSON Schema, SQLite 원장과 migration checksum, 순차 스케줄러, FakeRuntime·CodexRuntime, 검증·Artifact 저장, 복구·백업, CLI를 구현했다.
+- `benchmarks/`에는 B0/B1 동결 manifest와 서로 독립적인 `code-change`, `document-read` fixture를 추가했다. 두 fixture 모두 FakeRuntime 경로로 관통 검증했다.
+- B2 병렬 실행, B3 적응형 라우팅, Reviewer·Coordinator·Integrator 역할, Codex 앱 worktree 제어는 구현하지 않았다.
+
+### 확인한 항목
+
+- Python 3.12 가상환경에서 `pytest -q`를 실행해 60개 테스트가 모두 통과했다.
+- 12개 FakeRuntime 고장 시나리오, fixed fixture 두 개, CLI, 상태 전이와 Event 원자성, 재시도, timeout·interrupt, 재시작, backup·integrity, schema 동기화를 자동 테스트로 확인했다.
+- `openai-codex==0.144.4` 실제 설치본의 공개 API를 기준으로 `account()`, `thread_start()`, `turn()`, blocking `TurnHandle.run()`, `interrupt()` 경계를 맞췄다. thread와 turn 양쪽의 approval mode는 명시적으로 `deny_all`이다.
+- CodexRuntime은 `OPENAI_API_KEY`가 있으면 실패하고, SDK `account()` 결과가 `chatgpt`가 아니거나 확인 불가이면 실패하도록 했다. 계정 식별자와 토큰은 출력하지 않는다.
+- JSON 파일 17개 파싱, 로컬 Markdown 링크 48개 해석, 기능 코어 7개 여부, `shell=True` 부재, pilot 고유 역할 문자열 부재, B2·B3 구현 디렉터리 부재를 정적 점검했다.
+
+### 확인하지 못한 항목
+
+- 실제 Codex 모델을 호출하는 live smoke는 사용자 요청에 따라 집 PC 검증으로 넘겼다. 이 작업 중 실제 모델 turn 호출 수는 0회다.
+- isolated wheel 빌드는 build backend 다운로드가 필요한 시점에 현재 세션 사용 한도 때문에 승인을 완료하지 못해 미확인이다. editable 설치는 성공했다. wheel 내부 Project Pack 포함 여부도 집 PC에서 확인해야 한다.
+- 실제 ChatGPT 구독의 동시 세션 제한, usage 계측 위치, 장시간 timeout 후 app-server의 실제 종료 거동은 미확인이다.
+
+### 문서와 해시
+
+- 집 PC 실행 절차와 중단 조건은 `docs/operations/b1-home-test-handoff.md`에 기록했다.
+- B1 명세는 상태와 구현 링크만 바꿨다. 변경 전 Git blob은 `24a28759babf4cf54c1f61ce756166593a0c472a`, 변경 후 작업 트리 blob은 `54f06a40b8eea09d802673aa319ba26aec99c4ec`, 변경 후 SHA-256은 `5CC76E7B7E0D3419A48E1CB1A291B13C20F3322D7283243D2491B41EC82233D2`다.
+- 동결된 연구·심사 문서는 이 구현 작업에서 수정하지 않았다.

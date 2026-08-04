@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "B0Measurement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fixture_id", "repetition", "state", "check_success", "wall_clock_seconds", "session_count", "turn_count", "manual_copy_or_relay_count", "manual_recovery_count", "manual_recovery_seconds", "usage_status", "notes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "fixture_id": {"enum": ["code-change", "document-read"]},
+    "repetition": {"type": "integer", "minimum": 1},
+    "state": {"enum": ["completed", "failed", "blocked", "interrupted"]},
+    "check_success": {"type": "boolean"},
+    "wall_clock_seconds": {"type": "number", "minimum": 0},
+    "session_count": {"type": "integer", "minimum": 0},
+    "turn_count": {"type": "integer", "minimum": 0},
+    "manual_copy_or_relay_count": {"type": "integer", "minimum": 0},
+    "manual_recovery_count": {"type": "integer", "minimum": 0},
+    "manual_recovery_seconds": {"type": "number", "minimum": 0},
+    "usage_status": {"enum": ["measured", "unknown"]},
+    "token_usage": {"type": ["object", "null"]},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "$defs": {
+    "InputRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Id"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "InputRef",
+      "type": "object"
+    },
+    "RequestSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "text"
+      ],
+      "title": "RequestSpec",
+      "type": "object"
+    },
+    "RunCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "satisfied_by_tasks": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Satisfied By Tasks",
+          "type": "array"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "satisfied_by_tasks"
+      ],
+      "title": "RunCriterion",
+      "type": "object"
+    },
+    "TaskCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "check_names": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Check Names",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "check_names"
+      ],
+      "title": "TaskCriterion",
+      "type": "object"
+    },
+    "TaskSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "approval": {
+          "const": "none",
+          "title": "Approval",
+          "type": "string"
+        },
+        "capability_profile": {
+          "minLength": 1,
+          "title": "Capability Profile",
+          "type": "string"
+        },
+        "check_names": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Check Names",
+          "type": "array"
+        },
+        "completion_criteria": {
+          "items": {
+            "$ref": "#/$defs/TaskCriterion"
+          },
+          "minItems": 1,
+          "title": "Completion Criteria",
+          "type": "array"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "goal": {
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/InputRef"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "read_scope": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Read Scope",
+          "type": "array"
+        },
+        "workspace_mode": {
+          "$ref": "#/$defs/WorkspaceMode"
+        },
+        "write_scope": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Write Scope",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "goal",
+        "completion_criteria",
+        "read_scope",
+        "capability_profile",
+        "workspace_mode",
+        "check_names",
+        "approval"
+      ],
+      "title": "TaskSpec",
+      "type": "object"
+    },
+    "WorkspaceMode": {
+      "enum": [
+        "read_only",
+        "shared_serial_write"
+      ],
+      "title": "WorkspaceMode",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "completion_criteria": {
+      "items": {
+        "$ref": "#/$defs/RunCriterion"
+      },
+      "minItems": 1,
+      "title": "Completion Criteria",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "request": {
+      "$ref": "#/$defs/RequestSpec"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/TaskSpec"
+      },
+      "minItems": 1,
+      "title": "Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "request",
+    "completion_criteria",
+    "tasks"
+  ],
+  "title": "RunSpec",
+  "type": "object"
+}

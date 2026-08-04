@@ -1,0 +1,14 @@
+schema_version: 1
+checks:
+  acceptance:
+    kind: command
+    argv: ["python", "benchmark_checks/check_report.py"]
+    cwd: "."
+    timeout_seconds: 60
+    expected_exit_codes: [0]
+  diff_check:
+    kind: command
+    argv: ["git", "diff", "--check"]
+    cwd: "."
+    timeout_seconds: 60
+    expected_exit_codes: [0]

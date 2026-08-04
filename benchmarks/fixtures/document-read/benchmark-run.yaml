@@ -1,0 +1,26 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "sources/notes.md를 근거로 확인된 사실과 미확인을 분리한 report.md를 작성한다."
+completion_criteria:
+  - id: RC1
+    text: "고정 acceptance test가 통과한다."
+    satisfied_by_tasks: [T1]
+constraints:
+  - "sources/와 benchmark_checks/는 수정하지 않는다."
+assumptions: []
+tasks:
+  - key: T1
+    goal: "근거 수준을 구분한 report.md를 작성한다."
+    completion_criteria:
+      - id: TC1
+        text: "acceptance test가 통과한다."
+        check_names: [acceptance]
+    depends_on: []
+    inputs: []
+    read_scope: ["sources/**", "benchmark_checks/**", "README.md"]
+    write_scope: ["report.md"]
+    capability_profile: document_write
+    workspace_mode: shared_serial_write
+    check_names: [acceptance, diff_check]
+    approval: none
