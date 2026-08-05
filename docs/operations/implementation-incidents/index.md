@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 24건
-- 해결: 24건
+- 전체: 25건
+- 해결: 25건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -37,6 +37,7 @@
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 | DEV-20260806-001 | resolved | r6 | integration | 비대화형 B0 입력 실패가 Cell을 봉인함 |
+| DEV-20260806-002 | resolved | r6 | tooling | git archive가 core.autocrlf에 따라 다른 wheel을 생성함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1414,3 +1415,64 @@ R6 run-next가 B0 console sidecar의 대화형 stdin 전제를 상태 전이 전
 - 출처: docs/operations/codex-revision-log.md
 - 출처: tools/benchmark-runner/src/benchmark_runner/adapter.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/r6.py
+
+## DEV-20260806-002 — git archive가 core.autocrlf에 따라 다른 wheel을 생성함
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `tooling`
+- 발견: 2026-08-05T23:40:52Z / revision 2 독립 재현 빌드
+- 해결: 2026-08-05T23:43:16Z
+
+### 증상
+
+같은 source commit과 revision에서 Runner·B1 wheel hash, Schema hash, Plan fingerprint, Experiment ID가 서로 달랐다
+
+### 재현
+
+- core.autocrlf=true인 저장소와 false인 canonical clone에서 같은 commit을 build_r6_artifacts.py로 빌드한다
+- 두 build-record의 wheel hash와 execution-plan의 fingerprint를 비교한다
+
+### 증거
+
+- `direct-observation`: source commit은 같았지만 current archive SHA와 canonical archive SHA가 달랐고 core.autocrlf=false를 명령에 강제하자 archive SHA가 일치했다
+
+### 근본 원인
+
+build harness의 git archive 호출이 실행 저장소의 core.autocrlf 설정을 명시적으로 고정하지 않아 Windows checkout 설정에 따라 archive의 텍스트 EOL과 wheel 입력 bytes가 달라졌다
+
+### 검토한 해결안
+
+- `rejected` 첫 build hash를 기준값으로 그대로 채택 — 같은 commit을 다른 clone에서 재현하지 못해 동결 근거가 성립하지 않는다
+- `rejected` 저장소 로컬 config만 false로 변경 — 호출 환경의 숨은 전제를 남기고 다른 clone에서 다시 발생한다
+- `adopted` git archive 명령에 core.autocrlf=false 강제 — build 입력을 호출 저장소 설정과 분리하고 두 설정의 clone으로 회귀검증한다
+
+### 채택한 해결
+
+build_r6_artifacts.py가 git -c core.autocrlf=false archive로 snapshot을 만들도록 바꾸고 core.autocrlf=true와 false인 두 clone의 archive bytes가 같은지 실제 Git 회귀시험을 추가했다
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+- tools/benchmark-runner/tests/test_r6_build_reproducibility.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_build_reproducibility.py::test_build_archive_is_independent_of_repository_autocrlf
+
+### 검증 결과
+
+- R6 build·freeze 표적 시험 7개 통과
+- Benchmark Runner 전체 회귀시험 132개 통과
+- B1 전체 회귀시험 65개 통과
+
+### 남은 위험
+
+- 새 build 입력 경로가 추가되면 동일한 clone 간 byte 재현시험 범위에 포함해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/codex-revision-log.md
+- 출처: tools/benchmark-runner/scripts/build_r6_artifacts.py
+- 출처: tools/benchmark-runner/tests/test_r6_build_reproducibility.py

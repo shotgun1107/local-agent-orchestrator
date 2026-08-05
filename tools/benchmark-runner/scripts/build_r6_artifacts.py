@@ -51,6 +51,33 @@ def write_json(path: Path, value: object) -> None:
     )
 
 
+def git_archive_sources(git: Path, repository: Path) -> bytes:
+    """Read the build snapshot without inheriting checkout EOL conversion."""
+
+    archive = subprocess.run(
+        [
+            str(git),
+            "-c",
+            "core.autocrlf=false",
+            "archive",
+            "--format=tar",
+            "HEAD",
+            "tools/benchmark-runner",
+            "stages/b1-sequential",
+        ],
+        cwd=repository,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+    )
+    if archive.returncode != 0:
+        raise RuntimeError(
+            f"git archive failed: {archive.stderr.decode('utf-8', errors='replace')}"
+        )
+    return archive.stdout
+
+
 def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser()
     value.add_argument("--repository", type=Path, required=True)
@@ -94,26 +121,10 @@ def main() -> int:
     build_env["PYTHONDONTWRITEBYTECODE"] = "1"
     build_env["PYTHONUTF8"] = "1"
     build_env["PYTHONIOENCODING"] = "utf-8"
-    archive = subprocess.run(
-        [
-            str(git),
-            "archive",
-            "--format=tar",
-            "HEAD",
-            "tools/benchmark-runner",
-            "stages/b1-sequential",
-        ],
-        cwd=repository,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=False,
-    )
-    if archive.returncode != 0:
-        raise RuntimeError(f"git archive failed: {archive.stderr.decode('utf-8', errors='replace')}")
+    archive = git_archive_sources(git, repository)
     with tempfile.TemporaryDirectory(prefix="lao-r6-build-") as snapshot_name:
         snapshot = Path(snapshot_name)
-        with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as bundle:
+        with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as bundle:
             bundle.extractall(snapshot, filter="data")
         for project in (
             snapshot / "tools" / "benchmark-runner",

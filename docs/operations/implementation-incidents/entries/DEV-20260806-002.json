@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260806-002",
+  "title": "git archive가 core.autocrlf에 따라 다른 wheel을 생성함",
+  "status": "resolved",
+  "stage": "r6",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T23:40:52Z",
+  "resolved_at": "2026-08-05T23:43:16Z",
+  "discovered_by": "revision 2 독립 재현 빌드",
+  "symptom": "같은 source commit과 revision에서 Runner·B1 wheel hash, Schema hash, Plan fingerprint, Experiment ID가 서로 달랐다",
+  "reproduction": [
+    "core.autocrlf=true인 저장소와 false인 canonical clone에서 같은 commit을 build_r6_artifacts.py로 빌드한다",
+    "두 build-record의 wheel hash와 execution-plan의 fingerprint를 비교한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "source commit은 같았지만 current archive SHA와 canonical archive SHA가 달랐고 core.autocrlf=false를 명령에 강제하자 archive SHA가 일치했다"
+    }
+  ],
+  "root_cause": "build harness의 git archive 호출이 실행 저장소의 core.autocrlf 설정을 명시적으로 고정하지 않아 Windows checkout 설정에 따라 archive의 텍스트 EOL과 wheel 입력 bytes가 달라졌다",
+  "considered_options": [
+    {
+      "option": "첫 build hash를 기준값으로 그대로 채택",
+      "decision": "rejected",
+      "reason": "같은 commit을 다른 clone에서 재현하지 못해 동결 근거가 성립하지 않는다"
+    },
+    {
+      "option": "저장소 로컬 config만 false로 변경",
+      "decision": "rejected",
+      "reason": "호출 환경의 숨은 전제를 남기고 다른 clone에서 다시 발생한다"
+    },
+    {
+      "option": "git archive 명령에 core.autocrlf=false 강제",
+      "decision": "adopted",
+      "reason": "build 입력을 호출 저장소 설정과 분리하고 두 설정의 clone으로 회귀검증한다"
+    }
+  ],
+  "resolution": "build_r6_artifacts.py가 git -c core.autocrlf=false archive로 snapshot을 만들도록 바꾸고 core.autocrlf=true와 false인 두 clone의 archive bytes가 같은지 실제 Git 회귀시험을 추가했다",
+  "affected_files": [
+    "tools/benchmark-runner/scripts/build_r6_artifacts.py",
+    "tools/benchmark-runner/tests/test_r6_build_reproducibility.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_r6_build_reproducibility.py::test_build_archive_is_independent_of_repository_autocrlf"
+  ],
+  "verification": [
+    "R6 build·freeze 표적 시험 7개 통과",
+    "Benchmark Runner 전체 회귀시험 132개 통과",
+    "B1 전체 회귀시험 65개 통과"
+  ],
+  "remaining_risks": [
+    "새 build 입력 경로가 추가되면 동일한 clone 간 byte 재현시험 범위에 포함해야 한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/operations/codex-revision-log.md",
+    "tools/benchmark-runner/scripts/build_r6_artifacts.py",
+    "tools/benchmark-runner/tests/test_r6_build_reproducibility.py"
+  ]
+}
