@@ -779,3 +779,44 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `benchmarks/**`, `stages/**`, Runner 구현 코드는 수정하지 않았다.
 - 이 동결 작업에서 실제 모델 turn은 0회다.
 - 동결본과 인덱스의 로컬 링크, UTF-8 읽기, trailing whitespace, Markdown code fence, Git diff whitespace를 최종 점검한다.
+
+## Benchmark Runner R0 Fake vertical slice 구현
+
+### 구현 범위
+
+- 작업일: 2026-08-05.
+- 동결 설계 §24 R0만 구현했다. 실제 fixture 복원, B0/B1 Adapter, controller lock, retry, 비교 summary, Git export는 구현하지 않았다.
+- `tools/benchmark-runner/`에 Python 3.12·Pydantic 기반 독립 패키지와 `lao-bench` CLI를 추가했다.
+- 공개 계약은 `execution-plan`, `measurement`, `intervention-event` 세 Schema이며 Pydantic 모델에서 결정론적으로 생성한다.
+- 한 개의 read-only Fake Cell이 `PLANNED → PREPARED → ACTIVE → CAPTURED → JUDGING → SEALED`를 통과한다.
+- Fake Adapter는 모델·도구를 호출하지 않고 `model_turns=0` Evidence를 반환한다. Stub Judge는 completed를 통과, requested failure를 실패로 판정한다.
+- 성공과 실패 모두 canonical Measurement와 Evidence hash를 가진 `SEALED` 결과로 남는다. `SEALED`는 성공과 동일하지 않다.
+
+### 계약과 안전성
+
+- `MetricValue`는 measured zero와 unknown을 구분하며 `unknown|not_applicable`에 값을 넣는 것을 거부한다.
+- Evidence 경로는 정규화된 POSIX 상대 경로만 허용하고 절대 경로, `..`, Windows 역슬래시, symlink를 거부한다.
+- Cell 상태와 Measurement는 같은 디렉터리의 임시 파일에 `fsync` 후 `os.replace`하는 원자적 write를 사용한다.
+- Measurement는 자기 자신을 Evidence 목록에 넣지 않고, Cell 상태의 `sealed_measurement_sha256`으로 canonical bytes를 봉인한다.
+- 동일 Experiment ID가 이미 있으면 기존 실행을 덮어쓰지 않는다.
+
+### 구현 중 발견한 계약 오류
+
+- §8.1 공통 envelope의 `kind`와 §8.7 Intervention Event 예시의 `kind=correction`이 동일 필드에 두 의미를 요구하는 충돌을 발견했다.
+- `kind=intervention_event`, `intervention_kind=correction|...`으로 분리하고 설계 판본 4를 다시 동결했다.
+- 증상·근본 원인·검토 대안·해결·회귀시험은 `DEV-20260805-004`에 기록했다.
+- 판본 4 설계는 1,672줄, SHA-256 `841EACEF0C2FE81D72E0702371AF7B4CBEB62D6703431C54C92BE8D220D2030F`다.
+
+### 검증
+
+- B1 가상환경의 Python 3.12.10, Pydantic 2.13.4, pytest 8.4.2를 사용했다.
+- 계약·Schema 동기화·Plan fingerprint·CLI·상태 전이·성공/실패 봉인·Evidence 변조·Measurement 변조·중복 실행 거부 시험 18개가 통과했다.
+- 별도 임시 state root에서 실제 CLI 관통을 실행해 Cell `SEALED`, outcome `completed`, check success, `model_turns=0`을 확인하고 `r0 verify`로 재검증했다. 임시 결과는 검증 후 삭제했다.
+- 실제 Codex·OpenAI 모델 turn은 0회다.
+- 구현 오류 로그 6개 원본의 validation·render 일치 검사가 통과했고 하네스 자체 단위시험 10개도 통과했다.
+
+### 크기와 미확인
+
+- `src/benchmark_runner`는 Python 파일 8개, 물리 964줄·공백/주석 제외 795줄이다. 설계의 약 600줄 목표보다 크지만 공개 Schema 3개의 전체 필드와 명시적 Measurement 조립을 포함하며 R1 이후 기능은 넣지 않았다. R1 확장 전에 불필요한 중복을 다시 감사한다.
+- editable install과 wheel 빌드는 실행하지 않았다. 현재 검증은 `src`를 직접 import했으며 packaging artifact 고정은 R6 범위다.
+- R0는 실제 fixture·Judge·B0/B1 효율성을 증명하지 않는다. 다음 단계는 R1 fixture 복원과 독립 Judge다.

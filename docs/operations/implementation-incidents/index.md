@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 5건
-- 해결: 5건
+- 전체: 6건
+- 해결: 6건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -16,6 +16,7 @@
 | DEV-20260804-001 | resolved | b1-spec | integration | SDK에 없는 observe 기반 timeout 설계 |
 | DEV-20260804-002 | resolved | b1-spec | integration | Codex approval_mode 기본값으로 인한 추가 모델 호출 위험 |
 | DEV-20260805-003 | resolved | b1-sequential | implementation | doctor가 미인증 상태에서도 성공 종료함 |
+| DEV-20260805-004 | resolved | benchmark-runner-r0 | design | Intervention Event의 kind 필드가 envelope와 이벤트 종류에 중복됨 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -198,6 +199,66 @@ doctor 성공 조건에 API 키 부재, 계정 점검 수행, authenticated=true
 - 관련 커밋: 53cb512
 - 출처: stages/b1-sequential/src/orchestrator/cli.py
 - 출처: stages/b1-sequential/tests/integration/test_cli.py
+
+## DEV-20260805-004 — Intervention Event의 kind 필드가 envelope와 이벤트 종류에 중복됨
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r0`
+- 분류: `design`
+- 발견: 2026-08-05T03:33:52Z / R0 Pydantic contract implementation
+- 해결: 2026-08-05T03:35:18Z
+
+### 증상
+
+공개 JSON envelope는 kind를 문서 종류로 요구하지만 Intervention Event 예시는 같은 kind에 correction 같은 이벤트 종류를 넣어 단일 JSON에서 두 의미를 동시에 표현할 수 없다.
+
+### 재현
+
+- 동결 설계 §8.1의 Contract Envelope와 §8.7 Intervention Event 예시를 하나의 extra-forbid Pydantic 모델로 구현한다.
+
+### 증거
+
+- `source-inspection`: §8.1은 kind=measurement 형식의 공통 envelope를 요구하고 §8.7은 kind=correction을 요구해 필드 이름이 충돌한다.
+
+### 근본 원인
+
+공통 JSON envelope와 Intervention Event 예시를 별도 절에서 설계하면서 kind 필드의 namespace 충돌을 계약 모델로 검증하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` Intervention Event에서 공통 envelope를 제거 — 모든 공개 JSON이 같은 envelope를 가진다는 계약을 깨뜨린다
+- `rejected` kind에 correction만 기록 — 문서 종류를 기계적으로 판별할 수 없다
+- `adopted` kind와 intervention_kind 분리 — envelope 종류와 이벤트 의미를 각각 단일 필드로 보존한다
+
+### 채택한 해결
+
+Intervention Event는 kind=intervention_event를 사용하고 실제 이벤트 종류는 intervention_kind에 기록하도록 Pydantic 계약과 설계 판본 4를 일치시켰다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/contract.py
+- tools/benchmark-runner/tests/test_contract.py
+- docs/design/general-benchmark-runner-design.md
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_contract.py::test_intervention_event_separates_document_and_event_kinds
+
+### 검증 결과
+
+- Benchmark Runner R0 pytest 18개가 모두 통과했다.
+- 생성된 intervention-event.schema.json이 kind=intervention_event와 intervention_kind enum을 별도 필드로 요구한다.
+
+### 남은 위험
+
+- 향후 공개 Schema 판본을 소비하는 도구는 kind와 intervention_kind를 혼동하지 않아야 한다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:305
+- 출처: docs/design/general-benchmark-runner-design.md:475
+- 출처: tools/benchmark-runner/schemas/v1/intervention-event.schema.json
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

@@ -1,8 +1,8 @@
 # 범용 오케스트레이터 Benchmark Runner 설계
 
-- 문서 상태: 동결(freeze)
+- 문서 상태: 동결(freeze) — R0 계약 명명 erratum 반영
 - 동결일: 2026-08-05
-- 설계 판본: 3
+- 설계 판본: 4
 - 작성일: 2026-08-05
 - 적용 범위: B0~B3 비교 실험을 실행·측정·판정하는 중립 Runner
 - 최초 적용: 동결된 B0/B1 비교 실험
@@ -483,14 +483,15 @@ variant_metrics:
   "cell_id": "cell_code-change_1_b0",
   "timestamp": "2026-08-05T00:01:20Z",
   "monotonic_offset_seconds": 80.42,
-  "kind": "correction",
+  "kind": "intervention_event",
+  "intervention_kind": "correction",
   "actor": "user",
   "duration_seconds": 12.5,
   "note": "write scope 재설명"
 }
 ```
 
-허용 kind와 기계 계수 규칙:
+허용 `intervention_kind`와 기계 계수 규칙:
 
 | kind | startup | excluding-start 중계 | 그 밖의 효과 |
 |---|---:|---:|---|
@@ -1661,3 +1662,11 @@ B2/B3 manifest + B3ReviewedAdapter
 | P3-N5 preflight 없는 Cell 실행 차단이 없음 | 유효한 preflight hash와 Plan 일치를 Cell 준비 전 강제 | §17.3, §18.1, §25.5, DoD 22 |
 
 위 5건을 반영해 설계 판본 3을 2026-08-05에 동결한다. 이후 R0~R6 구현은 이 문서의 검증되지 않은 가설을 실제 코드와 시험으로 확인하는 단계다. 구현 중 계약 변경이 필요하면 이 동결본을 조용히 고치지 않고 변경 사유와 증거를 남긴 새 판본을 만든다.
+
+---
+
+## 31. R0 구현 중 계약 명명 erratum
+
+R0 Pydantic 계약 구현에서 §8.1의 공통 envelope와 §8.7의 Intervention Event 예시가 `kind` 필드를 서로 다른 의미로 요구하는 충돌을 확인했다. 공통 envelope는 `kind`를 문서 종류에 사용하므로 Intervention Event도 `kind=intervention_event`로 고정하고, `correction`, `manual_retry` 같은 실제 이벤트 종류는 `intervention_kind`에 기록한다.
+
+이 변경은 이벤트 계수 의미나 실험 판정식을 바꾸지 않고, 한 JSON 필드에 두 의미를 담을 수 없던 명명 충돌만 해소한다. 발견·원인·해결·회귀시험은 구현 오류 로그 `DEV-20260805-004`로 추적한다. 해당 erratum을 반영한 설계 판본 4를 2026-08-05에 다시 동결한다.

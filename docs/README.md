@@ -72,7 +72,7 @@ docs/
 - B1 구현 명세: 동결, reference 구현과 실제 Codex smoke 완료
 - 실제 B1 코드: `stages/b1-sequential/`
 - 비라이브 검증 및 실제 Codex smoke 1회: 완료
-- Benchmark Runner: 설계 판본 3 동결, 미구현
-- 다음 단계: 동결 설계 §24의 R0 Fake vertical slice 구현과 비라이브 계약 시험
+- Benchmark Runner: 설계 판본 4 동결, R0 Fake vertical slice 구현·비라이브 검증 완료
+- 다음 단계: R0 결과 감사 후 R1 fixture 복원·독립 Judge 구현
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
