@@ -38,6 +38,8 @@ def main() -> int:
     ).stdout.strip()
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONUTF8"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
     cases = [
         ("b1_full", [str(python), "-m", "pytest", "-q"], repository / "stages" / "b1-sequential", None),
         (

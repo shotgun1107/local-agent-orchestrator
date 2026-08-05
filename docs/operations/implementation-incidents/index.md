@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 19건
-- 해결: 19건
+- 전체: 20건
+- 해결: 20건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -30,6 +30,7 @@
 | DEV-20260805-015 | resolved | benchmark-runner-r5 | implementation | R5 export scanner가 JSON 이스케이프된 Windows 홈 경로를 누락 |
 | DEV-20260805-016 | resolved | benchmark-runner-r6 | integration | R6 Driver 봉인 뒤 controller lifecycle append가 Evidence hash를 변경 |
 | DEV-20260805-017 | resolved | benchmark-runner-r6 | integration | B1 wheel에서 공개 JSON Schema 묶음이 누락됨 |
+| DEV-20260805-018 | resolved | benchmark-runner-r6 | tooling | R6 artifact builder가 한글 경로의 CLI JSON을 손상함 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -1001,6 +1002,61 @@ schemas/v1 5개를 orchestrator/_schemas/v1에 force-include하고 비어 있는
 
 - B1 전체 65 tests passed
 - 임시 디렉터리에 wheel만 설치한 뒤 source checkout 밖에서 Schema 5개 export와 hash 출력을 확인했다
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-018 — R6 artifact builder가 한글 경로의 CLI JSON을 손상함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `tooling`
+- 발견: 2026-08-05T08:29:52Z / clean-commit installed-wheel artifact build
+- 해결: 2026-08-05T08:29:52Z
+
+### 증상
+
+wheel과 Experiment 생성 뒤 child CLI가 출력한 plan_path의 한글이 replacement character로 바뀌어 local root 상대경로 검증이 실패했다
+
+### 재현
+
+- 한글 저장소 경로에서 installed Runner CLI로 r6 create를 실행하고 부모 build script가 JSON stdout을 UTF-8로 해석한다
+
+### 증거
+
+- `reproducible-test`: build_r6_artifacts.py의 Path(created plan_path).relative_to(local_root)가 ValueError를 발생시켰다
+
+### 근본 원인
+
+부모는 UTF-8로 stdout을 읽었지만 자식 Python에 PYTHONUTF8과 PYTHONIOENCODING을 전달하지 않아 Windows 기본 console encoding으로 JSON이 출력됐다
+
+### 검토한 해결안
+
+- `rejected` 손상된 경로 문자열을 replacement character 기준으로 복구 — 원문 bytes를 잃었으므로 안전하게 복원할 수 없다
+- `rejected` 경로를 JSON에서 제거 — build record와 Experiment 위치 대조 증거가 약해진다
+- `adopted` 모든 build와 regression child에 UTF-8 환경 고정 — 한글 경로를 원형 보존한다
+
+### 채택한 해결
+
+build와 installed CLI 및 non-live regression 자식 프로세스에 PYTHONUTF8=1, PYTHONIOENCODING=utf-8을 명시했다
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+- tools/benchmark-runner/scripts/run_r6_nonlive_regression.py
+
+### 회귀시험
+
+- 한글 저장소 경로를 child Python JSON stdout으로 출력하고 부모 PowerShell에서 exact path로 재파싱
+
+### 검증 결과
+
+- PYTHONUTF8=1과 PYTHONIOENCODING=utf-8 환경의 child JSON path가 한글을 포함한 현재 저장소 절대경로와 exact match
 
 ### 남은 위험
 
