@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-019",
+  "title": "R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "integration",
+  "discovered_at": "2026-08-05T08:41:35Z",
+  "resolved_at": "2026-08-05T08:41:35Z",
+  "discovered_by": "installed-wheel authenticated preflight",
+  "symptom": "Codex CLI 로그인 뒤에도 B1 doctor가 workspace healthy false로 exit 7을 반환해 첫 Cell 전 동결이 불가능했다",
+  "reproduction": [
+    "메인 저장소 하위 benchmarks/fixtures/code-change를 lao doctor의 project로 직접 전달한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "doctor JSON은 worktree clean true지만 repository_root가 메인 저장소라 workspace healthy false를 반환했다"
+    }
+  ],
+  "root_cause": "B1 GitWorkspace doctor는 Project root와 Git top-level의 exact match를 요구하는데 R6 collector가 source tree 안의 중첩 fixture 경로를 직접 사용했다",
+  "considered_options": [
+    {
+      "option": "B1 doctor의 standalone repository 조건 완화",
+      "decision": "rejected",
+      "reason": "실제 B1 Run의 clean 독립 workspace 불변식을 약화한다"
+    },
+    {
+      "option": "첫 실험 Cell workspace를 preflight에서 미리 준비",
+      "decision": "rejected",
+      "reason": "유효한 preflight 전 Cell 부작용 0회 조건을 위반한다"
+    },
+    {
+      "option": "별도 임시 standalone fixture 복원 후 doctor",
+      "decision": "adopted",
+      "reason": "Cell 상태를 건드리지 않고 실제 실행 형태를 검증한다"
+    }
+  ],
+  "resolution": "manifest source commit에서 임시 독립 Git fixture를 복원해 doctor를 실행하고 healthy와 clean을 모두 확인한 뒤 임시 디렉터리를 폐기한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/r6.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_collect_environment_checks_doctor_profile_without_turn"
+  ],
+  "verification": [
+    "Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

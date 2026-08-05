@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Literal
 
@@ -20,6 +21,7 @@ from .contract import (
     StrictModel,
 )
 from .plan import assert_plan_integrity
+from .workspace import FixtureRestorer, load_frozen_manifest
 from .runner import (
     R4ControllerError,
     R4ExperimentController,
@@ -209,21 +211,28 @@ def collect_r6_environment(profile: R6RuntimeProfile) -> dict[str, str | bool]:
 
     if os.environ.get("OPENAI_API_KEY"):
         raise R4ControllerError("OPENAI_API_KEY is present")
-    manifest = yaml.safe_load(Path(profile.manifest_path).read_text(encoding="utf-8"))
-    fixture_path = Path(profile.source_repository) / manifest["fixtures"][0]["path"]
-    doctor_command = [
-        *profile.b1_command_prefix,
-        "doctor",
-        "--project",
-        str(fixture_path),
-        "--json",
-    ]
-    doctor_exit, doctor, doctor_stderr = _run_json(
-        doctor_command,
-        pythonpath=profile.b1_pythonpath,
-    )
-    if doctor_exit != 0:
-        raise R4ControllerError(f"B1 doctor failed without a model turn: {doctor_stderr}")
+    manifest = load_frozen_manifest(Path(profile.manifest_path))
+    with tempfile.TemporaryDirectory(prefix="lao-r6-doctor-") as temporary:
+        doctor_project = Path(temporary) / "project"
+        FixtureRestorer(
+            Path(profile.source_repository),
+            profile.git_executable,
+        ).restore(manifest.fixtures[0], doctor_project)
+        doctor_command = [
+            *profile.b1_command_prefix,
+            "doctor",
+            "--project",
+            str(doctor_project),
+            "--json",
+        ]
+        doctor_exit, doctor, doctor_stderr = _run_json(
+            doctor_command,
+            pythonpath=profile.b1_pythonpath,
+        )
+    if not doctor:
+        raise R4ControllerError(
+            f"B1 doctor returned no JSON without a model turn (exit={doctor_exit}): {doctor_stderr}"
+        )
     sdk = doctor.get("codex_sdk")
     login = doctor.get("codex_login")
     if not isinstance(sdk, dict) or sdk.get("pinned") is not True:
@@ -231,7 +240,20 @@ def collect_r6_environment(profile: R6RuntimeProfile) -> dict[str, str | bool]:
     if not isinstance(login, dict) or (
         login.get("authenticated") is not True or login.get("method") != "chatgpt"
     ):
-        raise R4ControllerError("B1 doctor did not verify ChatGPT authentication")
+        raise R4ControllerError(
+            f"B1 doctor did not verify ChatGPT authentication (exit={doctor_exit})"
+        )
+    workspace = doctor.get("workspace")
+    worktree = doctor.get("worktree")
+    if (
+        not isinstance(workspace, dict)
+        or workspace.get("healthy") is not True
+        or not isinstance(worktree, dict)
+        or worktree.get("clean") is not True
+    ):
+        raise R4ControllerError("B1 doctor did not verify a clean standalone Git workspace")
+    if doctor_exit != 0:
+        raise R4ControllerError(f"B1 doctor failed without a model turn (exit={doctor_exit})")
 
     profiles_path = doctor.get("runtime_profiles_path")
     if not isinstance(profiles_path, str) or not Path(profiles_path).is_file():
