@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import subprocess
 import sys
+import tarfile
+import tempfile
 from pathlib import Path
 
 
@@ -90,23 +93,47 @@ def main() -> int:
     build_env["PYTHONDONTWRITEBYTECODE"] = "1"
     build_env["PYTHONUTF8"] = "1"
     build_env["PYTHONIOENCODING"] = "utf-8"
-    for project in (repository / "tools" / "benchmark-runner", repository / "stages" / "b1-sequential"):
-        run(
-            [
-                str(python),
-                "-m",
-                "pip",
-                "wheel",
-                str(project),
-                "--no-deps",
-                "--no-build-isolation",
-                "--no-cache-dir",
-                "--wheel-dir",
-                str(artifact_root),
-            ],
-            cwd=repository,
-            env=build_env,
-        )
+    archive = subprocess.run(
+        [
+            str(git),
+            "archive",
+            "--format=tar",
+            "HEAD",
+            "tools/benchmark-runner",
+            "stages/b1-sequential",
+        ],
+        cwd=repository,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+    )
+    if archive.returncode != 0:
+        raise RuntimeError(f"git archive failed: {archive.stderr.decode('utf-8', errors='replace')}")
+    with tempfile.TemporaryDirectory(prefix="lao-r6-build-") as snapshot_name:
+        snapshot = Path(snapshot_name)
+        with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as bundle:
+            bundle.extractall(snapshot, filter="data")
+        for project in (
+            snapshot / "tools" / "benchmark-runner",
+            snapshot / "stages" / "b1-sequential",
+        ):
+            run(
+                [
+                    str(python),
+                    "-m",
+                    "pip",
+                    "wheel",
+                    str(project),
+                    "--no-deps",
+                    "--no-build-isolation",
+                    "--no-cache-dir",
+                    "--wheel-dir",
+                    str(artifact_root),
+                ],
+                cwd=snapshot,
+                env=build_env,
+            )
     runner_wheel = next(artifact_root.glob("local_agent_orchestrator_benchmark_runner-*.whl"))
     b1_wheel = next(artifact_root.glob("local_agent_orchestrator_b1-*.whl"))
     package_root = local_root / "site"

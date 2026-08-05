@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-020",
+  "title": "동일 commit의 R6 wheel hash가 checkout 줄바꿈에 따라 달라짐",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T08:52:41Z",
+  "resolved_at": "2026-08-05T08:52:41Z",
+  "discovered_by": "detached clean-checkout artifact reproduction",
+  "symptom": "같은 c413f66 source commit과 SOURCE_DATE_EPOCH으로 만든 Runner와 B1 wheel hash가 원래 worktree build와 달랐다",
+  "reproduction": [
+    "원래 worktree와 detached worktree에서 같은 commit의 두 wheel을 각각 빌드해 SHA-256을 비교한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "Runner와 B1 wheel 모두 두 checkout 사이에서 SHA-256이 불일치했다"
+    }
+  ],
+  "root_cause": "build script가 source commit을 기록했지만 wheel 입력은 Git blob이 아니라 checkout의 platform-dependent line-ending bytes였다",
+  "considered_options": [
+    {
+      "option": "첫 wheel hash를 권위값으로 수용",
+      "decision": "rejected",
+      "reason": "다른 clean checkout에서 같은 artifact를 재현할 수 없다"
+    },
+    {
+      "option": "전체 저장소에 급히 eol 정책 추가",
+      "decision": "rejected",
+      "reason": "이번 artifact 문제보다 넓은 source 변경이며 기존 파일 영향 검토가 필요하다"
+    },
+    {
+      "option": "git archive HEAD의 blob snapshot에서 build",
+      "decision": "adopted",
+      "reason": "commit bytes와 wheel 입력을 직접 결합한다"
+    }
+  ],
+  "resolution": "Runner와 B1 build 입력을 git archive HEAD에서 추출한 임시 snapshot으로 바꾸고 checkout 경로는 fixture 및 Plan source에만 사용한다",
+  "affected_files": [
+    "tools/benchmark-runner/scripts/build_r6_artifacts.py"
+  ],
+  "regression_tests": [
+    "같은 source commit을 서로 다른 worktree 경로에서 build해 Runner와 B1 wheel SHA-256 exact match 확인"
+  ],
+  "verification": [
+    "수정 source commit 고정 뒤 원래 저장소와 detached worktree의 두 build로 검증 예정"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}
