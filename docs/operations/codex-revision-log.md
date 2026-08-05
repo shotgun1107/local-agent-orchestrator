@@ -643,3 +643,139 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 표준 라이브러리만 사용하는 하네스 단위시험 10개가 통과했다.
 - 기존 기록에서 이관한 incident 3건과 하네스 검증 중 발견한 Python launcher 환경 가정 오류 1건, 총 4건이 validation을 통과했다.
 - 생성 문서와 JSON 원본의 결정론적 일치 검사는 최종 작업 검증에서 수행한다.
+
+## 범용 Benchmark Runner 설계
+
+### 작업 범위
+
+- 작업일: 2026-08-05.
+- `docs/design/general-benchmark-runner-design.md`를 새로 작성했다.
+- 대상은 B1 내부 기능이 아니라 B0~B3 단계의 실행 조건을 고정하고 결과를 공통 형식으로 측정·판정하는 중립 실험 제어기다.
+- 최초 실험은 동결된 B0/B1 manifest의 두 fixture × 두 variant × 3회, 총 12 Cell이다.
+
+### 주요 결정
+
+- Runner 코어는 variant 이름의 의미를 해석하지 않고 `VariantAdapter` 계약으로 B0·B1과 이후 B2·B3를 연결한다.
+- 현재 구현 대상으로는 B0 Manual Adapter와 B1 Sequential Adapter만 정의했다. B2·B3 자체와 그 Adapter는 해당 단계의 채택 게이트를 통과하기 전에는 구현하지 않는다.
+- Runner는 B1 Python 내부 모듈이나 SQLite를 직접 읽지 않고 공개 CLI·JSON report만 사용한다.
+- 활성 상태와 임시 workspace는 Git 밖의 사용자 state root에 두고, redaction·hash·봉인을 통과한 결과만 `benchmarks/results/`로 내보낸다.
+- source worktree 복사 대신 manifest의 source commit에서 fixture를 복원하고 Git tree를 다시 계산한다.
+- B0/B1 자체 완료 보고와 내부 Check를 최종 판정으로 사용하지 않고, Runner의 독립 Judge가 같은 acceptance·scope·diff 검사를 두 결과에 적용한다.
+- 사람 개입은 회상이 아니라 append-only Event로 즉시 기록하며, 측정 불가 값은 0 대신 `unknown`으로 보존한다.
+- Experiment·Cell 상태기계, 균형 Block 순서, 실패 보존, 자동 재실행 금지, revision 교체, Evidence seal을 명시했다.
+- 공통 Core Measurement와 variant별 namespaced metrics를 분리해 B2 병렬성과 B3 Reviewer 지표가 생겨도 코어 계약을 불필요하게 변경하지 않게 했다.
+
+### 구현 계획과 게이트
+
+- Fake Adapter vertical slice, fixture·Judge, B0 Adapter, B1 Adapter, 상태·복구, 비교·export, 실제 실행 전 동결의 R0~R6 순서를 제안했다.
+- Runner Definition of Done 18개를 정의했다. 실제 비교 turn은 Runner와 B1 artifact, 실행계획, decision policy를 hash로 고정하고 비라이브 회귀시험을 통과한 뒤에만 시작한다.
+- B1 채택 판정은 품질 비열화 방지, 사람 중계·복구 부담 감소, scope·integrity 조건을 함께 사용하며 `ADOPT_B1`, `REJECT_B1`, `INCONCLUSIVE`를 구분한다.
+
+### 확인한 것과 확인하지 않은 것
+
+- 확인: 현재 동결 manifest, B0 runbook·measurement schema, 두 fixture의 Run Spec·Check, B1 공개 CLI·report 지표와 설계가 충돌하지 않는지 대조했다.
+- 확인: 기존 `benchmarks/`에는 입력·결과만 두고 구현 코드는 두지 않는 규칙에 따라 Runner 소스 위치를 `tools/benchmark-runner/`로 정했다.
+- 미확인: B0에서 model을 검증 가능하게 고정하는 실제 Codex 표면, B0 usage 직접 회수 가능성, 최초 실행 seed, B1 수정 후 새 wheel hash는 구현·preflight에서 확정해야 한다.
+- 미구현: Runner 코드, 공통 Schema, Adapter, 실제 12 Cell, 비교 결과는 아직 없다.
+- 이 작업에서 모델 turn을 호출하지 않았고 B0/B1 동결 manifest와 fixture는 수정하지 않았다.
+
+## Benchmark Runner 설계 Claude 심사 프롬프트
+
+### 작업 범위
+
+- 작업일: 2026-08-05.
+- `docs/prompts/benchmark-runner/claude-review-prompt-general-benchmark-runner-design.md`를 작성했다.
+- 주 심사 대상은 `docs/design/general-benchmark-runner-design.md` 하나이며 기존 설계·manifest·B0·B1·운영 로그는 사실 대조용 읽기 전용 자료로 지정했다.
+- 심사 결과는 `docs/reviews/benchmark-runner/claude-review-general-benchmark-runner-design.md` 새 파일 하나에만 저장하도록 제한했다.
+
+### 심사 축
+
+- 맥락 이해, 맥락 비의존, clean-room 최소 설계를 분리했다.
+- 실험 타당성, B0/B1 공정성, manifest 사전 등록, 상태·복구, 독립 Judge, 측정 계약, 결과 봉인, CLI 운용, 채택 정책을 필수 질문으로 지정했다.
+- B2/B3 확장성이 실제 Adapter 경계에서 성립하는지와 아직 존재하지 않는 단계를 위한 조기 추상화인지 둘 다 검토하게 했다.
+- 현재 전체 설계와 단일 script·pytest·작은 CLI·수동 측정·기존 도구 대안을 같은 기준으로 비교하게 했다.
+- P0~P3 문제, 실험 타당성 표, 범용성 표, 계약 구현 가능성, clean-room 구조, R0~R6 재판정, 최종 판정을 필수 산출물로 지정했다.
+
+### 제한
+
+- 이 프롬프트 작성 시점에는 Claude 심사를 아직 실행하지 않았다. 이후 결과는 다음 개정 절에 기록한다.
+- 주 설계와 보호 파일은 이 프롬프트 작업에서 수정하지 않았다.
+
+## Benchmark Runner 1차 심사 반영과 재심사 준비
+
+### 작업 범위
+
+- 작업일: 2026-08-05.
+- `docs/reviews/benchmark-runner/claude-review-general-benchmark-runner-design.md`의 P0 3건, P1 7건, P2 6건, P3 2건을 `docs/design/general-benchmark-runner-design.md`에 반영했다.
+- 1차 심사 보고서는 개정 이력으로 보존하고 수정하지 않았다.
+- Runner와 B1 코드는 구현·수정하지 않았고 모델 turn도 호출하지 않았다.
+
+### 실험 계약 정정
+
+- B0 최초 prompt와 B1 start를 `startup_action_count`로 대칭 기록하고, primary 사람 부담 gate는 시작을 제외한 실행 중 중계만 사용하게 했다.
+- manifest bytes를 최상위 권위로 두고 baseline/candidate, seed, 숫자 판정식, reasoning 통제 같은 보충값을 Plan fingerprint와 Experiment ID에 포함했다.
+- B1 `partial_or_unknown` usage는 core `unknown`으로 정규화하고 정수 subtotal은 variant 원시 지표로만 보존한다.
+- B1 Adapter 전에 status/report 공개 JSON Schema와 contract test를 추가하도록 R2 선행 조건을 만들었다.
+- exit 130, exit 0 nonterminal, stale lock, Judge 고아 process, B0 Event 정본, 실행 표면 차이와 반복 학습효과를 계약·시험·해석 한계에 반영했다.
+
+### 구조 축소
+
+- 구현 모듈을 9개에서 7개(`contract`, `plan`, `workspace`, `adapter`, `runner`, `judge`, `cli`)로 줄였다.
+- 공개 Schema를 6개에서 3개(Execution Plan, Measurement, Intervention Event)로 줄였다.
+- Evidence 목록은 Measurement에 포함하고 Summary는 결정론적 파생 출력으로 뒀다.
+- Experiment의 두 번째 상태기계를 없애고 Cell 상태와 최소 제어 기록에서 표시 상태를 파생한다.
+- Adapter Protocol은 `id`, `capabilities`, `preflight`, `run` 네 method로 축소했다. 실제 B2 공개 경계가 생기기 전에는 `observe/request_stop`을 추가하지 않는다.
+
+### 구현 순서 변경
+
+- R0은 실제 모델 없이 단일 Fake Cell을 관통하는 작은 vertical slice다.
+- R1은 fixture와 Judge, R2는 B1 공개 Schema와 FakeRuntime Adapter, R3는 B0 Manual Adapter 순서다.
+- 기존 `23D8F64F8659CC…` wheel은 `53cb512` doctor 수정과 새 출력 Schema 이전 artifact라 실행 Plan에 재사용하지 않도록 명시했다.
+
+### 직접 확인
+
+- 동결 manifest 43줄을 다시 읽어 reasoning effort, baseline/candidate 방향, 숫자 decision policy가 없고 12 Cell은 2×2×3의 유도값임을 확인했다.
+- B1 `schedule.py`에서 `usage_status`가 `measured` 또는 `partial_or_unknown`이고 `token_usage`가 정수 dict로 반환되는 경로를 확인했다.
+- `run-status.schema.json`, `run-report.schema.json`이 현재 B1에 없음을 파일 검색으로 확인했다.
+- Git 이력에서 기존 smoke 이후 `53cb512 fix: require ChatGPT authentication in doctor`가 추가됐음을 확인했다.
+- 개정 설계에 `git diff --check`를 실행해 whitespace 오류가 없음을 확인했다.
+
+### 산출물과 미확정
+
+- 개정 설계: 1,620줄, SHA-256 `A2B834EF12035C64633F488233643B0B1A3D851E73FF70011FB152914D1F83E5`.
+- 재심사 프롬프트: `docs/prompts/benchmark-runner/claude-rereview-prompt-general-benchmark-runner-design.md`, 225줄, SHA-256 `B3161DAFF558FBD93505FFBFA75B020FE0F2F450DBF29E5A9F2AF3A33A4F3F41`.
+- 재심사 결과 저장 위치는 `docs/reviews/benchmark-runner/claude-rereview-general-benchmark-runner-design.md`로 지정했다. 이 작업에서는 재심사를 실행하지 않았다.
+- B0 model/reasoning 확인 표면, surface 통제 수준, 고정 seed, 새 B1 wheel 빌드 환경·hash, 사람 사후 검수, 기존 wall-clock 문구의 Plan상 의미는 미확정이다.
+
+## Benchmark Runner 재심사 반영과 설계 동결
+
+### 재심사 결과
+
+- 작업일: 2026-08-05.
+- 재심사 보고서 `docs/reviews/benchmark-runner/claude-rereview-general-benchmark-runner-design.md`는 315줄, SHA-256 `4CDBCE89D01C069B8866F4A48550EC6F22D417295C9302D3CBC486E79FA0825C`다.
+- 최종 판정은 `경미한 수정 후 동결`이었다.
+- 1차 지적 18건은 `해결 18 / 부분 0 / 미해결 0 / 회귀 0`으로 판정됐다.
+- 새 문제는 P2 3건, P3 2건이었고 P0·P1 이월 문제는 없었다.
+
+### 동결 전 반영
+
+- export에 Experiment 단위 `seals.json`을 추가해 내부 Cell 상태의 `sealed_measurement_sha256`과 저장소의 canonical Measurement를 대조할 수 있게 했다.
+- B1 `_status()`와 `generate_report()`의 평범한 dict를 `RunStatusEnvelope`, `RunReportEnvelope` Pydantic 공개 계약으로 승격하고 Schema를 `export_schemas.py`에서 생성하도록 R2를 구체화했다.
+- B1 usage의 session 층(`measured|unknown|unsupported`)과 report 집계 층(`measured|partial_or_unknown`)을 분리했다. core 총합은 report만 사용하고 session 값과 subtotal은 variant namespace에 보존하며 `unsupported`는 core unknown으로 취급한다.
+- B0 attestation 부재·거부는 미봉인 상태로 남기지 않고 `measurement_attestation_missing` infrastructure error로 봉인한 뒤 Experiment를 중단한다.
+- 유효한 preflight Evidence hash와 동결 Plan fingerprint 일치가 없으면 workspace 준비와 Cell 상태 전이를 시작하지 못하게 했다.
+- 관련 요구를 §24 R2·R3·R5, §25 계약·Adapter·상태 시험, Definition of Done 21·22까지 연결했다.
+
+### 동결 상태
+
+- `docs/design/general-benchmark-runner-design.md`의 상태를 `동결(freeze)`, 설계 판본 3, 동결일 2026-08-05로 확정했다.
+- 최종 동결본은 1,663줄, SHA-256 `47CDFAFC2C51876C966047E56A285A60AE4A954DC1463C20064898BE22ABAE73`이다.
+- §27의 model/reasoning 확인 경로, surface 통제 수준, seed, 새 B1 wheel 환경·hash, 사람 사후 검수, wall-clock 의미는 설계 누락이 아니라 첫 Cell 전 증거로 채울 Execution Plan 입력값이라 계속 `미확정`으로 남겼다.
+- 다음 구현 단계는 §24 R0의 실제 모델 호출 없는 단일 Fake Cell vertical slice다.
+
+### 변경 제한과 검증
+
+- 두 Claude 심사 보고서는 수정하지 않았다. 1차 심사 SHA-256은 `5799469A1EC56DBBCD440AFEE949EF895DA6BA5F1F88F2FD08CC63B3455D0502`, 재심사는 위 hash와 일치한다.
+- `benchmarks/**`, `stages/**`, Runner 구현 코드는 수정하지 않았다.
+- 이 동결 작업에서 실제 모델 turn은 0회다.
+- 동결본과 인덱스의 로컬 링크, UTF-8 읽기, trailing whitespace, Markdown code fence, Git diff whitespace를 최종 점검한다.
