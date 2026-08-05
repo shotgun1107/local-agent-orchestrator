@@ -45,9 +45,11 @@
     "서로 다른 worktree 경로의 같은 commit build에서 wheel hash와 Plan fingerprint exact match 확인"
   ],
   "verification": [
-    "수정 source commit 고정 뒤 두 독립 local runtime build로 검증 예정"
+    "bef6f8e의 두 독립 build에서 manifest SHA-256 5633cb18과 Plan fingerprint d90cff38 및 Experiment ID가 exact match"
   ],
   "remaining_risks": [],
-  "related_commits": [],
+  "related_commits": [
+    "bef6f8e4b291d8724c8d78160d4559595cc0489c"
+  ],
   "source_references": []
 }

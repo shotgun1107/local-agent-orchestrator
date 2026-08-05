@@ -72,7 +72,7 @@ docs/
 - B1 구현 명세: 동결, reference 구현과 실제 Codex smoke 완료
 - 실제 B1 코드: `stages/b1-sequential/`
 - 비라이브 검증 및 실제 Codex smoke 1회: 완료
-- Benchmark Runner: 설계 판본 5 동결, R0~R5 reference 구현 완료. 12-Cell 제어 결과의 paired summary·사전 등록 판정·sanitized export·`seals.json` 재검증까지 구현
-- 다음 단계: R6에서 새 Runner/B1 wheel·버전·Execution Plan·decision policy·비라이브 회귀 증거를 확정하고 실제 실행 직전 상태로 동결
+- Benchmark Runner: 설계 판본 5 동결, R0~R6 reference 구현과 실제 실행 전 동결 완료. 새 Runner/B1 wheel·공개 Schema·Execution Plan·decision policy·비라이브 회귀·무과금 인증 preflight를 hash로 고정
+- 다음 단계: 동결된 `exp_20260805_d90cff38_1`의 첫 Cell을 사용자 확인 아래 한 개만 실행. 12-Cell 완료 전에는 B1 채택 결론을 내리지 않음
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

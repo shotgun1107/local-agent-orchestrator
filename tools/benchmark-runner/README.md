@@ -2,7 +2,7 @@
 
 동결된 [범용 Benchmark Runner 설계](../../docs/design/general-benchmark-runner-design.md)의 단계별 reference 구현이다.
 
-## 현재 구현 범위: R0~R5
+## 현재 구현 범위: R0~R6 실행 전 동결
 
 - 실제 모델 호출 없는 read-only Fake Cell 하나
 - Pydantic 계약에서 생성한 공개 JSON Schema 3개
@@ -36,14 +36,39 @@
 - canonical Measurement bytes를 그대로 내보내고 내부 Cell seal과 같은 hash를 `seals.json`에 기록
 - Evidence·Measurement·summary·Plan의 민감정보와 위험 경로를 fail-closed 검사하고 byte-identical export만 멱등 허용
 - export된 모든 Measurement·Evidence hash와 summary 파생 결과를 저장소만으로 재검증
+- 실제 B0 console driver와 B1 public-CLI driver를 R4 controller에 연결하고 sidecar 전체 deadline·process group 복구·봉인 전 redaction 적용
+- `r6 create/preflight/status/run-next/freeze` installed-artifact CLI와 유료 실행 확인 flag
+- Git blob snapshot에서 재현 가능한 Runner/B1 wheel을 만들고 canonical source clone에서 manifest bytes와 Plan fingerprint 고정
+- Python 3.12.10·Git 2.54.0·Codex CLI/SDK 0.144.4·ChatGPT 인증을 모델 turn 없이 확인하고 12개 PLANNED Cell을 동결
 
 Runner 자동 retry는 의도적으로 제공하지 않는다. R0의 내부 seal은 R5 `seals.json` export와 Git commit을 외부 기준점으로 삼아 검증한다.
 
 봉인 후 Evidence를 고치면 원래 seal이 무효가 되므로 R5는 위험 문자열을 사후 치환하지 않는다. Adapter와 Collector가 봉인 전에 공개 Evidence를 redaction하고, R5에서 token·email·홈 절대 경로·`auth.json` 등을 발견하면 export를 중단해 새 revision에서 다시 봉인하도록 한다.
 
-R2는 정상 FakeRuntime 관통과 함께 malformed·missing·unknown-field Schema, exit 0/3/4/5/6/7/130/unknown, CLI 호출 실패, exit 0 nonterminal, `partial_or_unknown` 부분합을 검증한다. R3는 Fake 사용자 입력으로 두 fixture를 관통하고 B0의 정상·attestation 누락/거부·잘못된 Event·미종료 복구를 검증한다. R4는 generic Fake B0/B1 driver로 controller 상태·복구 계약을 검증하며 driver에 manifest의 900초 deadline을 전달한다. R5는 정상·품질 하락·중단·필수 지표 unknown·중계 동률/악화·무결성 실패와 export 변조를 검증한다. 실제 Codex B0/B1 효율성 비교는 아직 실행하지 않았다. 다음 단계는 R6다.
+R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·복구, R5는 비교·판정·export, R6는 실제 driver·artifact·환경·Plan 동결을 담당한다. 실제 Codex B0/B1 효율성 비교는 아직 실행하지 않았다.
 
-R4 controller와 R5 reporter/exporter는 현재 Python API와 `compare`·`export`·`verify-export` CLI reference 구현이다. 실제 B0/B1 12-Cell 실행에 사용할 driver·artifact·환경·decision policy는 R6에서 동결하고, 그 전까지 이 결과를 실사용 비교 결과로 해석하지 않는다.
+최종 실행 후보는 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`의 Plan과 hash다. `run-next`는 `--confirm-model-usage` 없이는 실행되지 않으며, R6 동결은 B1 성능 결론이 아니라 비교 입력과 실행 조건이 고정됐다는 뜻이다.
+
+### R6 실제 실행 명령 경계
+
+로컬 runtime은 `%LOCALAPPDATA%\local-agent-orchestrator\r6\bef6f8e-final\runtime`에 있으며 저장소에는 비밀값·절대경로를 제외한 동결 bundle만 보존한다. 상태 확인은 installed Runner wheel로 실행한다.
+
+```powershell
+$runtime = Join-Path $env:LOCALAPPDATA 'local-agent-orchestrator\r6\bef6f8e-final\runtime'
+$python = '<B1 Python 3.12 절대경로>'
+$env:PYTHONPATH = Join-Path $runtime 'site'
+$experiment = Join-Path $runtime 'experiments\exp_20260805_d90cff38_1'
+
+& $python -m benchmark_runner r6 status --experiment-dir $experiment
+```
+
+첫 Cell을 실제 실행할 때만 다음 확인 flag를 붙인다. 명령 한 번은 Plan 순서의 Cell 하나만 실행하며 자동으로 다음 Cell로 넘어가지 않는다.
+
+```powershell
+& $python -m benchmark_runner r6 run-next `
+  --experiment-dir $experiment `
+  --confirm-model-usage
+```
 
 ## 개발 실행
 

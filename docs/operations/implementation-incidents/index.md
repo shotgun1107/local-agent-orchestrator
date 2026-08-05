@@ -1060,6 +1060,7 @@ build와 installed CLI 및 non-live regression 자식 프로세스에 PYTHONUTF8
 ### 검증 결과
 
 - PYTHONUTF8=1과 PYTHONIOENCODING=utf-8 환경의 child JSON path가 한글을 포함한 현재 저장소 절대경로와 exact match
+- 수정 뒤 clean-commit artifact build가 한글 Plan 상대경로와 build-record를 정상 생성
 
 ### 남은 위험
 
@@ -1067,7 +1068,7 @@ build와 installed CLI 및 non-live regression 자식 프로세스에 PYTHONUTF8
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: b188954daef602bd80c116be6f0e5ffa207eebc7
 
 ## DEV-20260805-019 — R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판
 
@@ -1114,6 +1115,7 @@ manifest source commit에서 임시 독립 Git fixture를 복원해 doctor를 �
 ### 검증 결과
 
 - Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증
+- installed bef6f8e Runner의 실제 ChatGPT preflight가 Evidence hash 32da9499로 통과하고 12개 Cell 모두 PLANNED 유지
 
 ### 남은 위험
 
@@ -1121,7 +1123,7 @@ manifest source commit에서 임시 독립 Git fixture를 복원해 doctor를 �
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: c413f66d448ac736ea4b1607081d2ce4210dd751
 
 ## DEV-20260805-020 — 동일 commit의 R6 wheel hash가 checkout 줄바꿈에 따라 달라짐
 
@@ -1167,7 +1169,7 @@ Runner와 B1 build 입력을 git archive HEAD에서 추출한 임시 snapshot으
 
 ### 검증 결과
 
-- 수정 source commit 고정 뒤 원래 저장소와 detached worktree의 두 build로 검증 예정
+- bef6f8e를 서로 다른 두 worktree와 local root에서 build해 Runner 6da66546, B1 596c9823 wheel SHA-256 exact match
 
 ### 남은 위험
 
@@ -1175,7 +1177,7 @@ Runner와 B1 build 입력을 git archive HEAD에서 추출한 임시 snapshot으
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 35a54739c78649f1950cd253d2e4606d3a590e41
 
 ## DEV-20260805-021 — 동일 manifest commit의 R6 Plan fingerprint가 checkout마다 달라짐
 
@@ -1221,7 +1223,7 @@ build harness가 local_root/source를 no-checkout clone하고 core.autocrlf=fals
 
 ### 검증 결과
 
-- 수정 source commit 고정 뒤 두 독립 local runtime build로 검증 예정
+- bef6f8e의 두 독립 build에서 manifest SHA-256 5633cb18과 Plan fingerprint d90cff38 및 Experiment ID가 exact match
 
 ### 남은 위험
 
@@ -1229,7 +1231,7 @@ build harness가 local_root/source를 no-checkout clone하고 core.autocrlf=fals
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: bef6f8e4b291d8724c8d78160d4559595cc0489c
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 
