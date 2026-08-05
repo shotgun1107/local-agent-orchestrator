@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260805-003",
   "title": "doctor가 미인증 상태에서도 성공 종료함",
-  "status": "open",
+  "status": "resolved",
   "stage": "b1-sequential",
   "category": "implementation",
   "discovered_at": "2026-08-05T01:28:21Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-05T01:44:59Z",
   "discovered_by": "B0/B1 comparison preflight",
   "symptom": "codex_login.authenticated가 false이고 SDK CLI login status가 실패했는데 lao doctor가 종료 코드 0을 반환했다.",
   "reproduction": [
@@ -19,14 +19,43 @@
       "detail": "doctor JSON은 authenticated=false를 기록했으나 DOCTOR_EXIT=0이었고, 같은 SDK CLI의 codex login status는 Not logged in과 exit 1을 반환했다."
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [],
-  "related_commits": [],
+  "root_cause": "doctor의 종료 코드 판정이 workspace 건강성과 SDK 고정 버전만 확인하고 api_key_present와 codex_login 결과를 포함하지 않았다.",
+  "considered_options": [
+    {
+      "option": "JSON에 authenticated=false만 남긴다",
+      "decision": "rejected",
+      "reason": "자동 사전점검이 종료 코드 0을 성공으로 오판한다."
+    },
+    {
+      "option": "auth.json의 auth_mode 문자열만 확인한다",
+      "decision": "rejected",
+      "reason": "토큰 만료나 Windows 자격 증명 저장소 접근 불가를 판별하지 못한다."
+    },
+    {
+      "option": "SDK account 결과를 성공 조건에 포함한다",
+      "decision": "adopted",
+      "reason": "실제 B1 런타임이 확인한 ChatGPT 인증만 게이트를 통과한다."
+    }
+  ],
+  "resolution": "doctor 성공 조건에 API 키 부재, 계정 점검 수행, authenticated=true, method=chatgpt를 모두 추가하고 로그아웃 회귀시험을 추가했다.",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/cli.py",
+    "stages/b1-sequential/tests/integration/test_cli.py"
+  ],
+  "regression_tests": [
+    "tests/integration/test_cli.py::test_doctor_cli_fails_when_chatgpt_authentication_is_unavailable"
+  ],
+  "verification": [
+    "B1 전체 pytest 62개가 통과했다.",
+    "샌드박스의 미인증 경로에서 doctor가 authenticated=false와 종료 코드 7을 반환했다.",
+    "실제 사용자 인증 경로에서 doctor가 method=chatgpt, authenticated=true와 종료 코드 0을 반환했다."
+  ],
+  "remaining_risks": [
+    "Windows 자격 증명 저장소를 사용할 때 B1 실제 실행도 해당 저장소에 접근할 수 있는 사용자 권한에서 시작해야 한다."
+  ],
+  "related_commits": [
+    "53cb512"
+  ],
   "source_references": [
     "stages/b1-sequential/src/orchestrator/cli.py",
     "stages/b1-sequential/tests/integration/test_cli.py"

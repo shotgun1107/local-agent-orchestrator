@@ -6,16 +6,16 @@
 ## 요약
 
 - 전체: 5건
-- 해결: 4건
+- 해결: 5건
 - 조사 중: 0건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
 |---|---|---|---|---|
 | DEV-20260804-001 | resolved | b1-spec | integration | SDK에 없는 observe 기반 timeout 설계 |
 | DEV-20260804-002 | resolved | b1-spec | integration | Codex approval_mode 기본값으로 인한 추가 모델 호출 위험 |
-| DEV-20260805-003 | open | b1-sequential | implementation | doctor가 미인증 상태에서도 성공 종료함 |
+| DEV-20260805-003 | resolved | b1-sequential | implementation | doctor가 미인증 상태에서도 성공 종료함 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -142,11 +142,11 @@ CodexRuntime이 모든 thread_start와 turn 호출에 ApprovalMode.deny_all을 �
 
 ## DEV-20260805-003 — doctor가 미인증 상태에서도 성공 종료함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `b1-sequential`
 - 분류: `implementation`
 - 발견: 2026-08-05T01:28:21Z / B0/B1 comparison preflight
-- 해결: 미해결
+- 해결: 2026-08-05T01:44:59Z
 
 ### 증상
 
@@ -162,35 +162,40 @@ codex_login.authenticated가 false이고 SDK CLI login status가 실패했는데
 
 ### 근본 원인
 
-미확인
+doctor의 종료 코드 판정이 workspace 건강성과 SDK 고정 버전만 확인하고 api_key_present와 codex_login 결과를 포함하지 않았다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` JSON에 authenticated=false만 남긴다 — 자동 사전점검이 종료 코드 0을 성공으로 오판한다.
+- `rejected` auth.json의 auth_mode 문자열만 확인한다 — 토큰 만료나 Windows 자격 증명 저장소 접근 불가를 판별하지 못한다.
+- `adopted` SDK account 결과를 성공 조건에 포함한다 — 실제 B1 런타임이 확인한 ChatGPT 인증만 게이트를 통과한다.
 
 ### 채택한 해결
 
-미해결
+doctor 성공 조건에 API 키 부재, 계정 점검 수행, authenticated=true, method=chatgpt를 모두 추가하고 로그아웃 회귀시험을 추가했다.
 
 ### 수정 파일
 
-- 기록 없음
+- stages/b1-sequential/src/orchestrator/cli.py
+- stages/b1-sequential/tests/integration/test_cli.py
 
 ### 회귀시험
 
-- 기록 없음
+- tests/integration/test_cli.py::test_doctor_cli_fails_when_chatgpt_authentication_is_unavailable
 
 ### 검증 결과
 
-- 기록 없음
+- B1 전체 pytest 62개가 통과했다.
+- 샌드박스의 미인증 경로에서 doctor가 authenticated=false와 종료 코드 7을 반환했다.
+- 실제 사용자 인증 경로에서 doctor가 method=chatgpt, authenticated=true와 종료 코드 0을 반환했다.
 
 ### 남은 위험
 
-- 없음
+- Windows 자격 증명 저장소를 사용할 때 B1 실제 실행도 해당 저장소에 접근할 수 있는 사용자 권한에서 시작해야 한다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 53cb512
 - 출처: stages/b1-sequential/src/orchestrator/cli.py
 - 출처: stages/b1-sequential/tests/integration/test_cli.py
 
