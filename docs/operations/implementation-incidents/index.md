@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 22건
-- 해결: 22건
+- 전체: 23건
+- 해결: 23건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -33,6 +33,7 @@
 | DEV-20260805-018 | resolved | benchmark-runner-r6 | tooling | R6 artifact builder가 한글 경로의 CLI JSON을 손상함 |
 | DEV-20260805-019 | resolved | benchmark-runner-r6 | integration | R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판 |
 | DEV-20260805-020 | resolved | benchmark-runner-r6 | tooling | 동일 commit의 R6 wheel hash가 checkout 줄바꿈에 따라 달라짐 |
+| DEV-20260805-021 | resolved | benchmark-runner-r6 | tooling | 동일 manifest commit의 R6 Plan fingerprint가 checkout마다 달라짐 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -1167,6 +1168,60 @@ Runner와 B1 build 입력을 git archive HEAD에서 추출한 임시 snapshot으
 ### 검증 결과
 
 - 수정 source commit 고정 뒤 원래 저장소와 detached worktree의 두 build로 검증 예정
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-021 — 동일 manifest commit의 R6 Plan fingerprint가 checkout마다 달라짐
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `tooling`
+- 발견: 2026-08-05T08:54:49Z / two-worktree Plan reproduction
+- 해결: 2026-08-05T08:54:49Z
+
+### 증상
+
+wheel hash는 일치했지만 동일 source commit과 seed의 두 Execution Plan fingerprint가 달랐다
+
+### 재현
+
+- 같은 commit을 원래 worktree와 detached worktree에서 build한 뒤 execution-plan.json을 필드별 비교한다
+
+### 증거
+
+- `reproducible-test`: 차이는 created_at 외에 source_manifest.sha256이었고 manifest worktree bytes의 줄바꿈이 서로 달랐다
+
+### 근본 원인
+
+Plan은 manifest의 exact bytes를 hash하지만 runtime profile이 platform-dependent checkout 파일을 직접 가리켜 같은 Git blob도 CRLF 또는 LF로 읽었다
+
+### 검토한 해결안
+
+- `rejected` manifest hash에서 줄바꿈 정규화 — exact bytes 권위 규칙을 약화하고 조용한 변형을 허용한다
+- `rejected` 최초 Plan fingerprint만 수동 채택 — 다른 로컬에서 같은 Plan을 재생성할 수 없다
+- `adopted` local runtime에 autocrlf false canonical source clone 고정 — manifest와 fixture source를 commit blob bytes에 결합한다
+
+### 채택한 해결
+
+build harness가 local_root/source를 no-checkout clone하고 core.autocrlf=false 설정 뒤 source commit을 detached checkout해 profile의 source_repository와 manifest_path로 사용한다
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+
+### 회귀시험
+
+- 서로 다른 worktree 경로의 같은 commit build에서 wheel hash와 Plan fingerprint exact match 확인
+
+### 검증 결과
+
+- 수정 source commit 고정 뒤 두 독립 local runtime build로 검증 예정
 
 ### 남은 위험
 
