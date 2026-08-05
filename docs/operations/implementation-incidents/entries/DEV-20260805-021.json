@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-021",
+  "title": "동일 manifest commit의 R6 Plan fingerprint가 checkout마다 달라짐",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T08:54:49Z",
+  "resolved_at": "2026-08-05T08:54:49Z",
+  "discovered_by": "two-worktree Plan reproduction",
+  "symptom": "wheel hash는 일치했지만 동일 source commit과 seed의 두 Execution Plan fingerprint가 달랐다",
+  "reproduction": [
+    "같은 commit을 원래 worktree와 detached worktree에서 build한 뒤 execution-plan.json을 필드별 비교한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "차이는 created_at 외에 source_manifest.sha256이었고 manifest worktree bytes의 줄바꿈이 서로 달랐다"
+    }
+  ],
+  "root_cause": "Plan은 manifest의 exact bytes를 hash하지만 runtime profile이 platform-dependent checkout 파일을 직접 가리켜 같은 Git blob도 CRLF 또는 LF로 읽었다",
+  "considered_options": [
+    {
+      "option": "manifest hash에서 줄바꿈 정규화",
+      "decision": "rejected",
+      "reason": "exact bytes 권위 규칙을 약화하고 조용한 변형을 허용한다"
+    },
+    {
+      "option": "최초 Plan fingerprint만 수동 채택",
+      "decision": "rejected",
+      "reason": "다른 로컬에서 같은 Plan을 재생성할 수 없다"
+    },
+    {
+      "option": "local runtime에 autocrlf false canonical source clone 고정",
+      "decision": "adopted",
+      "reason": "manifest와 fixture source를 commit blob bytes에 결합한다"
+    }
+  ],
+  "resolution": "build harness가 local_root/source를 no-checkout clone하고 core.autocrlf=false 설정 뒤 source commit을 detached checkout해 profile의 source_repository와 manifest_path로 사용한다",
+  "affected_files": [
+    "tools/benchmark-runner/scripts/build_r6_artifacts.py"
+  ],
+  "regression_tests": [
+    "서로 다른 worktree 경로의 같은 commit build에서 wheel hash와 Plan fingerprint exact match 확인"
+  ],
+  "verification": [
+    "수정 source commit 고정 뒤 두 독립 local runtime build로 검증 예정"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

@@ -157,6 +157,22 @@ def main() -> int:
     installed_env["PYTHONDONTWRITEBYTECODE"] = "1"
     installed_env["PYTHONUTF8"] = "1"
     installed_env["PYTHONIOENCODING"] = "utf-8"
+    canonical_source = local_root / "source"
+    run(
+        [
+            str(git),
+            "clone",
+            "--no-hardlinks",
+            "--no-checkout",
+            str(repository),
+            str(canonical_source),
+        ],
+        cwd=local_root,
+    )
+    run([str(git), "config", "core.autocrlf", "false"], cwd=canonical_source)
+    run([str(git), "checkout", "--detach", source_commit], cwd=canonical_source)
+    if run([str(git), "status", "--porcelain"], cwd=canonical_source):
+        raise RuntimeError("canonical R6 source checkout is not clean")
     schema_root = local_root / "b1-public-schemas"
     run(
         [
@@ -176,8 +192,8 @@ def main() -> int:
     b1_sha = sha256(b1_wheel)
     profile = {
         "schema_version": 1,
-        "source_repository": str(repository),
-        "manifest_path": str(repository / "benchmarks" / "manifests" / "b0-b1-frozen.yaml"),
+        "source_repository": str(canonical_source),
+        "manifest_path": str(canonical_source / "benchmarks" / "manifests" / "b0-b1-frozen.yaml"),
         "runner_python": str(python),
         "benchmark_python": str(python),
         "git_executable": str(git),
