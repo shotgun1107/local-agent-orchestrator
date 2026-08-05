@@ -3,6 +3,8 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+import yaml
+
 from orchestrator.ledger import Ledger
 from orchestrator.schedule import Orchestrator, load_project, load_run_spec
 from tests.conftest import git
@@ -77,3 +79,22 @@ def test_core_contains_no_pilot_specific_identifiers() -> None:
     forbidden = ["EU4", "Brain", "이어서 작업", "P1", "P2", "P3"]
     combined = "\n".join(path.read_text(encoding="utf-8") for path in source_root.glob("*.py"))
     assert all(value not in combined for value in forbidden)
+
+
+def test_frozen_manifest_pins_fixture_commit_and_git_tree() -> None:
+    repository = Path(__file__).resolve().parents[4]
+    manifest = yaml.safe_load(
+        (repository / "benchmarks" / "manifests" / "b0-b1-frozen.yaml").read_text(encoding="utf-8")
+    )
+    assert manifest["status"] == "frozen_before_execution"
+    assert manifest["repetitions"] == 3
+    for fixture in manifest["fixtures"]:
+        assert len(fixture["commit"]) == 40
+        assert len(fixture["git_tree"]) == 40
+        recorded_tree = git(
+            repository,
+            "rev-parse",
+            f"{fixture['commit']}:{fixture['path']}",
+        ).stdout.strip()
+        current_tree = git(repository, "rev-parse", f"HEAD:{fixture['path']}").stdout.strip()
+        assert recorded_tree == fixture["git_tree"] == current_tree

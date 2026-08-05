@@ -2,7 +2,7 @@
 
 - 작성일: 2026-08-04
 - 대상: `stages/b1-sequential/`
-- 구현 상태: **B1 코드 구현과 비라이브 검증 완료, 실제 Codex smoke와 B0/B1 반복 비교 미실행**
+- 구현 상태: **B1 코드·비라이브 검증·실제 Codex smoke 완료, B0/B1 반복 비교 미실행**
 - 기준 명세: [B1 최소 오케스트레이터 구현 명세](../design/b1-minimum-orchestrator-implementation-spec.md)
 - 비교 manifest: [`b0-b1-frozen.yaml`](../../benchmarks/manifests/b0-b1-frozen.yaml)
 
@@ -25,13 +25,13 @@
 
 이 PC에서 실행한 비라이브 검증:
 
-- 전체 pytest: 60개 통과
-- 실제 모델 호출: 0회
+- 전체 pytest: 최종 61개 통과
+- 실제 모델 호출: document-read smoke 1회(이외 호출 0회)
 - 두 독립 fixture: FakeRuntime으로 각각 `COMPLETED`
-- 실제 Codex smoke: 미실행
-- wheel 격리 빌드: 추가 다운로드 승인 과정에서 현재 Codex 사용 한도에 걸려 미확인. editable 설치는 성공했다.
+- 실제 Codex smoke: 2026-08-05에 document-read 1회 통과
+- wheel 격리 빌드: 통과. 내장 Project Pack 포함을 확인했다.
 
-따라서 **코드 구현 완료**와 **B1 Definition of Done 전체 통과**를 구분한다. 실제 Codex smoke와 실제 fixture 실행이 끝나기 전에는 B1의 실사용 검증이 완료됐다고 보고하지 않는다.
+따라서 **B1 Definition of Done 통과**와 **B1이 B0보다 효율적인지에 대한 가설 7 통과**를 구분한다. 후자는 아직 B0/B1 반복 비교 전이므로 미확인이다.
 
 ## 2. 집 PC에서 처음 할 일
 
@@ -157,6 +157,30 @@ B1이 B0보다 성공률을 떨어뜨리지 않으면서 사람 중계·복구 �
 - 병렬 Worker, Reviewer, worktree, 외부 action은 구현하지 않았다.
 - B2·B3는 디렉터리도 아직 만들지 않았다.
 
-## 8. 테스트 결과 기록
+## 8. 실제 테스트 결과
 
-집 PC 검증이 끝나면 이 문서 아래에 날짜, Git commit, Python·SDK 버전, pytest 결과, wheel 결과, smoke Run ID, 상태, Check, usage 상태, integrity 결과를 추가하고 `docs/operations/codex-revision-log.md`에도 이어서 기록한다. 확인하지 않은 항목은 `미확인`으로 둔다.
+- 실행일: 2026-08-05
+- Python: 3.12.10
+- `openai-codex`: 0.144.4
+- 인증: ChatGPT, `OPENAI_API_KEY` 없음
+- 비라이브 회귀시험: smoke 직전 60개, fixture commit·Git tree 고정 회귀시험 추가 후 최종 61개 통과
+- wheel: `local_agent_orchestrator_b1-0.1.0-py3-none-any.whl`, SHA-256 `23D8F64F8659CCB355F0BBEDF95EFD664E899D20CDDFAE4AD2C1A7081FC55FA5`
+- wheel 내용: 7개 코어 모듈과 `orchestrator/_project_pack/` 포함 확인
+- fixture: 원본과 분리한 새 Git 저장소의 `document-read`
+- Run ID: `run_be31ab80d7294e88bf875fcc27514b6a`
+- 결과: Run `COMPLETED`, Task·Attempt `SUCCEEDED`, Session `COMPLETED`
+- 실행량: Attempt 1, Session 1, turn 1, resume 0
+- Check: `acceptance`와 `diff_check` 모두 `PASSED`, exit code 0
+- ResultEnvelope: SHA-256 `ADD1F9DF22082931E088D132A85BB908C83C27695FAA44AAB5DA73EE9AC032A6`
+- 사용량: `measured`, input 85,328 / output 771 / total 86,099 tokens
+- 시간: 원장 기준 39.698초, CLI 관측 약 41초
+- 무결성: SQLite quick check 정상, FK 위반·손상 Artifact·비밀 탐지 모두 0건
+- 백업: online backup 생성 후 manifest·파일 hash 재검증 통과
+
+큰 입력 토큰 수는 단순한 문서 작업 자체의 분량이 아니라 새 Codex thread에 포함된 시스템·도구·환경 컨텍스트까지 합쳐진 thread 누적 usage다. 측정값을 축소하거나 B0 수치로 오해하지 않는다.
+
+## 9. 남은 검증
+
+- 동결 manifest에 따른 B0/B1 두 fixture × 각 3회 비교
+- 성공률, 사람 중계·복구 부담, wall-clock, token usage 비교에 의한 가설 7 판정
+- 가설 7이 통과하기 전에는 B2 디렉터리나 병렬 기능을 만들지 않는다.

@@ -62,9 +62,9 @@ docs/
 ## 현재 상태
 
 - 범용 설계: 동결
-- B1 구현 명세: 동결, reference 구현 완료
+- B1 구현 명세: 동결, reference 구현과 실제 Codex smoke 완료
 - 실제 B1 코드: `stages/b1-sequential/`
-- 비라이브 검증: 완료
-- 다음 단계: 집 PC에서 실제 Codex smoke 1회와 B0/B1 비교
+- 비라이브 검증 및 실제 Codex smoke 1회: 완료
+- 다음 단계: 동결 manifest에 따른 B0/B1 반복 비교
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

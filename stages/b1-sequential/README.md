@@ -44,7 +44,7 @@ lao recover backup RUN_ID
 
 - 비라이브 단위·계약·통합 시험: 통과
 - 독립 code-change/document fixture의 FakeRuntime 관통: 통과
-- 실제 Codex smoke: 집 PC에서 1회 실행 예정
+- 실제 Codex smoke: ChatGPT 인증으로 document-read 1회 통과
 - B0/B1 실험: `benchmarks/manifests/b0-b1-frozen.yaml` 기준으로 실행 예정
 
-실제 smoke 전에는 `OPENAI_API_KEY`가 현재 셸에 없는지 확인한다. B1의 Codex 경로는 ChatGPT 인증만 허용하며 모든 thread·turn에 `ApprovalMode.deny_all`을 명시한다.
+실제 smoke에서는 Run·Task·Attempt·Session·Check·Artifact·usage·backup까지 검증했다. 다음 실제 실행도 `OPENAI_API_KEY`가 현재 셸에 없는지 먼저 확인한다. B1의 Codex 경로는 ChatGPT 인증만 허용하며 모든 thread·turn에 `ApprovalMode.deny_all`을 명시한다.
