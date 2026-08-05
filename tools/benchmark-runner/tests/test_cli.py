@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from benchmark_runner.cli import main
+from benchmark_runner.cli import build_parser, main
 
 
 def test_cli_runs_one_fake_cell_and_verifies_it(tmp_path: Path, capsys) -> None:
@@ -21,3 +21,20 @@ def test_cli_runs_one_fake_cell_and_verifies_it(tmp_path: Path, capsys) -> None:
         "outcome_state": "completed",
         "verified": True,
     }
+
+
+def test_r6_create_parser_accepts_explicit_revision() -> None:
+    args = build_parser().parse_args(
+        [
+            "r6",
+            "create",
+            "--profile",
+            "profile.json",
+            "--state-root",
+            "state",
+            "--revision",
+            "2",
+        ]
+    )
+
+    assert args.revision == 2

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Literal
@@ -142,7 +143,14 @@ def _assert_profile_artifacts(profile: R6RuntimeProfile) -> None:
         raise R4ControllerError("Frozen B1 public Schema bundle is incomplete")
 
 
-def create_r6_experiment(profile_path: Path, state_root: Path) -> R4ExperimentCreated:
+def create_r6_experiment(
+    profile_path: Path,
+    state_root: Path,
+    *,
+    revision: int = 1,
+) -> R4ExperimentCreated:
+    if revision < 1:
+        raise R4ControllerError("R6 revision must be positive")
     profile = load_r6_profile(profile_path)
     _assert_profile_artifacts(profile)
     environment = {
@@ -170,6 +178,7 @@ def create_r6_experiment(profile_path: Path, state_root: Path) -> R4ExperimentCr
         decision_policy=frozen_b0_b1_decision_policy(),
         reasoning_control=profile.plan_reasoning_control,
         environment_fingerprint=environment,
+        revision=revision,
     )
     destination = Path(created.experiment_dir) / "runtime" / "r6-runtime.json"
     atomic_write(destination, canonical_json_bytes(profile))
@@ -363,9 +372,35 @@ def status_r6_experiment(experiment_dir: Path):
     return _controller(experiment_dir).status()
 
 
+def _require_interactive_b0_stdin(experiment_dir: Path) -> None:
+    """Fail before state mutation when the next live B0 Cell cannot read input."""
+
+    experiment_dir = experiment_dir.resolve()
+    status = status_r6_experiment(experiment_dir)
+    next_cell_id = status.next_cell_id
+    if next_cell_id is None:
+        return
+    state = status.cell_states[next_cell_id]
+    if state not in {CellLifecycleState.PLANNED, CellLifecycleState.PREPARED}:
+        return
+    plan = ExecutionPlan.model_validate_json(
+        (experiment_dir / "execution-plan.json").read_bytes()
+    )
+    assert_plan_integrity(plan)
+    next_cell = next(cell for cell in plan.cells if cell.cell_id == next_cell_id)
+    if next_cell.variant_id != "b0":
+        return
+    is_interactive = getattr(sys.stdin, "isatty", lambda: False)()
+    if not is_interactive:
+        raise R4ControllerError(
+            "B0 run-next requires interactive stdin; no Cell state was changed"
+        )
+
+
 def run_next_r6_cell(experiment_dir: Path, *, confirm_model_usage: bool) -> R4RunNextResult:
     if not confirm_model_usage:
         raise R4ControllerError("R6 run-next requires --confirm-model-usage")
+    _require_interactive_b0_stdin(experiment_dir)
     profile = load_r6_profile(experiment_dir / "runtime" / "r6-runtime.json")
     environment = collect_r6_environment(profile)
     return _controller(experiment_dir, preflight_environment=environment).run_next()

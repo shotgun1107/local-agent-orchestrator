@@ -103,6 +103,42 @@ def test_create_status_and_paid_run_guard(tmp_path: Path) -> None:
     assert status_r6_experiment(experiment_dir).display_state == "CREATED"
 
 
+def test_create_accepts_explicit_revision_without_id_collision(tmp_path: Path) -> None:
+    profile_path, _ = _profile(tmp_path)
+    revision_1 = create_r6_experiment(profile_path, tmp_path / "state", revision=1)
+    revision_2 = create_r6_experiment(profile_path, tmp_path / "state", revision=2)
+    plan_2 = ExecutionPlan.model_validate_json(
+        (Path(revision_2.experiment_dir) / "execution-plan.json").read_bytes()
+    )
+
+    assert revision_1.experiment_id != revision_2.experiment_id
+    assert revision_2.experiment_id.endswith("_2")
+    assert plan_2.revision == 2
+
+
+def test_b0_noninteractive_stdin_fails_before_cell_state_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile_path, profile = _profile(tmp_path)
+    profile_path.write_bytes(canonical_json_bytes(profile.model_copy(update={"seed": 0})))
+    created = create_r6_experiment(profile_path, tmp_path / "state", revision=2)
+    experiment_dir = Path(created.experiment_dir)
+    status_before = status_r6_experiment(experiment_dir)
+    assert status_before.next_cell_id == "cell_code-change_1_b0"
+    monkeypatch.setattr(r6_module.sys, "stdin", SimpleNamespace(isatty=lambda: False))
+
+    with pytest.raises(R4ControllerError, match="interactive stdin"):
+        run_next_r6_cell(experiment_dir, confirm_model_usage=True)
+
+    status_after = status_r6_experiment(experiment_dir)
+    assert status_after.cell_states == status_before.cell_states
+    assert status_after.display_state == "CREATED"
+    assert not (
+        experiment_dir / "cells" / "cell_code-change_1_b0" / "workspace"
+    ).exists()
+
+
 def test_create_rejects_changed_frozen_artifact(tmp_path: Path) -> None:
     profile_path, profile = _profile(tmp_path)
     Path(profile.runner_artifact_path).write_bytes(b"tampered")
