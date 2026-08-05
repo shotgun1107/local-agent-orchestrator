@@ -72,7 +72,7 @@ docs/
 - B1 구현 명세: 동결, reference 구현과 실제 Codex smoke 완료
 - 실제 B1 코드: `stages/b1-sequential/`
 - 비라이브 검증 및 실제 Codex smoke 1회: 완료
-- Benchmark Runner: 설계 판본 5 동결, R0·R1과 R2의 B1 FakeRuntime 정상 관통 구현 완료
-- 다음 단계: R2의 schema 불일치·exit 130·exit 0 nonterminal·부분 usage 실패 주입 검증
+- Benchmark Runner: 설계 판본 5 동결, R0~R3 구현 완료. B0 Event·attestation 실패 경로와 B1 terminal·Schema·usage 실패 경로까지 검증
+- 다음 단계: R4 Execution Plan, 한 번에 한 Cell 실행, stop/resume·lock·crash recovery
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

@@ -301,6 +301,36 @@ class InterventionEvent(PublicEnvelope):
     _timestamp_has_timezone = field_validator("timestamp")(validate_timestamp)
 
 
+class B0Attestation(StrictModel):
+    """Internal B0 Evidence; deliberately not a fourth public input Schema."""
+
+    status: Literal["confirmed", "refused"]
+    confirmed_at: datetime
+    timeline_complete: bool
+    model: str | None = None
+    reasoning_effort: str | None = None
+    surface_kind: str | None = None
+
+    _confirmed_at_has_timezone = field_validator("confirmed_at")(validate_timestamp)
+
+    @model_validator(mode="after")
+    def confirmation_is_complete(self) -> B0Attestation:
+        if self.status == "confirmed":
+            if not self.timeline_complete:
+                raise ValueError("confirmed attestation requires a complete timeline")
+            if not self.model or not self.reasoning_effort or not self.surface_kind:
+                raise ValueError("confirmed attestation requires B0 control values")
+        elif self.timeline_complete:
+            raise ValueError("refused attestation cannot claim a complete timeline")
+        return self
+
+
+class B0ManualSubmission(StrictModel):
+    outcome_state: Literal["completed", "failed", "blocked", "interrupted"]
+    attestation: B0Attestation | None = None
+    note: str | None = None
+
+
 class CellLifecycleState(StrEnum):
     PLANNED = "PLANNED"
     PREPARED = "PREPARED"

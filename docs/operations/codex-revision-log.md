@@ -915,3 +915,58 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Benchmark Runner 전체 시험 53개가 통과했다. 이 중 R2 신규 정상 관통 시험은 Adapter 3개와 seal 2개다.
 - R2 전체 완료 판정은 아직 아니다. schema 불일치, exit 130, exit 0 nonterminal, `partial_or_unknown` subtotal을 core measured로 승격하지 않는 실패 주입 시험은 사용자가 지정한 다음 단계 4에 남겼다.
 - 실제 Codex 실행, B0 연결, B0/B1 비교 실험은 수행하지 않았다.
+
+## Benchmark Runner R2 실패 주입 검증·완료
+
+### Adapter 오류 경로
+
+- 작업일: 2026-08-05.
+- `run start` exit 130은 공개 JSON이 없어도 `interrupted`로 분류하고 `b1_interrupted` stop reason을 남긴다.
+- exit 5·6·7은 각각 integrity failure·controller lock·runtime failure, 그 밖의 코드는 unknown exit infrastructure error로 분류한다.
+- exit 0·3·4만 status 공개 Schema를 검증하고, exit code와 terminal state 또는 후속 status exit가 불일치하면 `b1_exit_state_mismatch`로 중단한다.
+- CLI process 시작 자체 실패, malformed JSON, Run ID 누락, unknown field, report Schema 누락, Run ID 변경은 모두 구분 가능한 Evidence를 가진 infrastructure error로 정규화한다.
+- 이 과정에서 발견한 “terminal exit보다 JSON parse를 먼저 수행한 결함”은 `DEV-20260805-011`에 원인·대안·해결·회귀시험을 기록했다.
+
+### Usage 불변식
+
+- report `usage_status=partial_or_unknown`이면 subtotal이 모두 0이어도 core token usage는 `unknown`, 값은 `null`로 봉인한다.
+- subtotal 정수 dict는 `b1_token_usage_raw`, report 집계 상태는 `b1_report_usage_status`, session의 `unsupported`는 `b1_session_usage_statuses`에 원형 보존한다.
+- 실제 R2 Cell 관통 시험에서도 unknown usage FakeRuntime 결과가 독립 Judge를 통과한 뒤 위 형식의 canonical Measurement로 봉인됨을 확인했다.
+
+### R2 완료 판정
+
+- B1 전체 단위·계약·통합 시험 63개가 통과했다.
+- Benchmark Runner 전체 시험 68개가 통과했다. R2 실패 주입은 Adapter 14개와 unknown usage Measurement 관통 1개를 추가한다.
+- Pydantic source에서 생성한 B1 Schema와 실제 CLI 출력의 동기화, Runner의 독립 Schema 재검증, 두 fixture 정상 seal, terminal·Schema·usage 실패 분류가 모두 통과했다.
+- B1 source fingerprint가 Execution Plan Variant artifact와 Measurement provenance에 동일하게 기록되는 것도 확인했다.
+- 따라서 동결 설계 §24 R2의 완료 조건을 충족한 것으로 판정한다. 다음 구현 단계는 R3 B0 Manual Adapter다.
+- 실제 Codex·OpenAI 모델 turn은 0회다.
+
+## Benchmark Runner R3 B0 Manual Adapter 구현
+
+### 수동 세션 측정 sidecar
+
+- 작업일: 2026-08-05.
+- Runner는 B0 Codex 세션을 자동 실행하거나 UI를 조작하지 않는다. Cell별 독립 workspace와 고정 prompt를 제공하고, 별도 세션을 운영하는 사용자의 동작만 Event sidecar로 기록한다.
+- console input loop와 주입 가능한 `B0ManualInputProvider` 경계를 구현했다. 시험에서는 Fake provider가 같은 경계를 사용해 workspace 변경과 사용자 입력을 결정론적으로 재현한다.
+- Intervention Event는 발생 즉시 append-only JSONL로 fsync한다. Cell ID·Event ID·monotonic 순서·B0/B1 kind 경계·단일 최초 prompt·최종 abort·복구 구간의 중첩과 완전성을 검증한다.
+- 최초 prompt는 `startup_action_count=1`, 추가 prompt·correction·manual retry만 excluding-start 중계로 계산한다. turn은 모델에 전달된 prompt 수, session은 최초 1개와 replacement, attempt는 최초 1회와 manual retry로 파생한다.
+- 기존 R2 B1 경로도 CLI 시작 직전에 `b1_start` Event를 남기고 startup 1·excluding-start 0·including-start 1로 봉인하도록 연결해 양쪽의 최초 기동 비용을 대칭 계수한다.
+
+### attestation·Judge·중단
+
+- 봉인 전 사용자가 Event 누락 없음과 model·reasoning·surface 값을 확인해야 한다. 확인된 Event에서만 사람 부담·session·turn·attempt 값을 Core Measurement에 `derived`로 기록한다.
+- attestation이 없거나 거부되면 `measurement_attestation_missing`, B0에서 허용되지 않는 Event나 미종료 복구 구간은 `measurement_event_invalid` infrastructure error가 된다. 계산 가능한 값이 있어도 불완전할 수 있으므로 Core 값은 `unknown`으로 봉인한다.
+- 실패 Cell도 가능한 Evidence와 독립 Judge 결과를 보존하고 `SEALED`로 닫는다. 동시에 Experiment 루트의 `experiment-stop.json`에 Cell과 stop reason을 기록해 다음 Cell 진행 금지를 표시한다.
+- B0 작업자의 완료 선언과 관계없이 기존 FixtureJudge가 acceptance·scope·보호 hash·final tree를 독립 판정한다. token usage를 실제 runtime에서 받지 못하는 B0는 0이 아닌 `unknown`이다.
+- 사용자가 완료를 확인했어도 독립 Judge가 실패하면 `independent_judge_failed`로 Experiment stop을 남긴다.
+
+### 검증과 경계
+
+- Fake 사용자 정상 경로는 `code-change`, `document-read` 두 fixture 모두 `restore → manual sidecar → Judge → Measurement → SEALED`를 통과했다.
+- startup 1, excluding-start 3, including-start 4, turn 4, session 2, attempt 2, recovery 1의 파생값을 Measurement에서 확인했다.
+- attestation 누락·명시적 거부, B0 timeline의 `b1_start`, 미종료 recovery를 각각 봉인·Experiment stop까지 fault injection했다.
+- Benchmark Runner 전체 회귀시험 75개와 B1 전체 시험 63개가 통과했다. 구현 오류 로그 14개 검증과 하네스 단위시험 10개도 통과했다.
+- R3 대조 중 발견한 B1 startup 지표 누락은 `DEV-20260805-012`에 원인·대안·수정·회귀시험을 기록했다.
+- R3 시험에서 실제 Codex·OpenAI 모델 turn은 0회다. console provider는 구현됐지만 실제 사용자 B0 반복 실험은 하지 않았다.
+- 다음 단계는 R4 Execution Plan controller, 한 번에 한 Cell 실행, lock·stop/resume·crash recovery다.

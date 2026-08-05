@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-011",
+  "title": "B1 terminal exit를 JSON Schema 오류로 오분류",
+  "status": "resolved",
+  "stage": "benchmark-runner-r2",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T05:28:13Z",
+  "resolved_at": "2026-08-05T05:28:23Z",
+  "discovered_by": "R2 failure-injection contract test",
+  "symptom": "exit 130 또는 5·6·7에서 stdout JSON이 없으면 interrupted나 구체적 infrastructure failure가 아니라 b1_public_contract_invalid로 분류된다",
+  "reproduction": [
+    "B1 run start가 stderr만 남기고 exit 130을 반환하도록 주입한 뒤 Adapter run을 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "기존 run은 start exit code를 보기 전에 _public_json을 호출해 빈 stdout에서 Schema parse 실패가 먼저 발생했다"
+    }
+  ],
+  "root_cause": "Adapter가 모든 run start 결과에 공개 status JSON이 존재한다고 가정하고 exit code보다 Schema parse를 먼저 수행했다",
+  "considered_options": [
+    {
+      "option": "모든 실패에서 가짜 status JSON을 요구",
+      "decision": "rejected",
+      "reason": "실제 KeyboardInterrupt와 CLI 인프라 오류 계약에 맞지 않는다"
+    },
+    {
+      "option": "JSON 불필요 terminal exit를 먼저 분류하고 0·3·4만 공개 status를 검증",
+      "decision": "adopted",
+      "reason": "CLI 종료 계약과 공개 Schema 책임을 분리한다"
+    }
+  ],
+  "resolution": "130은 interrupted, 5·6·7과 unknown code는 구체적 infrastructure_error로 Schema parse 전에 반환하고 stop_reason을 Evidence에 기록했다. CLI 시작 자체 실패도 별도 infrastructure_error로 정규화했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/adapter.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_b1_adapter_failures.py::test_early_exit_without_json_is_classified_before_schema_parse",
+    "tools/benchmark-runner/tests/test_b1_adapter_failures.py::test_start_invocation_failure_is_infrastructure_error"
+  ],
+  "verification": [
+    "종료 코드·Schema·비종료·부분 usage 실패 주입을 포함한 Benchmark Runner pytest 68개 통과"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

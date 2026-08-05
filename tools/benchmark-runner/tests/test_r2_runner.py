@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from benchmark_runner.contract import CellLifecycleState, CellStateRecord, MetricStatus
+from benchmark_runner.contract import (
+    CellLifecycleState,
+    CellStateRecord,
+    ExecutionPlan,
+    MetricStatus,
+)
 from benchmark_runner.runner import run_r2_b1_fake_cell, verify_sealed_cell
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
@@ -89,6 +94,7 @@ def test_r2_b1_fake_cell_reaches_independently_judged_seal(
         (cell_dir / "cell-state.json").read_bytes()
     )
     measurement = verify_sealed_cell(cell_dir)
+    plan = ExecutionPlan.model_validate_json(Path(result.plan_path).read_bytes())
 
     assert result.actual_model_turns == 0
     assert result.check_success is True
@@ -104,6 +110,9 @@ def test_r2_b1_fake_cell_reaches_independently_judged_seal(
         CellLifecycleState.SEALED,
     ]
     assert measurement.outcome.check_success is True
+    b1_artifact = next(item for item in plan.variants if item.artifact_id == "b1")
+    assert b1_artifact.sha256 != "0" * 64
+    assert b1_artifact.sha256 == measurement.provenance.variant_artifact_sha256
     assert measurement.resource.turn_count.value == 1
     assert measurement.resource.session_count.value == 1
     assert measurement.resource.attempt_count.value == 1
@@ -117,9 +126,47 @@ def test_r2_b1_fake_cell_reaches_independently_judged_seal(
     assert measurement.variant_metrics.values["b1_session_usage_statuses"] == [
         "measured"
     ]
+    assert measurement.effort.startup_action_count.value == 1
+    assert measurement.effort.manual_copy_or_relay_count_excluding_start.value == 0
+    assert measurement.effort.manual_copy_or_relay_count_including_start.value == 1
     evidence_paths = {item.path for item in measurement.evidence}
+    assert "events/interventions.jsonl" in evidence_paths
     assert "raw/adapter-result.json" in evidence_paths
     assert "raw/fake-runtime-input.json" in evidence_paths
     assert "judge/result.json" in evidence_paths
     assert "judge/final.diff" in evidence_paths
     assert all(not path.startswith("variant-state/") for path in evidence_paths)
+
+
+def test_r2_partial_usage_subtotal_is_sealed_as_unknown(tmp_path: Path) -> None:
+    fake_fixture = _fake_fixture("code-change")
+    fake_fixture["usage"] = {"status": "unknown"}
+    result = run_r2_b1_fake_cell(
+        state_root=tmp_path / "state",
+        source_repository=REPOSITORY_ROOT,
+        manifest_path=MANIFEST_PATH,
+        fixture_id="code-change",
+        b1_command_prefix=(sys.executable, "-m", "orchestrator"),
+        b1_project_root=B1_ROOT,
+        b1_schema_root=B1_ROOT / "schemas" / "v1",
+        fake_fixture=fake_fixture,
+        benchmark_python=Path(sys.executable),
+        git_executable=_git(),
+        created_at=FROZEN_TIME,
+    )
+    measurement = verify_sealed_cell(Path(result.measurement_path).parents[1])
+
+    assert measurement.outcome.check_success is True
+    assert measurement.resource.token_usage.status is MetricStatus.UNKNOWN
+    assert measurement.resource.token_usage.value is None
+    assert measurement.variant_metrics.values["b1_report_usage_status"] == (
+        "partial_or_unknown"
+    )
+    assert measurement.variant_metrics.values["b1_token_usage_raw"] == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+    }
+    assert measurement.variant_metrics.values["b1_session_usage_statuses"] == [
+        "unknown"
+    ]
