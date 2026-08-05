@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from orchestrator.cli import _doctor, main
+from orchestrator.cli import EXIT_RUNTIME, _doctor, main
 from tests.conftest import git, make_spec
 
 
@@ -68,3 +68,33 @@ def test_doctor_uses_sdk_account_without_exposing_account_data(project_factory, 
         "method": "chatgpt",
     }
     assert "must-not-be-reported" not in json.dumps(result)
+
+
+def test_doctor_cli_fails_when_chatgpt_authentication_is_unavailable(
+    project_factory, monkeypatch, capsys
+) -> None:
+    import openai_codex
+
+    class LoggedOutCodex:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def account(self, *, refresh_token=False):
+            assert refresh_token is False
+            return SimpleNamespace(account=None, requires_openai_auth=True)
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(openai_codex, "Codex", LoggedOutCodex)
+
+    result = main(["doctor", "--project", str(project_factory()), "--json"])
+    output = json.loads(capsys.readouterr().out)
+
+    assert result == EXIT_RUNTIME
+    assert output["codex_login"] == {
+        "checked": True,
+        "authenticated": False,
+        "method": "unknown",
+    }
