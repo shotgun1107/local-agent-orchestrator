@@ -1,7 +1,7 @@
 # B1 최소 오케스트레이터 구현 명세
 
 - 작성일: 2026-08-04
-- 상태: **명세 동결(freeze), 2026-08-04. reference 구현 완료, 실제 Codex smoke 전**
+- 상태: **명세 동결(freeze), 2026-08-04. reference 구현 및 실제 Codex smoke 완료(2026-08-05)**
 - 기준 설계: [범용 로컬 세션 오케스트레이터 설계안](./general-local-session-orchestrator-design.md)
 - 적용 기준선: B1 — 오케스트레이터가 단일 Worker를 순차 실행하고 자동검사
 - 구현 여부: 이 문서는 코드가 아니라 구현 명세이며, reference 구현은 [`stages/b1-sequential/`](../../stages/b1-sequential/README.md)에 있다.

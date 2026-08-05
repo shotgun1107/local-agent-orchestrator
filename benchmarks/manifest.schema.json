@@ -7,7 +7,22 @@
   "properties": {
     "schema_version": {"const": 1},
     "status": {"const": "frozen_before_execution"},
-    "fixtures": {"type": "array", "minItems": 2},
+    "fixtures": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "commit", "git_tree", "success_check"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1},
+          "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "git_tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "success_check": {"type": "string", "minLength": 1}
+        }
+      }
+    },
     "variants": {"type": "array", "items": {"enum": ["b0", "b1"]}, "minItems": 2},
     "repetitions": {"type": "integer", "minimum": 1},
     "budgets": {"type": "object"},

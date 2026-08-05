@@ -576,3 +576,43 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 집 PC 실행 절차와 중단 조건은 `docs/operations/b1-home-test-handoff.md`에 기록했다.
 - B1 명세는 상태와 구현 링크만 바꿨다. 변경 전 Git blob은 `24a28759babf4cf54c1f61ce756166593a0c472a`, 변경 후 작업 트리 blob은 `54f06a40b8eea09d802673aa319ba26aec99c4ec`, 변경 후 SHA-256은 `5CC76E7B7E0D3419A48E1CB1A291B13C20F3322D7283243D2491B41EC82233D2`다.
 - 동결된 연구·심사 문서는 이 구현 작업에서 수정하지 않았다.
+
+## B1 실제 Codex smoke 검증
+
+### 실행 범위와 사전 게이트
+
+- 실행일: 2026-08-05.
+- Python 3.12.10, `openai-codex==0.144.4`에서 smoke 직전 비라이브 회귀시험 60개를 실행해 모두 통과했다.
+- isolated wheel 빌드가 통과했다. wheel SHA-256은 `23D8F64F8659CCB355F0BBEDF95EFD664E899D20CDDFAE4AD2C1A7081FC55FA5`이며, 7개 코어 모듈과 `orchestrator/_project_pack/`의 포함을 archive 목록으로 확인했다.
+- 공식 `codex login status`와 SDK `account()`에서 ChatGPT 인증을 확인했다. `OPENAI_API_KEY`는 없었다.
+- 원본 fixture를 수정하지 않고 임시 경로에 복사한 뒤 새 Git 저장소로 초기화했다. 승인 실행 사용자와 임시 저장소 소유자 차이는 전역 Git 설정을 바꾸지 않고 해당 프로세스의 `safe.directory` 값으로만 처리했다.
+- `lao doctor`에서 SDK pin, ChatGPT 인증, Git root, clean worktree를 확인했고 Run Spec validation도 통과했다.
+
+### 실제 호출 결과
+
+- 실제 모델 호출은 `document-read` smoke 1회뿐이며, 생성된 Codex turn도 1개다.
+- Run ID: `run_be31ab80d7294e88bf875fcc27514b6a`.
+- Run `COMPLETED`, Task `SUCCEEDED`, Attempt 1 `SUCCEEDED`, Session `COMPLETED`; resume 0, interrupt 요청 없음이다.
+- `acceptance`, `diff_check`가 모두 exit code 0으로 `PASSED`했다.
+- ResultEnvelope SHA-256은 `ADD1F9DF22082931E088D132A85BB908C83C27695FAA44AAB5DA73EE9AC032A6`이고 원장 값과 실제 파일 hash가 일치했다.
+- Run Artifact는 17개다. `recover check` 결과 SQLite quick check `ok`, foreign key 위반 0, 손상 Artifact 0, 비밀 탐지 0이다.
+- online backup을 만든 뒤 별도의 `recover verify-backup`으로 manifest와 모든 파일 hash가 일치함을 확인했다.
+- usage는 `measured`다. input 85,328, output 771, total 86,099 tokens이며 원장 wall-clock은 39.698초, CLI 관측은 약 41초다.
+- input 수치는 작업 문서 분량만이 아니라 새 thread에 들어간 시스템·도구·환경 컨텍스트를 포함한 thread 누적값이다. B0 비교 전에는 효율성 수치로 해석하지 않는다.
+
+### Definition of Done 감사
+
+- §16의 1~11번은 코어 구조·상태 원장·검증 순서·고장 fixture와 자동시험으로 확인했다.
+- 12번은 위 실제 Codex smoke에서 ResultEnvelope와 measured usage 수집으로 확인했다.
+- 13번은 실제 Run의 secret scan 0건으로 확인했다.
+- 14번은 Project Pack만 다른 `code-change`, `document-read` 독립 Git fixture의 FakeRuntime 관통 시험으로 확인했다.
+- 15번 감사 중 fixture `commit`이 `TO_BE_RECORDED_AFTER_CHECKOUT`으로 남은 것을 발견했다. 실제 비교 전에 출처 commit과 fixture별 Git tree를 고정하고 회귀시험을 추가했으며, 최종 비라이브 시험은 61개가 모두 통과했다.
+- 16번은 B2·B3 디렉터리와 병렬·Reviewer·worktree 구현 부재를 정적으로 확인했다.
+- 이에 따라 B1 Definition of Done은 통과했다. 단, B1이 B0보다 효율적인지를 묻는 가설 7은 반복 비교 전이므로 미확인이다.
+
+### 문서와 남은 범위
+
+- 최신 실행 기록은 `docs/operations/b1-home-test-handoff.md` §8에 반영했다.
+- B1 명세 상태 줄은 실제 smoke 완료로만 갱신했다. 현재 Git blob은 `17f3ca281cd49abb9f10cf9b5283728f4c95ee42`, SHA-256은 `3097DA304731DDFC6A030C9AE07AD386CEDF767F2B7617B6DF1E55193E188F2E`다.
+- 연구·심사·범용 설계 문서는 수정하지 않았다.
+- 남은 작업은 동결 manifest에 따른 B0/B1 두 fixture × 각 3회 비교와 가설 7 판정이다. 그 전에는 B2를 구현하지 않는다.
