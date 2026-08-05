@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-001",
+  "title": "동결 benchmark fixture의 commit 값이 placeholder로 남음",
+  "status": "resolved",
+  "stage": "b1-dod-audit",
+  "category": "test",
+  "discovered_at": "2026-08-05T10:00:00+09:00",
+  "resolved_at": "2026-08-05T10:30:00+09:00",
+  "discovered_by": "B1 Definition of Done item 15 audit",
+  "symptom": "B0/B1 benchmark manifest가 frozen 상태였지만 fixture commit 필드가 TO_BE_RECORDED_AFTER_CHECKOUT으로 남아 있어 이후 비교 입력의 동일성을 증명할 수 없었다.",
+  "reproduction": [
+    "B1 smoke 뒤 Definition of Done 15번을 항목별로 감사한다.",
+    "benchmarks/manifests/b0-b1-frozen.yaml의 fixture commit 값을 확인한다.",
+    "placeholder가 실제 Git commit과 tree를 고정하지 못함을 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "동결 manifest의 두 fixture commit 값이 실제 SHA가 아닌 placeholder였다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "manifest의 commit과 fixture별 Git tree를 현재 저장소 값과 대조하는 통합 시험을 추가했다."
+    }
+  ],
+  "root_cause": "fixture를 추가한 커밋이 만들어지기 전에 manifest를 작성하면서 사후 치환해야 할 값을 남겼고, 최초 60개 시험에는 placeholder 금지 검사가 없었다.",
+  "considered_options": [
+    {
+      "option": "비교 실행 직전에 사람이 commit을 기록한다",
+      "decision": "rejected",
+      "reason": "동결 시점과 실행 시점 사이 입력 변화를 자동으로 탐지할 수 없다."
+    },
+    {
+      "option": "출처 commit과 fixture별 Git tree를 모두 고정한다",
+      "decision": "adopted",
+      "reason": "manifest 파일 자체와 각 fixture 내용의 동일성을 독립적으로 검증할 수 있다."
+    }
+  ],
+  "resolution": "두 fixture의 실제 출처 commit과 서로 다른 Git tree SHA를 manifest에 기록하고, placeholder 부재와 현재 tree 일치를 확인하는 통합 회귀시험을 추가했다.",
+  "affected_files": [
+    "benchmarks/manifests/b0-b1-frozen.yaml",
+    "stages/b1-sequential/tests/integration/test_benchmark_fixtures.py"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/integration/test_benchmark_fixtures.py::test_frozen_manifest_pins_fixture_commit_and_git_tree"
+  ],
+  "verification": [
+    "두 fixture의 manifest Git tree가 실제 tree와 일치했다.",
+    "최종 비라이브 회귀시험 61개가 모두 통과했다."
+  ],
+  "remaining_risks": [
+    "B0/B1 실제 반복 비교는 아직 실행하지 않았으므로 결과 파일의 재현성은 후속 검증 대상이다."
+  ],
+  "related_commits": [
+    "4f4817a"
+  ],
+  "source_references": [
+    "docs/operations/codex-revision-log.md:609",
+    "benchmarks/manifests/b0-b1-frozen.yaml"
+  ]
+}

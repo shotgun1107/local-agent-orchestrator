@@ -1,2 +1,4 @@
 benchmarks/results/*/*
 !benchmarks/results/*/.gitkeep
+__pycache__/
+*.py[cod]

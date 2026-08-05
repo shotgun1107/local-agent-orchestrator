@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260804-001",
+  "title": "SDK에 없는 observe 기반 timeout 설계",
+  "status": "resolved",
+  "stage": "b1-spec",
+  "category": "integration",
+  "discovered_at": "2026-08-04T09:00:00+09:00",
+  "resolved_at": "2026-08-04T12:00:00+09:00",
+  "discovered_by": "Claude review and openai-codex 0.144.4 source inspection",
+  "symptom": "명세가 TurnHandle.observe() 폴링으로 task timeout을 집행하도록 했지만 실제 SDK에는 해당 메서드와 timeout 인자가 없어서 Worker 정지 시 main controller가 무기한 블로킹될 수 있었다.",
+  "reproduction": [
+    "openai-codex 0.144.4의 동기 TurnHandle 공개 메서드를 확인한다.",
+    "turn(), stream(), run() 경로에 timeout 인자가 없고 observe()가 존재하지 않음을 확인한다.",
+    "결과 notification이 오지 않는 FakeRuntime scenario를 같은 runtime 계약으로 실행한다."
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "SDK 0.144.4 TurnHandle에는 steer, interrupt, stream, run만 있고 observe는 없었다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "timeout fixture에서 notification을 지연해도 main controller deadline이 반환되는 계약 시험을 추가했다."
+    }
+  ],
+  "root_cause": "실제 SDK 공개 API를 소스 수준에서 대조하기 전에 폴링 가능한 runtime을 가정했다.",
+  "considered_options": [
+    {
+      "option": "AsyncCodex coroutine 취소에만 의존한다",
+      "decision": "rejected",
+      "reason": "AsyncCodex도 내부 blocking 작업을 asyncio.to_thread로 넘기므로 coroutine 취소가 consumer 종료를 보장하지 않는다."
+    },
+    {
+      "option": "daemon consumer thread와 monotonic deadline을 둔다",
+      "decision": "adopted",
+      "reason": "SDK blocking 경계를 격리하면서 main controller가 deadline과 interrupt grace를 직접 집행할 수 있다."
+    }
+  ],
+  "resolution": "RuntimePort를 await_terminal(handle, monotonic_deadline) 계약으로 바꾸고 Codex adapter가 daemon consumer thread에서 TurnHandle.run()을 소비하도록 했다. deadline 뒤에는 interrupt를 시도하고 확인할 수 없으면 Session을 격리해 늦은 결과를 폐기한다.",
+  "affected_files": [
+    "docs/design/b1-minimum-orchestrator-implementation-spec.md",
+    "stages/b1-sequential/src/orchestrator/runtime.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/contract/test_runtime.py::test_fake_timeout_does_not_block_main_thread",
+    "stages/b1-sequential/tests/integration/test_orchestrator.py::test_timeout_paths_are_bounded_and_never_adopted"
+  ],
+  "verification": [
+    "FakeRuntime timeout 지원·미지원 scenario가 동일한 await_terminal 경계를 통과했다.",
+    "B1 비라이브 회귀시험 전체가 통과했다."
+  ],
+  "remaining_risks": [
+    "장시간 실제 Codex turn에서 app-server 프로세스가 interrupt 뒤 어떻게 종료되는지는 별도 live 시험이 필요하다."
+  ],
+  "related_commits": [
+    "0e581b7",
+    "e915914"
+  ],
+  "source_references": [
+    "docs/operations/codex-revision-log.md:472",
+    "docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md"
+  ]
+}

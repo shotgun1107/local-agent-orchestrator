@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260804-002",
+  "title": "Codex approval_mode 기본값으로 인한 추가 모델 호출 위험",
+  "status": "resolved",
+  "stage": "b1-spec",
+  "category": "integration",
+  "discovered_at": "2026-08-04T09:10:00+09:00",
+  "resolved_at": "2026-08-04T12:10:00+09:00",
+  "discovered_by": "Claude review and openai-codex 0.144.4 source inspection",
+  "symptom": "명세가 sandbox만 지정하고 approval_mode를 생략해 SDK 기본 auto_review가 활성화될 수 있었고, 승인 불필요 Run에서도 자동 reviewer 모델 호출이 발생할 가능성이 있었다.",
+  "reproduction": [
+    "openai-codex 0.144.4 thread_start 기본 인자를 확인한다.",
+    "approval_mode를 생략한 thread와 turn 생성이 auto_review 경로를 선택하는지 대조한다."
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "SDK 0.144.4의 thread_start 기본 approval_mode가 auto_review였다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "Codex adapter mock에서 thread_start와 turn 양쪽에 deny_all이 전달되는지 검사한다."
+    }
+  ],
+  "root_cause": "sandbox 설정과 승인 정책을 같은 안전 경계로 오해하고 SDK의 approval_mode 기본값을 명세에 고정하지 않았다.",
+  "considered_options": [
+    {
+      "option": "SDK 기본 auto_review를 유지한다",
+      "decision": "rejected",
+      "reason": "B1의 비용·turn 예산과 사용자 승인 정책을 오케스트레이터가 결정적으로 통제할 수 없다."
+    },
+    {
+      "option": "thread와 turn 모두 deny_all을 명시한다",
+      "decision": "adopted",
+      "reason": "숨은 reviewer 호출을 차단하고 필요한 권한은 사전 정의된 sandbox와 write scope로만 표현할 수 있다."
+    }
+  ],
+  "resolution": "CodexRuntime이 모든 thread_start와 turn 호출에 ApprovalMode.deny_all을 명시하고 이를 runtime 계약 시험으로 고정했다.",
+  "affected_files": [
+    "docs/design/b1-minimum-orchestrator-implementation-spec.md",
+    "stages/b1-sequential/src/orchestrator/runtime.py"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/contract/test_runtime.py::test_codex_adapter_sets_deny_all_on_thread_and_turn"
+  ],
+  "verification": [
+    "mock SDK 호출 인자에서 thread와 turn의 approval_mode가 모두 deny_all임을 확인했다.",
+    "실제 Codex smoke 1회가 별도 승인·reviewer turn 없이 완료됐다."
+  ],
+  "remaining_risks": [],
+  "related_commits": [
+    "0e581b7",
+    "e915914",
+    "4f4817a"
+  ],
+  "source_references": [
+    "docs/operations/codex-revision-log.md:474",
+    "docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md"
+  ]
+}

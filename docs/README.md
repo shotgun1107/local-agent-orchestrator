@@ -52,6 +52,7 @@ docs/
 ### `operations/`
 
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
+- [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [로컬 인수인계](./operations/home-codex-handoff.md) — 다른 PC에서 이어서 작업할 때의 배경
 - [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
 
