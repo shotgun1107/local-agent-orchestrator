@@ -5,16 +5,17 @@
 
 ## 요약
 
-- 전체: 4건
+- 전체: 5건
 - 해결: 4건
 - 조사 중: 0건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
 |---|---|---|---|---|
 | DEV-20260804-001 | resolved | b1-spec | integration | SDK에 없는 observe 기반 timeout 설계 |
 | DEV-20260804-002 | resolved | b1-spec | integration | Codex approval_mode 기본값으로 인한 추가 모델 호출 위험 |
+| DEV-20260805-003 | open | b1-sequential | implementation | doctor가 미인증 상태에서도 성공 종료함 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -138,6 +139,60 @@ CodexRuntime이 모든 thread_start와 turn 호출에 ApprovalMode.deny_all을 �
 - 관련 커밋: 0e581b7, e915914, 4f4817a
 - 출처: docs/operations/codex-revision-log.md:474
 - 출처: docs/reviews/b1/claude-review-b1-minimum-orchestrator-implementation-spec.md
+
+## DEV-20260805-003 — doctor가 미인증 상태에서도 성공 종료함
+
+- 상태: `open`
+- 단계: `b1-sequential`
+- 분류: `implementation`
+- 발견: 2026-08-05T01:28:21Z / B0/B1 comparison preflight
+- 해결: 미해결
+
+### 증상
+
+codex_login.authenticated가 false이고 SDK CLI login status가 실패했는데 lao doctor가 종료 코드 0을 반환했다.
+
+### 재현
+
+- SDK CLI가 로그아웃된 상태에서 독립 Git fixture에 대해 lao doctor --project PATH --json을 실행한다.
+
+### 증거
+
+- `reproducible-test`: doctor JSON은 authenticated=false를 기록했으나 DOCTOR_EXIT=0이었고, 같은 SDK CLI의 codex login status는 Not logged in과 exit 1을 반환했다.
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: stages/b1-sequential/src/orchestrator/cli.py
+- 출처: stages/b1-sequential/tests/integration/test_cli.py
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 
