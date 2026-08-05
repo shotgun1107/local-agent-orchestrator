@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-003",
+  "title": "doctor가 미인증 상태에서도 성공 종료함",
+  "status": "open",
+  "stage": "b1-sequential",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T01:28:21Z",
+  "resolved_at": null,
+  "discovered_by": "B0/B1 comparison preflight",
+  "symptom": "codex_login.authenticated가 false이고 SDK CLI login status가 실패했는데 lao doctor가 종료 코드 0을 반환했다.",
+  "reproduction": [
+    "SDK CLI가 로그아웃된 상태에서 독립 Git fixture에 대해 lao doctor --project PATH --json을 실행한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "doctor JSON은 authenticated=false를 기록했으나 DOCTOR_EXIT=0이었고, 같은 SDK CLI의 codex login status는 Not logged in과 exit 1을 반환했다."
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "stages/b1-sequential/src/orchestrator/cli.py",
+    "stages/b1-sequential/tests/integration/test_cli.py"
+  ]
+}
