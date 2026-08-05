@@ -55,6 +55,7 @@ class FakeR4Driver(R4CellDriver):
         self.prepare_calls = 0
         self.invoke_calls = 0
         self.validate_capture_calls = 0
+        self.recover_active_calls = 0
         self.recover_judging_calls = 0
         self.judge_calls = 0
         self.deadlines: list[float] = []
@@ -95,6 +96,9 @@ class FakeR4Driver(R4CellDriver):
         if not path.is_file():
             raise R4ControllerError("driver has no terminal capture")
         return R4CapturedCell.model_validate_json(path.read_bytes())
+
+    def recover_active(self, cell_dir: Path) -> None:
+        self.recover_active_calls += 1
 
     def recover_judging(self, cell_dir: Path) -> None:
         self.recover_judging_calls += 1
@@ -348,6 +352,7 @@ def test_active_crash_never_reinvokes_variant_automatically(tmp_path: Path) -> N
     result = recovered.run_next()
     assert result.action == "stopped_active_crash"
     assert sum(driver.invoke_calls for driver in drivers.values()) == 0
+    assert sum(driver.recover_active_calls for driver in drivers.values()) == 1
     assert recovered._cell_state(plan.cells[0]).state is CellLifecycleState.STOPPED
     with pytest.raises(R4ControllerError, match="no terminal capture"):
         recovered.accept_stopped_capture(
@@ -387,6 +392,7 @@ def test_active_crash_after_capture_can_judge_without_reinvoke(tmp_path: Path) -
 
     recovered = _controller_without_fault(controller, drivers)
     assert recovered.run_next().action == "stopped_active_crash"
+    assert sum(driver.recover_active_calls for driver in drivers.values()) == 1
     recovered.accept_stopped_capture(
         plan.cells[0].cell_id,
         decided_by="test",

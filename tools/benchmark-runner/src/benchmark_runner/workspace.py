@@ -256,6 +256,57 @@ class FixtureRestorer:
             )
         return actual_tree
 
+    def open_existing(
+        self,
+        fixture: FrozenFixtureSpec,
+        workspace: Path,
+        *,
+        require_clean: bool = False,
+    ) -> PreparedFixture:
+        """Reconstruct trusted baseline metadata without rewriting an existing workspace."""
+
+        workspace = workspace.resolve()
+        self.verify_source(fixture)
+        if not workspace.is_dir() or not (workspace / ".git").is_dir():
+            raise WorkspaceError("prepared fixture workspace is missing or is not a Git repository")
+        baseline_tree = _run_git(
+            self.git_executable,
+            workspace,
+            ["rev-parse", "HEAD^{tree}"],
+        ).decode("ascii").strip()
+        if baseline_tree != fixture.git_tree:
+            raise WorkspaceError(
+                f"prepared baseline tree mismatch: expected {fixture.git_tree}, got {baseline_tree}"
+            )
+        if require_clean and _run_git(
+            self.git_executable,
+            workspace,
+            ["status", "--porcelain"],
+        ):
+            raise WorkspaceError("prepared fixture worktree is not clean")
+        checks = ChecksFile.model_validate(
+            _load_yaml(workspace / ".orchestrator" / "checks.yaml")
+        )
+        benchmark_run = BenchmarkRun.model_validate(
+            _load_yaml(workspace / "benchmark-run.yaml")
+        )
+        if fixture.success_check not in checks.checks:
+            raise WorkspaceError(f"missing success Check: {fixture.success_check}")
+        if fixture.success_check == "diff_check":
+            raise WorkspaceError("success Check and diff_check must be distinct")
+        if "diff_check" not in checks.checks:
+            raise WorkspaceError("missing diff_check")
+        scopes = tuple(
+            dict.fromkeys(scope for task in benchmark_run.tasks for scope in task.write_scope)
+        )
+        return PreparedFixture(
+            fixture=fixture,
+            workspace=workspace,
+            checks=checks,
+            write_scopes=scopes,
+            protected_hashes=_protected_hashes(workspace),
+        )
+
     def restore(self, fixture: FrozenFixtureSpec, workspace: Path) -> PreparedFixture:
         workspace = workspace.resolve()
         self.verify_source(fixture)
@@ -299,25 +350,4 @@ class FixtureRestorer:
         if _run_git(self.git_executable, workspace, ["status", "--porcelain"]):
             raise WorkspaceError("restored fixture worktree is not clean")
 
-        checks = ChecksFile.model_validate(
-            _load_yaml(workspace / ".orchestrator" / "checks.yaml")
-        )
-        benchmark_run = BenchmarkRun.model_validate(
-            _load_yaml(workspace / "benchmark-run.yaml")
-        )
-        if fixture.success_check not in checks.checks:
-            raise WorkspaceError(f"missing success Check: {fixture.success_check}")
-        if fixture.success_check == "diff_check":
-            raise WorkspaceError("success Check and diff_check must be distinct")
-        if "diff_check" not in checks.checks:
-            raise WorkspaceError("missing diff_check")
-        scopes = tuple(
-            dict.fromkeys(scope for task in benchmark_run.tasks for scope in task.write_scope)
-        )
-        return PreparedFixture(
-            fixture=fixture,
-            workspace=workspace,
-            checks=checks,
-            write_scopes=scopes,
-            protected_hashes=_protected_hashes(workspace),
-        )
+        return self.open_existing(fixture, workspace, require_clean=True)

@@ -34,13 +34,14 @@ lao run validate --project C:\path\to\project --spec C:\path\to\run.yaml
 lao run start --project C:\path\to\project --spec C:\path\to\run.yaml --runtime fake
 lao run status RUN_ID --json
 lao report RUN_ID --format md
+lao schema export --output C:\path\to\public-schemas
 lao recover check RUN_ID
 lao recover backup RUN_ID
 ```
 
 `require_clean_worktree=true`이므로 새 Run은 깨끗한 Git 저장소에서만 시작한다. 시험에서는 `LAO_STATE_ROOT`를 별도 임시 경로로 지정한다.
 
-`run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. `run-status.schema.json`, `run-report.schema.json`도 같은 Pydantic 모델에서 생성되므로 외부 실행기는 B1 내부 DB나 Python 모듈을 읽지 않고 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
+`run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. 공개 Schema 5개는 wheel의 `orchestrator/_schemas/v1`에도 포함되며 `lao schema export`가 비어 있는 디렉터리로 exact file set·SHA-256과 함께 내보낸다. 따라서 외부 실행기는 source checkout, B1 내부 DB, B1 Python 모델을 읽지 않고 설치된 artifact만으로 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
 
 ## 검증 상태
 
