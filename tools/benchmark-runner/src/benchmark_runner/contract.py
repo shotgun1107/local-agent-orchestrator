@@ -351,7 +351,73 @@ class CellStateRecord(StrictModel):
     state: CellLifecycleState
     history: list[LifecycleEntry]
     outcome_state: OutcomeState | None = None
+    stop_reason: str | None = None
     sealed_measurement_sha256: Sha256 | None = None
+
+
+class PreflightRecord(StrictModel):
+    completed_at: datetime
+    evidence_path: str
+    evidence_sha256: Sha256
+    plan_fingerprint: Sha256
+
+    _completed_at_has_timezone = field_validator("completed_at")(validate_timestamp)
+    _evidence_path_is_relative = field_validator("evidence_path")(validate_relative_path)
+
+
+class StopHistoryEntry(StrictModel):
+    reason: str = Field(min_length=1)
+    decision: str = Field(min_length=1)
+    decided_by: str = Field(min_length=1)
+    decided_at: datetime
+    evidence: str = Field(min_length=1)
+
+    _decided_at_has_timezone = field_validator("decided_at")(validate_timestamp)
+
+
+class ExperimentControl(StrictModel):
+    preflight: PreflightRecord | None = None
+    stop_reason: str | None = None
+    stop_history: list[StopHistoryEntry] = Field(default_factory=list)
+    superseded_by: str | None = Field(
+        default=None,
+        pattern=r"^exp_[0-9]{8}_[0-9a-f]{8}_[1-9][0-9]*$",
+    )
+    analysis_sha256: Sha256 | None = None
+    export_sha256: Sha256 | None = None
+
+
+class ControllerLockRecord(StrictModel):
+    controller_id: str = Field(pattern=r"^ctl_[0-9a-f]{32}$")
+    pid: int = Field(gt=0)
+    hostname: str = Field(min_length=1)
+    process_start_identity: str = Field(min_length=1)
+    acquired_at: datetime
+    runner_version: str = Field(min_length=1)
+    experiment_id: str = Field(pattern=r"^exp_[0-9]{8}_[0-9a-f]{8}_[1-9][0-9]*$")
+
+    _acquired_at_has_timezone = field_validator("acquired_at")(validate_timestamp)
+
+
+class ExperimentDisplayState(StrEnum):
+    CREATED = "CREATED"
+    PREFLIGHTED = "PREFLIGHTED"
+    RUNNING = "RUNNING"
+    STOPPED = "STOPPED"
+    COMPLETED = "COMPLETED"
+    ANALYZED = "ANALYZED"
+    FROZEN = "FROZEN"
+    SUPERSEDED = "SUPERSEDED"
+
+
+class ExperimentStatus(StrictModel):
+    experiment_id: str
+    display_state: ExperimentDisplayState
+    stop_reason: str | None
+    sealed_cells: int = Field(ge=0)
+    planned_cells: int = Field(ge=1)
+    next_cell_id: str | None
+    cell_states: dict[str, CellLifecycleState]
 
 
 PUBLIC_SCHEMAS: dict[str, type[BaseModel]] = {

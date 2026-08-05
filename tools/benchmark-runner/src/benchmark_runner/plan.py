@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import random
 from datetime import datetime, timezone
 
 from benchmark_runner.contract import (
@@ -289,4 +290,148 @@ def build_r3_plan(
         }
     )
     assert_plan_integrity(plan)
+    return plan
+
+
+def build_r4_plan(
+    *,
+    source_manifest_path: str,
+    source_manifest_sha256: str,
+    fixtures: list[FixtureIdentity],
+    repetitions: int,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    baseline_variant: str,
+    candidate_variant: str,
+    seed: int,
+    primary_metrics: list[str],
+    decision_policy: dict[str, object],
+    reasoning_control: str,
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build the full balanced B0/B1 plan; all experiment choices are explicit inputs."""
+
+    if repetitions < 1:
+        raise ValueError("repetitions must be positive")
+    if revision < 1:
+        raise ValueError("revision must be positive")
+    variant_ids = [variant.artifact_id for variant in variants]
+    if len(variant_ids) != len(set(variant_ids)):
+        raise ValueError("R4 variant artifact IDs must be unique")
+    if baseline_variant not in variant_ids or candidate_variant not in variant_ids:
+        raise ValueError("R4 baseline and candidate must have artifact identities")
+    if baseline_variant == candidate_variant:
+        raise ValueError("R4 baseline and candidate must differ")
+    if not fixtures:
+        raise ValueError("R4 requires at least one fixture")
+    block_inputs = [
+        (fixture, repetition)
+        for repetition in range(1, repetitions + 1)
+        for fixture in fixtures
+    ]
+    block_count = len(block_inputs)
+    if block_count % 2:
+        raise ValueError("balanced order requires an even number of Blocks")
+    randomizer = random.Random(seed)
+    baseline_first = set(randomizer.sample(range(block_count), block_count // 2))
+    cells: list[PlannedCell] = []
+    ordinal = 1
+    for block_index, (fixture, repetition) in enumerate(block_inputs):
+        ordered_variants = (
+            (baseline_variant, candidate_variant)
+            if block_index in baseline_first
+            else (candidate_variant, baseline_variant)
+        )
+        block_id = f"block_{fixture.fixture_id}_{repetition}"
+        for variant_id in ordered_variants:
+            cells.append(
+                PlannedCell(
+                    cell_id=f"cell_{fixture.fixture_id}_{repetition}_{variant_id}",
+                    block_id=block_id,
+                    fixture_id=fixture.fixture_id,
+                    repetition=repetition,
+                    variant_id=variant_id,
+                    execution_ordinal=ordinal,
+                )
+            )
+            ordinal += 1
+
+    created = created_at or utc_now()
+    if created.tzinfo is None or created.utcoffset() is None:
+        raise ValueError("created_at must include a timezone")
+    date = created.astimezone(timezone.utc).strftime("%Y%m%d")
+    placeholder = ExecutionPlan(
+        created_at=created,
+        producer=PRODUCER,
+        experiment_id=f"exp_{date}_00000000_{revision}",
+        plan_fingerprint=ZERO_SHA256,
+        revision=revision,
+        source_manifest=SourceManifest(
+            path=source_manifest_path,
+            sha256=source_manifest_sha256,
+        ),
+        runner=runner,
+        variants=variants,
+        fixtures=fixtures,
+        cells=cells,
+        seed=seed,
+        baseline_variant=baseline_variant,
+        candidate_variants=[candidate_variant],
+        primary_metrics=primary_metrics,
+        decision_policy=decision_policy,
+        reasoning_control=reasoning_control,
+        plan_supplemented=[
+            PlanSupplement(
+                field="baseline_variant",
+                value=baseline_variant,
+                source="user_before_first_cell",
+            ),
+            PlanSupplement(
+                field="candidate_variants",
+                value=[candidate_variant],
+                source="user_before_first_cell",
+            ),
+            PlanSupplement(
+                field="seed",
+                value=seed,
+                source="user_before_first_cell",
+            ),
+            PlanSupplement(
+                field="decision_policy",
+                value=decision_policy,
+                source="user_before_first_cell",
+            ),
+            PlanSupplement(
+                field="reasoning_control",
+                value=reasoning_control,
+                source="user_before_first_cell",
+            ),
+            PlanSupplement(
+                field="wall_clock_seconds",
+                value={
+                    "primary": "variant_execution_seconds",
+                    "operational": "total_wall_clock_seconds",
+                },
+                source="frozen_design_section_16_4",
+            ),
+        ],
+        environment_fingerprint=environment_fingerprint,
+    )
+    fingerprint = recompute_plan_fingerprint(placeholder)
+    plan = placeholder.model_copy(
+        update={
+            "plan_fingerprint": fingerprint,
+            "experiment_id": f"exp_{date}_{fingerprint[:8]}_{revision}",
+        }
+    )
+    assert_plan_integrity(plan)
+    baseline_first_count = sum(
+        1
+        for index in range(0, len(plan.cells), 2)
+        if plan.cells[index].variant_id == baseline_variant
+    )
+    if baseline_first_count * 2 != block_count:
+        raise AssertionError("R4 block order is not balanced")
     return plan

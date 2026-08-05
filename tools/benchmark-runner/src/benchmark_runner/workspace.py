@@ -244,8 +244,7 @@ class FixtureRestorer:
         self.source_repository = source_repository.resolve()
         self.git_executable = git_executable
 
-    def restore(self, fixture: FrozenFixtureSpec, workspace: Path) -> PreparedFixture:
-        workspace = workspace.resolve()
+    def verify_source(self, fixture: FrozenFixtureSpec) -> str:
         actual_tree = _run_git(
             self.git_executable,
             self.source_repository,
@@ -255,6 +254,11 @@ class FixtureRestorer:
             raise WorkspaceError(
                 f"fixture tree mismatch: expected {fixture.git_tree}, got {actual_tree}"
             )
+        return actual_tree
+
+    def restore(self, fixture: FrozenFixtureSpec, workspace: Path) -> PreparedFixture:
+        workspace = workspace.resolve()
+        self.verify_source(fixture)
         archive = _run_git(
             self.git_executable,
             self.source_repository,

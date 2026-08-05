@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-013",
+  "title": "Windows Judge 고아 프로세스 복구가 taskkill 단독 경로에서 실패",
+  "status": "resolved",
+  "stage": "benchmark-runner-r4",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T06:26:41Z",
+  "resolved_at": "2026-08-05T06:26:41Z",
+  "discovered_by": "R4 orphan Judge process recovery test",
+  "symptom": "기록된 Judge 프로세스 그룹에 taskkill /T /F를 실행해도 Access denied가 반환되고, 부모 종료 뒤 자식이 남거나 종료 여부 검사가 이미 끝난 부모를 살아 있다고 판정해 복구가 실패한다",
+  "reproduction": [
+    "CREATE_NEW_PROCESS_GROUP으로 30초 대기하는 Judge 대체 프로세스와 자식을 시작하고 active-process.json을 기록한 뒤 recover_orphan_judge_process를 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "최초 회귀시험은 Judge process group could not be terminated로 실패했고 동일 환경의 taskkill stderr는 ERROR: Access denied였다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "Windows os.kill(pid, 0)은 Popen 핸들이 남은 종료 프로세스의 실제 실행 상태를 구분하는 근거로 충분하지 않았다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "단일 시험 통과 뒤 전체 회귀에서 부모는 종료됐지만 자식 PID가 생존하는 실패가 다시 검출됐다"
+    }
+  ],
+  "root_cause": "Windows 복구 경로가 강제 taskkill 하나에 의존하고 후손 PID를 별도로 고정하지 않았으며 프로세스 생존 판정에 GetExitCodeProcess가 아닌 범용 PID probe를 사용해, 관리 환경의 권한 제한·부모만 종료되는 경우·종료된 핸들 상태를 잘못 처리했다",
+  "considered_options": [
+    {
+      "option": "taskkill 실패를 무시하고 Judge를 즉시 재실행",
+      "decision": "rejected",
+      "reason": "이전 Judge와 새 Judge가 같은 workspace를 동시에 변경할 수 있어 복구 계약을 위반한다"
+    },
+    {
+      "option": "종료 전 후손 PID tree를 스냅샷하고 Windows process group에 CTRL_BREAK_EVENT를 보낸 뒤 taskkill·WinAPI TerminateProcess fallback과 GetExitCodeProcess로 부모·후손 종료를 확인",
+      "decision": "adopted",
+      "reason": "같은 그룹의 자식에게 협조 종료를 전달하고 실제 실행 상태를 확인한 뒤에만 복구를 허용한다"
+    }
+  ],
+  "resolution": "Judge 실행마다 PID·process start identity·group kind를 active-process.json에 원자적으로 기록했다. 복구는 PID 재사용을 identity로 거부하고 Windows에서는 종료 전에 Toolhelp snapshot으로 후손 PID를 고정한 뒤 CTRL_BREAK_EVENT, taskkill /T /F, WinAPI TerminateProcess fallback 순서로 부모와 후손을 종료하고 GetExitCodeProcess가 모두 비활성임을 확인한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py",
+    "tools/benchmark-runner/src/benchmark_runner/runner.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_judge.py::test_crash_recovery_terminates_recorded_judge_process_group",
+    "tools/benchmark-runner/tests/test_judge.py::test_check_output_is_truncated_but_full_hash_is_kept"
+  ],
+  "verification": [
+    "부모와 자식 프로세스를 포함한 Judge group recovery 시험 5회 연속 통과",
+    "Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개 통과"
+  ],
+  "remaining_risks": [
+    "후손 스냅샷과 종료 신호 사이에 새 자식을 만드는 극단적 race는 Windows Job Object의 kill-on-close보다 약하므로 실제 R6 환경에서 재확인이 필요하다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/general-benchmark-runner-design.md:1191",
+    "docs/design/general-benchmark-runner-design.md:1527"
+  ]
+}

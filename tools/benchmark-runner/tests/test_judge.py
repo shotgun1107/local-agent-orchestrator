@@ -11,7 +11,16 @@ from pathlib import Path
 
 import pytest
 
-from benchmark_runner.judge import FixtureJudge, JudgeResult
+from benchmark_runner.judge import (
+    FixtureJudge,
+    JudgeProcessRecord,
+    JudgeResult,
+    _pid_is_alive,
+    _process_start_identity,
+    _write_process_record,
+    recover_orphan_judge_process,
+)
+from benchmark_runner.contract import utc_now
 from benchmark_runner.workspace import FixtureRestorer, load_frozen_manifest
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
@@ -224,16 +233,22 @@ def test_check_output_is_truncated_but_full_hash_is_kept(tmp_path: Path) -> None
     check = prepared.checks.checks["acceptance"].model_copy(
         update={"argv": ["python", "-c", "import sys;sys.stdout.write('x'*64)"]}
     )
+    judge_dir = tmp_path / "judge"
     result = FixtureJudge(
         Path(sys.executable),
         _git(),
         stream_limit_bytes=16,
-    )._run_check("large-output", check, prepared.workspace, tmp_path / "judge")
+    )._run_check("large-output", check, prepared.workspace, judge_dir)
     assert result.status == "passed"
     assert result.stdout.stored_bytes == 16
     assert result.stdout.total_bytes == 64
     assert result.stdout.truncated is True
     assert result.stdout.sha256 == hashlib.sha256(b"x" * 64).hexdigest()
+    process_record = JudgeProcessRecord.model_validate_json(
+        (judge_dir / "active-process.json").read_bytes()
+    )
+    assert process_record.check_id == "large-output"
+    assert process_record.status == "completed"
 
 
 def test_check_timeout_terminates_process_group(tmp_path: Path) -> None:
@@ -279,3 +294,62 @@ def test_check_timeout_terminates_process_group(tmp_path: Path) -> None:
     while child_is_running() and time.monotonic() < deadline:
         time.sleep(0.05)
     assert child_is_running() is False
+
+
+def test_crash_recovery_terminates_recorded_judge_process_group(tmp_path: Path) -> None:
+    popen_options: dict[str, object] = {}
+    if os.name == "nt":
+        popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        group_kind = "windows_new_process_group"
+    else:
+        popen_options["start_new_session"] = True
+        group_kind = "posix_session"
+    child_pid_path = tmp_path / "orphan-child.pid"
+    root_code = (
+        "import pathlib,subprocess,sys,time;"
+        "child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)']);"
+        f"pathlib.Path({str(child_pid_path)!r}).write_text(str(child.pid));"
+        "time.sleep(30)"
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-c", root_code],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        **popen_options,
+    )
+    try:
+        deadline = time.monotonic() + 2
+        while not child_pid_path.is_file() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert child_pid_path.is_file()
+        child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+        identity = _process_start_identity(process.pid)
+        assert identity is not None
+        judge_dir = tmp_path / "judge"
+        _write_process_record(
+            judge_dir / "active-process.json",
+            JudgeProcessRecord(
+                check_id="orphan-test",
+                pid=process.pid,
+                process_start_identity=identity,
+                process_group_kind=group_kind,
+                status="running",
+                started_at=utc_now().isoformat(),
+            ),
+        )
+
+        assert recover_orphan_judge_process(judge_dir, grace_seconds=2) == "terminated"
+        process.wait(timeout=2)
+        deadline = time.monotonic() + 2
+        while _pid_is_alive(child_pid) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert _pid_is_alive(child_pid) is False
+        record = JudgeProcessRecord.model_validate_json(
+            (judge_dir / "active-process.json").read_bytes()
+        )
+        assert record.status == "recovered_terminated"
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=2)
