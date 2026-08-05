@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260806-003",
+  "title": "동결 artifact JSON이 checkout EOL 변환 대상이었음",
+  "status": "resolved",
+  "stage": "r6",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T23:53:07Z",
+  "resolved_at": "2026-08-05T23:53:17Z",
+  "discovered_by": "revision 2 최종 이식성 감사",
+  "symptom": "동결 JSON이 text 속성 미지정 상태여서 core.autocrlf=true인 clone에서 byte hash가 달라질 수 있었다",
+  "reproduction": [
+    "동결 bundle의 execution-plan.json에 대해 git check-attr text를 확인한다",
+    "freeze record가 JSON의 exact SHA-256을 검증한다는 계약과 checkout EOL 변환 가능성을 대조한다"
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "속성 추가 전 execution-plan.json의 text 속성은 unspecified였고 freeze record는 해당 파일의 exact byte hash를 저장했다"
+    }
+  ],
+  "root_cause": "동결 bundle의 JSON과 wheel에 checkout byte 보존 Git attribute가 없어 저장소 전역 core.autocrlf 설정이 exact-hash Evidence를 바꿀 수 있었다",
+  "considered_options": [
+    {
+      "option": "clone 뒤 hash를 새로 계산해 기록 갱신",
+      "decision": "rejected",
+      "reason": "동결 시점 기준을 결과를 받은 뒤 바꾸게 되어 Evidence 의미가 사라진다"
+    },
+    {
+      "option": "artifact JSON은 -text, wheel은 binary로 고정",
+      "decision": "adopted",
+      "reason": "Git checkout이 committed blob bytes를 그대로 복원하게 한다"
+    }
+  ],
+  "resolution": "루트 .gitattributes에 benchmarks/artifacts 하위 JSON -text와 wheel binary 규칙을 추가하고 core.autocrlf=true인 no-checkout clone에서 bundle 7개 전체 byte와 내부 SHA를 재검증했다",
+  "affected_files": [
+    ".gitattributes"
+  ],
+  "regression_tests": [
+    "core.autocrlf=true fresh-clone artifact byte audit"
+  ],
+  "verification": [
+    "fresh clone의 bundle 7개가 원본과 byte-identical",
+    "execution Plan·nonlive regression·Runner wheel·B1 wheel 내부 SHA 검증 통과",
+    "fresh clone worktree clean 확인"
+  ],
+  "remaining_risks": [
+    "새 artifact 확장자를 추가하면 byte 보존 attribute와 clone 감사를 함께 갱신해야 한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    ".gitattributes",
+    "benchmarks/artifacts/r6-b0-b1-2c33500-r2/pre-execution-freeze.json",
+    "docs/operations/codex-revision-log.md"
+  ]
+}

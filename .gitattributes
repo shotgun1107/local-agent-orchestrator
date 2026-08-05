@@ -1,0 +1,2 @@
+benchmarks/artifacts/**/*.json -text
+benchmarks/artifacts/**/*.whl binary

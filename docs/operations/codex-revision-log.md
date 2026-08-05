@@ -1084,3 +1084,8 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - build harness가 `git -c core.autocrlf=false archive`를 사용하도록 수정했다. `core.autocrlf=true/false`인 두 독립 clone을 실제 생성해 archive bytes가 같은지 확인하는 회귀시험을 추가했다.
 - 수정 뒤 Benchmark Runner 132개, B1 65개가 통과했다. 원인·대안·해결·잔여 위험은 `DEV-20260806-002`에 기록했다.
 - 실제 모델 호출은 0회다. revision 2는 이 수정이 포함된 새 clean commit에서 wheel·runtime·회귀 기록·preflight·freeze를 처음부터 다시 생성한다.
+- 최종 source commit은 `2c335005e40b9c5e7fe2ed4b00a6d85b2e442f9f`다. Runner wheel SHA-256은 `76510b064a3d9202e53f6d75d64351fbb638870645a0e9e66525360a8f05eacb`, B1 wheel은 `fa42d6f225c1b4bafc40e194b916ebf7399e5525a65b7d95a5c361e6901039b1`다.
+- `core.autocrlf=true`인 현재 저장소와 `false`인 canonical clone에서 독립 build한 결과 wheel 2개, 공개 Schema 5개, Plan fingerprint `3b2f0a7b6abb210ea2eedb1dfb4068db9409e0fd030e7b85dee301b483b521af`, Experiment ID `exp_20260805_3b2f0a7b_2`가 모두 일치했다.
+- 최종 비라이브 기록은 B1 65개, Benchmark Runner 132개, 구현 오류 로그 25건, 로그 하네스 10개 통과다. preflight Evidence SHA-256은 `b8c786b420c76f4edcfe1adb96cc0fd79dbdd88181ce6cd8c91a8c73d477c928`다.
+- 최종 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, workspace 0, stop reason 없음이다. `benchmarks/artifacts/r6-b0-b1-2c33500-r2/`를 revision 2 실행 후보로 동결했고 실제 model turn은 0회다.
+- 동결 JSON이 Windows checkout에서 CRLF로 바뀌어 exact hash가 깨지지 않도록 `benchmarks/artifacts/**/*.json -text`, wheel `binary` 속성을 추가했다. `core.autocrlf=true`인 새 clone에서 bundle 7개가 byte-identical이고 Plan·회귀 기록·wheel 내부 SHA가 모두 유효함을 확인했으며 `DEV-20260806-003`에 기록했다.
