@@ -197,3 +197,96 @@ def build_r2_plan(
     )
     assert_plan_integrity(plan)
     return plan
+
+
+def build_r3_plan(
+    *,
+    source_manifest_path: str,
+    source_manifest_sha256: str,
+    fixture_id: str,
+    fixture_source_commit: str,
+    fixture_git_tree: str,
+    runner_sha256: str,
+    b0_sha256: str,
+    model: str,
+    reasoning_effort: str,
+    surface_kind: str,
+    created_at: datetime | None = None,
+) -> ExecutionPlan:
+    created = created_at or utc_now()
+    if created.tzinfo is None or created.utcoffset() is None:
+        raise ValueError("created_at must include a timezone")
+    date = created.astimezone(timezone.utc).strftime("%Y%m%d")
+    placeholder = ExecutionPlan(
+        created_at=created,
+        producer=PRODUCER,
+        experiment_id=f"exp_{date}_00000000_1",
+        plan_fingerprint=ZERO_SHA256,
+        revision=1,
+        source_manifest=SourceManifest(
+            path=source_manifest_path,
+            sha256=source_manifest_sha256,
+        ),
+        runner=ArtifactIdentity(
+            artifact_id="benchmark-runner",
+            version="0.1.0-r3",
+            sha256=runner_sha256,
+        ),
+        variants=[
+            ArtifactIdentity(
+                artifact_id="b0",
+                version="0.1.0-r3-manual",
+                sha256=b0_sha256,
+            )
+        ],
+        fixtures=[
+            FixtureIdentity(
+                fixture_id=fixture_id,
+                source_commit=fixture_source_commit,
+                git_tree=fixture_git_tree,
+            )
+        ],
+        cells=[
+            PlannedCell(
+                cell_id=f"cell_{fixture_id}_1_b0",
+                block_id=f"block_{fixture_id}_1",
+                fixture_id=fixture_id,
+                repetition=1,
+                variant_id="b0",
+                execution_ordinal=1,
+            )
+        ],
+        seed=0,
+        baseline_variant="b0",
+        candidate_variants=[],
+        primary_metrics=[
+            "check_success",
+            "manual_copy_or_relay_count_excluding_start",
+        ],
+        decision_policy={
+            "r3_manual_vertical_slice": True,
+            "primary_intervention_metric_excludes_start": True,
+        },
+        reasoning_control=reasoning_effort,
+        plan_supplemented=[
+            PlanSupplement(
+                field="b0_measurement_authority",
+                value="runner_intervention_events_plus_user_attestation",
+                source="frozen_design_r3",
+            )
+        ],
+        environment_fingerprint={
+            "model": model,
+            "reasoning_effort": reasoning_effort,
+            "surface_kind": surface_kind,
+        },
+    )
+    fingerprint = recompute_plan_fingerprint(placeholder)
+    plan = placeholder.model_copy(
+        update={
+            "plan_fingerprint": fingerprint,
+            "experiment_id": f"exp_{date}_{fingerprint[:8]}_1",
+        }
+    )
+    assert_plan_integrity(plan)
+    return plan

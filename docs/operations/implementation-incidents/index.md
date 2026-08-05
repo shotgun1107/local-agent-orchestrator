@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 12건
-- 해결: 12건
+- 전체: 14건
+- 해결: 14건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -23,6 +23,8 @@
 | DEV-20260805-008 | resolved | benchmark-runner-r1 | implementation | Windows Judge timeout이 process group을 종료하지 못함 |
 | DEV-20260805-009 | resolved | benchmark-runner-r1 | implementation | Git rename의 원래 경로를 write scope 검사에서 누락 |
 | DEV-20260805-010 | resolved | benchmark-runner-r1 | implementation | Judge 자체 변경 검사가 동일 경로의 내용 변조를 놓침 |
+| DEV-20260805-011 | resolved | benchmark-runner-r2 | implementation | B1 terminal exit를 JSON Schema 오류로 오분류 |
+| DEV-20260805-012 | resolved | benchmark-runner-r3 | implementation | B1 시작 동작을 공통 startup 지표에서 누락 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -603,6 +605,116 @@ Check 직전 worker tree를 임시 index로 계산하고 Check 뒤 final tree와
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
+
+## DEV-20260805-011 — B1 terminal exit를 JSON Schema 오류로 오분류
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r2`
+- 분류: `implementation`
+- 발견: 2026-08-05T05:28:13Z / R2 failure-injection contract test
+- 해결: 2026-08-05T05:28:23Z
+
+### 증상
+
+exit 130 또는 5·6·7에서 stdout JSON이 없으면 interrupted나 구체적 infrastructure failure가 아니라 b1_public_contract_invalid로 분류된다
+
+### 재현
+
+- B1 run start가 stderr만 남기고 exit 130을 반환하도록 주입한 뒤 Adapter run을 실행한다
+
+### 증거
+
+- `reproducible-test`: 기존 run은 start exit code를 보기 전에 _public_json을 호출해 빈 stdout에서 Schema parse 실패가 먼저 발생했다
+
+### 근본 원인
+
+Adapter가 모든 run start 결과에 공개 status JSON이 존재한다고 가정하고 exit code보다 Schema parse를 먼저 수행했다
+
+### 검토한 해결안
+
+- `rejected` 모든 실패에서 가짜 status JSON을 요구 — 실제 KeyboardInterrupt와 CLI 인프라 오류 계약에 맞지 않는다
+- `adopted` JSON 불필요 terminal exit를 먼저 분류하고 0·3·4만 공개 status를 검증 — CLI 종료 계약과 공개 Schema 책임을 분리한다
+
+### 채택한 해결
+
+130은 interrupted, 5·6·7과 unknown code는 구체적 infrastructure_error로 Schema parse 전에 반환하고 stop_reason을 Evidence에 기록했다. CLI 시작 자체 실패도 별도 infrastructure_error로 정규화했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/adapter.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_b1_adapter_failures.py::test_early_exit_without_json_is_classified_before_schema_parse
+- tools/benchmark-runner/tests/test_b1_adapter_failures.py::test_start_invocation_failure_is_infrastructure_error
+
+### 검증 결과
+
+- 종료 코드·Schema·비종료·부분 usage 실패 주입을 포함한 Benchmark Runner pytest 68개 통과
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-012 — B1 시작 동작을 공통 startup 지표에서 누락
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r3`
+- 분류: `implementation`
+- 발견: 2026-08-05T05:45:15Z / R3 completion-contract re-audit
+- 해결: 2026-08-05T05:45:15Z
+
+### 증상
+
+B0 최초 prompt는 startup_action_count 1로 계산하지만 기존 B1 Measurement는 run start를 not_applicable로 기록해 양쪽 기동 비용을 대칭 비교할 수 없다
+
+### 재현
+
+- R2 B1 FakeRuntime Cell을 봉인한 뒤 effort.startup_action_count와 manual_copy_or_relay_count_including_start를 확인한다
+
+### 증거
+
+- `direct-observation`: R2 Measurement 생성 코드는 B1의 startup·including-start·excluding-start를 모두 not_applicable로 만들고 Intervention Event를 생성하지 않았다
+
+### 근본 원인
+
+R2 구현에서 자동 실행되는 B1 시작 명령을 사람 중계 지표 전체와 함께 제외했지만, 공통 계약은 자동/수동 여부와 별개로 양쪽 최초 기동 동작을 startup 보조 지표에 각각 1회 기록하도록 구분한다
+
+### 검토한 해결안
+
+- `rejected` B0 최초 prompt도 primary 지표에서 완전히 제거하고 기록하지 않음 — 시작을 제외하는 primary gate와 양쪽 기동 비용을 보여주는 보조 지표를 동시에 보존한다는 동결 설계에 어긋난다
+- `adopted` B1 CLI 호출 직전에 b1_start Event를 기록하고 startup 1, excluding-start 0, including-start 1을 파생 — B0와 같은 Event 근거를 남기면서 primary 사람 부담 지표에는 자동 시작을 섞지 않는다
+
+### 채택한 해결
+
+R2 B1 Cell에 events/interventions.jsonl을 추가해 실제 CLI 호출 직전 b1_start를 append하고 Measurement의 startup_action_count 1, excluding-start 0, including-start 1과 복구 0을 Event 근거의 derived 값으로 봉인했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+- tools/benchmark-runner/tests/test_r2_runner.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r2_runner.py::test_r2_b1_fake_cell_reaches_independently_judged_seal
+
+### 검증 결과
+
+- B0 startup 1/excluding 3/including 4와 B1 startup 1/excluding 0/including 1을 각각 봉인하는 Benchmark Runner 전체 pytest 75개 통과
+
+### 남은 위험
+
+- 실제 B0/B1 반복 비교를 아직 실행하지 않아 양쪽 시작 Event의 현장 입력 절차는 미검증이다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:475
+- 출처: docs/design/general-benchmark-runner-design.md:1406
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

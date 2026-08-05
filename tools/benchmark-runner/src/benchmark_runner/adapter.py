@@ -7,15 +7,24 @@ import shutil
 import signal
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, Literal, Protocol
+from typing import BinaryIO, Callable, Literal, Protocol
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, ValidationError as JsonSchemaValidationError
-from pydantic import JsonValue
+from pydantic import JsonValue, ValidationError
 
-from benchmark_runner.contract import OutcomeState
+from benchmark_runner.contract import (
+    B0Attestation,
+    B0ManualSubmission,
+    InterventionEvent,
+    InterventionKind,
+    OutcomeState,
+    utc_now,
+)
 
 
 @dataclass(frozen=True)
@@ -90,6 +99,429 @@ class FakeAdapter:
 
 class AdapterInfrastructureError(RuntimeError):
     pass
+
+
+class B0EventValidationError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class B0DerivedMetrics:
+    startup_action_count: int
+    manual_copy_or_relay_count_excluding_start: int
+    manual_copy_or_relay_count_including_start: int
+    manual_recovery_count: int
+    manual_recovery_seconds: float
+    session_count: int
+    turn_count: int
+    attempt_count: int
+    aborted: bool
+
+    def public_payload(self) -> dict[str, JsonValue]:
+        return {
+            "startup_action_count": self.startup_action_count,
+            "manual_copy_or_relay_count_excluding_start": (
+                self.manual_copy_or_relay_count_excluding_start
+            ),
+            "manual_copy_or_relay_count_including_start": (
+                self.manual_copy_or_relay_count_including_start
+            ),
+            "manual_recovery_count": self.manual_recovery_count,
+            "manual_recovery_seconds": self.manual_recovery_seconds,
+            "session_count": self.session_count,
+            "turn_count": self.turn_count,
+            "attempt_count": self.attempt_count,
+            "aborted": self.aborted,
+        }
+
+
+def derive_b0_metrics(
+    events: list[InterventionEvent],
+    *,
+    cell_id: str,
+) -> B0DerivedMetrics:
+    if not events:
+        raise B0EventValidationError("B0 timeline is empty")
+    if events[0].intervention_kind != "initial_prompt_copy":
+        raise B0EventValidationError("B0 timeline must start with initial_prompt_copy")
+    if sum(event.intervention_kind == "initial_prompt_copy" for event in events) != 1:
+        raise B0EventValidationError("B0 timeline requires exactly one initial_prompt_copy")
+    event_ids: set[str] = set()
+    previous_offset = -1.0
+    previous_timestamp: datetime | None = None
+    recovery_started_at: float | None = None
+    recovery_count = 0
+    recovery_seconds = 0.0
+    aborted = False
+    for index, event in enumerate(events):
+        if event.cell_id != cell_id:
+            raise B0EventValidationError("B0 Event references a different Cell")
+        if event.event_id in event_ids:
+            raise B0EventValidationError("B0 Event IDs must be unique")
+        event_ids.add(event.event_id)
+        if event.monotonic_offset_seconds < previous_offset:
+            raise B0EventValidationError("B0 monotonic offsets must not go backwards")
+        if previous_timestamp is not None and event.timestamp < previous_timestamp:
+            raise B0EventValidationError("B0 timestamps must not go backwards")
+        previous_offset = event.monotonic_offset_seconds
+        previous_timestamp = event.timestamp
+        kind = event.intervention_kind
+        if kind == "b1_start":
+            raise B0EventValidationError("b1_start is not valid in a B0 timeline")
+        if kind == "recovery_start":
+            if recovery_started_at is not None:
+                raise B0EventValidationError("B0 recovery intervals cannot overlap")
+            recovery_started_at = event.monotonic_offset_seconds
+        elif kind == "recovery_end":
+            if recovery_started_at is None:
+                raise B0EventValidationError("B0 recovery_end has no matching start")
+            recovery_seconds += event.monotonic_offset_seconds - recovery_started_at
+            recovery_count += 1
+            recovery_started_at = None
+        elif kind == "abort":
+            if aborted or index != len(events) - 1:
+                raise B0EventValidationError("B0 abort must occur once and be the final Event")
+            aborted = True
+    if recovery_started_at is not None:
+        raise B0EventValidationError("B0 recovery interval was not closed")
+
+    excluding_kinds = {"additional_prompt", "correction", "manual_retry"}
+    startup = 1
+    excluding = sum(event.intervention_kind in excluding_kinds for event in events)
+    turns = sum(
+        event.intervention_kind
+        in {"initial_prompt_copy", "additional_prompt", "correction", "manual_retry"}
+        for event in events
+    )
+    retries = sum(event.intervention_kind == "manual_retry" for event in events)
+    replacements = sum(
+        event.intervention_kind == "session_replacement" for event in events
+    )
+    return B0DerivedMetrics(
+        startup_action_count=startup,
+        manual_copy_or_relay_count_excluding_start=excluding,
+        manual_copy_or_relay_count_including_start=startup + excluding,
+        manual_recovery_count=recovery_count,
+        manual_recovery_seconds=recovery_seconds,
+        session_count=1 + replacements,
+        turn_count=turns,
+        attempt_count=1 + retries,
+        aborted=aborted,
+    )
+
+
+class B0InterventionRecorder:
+    def __init__(
+        self,
+        *,
+        cell_id: str,
+        path: Path,
+        monotonic_clock: Callable[[], float] = time.monotonic,
+        wall_clock: Callable[[], datetime] = utc_now,
+    ) -> None:
+        if path.exists():
+            raise FileExistsError(f"B0 Intervention Event file already exists: {path}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.cell_id = cell_id
+        self.path = path
+        self._monotonic_clock = monotonic_clock
+        self._wall_clock = wall_clock
+        self._started_at = monotonic_clock()
+        self._next_id = 1
+
+    def record(
+        self,
+        intervention_kind: InterventionKind,
+        *,
+        actor: Literal["user", "runner"] = "user",
+        duration_seconds: float | None = None,
+        note: str | None = None,
+    ) -> InterventionEvent:
+        now = self._wall_clock()
+        event = InterventionEvent(
+            created_at=now,
+            event_id=f"evt_{self._next_id:06d}",
+            cell_id=self.cell_id,
+            timestamp=now,
+            monotonic_offset_seconds=max(0.0, self._monotonic_clock() - self._started_at),
+            intervention_kind=intervention_kind,
+            actor=actor,
+            duration_seconds=duration_seconds,
+            note=note,
+        )
+        line = json.dumps(
+            event.model_dump(mode="json"),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8") + b"\n"
+        with self.path.open("ab") as handle:
+            handle.write(line)
+            handle.flush()
+            os.fsync(handle.fileno())
+        self._next_id += 1
+        return event
+
+    def read_all(self) -> list[InterventionEvent]:
+        if not self.path.is_file():
+            return []
+        events: list[InterventionEvent] = []
+        try:
+            for line in self.path.read_bytes().splitlines():
+                if not line.strip():
+                    raise B0EventValidationError("B0 Event JSONL contains a blank line")
+                events.append(InterventionEvent.model_validate_json(line))
+        except (OSError, ValidationError) as exc:
+            raise B0EventValidationError("B0 Event JSONL is invalid") from exc
+        return events
+
+
+@dataclass(frozen=True)
+class B0ManualSession:
+    context: CellContext
+    workspace: Path
+    prompt_path: Path
+    recorder: B0InterventionRecorder
+
+
+class B0ManualInputProvider(Protocol):
+    def collect(self, session: B0ManualSession) -> B0ManualSubmission | None: ...
+
+
+@dataclass(frozen=True)
+class B0AdapterConfig:
+    workspace: Path
+    prompt_path: Path
+    events_path: Path
+    input_provider: B0ManualInputProvider
+    expected_model: str
+    expected_reasoning_effort: str
+    expected_surface_kind: str
+    monotonic_clock: Callable[[], float] = time.monotonic
+    wall_clock: Callable[[], datetime] = utc_now
+
+
+class ConsoleB0ManualInputProvider:
+    """Small sidecar loop. It observes a separate B0 Codex session; it never launches one."""
+
+    def __init__(
+        self,
+        *,
+        expected_model: str,
+        expected_reasoning_effort: str,
+        expected_surface_kind: str,
+        input_fn: Callable[[str], str] = input,
+        output_fn: Callable[[str], None] = print,
+    ) -> None:
+        self.expected_model = expected_model
+        self.expected_reasoning_effort = expected_reasoning_effort
+        self.expected_surface_kind = expected_surface_kind
+        self.input_fn = input_fn
+        self.output_fn = output_fn
+
+    def collect(self, session: B0ManualSession) -> B0ManualSubmission:
+        self.output_fn(f"B0 workspace: {session.workspace}")
+        self.output_fn(f"Fixed prompt: {session.prompt_path}")
+        self.output_fn("[p] prompt  [a] additional  [c] correction  [m] retry")
+        self.output_fn("[r] recovery toggle  [s] new session  [o] observe  [d] done  [x] abort")
+        recovering = False
+        while True:
+            command = self.input_fn("b0> ").strip().lower()
+            if command == "p":
+                session.recorder.record("initial_prompt_copy")
+            elif command == "a":
+                session.recorder.record("additional_prompt")
+            elif command == "c":
+                session.recorder.record("correction")
+            elif command == "m":
+                session.recorder.record("manual_retry")
+            elif command == "r":
+                session.recorder.record("recovery_end" if recovering else "recovery_start")
+                recovering = not recovering
+            elif command == "s":
+                session.recorder.record("session_replacement")
+            elif command == "o":
+                session.recorder.record("status_observation")
+            elif command in {"d", "x"}:
+                if command == "x":
+                    session.recorder.record("abort")
+                confirmed = self.input_fn("Timeline complete and controls confirmed? [y/N] ").strip().lower() == "y"
+                attestation = B0Attestation(
+                    status="confirmed" if confirmed else "refused",
+                    confirmed_at=utc_now(),
+                    timeline_complete=confirmed,
+                    model=self.expected_model if confirmed else None,
+                    reasoning_effort=self.expected_reasoning_effort if confirmed else None,
+                    surface_kind=self.expected_surface_kind if confirmed else None,
+                )
+                return B0ManualSubmission(
+                    outcome_state="interrupted" if command == "x" else "completed",
+                    attestation=attestation,
+                )
+
+
+class B0ManualAdapter:
+    def __init__(self, config: B0AdapterConfig) -> None:
+        self.config = config
+
+    def id(self) -> str:
+        return "b0"
+
+    def capabilities(self) -> VariantCapabilities:
+        return VariantCapabilities(
+            automated_launch=False,
+            supports_usage=False,
+            supports_attempt_count=True,
+        )
+
+    def preflight(self, context: CellContext) -> PreflightResult:
+        if not self.config.workspace.is_dir():
+            return PreflightResult(False, "B0 workspace is missing")
+        if not self.config.prompt_path.is_file():
+            return PreflightResult(False, "B0 fixed prompt is missing")
+        if self.config.events_path.exists():
+            return PreflightResult(False, "B0 Event sidecar is not empty")
+        if not all(
+            (
+                self.config.expected_model,
+                self.config.expected_reasoning_effort,
+                self.config.expected_surface_kind,
+            )
+        ):
+            return PreflightResult(False, "B0 control values are incomplete")
+        return PreflightResult(True, f"B0 manual sidecar preflight passed for {context.cell_id}")
+
+    def _failure(
+        self,
+        context: CellContext,
+        *,
+        failure_kind: str,
+        error_kind: str,
+        events: list[InterventionEvent],
+        submission: B0ManualSubmission | None,
+        derived: B0DerivedMetrics | None = None,
+    ) -> VariantEvidence:
+        return VariantEvidence(
+            outcome_state="infrastructure_error",
+            failure_kind=failure_kind,
+            attempt_count=0,
+            raw_payload={
+                "adapter_id": self.id(),
+                "cell_id": context.cell_id,
+                "error_kind": error_kind,
+                "stop_required": True,
+                "stop_reason": failure_kind,
+                "submission": submission.model_dump(mode="json") if submission else None,
+                "event_count": len(events),
+                "derived_metrics_untrusted": derived.public_payload() if derived else None,
+            },
+            normalized_metrics={
+                "measurement_trusted": False,
+                "event_count": len(events),
+            },
+        )
+
+    def run(self, context: CellContext) -> VariantEvidence:
+        recorder = B0InterventionRecorder(
+            cell_id=context.cell_id,
+            path=self.config.events_path,
+            monotonic_clock=self.config.monotonic_clock,
+            wall_clock=self.config.wall_clock,
+        )
+        submission: B0ManualSubmission | None = None
+        try:
+            raw_submission = self.config.input_provider.collect(
+                B0ManualSession(
+                    context=context,
+                    workspace=self.config.workspace,
+                    prompt_path=self.config.prompt_path,
+                    recorder=recorder,
+                )
+            )
+            submission = (
+                B0ManualSubmission.model_validate(raw_submission)
+                if raw_submission is not None
+                else None
+            )
+        except Exception as exc:
+            try:
+                events = recorder.read_all()
+            except B0EventValidationError:
+                events = []
+            return self._failure(
+                context,
+                failure_kind="b0_manual_input_failed",
+                error_kind=type(exc).__name__,
+                events=events,
+                submission=None,
+            )
+
+        try:
+            events = recorder.read_all()
+            derived = derive_b0_metrics(events, cell_id=context.cell_id)
+            if submission is not None:
+                if derived.aborted != (submission.outcome_state == "interrupted"):
+                    raise B0EventValidationError("B0 abort Event and outcome disagree")
+        except B0EventValidationError as exc:
+            return self._failure(
+                context,
+                failure_kind="measurement_event_invalid",
+                error_kind=type(exc).__name__,
+                events=locals().get("events", []),
+                submission=submission,
+            )
+        if (
+            submission is None
+            or submission.attestation is None
+            or submission.attestation.status != "confirmed"
+            or not submission.attestation.timeline_complete
+        ):
+            return self._failure(
+                context,
+                failure_kind="measurement_attestation_missing",
+                error_kind="B0AttestationMissing",
+                events=events,
+                submission=submission,
+                derived=derived,
+            )
+        attestation = submission.attestation
+        if (
+            attestation.model != self.config.expected_model
+            or attestation.reasoning_effort != self.config.expected_reasoning_effort
+            or attestation.surface_kind != self.config.expected_surface_kind
+        ):
+            return self._failure(
+                context,
+                failure_kind="b0_control_attestation_invalid",
+                error_kind="B0ControlMismatch",
+                events=events,
+                submission=submission,
+                derived=derived,
+            )
+        metrics = derived.public_payload()
+        metrics["measurement_trusted"] = True
+        metrics["event_count"] = len(events)
+        metrics["token_usage_status"] = "unknown"
+        metrics["token_usage"] = None
+        return VariantEvidence(
+            outcome_state=submission.outcome_state,
+            failure_kind=(
+                None if submission.outcome_state == "completed" else f"b0_{submission.outcome_state}"
+            ),
+            attempt_count=derived.attempt_count,
+            raw_payload={
+                "adapter_id": self.id(),
+                "cell_id": context.cell_id,
+                "stop_required": submission.outcome_state != "completed",
+                "stop_reason": (
+                    None if submission.outcome_state == "completed" else f"b0_{submission.outcome_state}"
+                ),
+                "submission": submission.model_dump(mode="json"),
+                "event_count": len(events),
+                "derived_metrics": derived.public_payload(),
+            },
+            normalized_metrics=metrics,
+        )
 
 
 @dataclass(frozen=True)
@@ -294,6 +726,31 @@ class B1SequentialAdapter:
             return PreflightResult(False, "B1 run validate failed")
         return PreflightResult(True, f"B1 public CLI preflight passed for {context.cell_id}")
 
+    def _terminal_failure(
+        self,
+        context: CellContext,
+        captures: dict[str, CommandCapture],
+        *,
+        outcome_state: OutcomeState,
+        failure_kind: str,
+        error_kind: str,
+    ) -> VariantEvidence:
+        return VariantEvidence(
+            outcome_state=outcome_state,
+            failure_kind=failure_kind,
+            attempt_count=0,
+            raw_payload={
+                "adapter_id": self.id(),
+                "cell_id": context.cell_id,
+                "error_kind": error_kind,
+                "stop_required": True,
+                "stop_reason": failure_kind,
+                "commands": {
+                    key: value.public_payload() for key, value in captures.items()
+                },
+            },
+        )
+
     def run(self, context: CellContext) -> VariantEvidence:
         start_arguments = [
             "run",
@@ -308,8 +765,46 @@ class B1SequentialAdapter:
         if self.config.runtime == "fake":
             assert self.config.fake_fixture is not None
             start_arguments.extend(["--fake-fixture", str(self.config.fake_fixture.resolve())])
-        start = self._invoke(start_arguments)
+        try:
+            start = self._invoke(start_arguments)
+        except AdapterInfrastructureError as exc:
+            return self._terminal_failure(
+                context,
+                {},
+                outcome_state="infrastructure_error",
+                failure_kind="b1_cli_invocation_failed",
+                error_kind=type(exc).__name__,
+            )
         captures: dict[str, CommandCapture] = {"start": start}
+        early_exit_kinds = {
+            5: "b1_integrity_failure",
+            6: "b1_controller_locked",
+            7: "b1_runtime_failure",
+        }
+        if start.exit_code == 130:
+            return self._terminal_failure(
+                context,
+                captures,
+                outcome_state="interrupted",
+                failure_kind="b1_interrupted",
+                error_kind="B1Exit130",
+            )
+        if start.exit_code in early_exit_kinds:
+            return self._terminal_failure(
+                context,
+                captures,
+                outcome_state="infrastructure_error",
+                failure_kind=early_exit_kinds[start.exit_code],
+                error_kind=f"B1Exit{start.exit_code}",
+            )
+        if start.exit_code not in {0, 3, 4}:
+            return self._terminal_failure(
+                context,
+                captures,
+                outcome_state="infrastructure_error",
+                failure_kind="b1_unknown_exit_code",
+                error_kind=f"B1Exit{start.exit_code}",
+            )
         try:
             start_status = self._public_json(start, "status")
             run_id = str(start_status["run_id"])
@@ -320,6 +815,8 @@ class B1SequentialAdapter:
                 raise AdapterInfrastructureError("B1 status Run ID changed after launch")
             report_capture = self._invoke(["report", run_id, "--format", "json"])
             captures["report"] = report_capture
+            if report_capture.exit_code != 0:
+                raise AdapterInfrastructureError("B1 public report command failed")
             report = self._public_json(report_capture, "report")
             if report["run_id"] != run_id:
                 raise AdapterInfrastructureError("B1 report Run ID does not match status")
@@ -329,32 +826,33 @@ class B1SequentialAdapter:
             if integrity_capture.exit_code != 0 or not isinstance(integrity, dict) or not integrity.get("ok"):
                 raise AdapterInfrastructureError("B1 integrity check failed")
         except (AdapterInfrastructureError, json.JSONDecodeError, KeyError, TypeError) as exc:
-            return VariantEvidence(
+            return self._terminal_failure(
+                context,
+                captures,
                 outcome_state="infrastructure_error",
                 failure_kind="b1_public_contract_invalid",
-                attempt_count=0,
-                raw_payload={
-                    "adapter_id": self.id(),
-                    "cell_id": context.cell_id,
-                    "error_kind": type(exc).__name__,
-                    "commands": {
-                        key: value.public_payload() for key, value in captures.items()
-                    },
-                },
+                error_kind=type(exc).__name__,
             )
 
         state = str(status["state"])
-        if start.exit_code == 0 and state == "COMPLETED":
-            outcome: OutcomeState = "completed"
+        expected_terminal = {
+            0: ("COMPLETED", 0),
+            3: ("BLOCKED", 3),
+            4: ("FAILED", 4),
+        }
+        expected_state, expected_status_exit = expected_terminal[start.exit_code]
+        if state != expected_state or status_capture.exit_code != expected_status_exit:
+            outcome: OutcomeState = "infrastructure_error"
+            failure_kind = "b1_exit_state_mismatch"
+        elif start.exit_code == 0:
+            outcome = "completed"
             failure_kind = None
-        elif start.exit_code == 3 or state == "BLOCKED":
-            outcome, failure_kind = "blocked", "b1_blocked"
-        elif start.exit_code == 4 or state == "FAILED":
-            outcome, failure_kind = "failed", "b1_task_failed"
-        elif start.exit_code == 130:
-            outcome, failure_kind = "interrupted", "b1_interrupted"
+        elif start.exit_code == 3:
+            outcome = "blocked"
+            failure_kind = "b1_blocked"
         else:
-            outcome, failure_kind = "infrastructure_error", "b1_exit_state_mismatch"
+            outcome = "failed"
+            failure_kind = "b1_task_failed"
 
         metrics = report["metrics"]
         usage_status = str(metrics["usage_status"])
@@ -382,6 +880,8 @@ class B1SequentialAdapter:
                 "run_id": run_id,
                 "runtime": self.config.runtime,
                 "actual_model_turns": 0 if self.config.runtime == "fake" else None,
+                "stop_required": outcome != "completed",
+                "stop_reason": failure_kind,
                 "status": status,
                 "report": report,
                 "integrity": integrity,

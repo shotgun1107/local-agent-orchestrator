@@ -2,7 +2,7 @@
 
 동결된 [범용 Benchmark Runner 설계](../../docs/design/general-benchmark-runner-design.md)의 단계별 reference 구현이다.
 
-## 현재 구현 범위: R0~R2 정상 관통
+## 현재 구현 범위: R0~R3
 
 - 실제 모델 호출 없는 read-only Fake Cell 하나
 - Pydantic 계약에서 생성한 공개 JSON Schema 3개
@@ -19,11 +19,16 @@
 - B1 `run status`·`report` 공개 Schema를 Runner에서 독립 검증
 - B1 내부 모듈·SQLite import 없이 `lao` CLI만 호출하는 `B1SequentialAdapter`
 - 두 동결 fixture에서 FakeRuntime으로 `fixture → B1 → Judge → Measurement seal` 관통
+- B0 작업용 고정 prompt와 별도 Codex 세션 측정 sidecar
+- `initial_prompt_copy`·추가 지시·correction·manual retry·복구 구간·session 교체 Event의 즉시 JSONL 기록
+- 시작 동작을 제외한 사람 중계 수, turn·session·attempt·복구 시간의 기계적 파생
+- 사용자 timeline·model·reasoning·surface attestation 뒤 독립 Judge와 Measurement 봉인
+- Event 오류·미종료 복구·attestation 누락/거부를 infrastructure error로 봉인하고 `experiment-stop.json` 기록
 
-B0 Adapter, controller lock, Runner retry, 비교 summary, Git export는 아직 구현하지 않았다.
+R4의 controller lock·stop/resume, Runner retry, 비교 summary, Git export는 아직 구현하지 않았다.
 R0의 seal은 Cell 내부 일관성 검사이며 독립적인 외부 신뢰 기준은 아니다. Git에 내보내는 `seals.json`과 commit을 기준점으로 삼는 단계는 R5다.
 
-R2의 정상 FakeRuntime 경로는 연결됐지만 R2 전체가 끝난 것은 아니다. schema 불일치, exit 130, exit 0 nonterminal, `partial_or_unknown` 부분합을 검증하는 실패 주입 시험은 다음 작업으로 남아 있다. 실제 Codex와 B0/B1 효율성 비교도 아직 실행하지 않았다.
+R2는 정상 FakeRuntime 관통과 함께 malformed·missing·unknown-field Schema, exit 0/3/4/5/6/7/130/unknown, CLI 호출 실패, exit 0 nonterminal, `partial_or_unknown` 부분합을 검증한다. R3는 Fake 사용자 입력으로 두 fixture를 관통하고 B0의 정상·attestation 누락/거부·잘못된 Event·미종료 복구를 검증한다. 두 단계 모두 Runner가 실제 모델을 호출하지 않는다. 실제 Codex B0/B1 효율성 비교는 아직 실행하지 않았다. 다음 단계는 R4다.
 
 ## 개발 실행
 
