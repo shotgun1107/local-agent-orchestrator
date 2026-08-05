@@ -14,7 +14,14 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from .contract import AttemptState, RunState, SessionState, TaskState, canonical_json
+from .contract import (
+    AttemptState,
+    RunState,
+    RunStatusEnvelope,
+    SessionState,
+    TaskState,
+    canonical_json,
+)
 from .ledger import IntegrityViolation, Ledger, LedgerError, StateConflict
 from .recover import (
     ControllerLock,
@@ -208,11 +215,12 @@ def _status(run_id: str) -> dict[str, Any]:
     root = find_state_root(run_id)
     with Ledger(root / "ledger.sqlite") as ledger:
         snapshot = ledger.load_run_snapshot(run_id)
-    return {
-        "run_id": run_id,
-        "state": snapshot["run"]["state"],
-        "turns_used": snapshot["run"]["turns_used"],
-        "tasks": [
+    return RunStatusEnvelope(
+        schema_version=1,
+        run_id=run_id,
+        state=snapshot["run"]["state"],
+        turns_used=snapshot["run"]["turns_used"],
+        tasks=[
             {
                 "key": task["external_key"],
                 "state": task["state"],
@@ -221,7 +229,10 @@ def _status(run_id: str) -> dict[str, Any]:
             }
             for task in snapshot["tasks"]
         ],
-    }
+        session_usage_statuses=[
+            session["usage_status"] for session in snapshot["sessions"]
+        ],
+    ).model_dump(mode="json")
 
 
 def _resume(run_id: str) -> dict[str, Any]:

@@ -1,0 +1,298 @@
+{
+  "$defs": {
+    "AttemptState": {
+      "enum": [
+        "CREATED",
+        "DISPATCHING",
+        "RUNNING",
+        "REPORTED",
+        "VERIFYING",
+        "SUCCEEDED",
+        "RETRYABLE_FAILED",
+        "FAILED",
+        "BLOCKED",
+        "CANCELLED",
+        "QUARANTINED",
+        "DISPATCH_UNCERTAIN"
+      ],
+      "title": "AttemptState",
+      "type": "string"
+    },
+    "ReportUsageStatus": {
+      "enum": [
+        "measured",
+        "partial_or_unknown"
+      ],
+      "title": "ReportUsageStatus",
+      "type": "string"
+    },
+    "RunReportAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_no": {
+          "minimum": 1,
+          "title": "Attempt No",
+          "type": "integer"
+        },
+        "failure_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Failure Kind"
+        },
+        "resume_count": {
+          "minimum": 0,
+          "title": "Resume Count",
+          "type": "integer"
+        },
+        "state": {
+          "$ref": "#/$defs/AttemptState"
+        }
+      },
+      "required": [
+        "attempt_no",
+        "state",
+        "failure_kind",
+        "resume_count"
+      ],
+      "title": "RunReportAttempt",
+      "type": "object"
+    },
+    "RunReportMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "attempts": {
+          "minimum": 0,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "checks_failed": {
+          "minimum": 0,
+          "title": "Checks Failed",
+          "type": "integer"
+        },
+        "checks_passed": {
+          "minimum": 0,
+          "title": "Checks Passed",
+          "type": "integer"
+        },
+        "decisions": {
+          "minimum": 0,
+          "title": "Decisions",
+          "type": "integer"
+        },
+        "manual_copy_or_relay_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manual Copy Or Relay Count"
+        },
+        "manual_recovery_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manual Recovery Seconds"
+        },
+        "sessions": {
+          "minimum": 0,
+          "title": "Sessions",
+          "type": "integer"
+        },
+        "tasks": {
+          "minimum": 0,
+          "title": "Tasks",
+          "type": "integer"
+        },
+        "token_usage": {
+          "$ref": "#/$defs/TokenCounts",
+          "description": "Aggregate token counts only when usage_status=measured; otherwise these integers are an incomplete subtotal and must not be promoted to a measured total."
+        },
+        "turns": {
+          "minimum": 0,
+          "title": "Turns",
+          "type": "integer"
+        },
+        "usage_status": {
+          "$ref": "#/$defs/ReportUsageStatus"
+        },
+        "wall_clock_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wall Clock Seconds"
+        }
+      },
+      "required": [
+        "turns",
+        "sessions",
+        "tasks",
+        "attempts",
+        "checks_passed",
+        "checks_failed",
+        "usage_status",
+        "token_usage",
+        "decisions"
+      ],
+      "title": "RunReportMetrics",
+      "type": "object"
+    },
+    "RunReportTask": {
+      "additionalProperties": false,
+      "properties": {
+        "attempts": {
+          "items": {
+            "$ref": "#/$defs/RunReportAttempt"
+          },
+          "title": "Attempts",
+          "type": "array"
+        },
+        "key": {
+          "minLength": 1,
+          "title": "Key",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/TaskState"
+        }
+      },
+      "required": [
+        "key",
+        "state",
+        "attempts"
+      ],
+      "title": "RunReportTask",
+      "type": "object"
+    },
+    "RunState": {
+      "enum": [
+        "DRAFT",
+        "READY",
+        "RUNNING",
+        "VERIFYING",
+        "COMPLETED",
+        "FAILED",
+        "BLOCKED",
+        "CANCELLED"
+      ],
+      "title": "RunState",
+      "type": "string"
+    },
+    "TaskState": {
+      "enum": [
+        "PENDING",
+        "READY",
+        "RUNNING",
+        "REPORTED",
+        "VERIFYING",
+        "SUCCEEDED",
+        "RETRYABLE_FAILED",
+        "BLOCKED",
+        "FAILED",
+        "CANCELLED",
+        "SUPERSEDED"
+      ],
+      "title": "TaskState",
+      "type": "string"
+    },
+    "TokenCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "minimum": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "minimum": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "total_tokens"
+      ],
+      "title": "TokenCounts",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "metrics": {
+      "$ref": "#/$defs/RunReportMetrics"
+    },
+    "project_id": {
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "request": {
+      "title": "Request",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "state": {
+      "$ref": "#/$defs/RunState"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/RunReportTask"
+      },
+      "title": "Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "state",
+    "project_id",
+    "request",
+    "metrics",
+    "tasks"
+  ],
+  "title": "RunReportEnvelope",
+  "type": "object"
+}

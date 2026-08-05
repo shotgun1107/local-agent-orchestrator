@@ -26,6 +26,7 @@ from .contract import (
     RunSpec,
     RunState,
     RuntimeProfile,
+    RunReportEnvelope,
     RuntimeProfilesConfig,
     SandboxMode,
     SessionState,
@@ -871,13 +872,13 @@ class Orchestrator:
                 ).total_seconds(),
                 3,
             )
-        report = {
-            "schema_version": 1,
-            "run_id": run_id,
-            "state": run["state"],
-            "project_id": run["project_id"],
-            "request": run["request_text"],
-            "metrics": {
+        report = RunReportEnvelope(
+            schema_version=1,
+            run_id=run_id,
+            state=run["state"],
+            project_id=run["project_id"],
+            request=run["request_text"],
+            metrics={
                 "turns": run["turns_used"],
                 "sessions": len(snapshot["sessions"]),
                 "tasks": len(snapshot["tasks"]),
@@ -891,7 +892,7 @@ class Orchestrator:
                 "manual_copy_or_relay_count": None,
                 "manual_recovery_seconds": None,
             },
-            "tasks": [
+            tasks=[
                 {
                     "key": task["external_key"],
                     "state": task["state"],
@@ -907,7 +908,7 @@ class Orchestrator:
                 }
                 for task in snapshot["tasks"]
             ],
-        }
+        ).model_dump(mode="json")
         base = f"runs/{run_id}/report"
         self._persist(
             ledger, run_id=run_id, relative_path=f"{base}/summary.json",
