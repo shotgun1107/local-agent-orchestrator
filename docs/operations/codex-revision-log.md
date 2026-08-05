@@ -1066,3 +1066,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `DEV-20260805-019`: nested fixture를 직접 doctor하던 오류를 임시 standalone fixture doctor로 교체했다.
 - `DEV-20260805-020`, `DEV-20260805-021`: checkout 줄바꿈에 따라 wheel hash와 Plan fingerprint가 달라지던 문제를 Git blob snapshot과 canonical source clone으로 닫았다.
 - 이 단계는 B1이 B0보다 낫다는 결과가 아니다. 실제 12-Cell을 순서대로 실행하고 R5 policy가 봉인 결과를 분석해야만 `ADOPT_B1`, `REJECT_B1`, `INCONCLUSIVE` 중 하나를 낼 수 있다.
+
+## R6 첫 라이브 실행 중단과 revision·대화형 입력 경계 보강
+
+- 작업일: 2026-08-06.
+- revision 1의 첫 B1 `code-change` Cell은 1 Attempt·1 Session·1 turn으로 Judge Check 2개를 통과해 봉인됐다. 측정값은 총 47.359초, 입력 86,194·출력 737 token이었다. 이 한 Cell만으로 B1 효율성 결론을 내리지 않는다.
+- 다음 B0 Cell을 비대화형 명령 실행 환경에서 시작해 console sidecar의 `input()`이 EOF를 받았다. 모델 호출은 0회였지만 기존 구현은 이를 실행 전 환경 오류가 아니라 Cell 내부 infrastructure error로 봉인하고 Experiment를 중지했다.
+- `r6 create --revision N`을 추가해 중단된 revision 1과 분리된 새 Plan·Experiment ID를 만들 수 있게 했다. artifact build harness에도 같은 인자를 전달한다.
+- 다음 Cell이 `PLANNED/PREPARED` B0일 때 stdin이 TTY가 아니면 environment 수집·workspace 준비·상태 전이 전에 거부한다. B1 Cell과 crash/Judge 복구 경로에는 이 검사를 적용하지 않는다.
+- revision 1의 로컬 runtime Evidence는 수정하거나 재사용하지 않는다. 수정된 Runner artifact와 전체 비라이브 회귀 결과로 revision 2를 새로 build·preflight·동결한 뒤 유료 비교를 재시작한다.

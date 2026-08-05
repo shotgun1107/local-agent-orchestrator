@@ -55,6 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     r6_create = r6_commands.add_parser("create")
     r6_create.add_argument("--profile", type=Path, required=True)
     r6_create.add_argument("--state-root", type=Path, required=True)
+    r6_create.add_argument("--revision", type=int, default=1)
     r6_preflight = r6_commands.add_parser("preflight")
     r6_preflight.add_argument("--experiment-dir", type=Path, required=True)
     r6_status = r6_commands.add_parser("status")
@@ -109,7 +110,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "r6":
             if args.r6_command == "create":
-                result = create_r6_experiment(args.profile, args.state_root)
+                result = create_r6_experiment(
+                    args.profile,
+                    args.state_root,
+                    revision=args.revision,
+                )
             elif args.r6_command == "preflight":
                 result = preflight_r6_experiment(args.experiment_dir)
             elif args.r6_command == "status":

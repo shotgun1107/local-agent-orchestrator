@@ -37,7 +37,7 @@
 - Evidence·Measurement·summary·Plan의 민감정보와 위험 경로를 fail-closed 검사하고 byte-identical export만 멱등 허용
 - export된 모든 Measurement·Evidence hash와 summary 파생 결과를 저장소만으로 재검증
 - 실제 B0 console driver와 B1 public-CLI driver를 R4 controller에 연결하고 sidecar 전체 deadline·process group 복구·봉인 전 redaction 적용
-- `r6 create/preflight/status/run-next/freeze` installed-artifact CLI와 유료 실행 확인 flag
+- `r6 create/preflight/status/run-next/freeze` installed-artifact CLI, 명시적 revision, 유료 실행 확인 flag
 - Git blob snapshot에서 재현 가능한 Runner/B1 wheel을 만들고 canonical source clone에서 manifest bytes와 Plan fingerprint 고정
 - Python 3.12.10·Git 2.54.0·Codex CLI/SDK 0.144.4·ChatGPT 인증을 모델 turn 없이 확인하고 12개 PLANNED Cell을 동결
 
@@ -47,7 +47,16 @@ Runner 자동 retry는 의도적으로 제공하지 않는다. R0의 내부 seal
 
 R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·복구, R5는 비교·판정·export, R6는 실제 driver·artifact·환경·Plan 동결을 담당한다. 실제 Codex B0/B1 효율성 비교는 아직 실행하지 않았다.
 
-최종 실행 후보는 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`의 Plan과 hash다. `run-next`는 `--confirm-model-usage` 없이는 실행되지 않으며, R6 동결은 B1 성능 결론이 아니라 비교 입력과 실행 조건이 고정됐다는 뜻이다.
+`benchmarks/artifacts/r6-b0-b1-bef6f8e/`는 revision 1 실행 전 동결 bundle이다. 첫 라이브 실행에서 B1 Cell 하나는 성공했지만, 뒤이은 B0 Cell은 비대화형 stdin으로 sidecar 입력이 끊겨 infrastructure error로 봉인됐다. 이 외부 runtime 상태는 저장소에 없으며 revision 1을 비교 결론에 사용하거나 이어서 실행하지 않는다. 다음 실행은 수정된 Runner artifact로 revision 2를 새로 만들고 다시 동결해야 한다.
+
+새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
+
+```powershell
+& $python -m benchmark_runner r6 create `
+  --profile <runtime-profile.json> `
+  --state-root <state-root> `
+  --revision 2
+```
 
 ### R6 실제 실행 명령 경계
 
@@ -69,6 +78,8 @@ $experiment = Join-Path $runtime 'experiments\exp_20260805_d90cff38_1'
   --experiment-dir $experiment `
   --confirm-model-usage
 ```
+
+다음 Cell이 B0이면 이 명령은 반드시 사용자가 입력할 수 있는 대화형 PowerShell에서 실행한다. stdin이 TTY가 아니면 Runner는 `PLANNED/PREPARED` 상태를 바꾸거나 workspace를 만들기 전에 실패한다. B0 화면에 표시된 workspace와 고정 prompt로 별도 Codex App 작업을 실행하고, sidecar에 실제 개입 Event와 완료 attestation을 입력한다.
 
 ## 개발 실행
 

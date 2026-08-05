@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 23건
-- 해결: 23건
+- 전체: 24건
+- 해결: 24건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -36,6 +36,7 @@
 | DEV-20260805-021 | resolved | benchmark-runner-r6 | tooling | 동일 manifest commit의 R6 Plan fingerprint가 checkout마다 달라짐 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
+| DEV-20260806-001 | resolved | r6 | integration | 비대화형 B0 입력 실패가 Cell을 봉인함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1350,3 +1351,66 @@ fixture를 추가한 커밋이 만들어지기 전에 manifest를 작성하면�
 - 관련 커밋: 기록 없음
 - 출처: tools/implementation-log/README.md
 - 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260806-001 — 비대화형 B0 입력 실패가 Cell을 봉인함
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `integration`
+- 발견: 2026-08-05T23:18:33Z / 첫 R6 B0 라이브 실행
+- 해결: 2026-08-05T23:18:48Z
+
+### 증상
+
+B0 sidecar가 stdin EOF를 받은 뒤 모델 호출 없이 infrastructure_error를 봉인하고 Experiment를 중지했다
+
+### 재현
+
+- Plan의 다음 Cell이 B0인 상태에서 비대화형 shell로 r6 run-next를 실행한다
+- ConsoleB0ManualInputProvider input 호출이 EOF를 받고 b0_manual_input_failed가 봉인되는지 확인한다
+
+### 증거
+
+- `direct-observation`: revision 1의 cell_code-change_1_b0가 b0_manual_input_failed와 0초 Variant 실행으로 SEALED됐다
+
+### 근본 원인
+
+R6 run-next가 B0 console sidecar의 대화형 stdin 전제를 상태 전이 전에 검사하지 않았고, R6 create CLI도 중단된 실행을 분리할 revision 입력을 노출하지 않았다
+
+### 검토한 해결안
+
+- `rejected` EOF 뒤 Cell 상태를 PLANNED로 되돌림 — 이미 시작한 상태와 Evidence를 숨기는 rollback이 되어 봉인·감사 불변식을 깬다
+- `adopted` B0 실행 전 TTY 검사와 명시적 revision — 환경 오류를 상태 변경 전에 거부하고 실패한 실행은 별도 revision으로 보존한다
+- `deferred` B0를 Codex CLI로 자동 실행 — 수동 Codex App 기준선이라는 Variant 정의를 바꿔 비교 조건을 오염시킨다
+
+### 채택한 해결
+
+다음 PLANNED 또는 PREPARED Cell이 B0이면 stdin TTY를 environment 수집과 Controller 실행 전에 확인하고, 비대화형이면 workspace와 Cell 상태를 변경하지 않고 거부한다. r6 create와 artifact build harness에 양의 revision 인자를 추가했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/r6.py
+- tools/benchmark-runner/src/benchmark_runner/cli.py
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_b0_noninteractive_stdin_fails_before_cell_state_changes
+- tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_create_accepts_explicit_revision_without_id_collision
+- tools/benchmark-runner/tests/test_cli.py::test_r6_create_parser_accepts_explicit_revision
+
+### 검증 결과
+
+- R6 경계·CLI 표적 시험 8개 통과
+- Benchmark Runner 전체 회귀시험 131개 통과
+
+### 남은 위험
+
+- B0는 계속 별도 Codex App 작업과 사용자 attestation이 필요한 수동 기준선이다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/codex-revision-log.md
+- 출처: tools/benchmark-runner/src/benchmark_runner/adapter.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/r6.py

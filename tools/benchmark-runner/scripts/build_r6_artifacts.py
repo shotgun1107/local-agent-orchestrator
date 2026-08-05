@@ -60,6 +60,7 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--artifact-root", type=Path, required=True)
     value.add_argument("--local-root", type=Path, required=True)
     value.add_argument("--seed", type=int, default=20260805)
+    value.add_argument("--revision", type=int, default=1)
     value.add_argument("--model", default="gpt-5.6-terra")
     value.add_argument("--reasoning-effort", default="low")
     return value
@@ -236,6 +237,8 @@ def main() -> int:
             str(profile_path),
             "--state-root",
             str(local_root / "experiments"),
+            "--revision",
+            str(args.revision),
         ],
         cwd=local_root,
         env=installed_env,
