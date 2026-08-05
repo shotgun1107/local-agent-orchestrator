@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-014",
+  "title": "Windows Judge process record 원자 교체가 일시적 공유 잠금으로 실패",
+  "status": "resolved",
+  "stage": "benchmark-runner-r4",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T06:36:43Z",
+  "resolved_at": "2026-08-05T06:36:43Z",
+  "discovered_by": "full Benchmark Runner regression after R4 process tracking",
+  "symptom": "첫 Check의 active-process.json을 두 번째 Check의 running record로 os.replace할 때 Windows가 WinError 5 Access denied를 일시 반환해 R3 Judge 실행이 중단된다",
+  "reproduction": [
+    "R4 process tracking이 적용된 상태에서 R3 B0 실패 경로 4종과 두 Check를 포함한 Benchmark Runner 전체 회귀시험을 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "전체 회귀에서 test_r3_measurement_failures_are_sealed_and_stop_experiment의 두 번째 Check record 교체가 WinError 5로 한 차례 실패했다"
+    }
+  ],
+  "root_cause": "같은 디렉터리의 임시 파일을 fsync 후 os.replace하는 원자성은 지켰지만 Windows에서 짧게 발생할 수 있는 destination 공유 잠금을 단 한 번의 replace 실패로 영구 오류 처리했다",
+  "considered_options": [
+    {
+      "option": "기존 active-process.json을 먼저 삭제한 뒤 새 파일을 rename",
+      "decision": "rejected",
+      "reason": "삭제와 rename 사이 crash에서 process recovery 정본이 사라져 원자성 계약을 깨뜨린다"
+    },
+    {
+      "option": "같은 임시 파일과 원자 replace를 유지하고 Windows PermissionError만 10ms 간격으로 최대 20회 재시도",
+      "decision": "adopted",
+      "reason": "짧은 공유 잠금만 흡수하고 200ms를 넘는 지속 오류는 숨기지 않고 그대로 실패시킨다"
+    }
+  ],
+  "resolution": "_write_process_record의 os.replace에 Windows PermissionError 한정 bounded retry를 추가했다. 임시 파일·fsync·같은 디렉터리 replace 순서는 바꾸지 않았고 최종 실패는 계속 예외로 전파한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_r3_b0_manual.py::test_r3_measurement_failures_are_sealed_and_stop_experiment",
+    "tools/benchmark-runner/tests/test_judge.py::test_check_output_is_truncated_but_full_hash_is_kept"
+  ],
+  "verification": [
+    "R3 B0 전체 시험 7개를 5회 연속 실행해 모두 통과",
+    "Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개 통과"
+  ],
+  "remaining_risks": [
+    "200ms를 넘는 지속 권한 오류는 의도대로 Judge infrastructure failure로 남는다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/general-benchmark-runner-design.md:626",
+    "docs/design/general-benchmark-runner-design.md:1199"
+  ]
+}

@@ -970,3 +970,38 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - R3 대조 중 발견한 B1 startup 지표 누락은 `DEV-20260805-012`에 원인·대안·수정·회귀시험을 기록했다.
 - R3 시험에서 실제 Codex·OpenAI 모델 turn은 0회다. console provider는 구현됐지만 실제 사용자 B0 반복 실험은 하지 않았다.
 - 다음 단계는 R4 Execution Plan controller, 한 번에 한 Cell 실행, lock·stop/resume·crash recovery다.
+
+## Benchmark Runner R4 Execution Controller·crash recovery 구현
+
+### 12-Cell Plan과 preflight
+
+- 작업일: 2026-08-05.
+- 동결 manifest의 fixture 2개·repetition 3회·B0/B1 두 Variant를 정확히 12개 Cell과 6개 Block으로 확장한다. 고정 seed로 B0-first와 B1-first를 각각 3 Block으로 균형화하고 ordinal 1~12를 Plan fingerprint에 고정한다.
+- manifest factory는 exact manifest hash, fixture commit/tree, Runner·B0·B1 artifact hash, baseline/candidate, seed, decision policy, reasoning control, model/auth/surface fingerprint를 입력으로 canonical Plan을 만든다. 아직 정하지 않은 실험값을 추측하지 않고 호출자가 명시해야 한다.
+- preflight는 controller lock 아래 manifest bytes·fixture source tree·Python 3.12·Git·artifact hash·driver capability·disk·model/auth 사전확인 Evidence를 검사한다. 실제 model turn은 0회이며 Evidence hash와 Plan fingerprint를 control record에 함께 기록한다.
+- preflight Evidence가 없거나 한 byte라도 변조됐거나 artifact hash가 달라지면 Cell workspace 준비와 상태 전이를 시작하지 않는다.
+
+### 한 Cell 실행과 중단·재개
+
+- `run_next`는 Plan ordinal상 다음 Cell 하나만 `PLANNED → PREPARED → ACTIVE → CAPTURED → JUDGING → SEALED`로 진행한다. 같은 명령에서 다음 Cell을 자동 시작하지 않는다.
+- manifest의 `task_timeout_seconds=900`을 Cell driver 호출 경계에 전달한다. 실제 deadline 집행은 B0/B1별 실행 경계를 소유한 driver 책임이며, controller가 별도 Runner retry를 만들지 않는다.
+- 설명되지 않은 실패는 control record의 `stop_reason`으로 남긴다. resume은 기존 reason·결정·결정자·시각·근거를 `stop_history`에 append한 뒤에만 reason을 해제한다.
+- Runner/Variant artifact가 달라지면 같은 revision 재개를 거부하고 `artifact_fingerprint_changed`로 중단한다. 기존 Experiment는 `superseded_by`를 기록한 뒤 다시 실행할 수 없다.
+
+### lock과 crash recovery
+
+- Experiment lock은 exclusive create로 획득하고 controller ID·PID·hostname·획득 시각·Runner version·process start identity를 저장한다. 살아 있는 같은 프로세스의 lock은 확인 flag가 있어도 해제할 수 없다.
+- 죽은 PID·PID 재사용·다른 host의 stale lock은 `confirm_no_controller`를 명시한 경우에만 제거하고 lifecycle Event를 남긴다.
+- 재시작 시 `ACTIVE` Cell은 Variant를 호출하지 않고 `STOPPED`로 전환한다. terminal capture가 실제로 존재하는 경우 사용자가 이를 확인한 뒤에만 `STOPPED → CAPTURED`가 가능하다.
+- `PREPARED`는 같은 Cell을 안전하게 시작할 수 있고, `CAPTURED`는 Variant 재호출 없이 Judge만 실행한다. `JUDGING`은 기록된 이전 Judge process group을 종료·검증한 뒤 Judge만 재개한다. `SEALED` 결과는 변경하지 않는다.
+- PREPARED·ACTIVE·CAPTURED·JUDGING·SEALED 상태 write의 직전과 직후 10개 경계에 crash를 주입했다. 특히 ACTIVE 직후와 Variant capture 직후 crash 모두 자동 Variant 재호출 0회를 확인했다.
+
+### Judge process 복구 오류와 검증
+
+- Judge Check마다 PID·process start identity·process group 종류·상태를 `active-process.json`에 원자적으로 기록한다. 정상 종료도 terminal record로 바꾼다.
+- Windows 관리 환경에서 `taskkill /T /F`가 Access denied를 반환하고 범용 PID probe가 종료 프로세스를 살아 있다고 오판한 문제를 발견했다. `DEV-20260805-013`에 원인·대안·해결·잔여 위험을 기록했다.
+- 복구는 종료 전 Toolhelp snapshot으로 후손 PID를 고정하고 Windows process group에 CTRL_BREAK_EVENT를 먼저 보낸 뒤 taskkill·WinAPI TerminateProcess fallback과 GetExitCodeProcess로 부모·자식의 실제 종료를 확인한다. 단일 통과 뒤 전체 회귀에서 자식 생존이 한 차례 재검출돼 보강했으며, 보강 시험은 5회 연속 통과했다.
+- 전체 회귀에서 `active-process.json` 원자 교체가 Windows의 일시적 공유 잠금으로 한 차례 실패했다. 원자성을 깨는 선삭제 대신 Windows PermissionError만 200ms 이내 bounded retry하고 지속 오류는 그대로 실패시키며, `DEV-20260805-014`에 기록했다.
+- Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개가 통과했다. 구현 오류 로그 16개와 하네스 단위시험 10개도 검증했다.
+- R4 시험에서 실제 Codex·OpenAI model turn은 0회다. generic Fake driver로 상태·복구 계약을 검증했으며 실제 B0/B1 12-Cell 비교는 실행하지 않았다.
+- 다음 단계는 R5 paired summary·판정·sanitized export다. 실제 비교 실행은 R6 artifact·환경 동결 뒤에만 시작한다.

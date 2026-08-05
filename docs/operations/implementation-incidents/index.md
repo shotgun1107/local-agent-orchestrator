@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 14건
-- 해결: 14건
+- 전체: 16건
+- 해결: 16건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -25,6 +25,8 @@
 | DEV-20260805-010 | resolved | benchmark-runner-r1 | implementation | Judge 자체 변경 검사가 동일 경로의 내용 변조를 놓침 |
 | DEV-20260805-011 | resolved | benchmark-runner-r2 | implementation | B1 terminal exit를 JSON Schema 오류로 오분류 |
 | DEV-20260805-012 | resolved | benchmark-runner-r3 | implementation | B1 시작 동작을 공통 startup 지표에서 누락 |
+| DEV-20260805-013 | resolved | benchmark-runner-r4 | implementation | Windows Judge 고아 프로세스 복구가 taskkill 단독 경로에서 실패 |
+| DEV-20260805-014 | resolved | benchmark-runner-r4 | implementation | Windows Judge process record 원자 교체가 일시적 공유 잠금으로 실패 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -715,6 +717,123 @@ R2 B1 Cell에 events/interventions.jsonl을 추가해 실제 CLI 호출 직전 b
 - 관련 커밋: 기록 없음
 - 출처: docs/design/general-benchmark-runner-design.md:475
 - 출처: docs/design/general-benchmark-runner-design.md:1406
+
+## DEV-20260805-013 — Windows Judge 고아 프로세스 복구가 taskkill 단독 경로에서 실패
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r4`
+- 분류: `implementation`
+- 발견: 2026-08-05T06:26:41Z / R4 orphan Judge process recovery test
+- 해결: 2026-08-05T06:26:41Z
+
+### 증상
+
+기록된 Judge 프로세스 그룹에 taskkill /T /F를 실행해도 Access denied가 반환되고, 부모 종료 뒤 자식이 남거나 종료 여부 검사가 이미 끝난 부모를 살아 있다고 판정해 복구가 실패한다
+
+### 재현
+
+- CREATE_NEW_PROCESS_GROUP으로 30초 대기하는 Judge 대체 프로세스와 자식을 시작하고 active-process.json을 기록한 뒤 recover_orphan_judge_process를 실행한다
+
+### 증거
+
+- `reproducible-test`: 최초 회귀시험은 Judge process group could not be terminated로 실패했고 동일 환경의 taskkill stderr는 ERROR: Access denied였다
+- `direct-observation`: Windows os.kill(pid, 0)은 Popen 핸들이 남은 종료 프로세스의 실제 실행 상태를 구분하는 근거로 충분하지 않았다
+- `reproducible-test`: 단일 시험 통과 뒤 전체 회귀에서 부모는 종료됐지만 자식 PID가 생존하는 실패가 다시 검출됐다
+
+### 근본 원인
+
+Windows 복구 경로가 강제 taskkill 하나에 의존하고 후손 PID를 별도로 고정하지 않았으며 프로세스 생존 판정에 GetExitCodeProcess가 아닌 범용 PID probe를 사용해, 관리 환경의 권한 제한·부모만 종료되는 경우·종료된 핸들 상태를 잘못 처리했다
+
+### 검토한 해결안
+
+- `rejected` taskkill 실패를 무시하고 Judge를 즉시 재실행 — 이전 Judge와 새 Judge가 같은 workspace를 동시에 변경할 수 있어 복구 계약을 위반한다
+- `adopted` 종료 전 후손 PID tree를 스냅샷하고 Windows process group에 CTRL_BREAK_EVENT를 보낸 뒤 taskkill·WinAPI TerminateProcess fallback과 GetExitCodeProcess로 부모·후손 종료를 확인 — 같은 그룹의 자식에게 협조 종료를 전달하고 실제 실행 상태를 확인한 뒤에만 복구를 허용한다
+
+### 채택한 해결
+
+Judge 실행마다 PID·process start identity·group kind를 active-process.json에 원자적으로 기록했다. 복구는 PID 재사용을 identity로 거부하고 Windows에서는 종료 전에 Toolhelp snapshot으로 후손 PID를 고정한 뒤 CTRL_BREAK_EVENT, taskkill /T /F, WinAPI TerminateProcess fallback 순서로 부모와 후손을 종료하고 GetExitCodeProcess가 모두 비활성임을 확인한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_judge.py::test_crash_recovery_terminates_recorded_judge_process_group
+- tools/benchmark-runner/tests/test_judge.py::test_check_output_is_truncated_but_full_hash_is_kept
+
+### 검증 결과
+
+- 부모와 자식 프로세스를 포함한 Judge group recovery 시험 5회 연속 통과
+- Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개 통과
+
+### 남은 위험
+
+- 후손 스냅샷과 종료 신호 사이에 새 자식을 만드는 극단적 race는 Windows Job Object의 kill-on-close보다 약하므로 실제 R6 환경에서 재확인이 필요하다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:1191
+- 출처: docs/design/general-benchmark-runner-design.md:1527
+
+## DEV-20260805-014 — Windows Judge process record 원자 교체가 일시적 공유 잠금으로 실패
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r4`
+- 분류: `implementation`
+- 발견: 2026-08-05T06:36:43Z / full Benchmark Runner regression after R4 process tracking
+- 해결: 2026-08-05T06:36:43Z
+
+### 증상
+
+첫 Check의 active-process.json을 두 번째 Check의 running record로 os.replace할 때 Windows가 WinError 5 Access denied를 일시 반환해 R3 Judge 실행이 중단된다
+
+### 재현
+
+- R4 process tracking이 적용된 상태에서 R3 B0 실패 경로 4종과 두 Check를 포함한 Benchmark Runner 전체 회귀시험을 실행한다
+
+### 증거
+
+- `reproducible-test`: 전체 회귀에서 test_r3_measurement_failures_are_sealed_and_stop_experiment의 두 번째 Check record 교체가 WinError 5로 한 차례 실패했다
+
+### 근본 원인
+
+같은 디렉터리의 임시 파일을 fsync 후 os.replace하는 원자성은 지켰지만 Windows에서 짧게 발생할 수 있는 destination 공유 잠금을 단 한 번의 replace 실패로 영구 오류 처리했다
+
+### 검토한 해결안
+
+- `rejected` 기존 active-process.json을 먼저 삭제한 뒤 새 파일을 rename — 삭제와 rename 사이 crash에서 process recovery 정본이 사라져 원자성 계약을 깨뜨린다
+- `adopted` 같은 임시 파일과 원자 replace를 유지하고 Windows PermissionError만 10ms 간격으로 최대 20회 재시도 — 짧은 공유 잠금만 흡수하고 200ms를 넘는 지속 오류는 숨기지 않고 그대로 실패시킨다
+
+### 채택한 해결
+
+_write_process_record의 os.replace에 Windows PermissionError 한정 bounded retry를 추가했다. 임시 파일·fsync·같은 디렉터리 replace 순서는 바꾸지 않았고 최종 실패는 계속 예외로 전파한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r3_b0_manual.py::test_r3_measurement_failures_are_sealed_and_stop_experiment
+- tools/benchmark-runner/tests/test_judge.py::test_check_output_is_truncated_but_full_hash_is_kept
+
+### 검증 결과
+
+- R3 B0 전체 시험 7개를 5회 연속 실행해 모두 통과
+- Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개 통과
+
+### 남은 위험
+
+- 200ms를 넘는 지속 권한 오류는 의도대로 Judge infrastructure failure로 남는다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:626
+- 출처: docs/design/general-benchmark-runner-design.md:1199
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

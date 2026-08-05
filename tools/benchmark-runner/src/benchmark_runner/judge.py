@@ -16,7 +16,7 @@ from typing import Any, BinaryIO, Literal
 from pydantic import Field
 
 from benchmark_runner.adapter import VariantEvidence
-from benchmark_runner.contract import StrictModel
+from benchmark_runner.contract import StrictModel, utc_now
 from benchmark_runner.workspace import (
     CheckCommandSpec,
     GitObjectId,
@@ -64,6 +64,16 @@ class JudgeResult(StrictModel):
     baseline_tree: GitObjectId | None = None
     final_tree: GitObjectId | None = None
     final_diff: FileResult | None = None
+
+
+class JudgeProcessRecord(StrictModel):
+    check_id: str
+    pid: int = Field(gt=0)
+    process_start_identity: str
+    process_group_kind: Literal["windows_new_process_group", "posix_session"]
+    status: Literal["running", "completed", "recovered_terminated", "already_gone"]
+    started_at: str
+    completed_at: str | None = None
 
 
 class StubJudge:
@@ -154,6 +164,266 @@ def _terminate_process_group(process: subprocess.Popen[bytes], grace_seconds: fl
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=grace_seconds)
+
+
+def _process_start_identity(pid: int) -> str | None:
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.OpenProcess.restype = wintypes.HANDLE
+            handle = kernel32.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return None
+            creation = wintypes.FILETIME()
+            exit_time = wintypes.FILETIME()
+            kernel_time = wintypes.FILETIME()
+            user_time = wintypes.FILETIME()
+            try:
+                if not kernel32.GetProcessTimes(
+                    handle,
+                    ctypes.byref(creation),
+                    ctypes.byref(exit_time),
+                    ctypes.byref(kernel_time),
+                    ctypes.byref(user_time),
+                ):
+                    return None
+                value = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
+                return f"windows-filetime:{value}"
+            finally:
+                kernel32.CloseHandle(handle)
+        except (AttributeError, OSError, ValueError):
+            return None
+    proc_stat = Path(f"/proc/{pid}/stat")
+    if proc_stat.is_file():
+        try:
+            value = proc_stat.read_text(encoding="ascii")
+            fields = value[value.rfind(")") + 2 :].split()
+            return f"proc-start-ticks:{fields[19]}"
+        except (OSError, IndexError, ValueError):
+            return None
+    return None
+
+
+def _pid_is_alive(pid: int) -> bool:
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.OpenProcess.restype = wintypes.HANDLE
+            handle = kernel32.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return False
+            exit_code = wintypes.DWORD()
+            try:
+                if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                    return False
+                return exit_code.value == 259
+            finally:
+                kernel32.CloseHandle(handle)
+        except (AttributeError, OSError, ValueError):
+            return False
+    proc_status = Path(f"/proc/{pid}/status")
+    if proc_status.is_file():
+        try:
+            state = next(
+                line for line in proc_status.read_text(encoding="ascii").splitlines() if line.startswith("State:")
+            )
+            if "Z" in state.split():
+                return False
+        except (OSError, StopIteration):
+            pass
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _write_process_record(path: Path, record: JudgeProcessRecord) -> None:
+    data = json.dumps(
+        record.model_dump(mode="json"),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        for attempt in range(20):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError:
+                if os.name != "nt" or attempt == 19:
+                    raise
+                time.sleep(0.01)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _windows_descendant_pids(root_pid: int) -> list[int]:
+    if os.name != "nt":
+        return []
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class ProcessEntry32W(ctypes.Structure):
+            _fields_ = [
+                ("dwSize", wintypes.DWORD),
+                ("cntUsage", wintypes.DWORD),
+                ("th32ProcessID", wintypes.DWORD),
+                ("th32DefaultHeapID", ctypes.c_size_t),
+                ("th32ModuleID", wintypes.DWORD),
+                ("cntThreads", wintypes.DWORD),
+                ("th32ParentProcessID", wintypes.DWORD),
+                ("pcPriClassBase", wintypes.LONG),
+                ("dwFlags", wintypes.DWORD),
+                ("szExeFile", wintypes.WCHAR * 260),
+            ]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+        kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+        kernel32.Process32FirstW.argtypes = [wintypes.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+        kernel32.Process32NextW.argtypes = [wintypes.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+        snapshot = kernel32.CreateToolhelp32Snapshot(0x00000002, 0)
+        invalid_handle = ctypes.c_void_p(-1).value
+        if snapshot == invalid_handle:
+            return []
+        parent_by_pid: dict[int, int] = {}
+        entry = ProcessEntry32W()
+        entry.dwSize = ctypes.sizeof(entry)
+        try:
+            ok = kernel32.Process32FirstW(snapshot, ctypes.byref(entry))
+            while ok:
+                parent_by_pid[int(entry.th32ProcessID)] = int(entry.th32ParentProcessID)
+                ok = kernel32.Process32NextW(snapshot, ctypes.byref(entry))
+        finally:
+            kernel32.CloseHandle(snapshot)
+        children: dict[int, list[int]] = {}
+        for pid, parent in parent_by_pid.items():
+            children.setdefault(parent, []).append(pid)
+        descendants: list[int] = []
+
+        def visit(parent: int) -> None:
+            for child in children.get(parent, []):
+                visit(child)
+                descendants.append(child)
+
+        visit(root_pid)
+        return descendants
+    except (AttributeError, OSError, ValueError):
+        return []
+
+
+def _windows_terminate_pid(pid: int) -> None:
+    if os.name != "nt" or not _pid_is_alive(pid):
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        handle = kernel32.OpenProcess(0x0001, False, pid)
+        if handle:
+            try:
+                kernel32.TerminateProcess(handle, 15)
+            finally:
+                kernel32.CloseHandle(handle)
+            return
+    except (AttributeError, OSError, ValueError):
+        pass
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        pass
+
+
+def recover_orphan_judge_process(
+    judge_dir: Path,
+    *,
+    grace_seconds: float = TERMINATION_GRACE_SECONDS,
+) -> Literal["none", "already_terminal", "already_gone", "terminated"]:
+    record_path = judge_dir.resolve() / "active-process.json"
+    if not record_path.is_file():
+        return "none"
+    try:
+        record = JudgeProcessRecord.model_validate_json(record_path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("Judge process recovery record is invalid") from exc
+    if record.status != "running":
+        return "already_terminal"
+    identity = _process_start_identity(record.pid)
+    if not _pid_is_alive(record.pid) or identity != record.process_start_identity:
+        _write_process_record(
+            record_path,
+            record.model_copy(
+                update={"status": "already_gone", "completed_at": utc_now().isoformat()}
+            ),
+        )
+        return "already_gone"
+    if os.name == "nt":
+        descendants = _windows_descendant_pids(record.pid)
+        try:
+            os.kill(record.pid, signal.CTRL_BREAK_EVENT)
+        except OSError:
+            pass
+        cooperative_deadline = time.monotonic() + min(1.0, grace_seconds / 2)
+        while _pid_is_alive(record.pid) and time.monotonic() < cooperative_deadline:
+            time.sleep(0.01)
+        taskkill = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "taskkill.exe"
+        if _pid_is_alive(record.pid):
+            subprocess.run(
+                [str(taskkill), "/PID", str(record.pid), "/T", "/F"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=grace_seconds,
+            )
+        if _pid_is_alive(record.pid):
+            try:
+                os.kill(record.pid, signal.SIGTERM)
+            except OSError:
+                pass
+        for descendant_pid in descendants:
+            _windows_terminate_pid(descendant_pid)
+        _windows_terminate_pid(record.pid)
+    else:
+        descendants = []
+        try:
+            os.killpg(record.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    deadline = time.monotonic() + grace_seconds
+    while (
+        _pid_is_alive(record.pid)
+        or any(_pid_is_alive(pid) for pid in descendants)
+    ) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    if _pid_is_alive(record.pid) or any(_pid_is_alive(pid) for pid in descendants):
+        raise RuntimeError("Judge process group could not be terminated")
+    _write_process_record(
+        record_path,
+        record.model_copy(
+            update={"status": "recovered_terminated", "completed_at": utc_now().isoformat()}
+        ),
+    )
+    return "terminated"
 
 
 def _status_paths(git_executable: Path, workspace: Path) -> list[str]:
@@ -355,6 +625,22 @@ class FixtureJudge:
             stderr=subprocess.PIPE,
             **popen_options,
         )
+        process_identity = _process_start_identity(process.pid)
+        if process_identity is None:
+            _terminate_process_group(process, self.termination_grace_seconds)
+            raise RuntimeError("cannot establish Judge process start identity")
+        process_record_path = judge_dir / "active-process.json"
+        process_record = JudgeProcessRecord(
+            check_id=check_id,
+            pid=process.pid,
+            process_start_identity=process_identity,
+            process_group_kind=(
+                "windows_new_process_group" if os.name == "nt" else "posix_session"
+            ),
+            status="running",
+            started_at=utc_now().isoformat(),
+        )
+        _write_process_record(process_record_path, process_record)
         assert process.stdout is not None and process.stderr is not None
         stdout = _StreamAccumulator(self.stream_limit_bytes)
         stderr = _StreamAccumulator(self.stream_limit_bytes)
@@ -396,6 +682,12 @@ class FixtureJudge:
         else:
             exit_code = process.returncode
             status = "passed" if exit_code in check.expected_exit_codes else "failed"
+        _write_process_record(
+            process_record_path,
+            process_record.model_copy(
+                update={"status": "completed", "completed_at": utc_now().isoformat()}
+            ),
+        )
         return CheckResult(
             check_id=check_id,
             status=status,
