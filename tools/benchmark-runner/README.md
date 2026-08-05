@@ -9,9 +9,10 @@
 - 단일 Cell 상태 전이
 - Fake Adapter Evidence와 Judge stub
 - canonical Measurement와 Evidence hash 봉인
-- 성공과 실패 모두 변경 불가능한 `SEALED` 결과로 보존
+- 성공과 실패 모두 hash로 봉인된 `SEALED` 결과로 보존하고 로컬 변조를 검출
 
 실제 fixture 복원, B0/B1 Adapter, controller lock, retry, 비교 summary, Git export는 아직 구현하지 않았다.
+R0의 seal은 Cell 내부 일관성 검사이며 독립적인 외부 신뢰 기준은 아니다. Git에 내보내는 `seals.json`과 commit을 기준점으로 삼는 단계는 R5다.
 
 ## 개발 실행
 

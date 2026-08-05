@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 6건
-- 해결: 6건
+- 전체: 8건
+- 해결: 8건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -17,6 +17,8 @@
 | DEV-20260804-002 | resolved | b1-spec | integration | Codex approval_mode 기본값으로 인한 추가 모델 호출 위험 |
 | DEV-20260805-003 | resolved | b1-sequential | implementation | doctor가 미인증 상태에서도 성공 종료함 |
 | DEV-20260805-004 | resolved | benchmark-runner-r0 | design | Intervention Event의 kind 필드가 envelope와 이벤트 종류에 중복됨 |
+| DEV-20260805-005 | resolved | benchmark-runner-r0-audit | implementation | Execution Plan이 미선언 fixture·variant와 변경된 payload를 허용함 |
+| DEV-20260805-006 | resolved | benchmark-runner-r1-readiness | design | R1 완료 조건이 의도적으로 실패하는 baseline fixture의 통과를 요구함 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -259,6 +261,132 @@ Intervention Event는 kind=intervention_event를 사용하고 실제 이벤트 �
 - 출처: docs/design/general-benchmark-runner-design.md:305
 - 출처: docs/design/general-benchmark-runner-design.md:475
 - 출처: tools/benchmark-runner/schemas/v1/intervention-event.schema.json
+
+## DEV-20260805-005 — Execution Plan이 미선언 fixture·variant와 변경된 payload를 허용함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r0-audit`
+- 분류: `implementation`
+- 발견: 2026-08-05T04:05:35Z / R0 post-implementation audit
+- 해결: 2026-08-05T04:05:47Z
+
+### 증상
+
+Cell 참조와 Plan fingerprint를 실행 경계에서 재검증하지 않아 잘못 연결되거나 중첩 dict가 변경된 Plan이 정식 Plan처럼 남을 수 있었다.
+
+### 재현
+
+- ExecutionPlan payload의 Cell fixture_id를 선언되지 않은 값으로 바꿔 model_validate를 실행한다.
+- 생성된 Plan의 decision_policy dict를 직접 변경한 뒤 저장된 fingerprint와 재계산 값을 비교한다.
+
+### 증거
+
+- `reproducible-test`: 미선언 fixture 참조가 검증을 통과했고 중첩 dict 변경 뒤 fingerprint 불일치가 재현됐다. 새 참조 검사를 켜자 기존 r0-fake artifact와 fake Cell ID 불일치도 즉시 검출됐다.
+
+### 근본 원인
+
+ExecutionPlan validator가 Cell ID와 ordinal의 형태만 확인하고 fixture·variant 선언 목록과의 교차참조를 검사하지 않았으며, frozen Pydantic 모델을 중첩 container까지 불변이라고 간주했다.
+
+### 검토한 해결안
+
+- `rejected` 모든 중첩 dict를 사용자 정의 immutable type으로 교체 — 공개 JSON Schema와 직렬화 복잡도를 R0 범위 이상으로 키운다
+- `adopted` 교차참조 검증과 실행경계 fingerprint 재계산 — 잘못된 Plan이 실제 실행 또는 봉인 검증에 사용되는 것을 작은 변경으로 차단한다
+
+### 채택한 해결
+
+fixture·variant·baseline·candidate·Cell 교차참조를 계약에서 검증하고 R0 Variant ID를 fake로 통일했다. canonical Plan fingerprint와 Experiment ID는 생성 직후, 실행 직전, 봉인 검증 시 다시 확인한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/contract.py
+- tools/benchmark-runner/src/benchmark_runner/plan.py
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+- tools/benchmark-runner/tests/test_plan.py
+- tools/benchmark-runner/tests/test_runner.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_plan.py::test_plan_rejects_cells_that_reference_undeclared_inputs
+- tools/benchmark-runner/tests/test_plan.py::test_plan_integrity_rejects_nested_payload_mutation
+- tools/benchmark-runner/tests/test_plan.py::test_plan_integrity_rejects_experiment_revision_mismatch
+- tools/benchmark-runner/tests/test_runner.py::test_execution_plan_tampering_is_detected
+
+### 검증 결과
+
+- Benchmark Runner 테스트 23개가 모두 통과했다.
+- 새 교차참조 검사가 기존 r0-fake/fake 불일치를 검출했고 정식 ID를 fake로 통일한 뒤 전체 관통이 통과했다.
+
+### 남은 위험
+
+- 중첩 dict의 Python 수준 변경 자체는 가능하지만 실행·검증 경계의 fingerprint 재계산이 이를 거부한다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md
+- 출처: tools/benchmark-runner/src/benchmark_runner/contract.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/plan.py
+
+## DEV-20260805-006 — R1 완료 조건이 의도적으로 실패하는 baseline fixture의 통과를 요구함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r1-readiness`
+- 분류: `design`
+- 발견: 2026-08-05T04:05:58Z / R1 specification readiness audit
+- 해결: 2026-08-05T04:06:12Z
+
+### 증상
+
+R1은 두 fixture 원본 통과를 요구하지만 원본은 아직 정답이 적용되지 않은 문제 상태라 acceptance가 모두 실패하며, Python Check는 기본 설정에서 __pycache__를 생성한다.
+
+### 재현
+
+- source commit에서 두 fixture를 archive로 복원하고 tree를 확인한 뒤 각 acceptance Check를 실행한다.
+- code-change Check를 PYTHONDONTWRITEBYTECODE 없이 실행한 뒤 git status를 확인한다.
+
+### 증거
+
+- `reproducible-test`: 두 tree hash는 manifest와 일치했지만 code-change와 document-read baseline acceptance는 모두 exit 1이었다. bytecode guard가 없으면 benchmark_checks/__pycache__와 src/__pycache__가 생성됐다.
+
+### 근본 원인
+
+R1 설계가 fixture 복원 성공과 과제 해결 후 Judge 성공을 한 문장으로 합쳤고, 실제 Python Check의 workspace 부작용과 scope pattern 의미를 사전 재현하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` baseline fixture 자체를 정답 상태로 수정 — 동결된 실제 비교 과제를 없애고 manifest tree를 바꾼다
+- `adopted` 동결 baseline과 test-only golden patch 분리 — 실제 실험 입력을 보존하면서 Judge의 성공·실패 경로를 모두 결정론적으로 시험한다
+
+### 채택한 해결
+
+설계 판본 5에서 baseline 복원/의도적 acceptance 실패, hash가 고정된 test-only golden positive case, 변조·scope·tree negative case를 분리했다. write scope 문법, PyYAML safe_load, bytecode 방지 환경, 1 MiB 출력 보존, timeout process-group 종료 계약을 명시했다.
+
+### 수정 파일
+
+- docs/design/general-benchmark-runner-design.md
+- docs/README.md
+
+### 회귀시험
+
+- R1: 두 baseline tree 일치와 acceptance exit 1 확인
+- R1 구현 예정: golden positive, check tamper, scope violation, tree mismatch, no-bytecode contract tests
+
+### 검증 결과
+
+- source commit e915914c0494cd21969de5bc60f81ad74ec1b037의 두 fixture tree가 manifest hash와 일치했다.
+- PYTHONDONTWRITEBYTECODE=1에서는 Check 뒤 worktree가 clean이고, 미설정 시 code-change에 __pycache__ 두 경로가 생김을 재현했다.
+
+### 남은 위험
+
+- golden patch 파일과 SHA-256은 R1 구현에서 생성·고정하고 그때 실제 positive Check를 실행해야 한다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: benchmarks/fixtures/code-change/benchmark_checks/test_acceptance.py
+- 출처: benchmarks/fixtures/document-read/benchmark_checks/check_report.py
+- 출처: benchmarks/manifests/b0-b1-frozen.yaml
+- 출처: docs/design/general-benchmark-runner-design.md
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

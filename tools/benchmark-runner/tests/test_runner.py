@@ -69,6 +69,18 @@ def test_measurement_tampering_is_detected(tmp_path: Path) -> None:
         verify_sealed_cell(cell_dir)
 
 
+def test_execution_plan_tampering_is_detected(tmp_path: Path) -> None:
+    result = run_r0_fake_cell(tmp_path, "completed", FROZEN_TIME)
+    cell_dir = _cell_dir(result.measurement_path)
+    plan_path = cell_dir.parents[1] / "execution-plan.json"
+    plan = plan_path.read_text(encoding="utf-8")
+    tampered = plan.replace('"r0_only":true', '"r0_only":false')
+    assert tampered != plan
+    plan_path.write_text(tampered, encoding="utf-8")
+    with pytest.raises(IntegrityError, match="Execution Plan"):
+        verify_sealed_cell(cell_dir)
+
+
 def test_existing_experiment_is_not_overwritten(tmp_path: Path) -> None:
     run_r0_fake_cell(tmp_path, "completed", FROZEN_TIME)
     with pytest.raises(FileExistsError):

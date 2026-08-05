@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-005",
+  "title": "Execution Plan이 미선언 fixture·variant와 변경된 payload를 허용함",
+  "status": "resolved",
+  "stage": "benchmark-runner-r0-audit",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T04:05:35Z",
+  "resolved_at": "2026-08-05T04:05:47Z",
+  "discovered_by": "R0 post-implementation audit",
+  "symptom": "Cell 참조와 Plan fingerprint를 실행 경계에서 재검증하지 않아 잘못 연결되거나 중첩 dict가 변경된 Plan이 정식 Plan처럼 남을 수 있었다.",
+  "reproduction": [
+    "ExecutionPlan payload의 Cell fixture_id를 선언되지 않은 값으로 바꿔 model_validate를 실행한다.",
+    "생성된 Plan의 decision_policy dict를 직접 변경한 뒤 저장된 fingerprint와 재계산 값을 비교한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "미선언 fixture 참조가 검증을 통과했고 중첩 dict 변경 뒤 fingerprint 불일치가 재현됐다. 새 참조 검사를 켜자 기존 r0-fake artifact와 fake Cell ID 불일치도 즉시 검출됐다."
+    }
+  ],
+  "root_cause": "ExecutionPlan validator가 Cell ID와 ordinal의 형태만 확인하고 fixture·variant 선언 목록과의 교차참조를 검사하지 않았으며, frozen Pydantic 모델을 중첩 container까지 불변이라고 간주했다.",
+  "considered_options": [
+    {
+      "option": "모든 중첩 dict를 사용자 정의 immutable type으로 교체",
+      "decision": "rejected",
+      "reason": "공개 JSON Schema와 직렬화 복잡도를 R0 범위 이상으로 키운다"
+    },
+    {
+      "option": "교차참조 검증과 실행경계 fingerprint 재계산",
+      "decision": "adopted",
+      "reason": "잘못된 Plan이 실제 실행 또는 봉인 검증에 사용되는 것을 작은 변경으로 차단한다"
+    }
+  ],
+  "resolution": "fixture·variant·baseline·candidate·Cell 교차참조를 계약에서 검증하고 R0 Variant ID를 fake로 통일했다. canonical Plan fingerprint와 Experiment ID는 생성 직후, 실행 직전, 봉인 검증 시 다시 확인한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/src/benchmark_runner/plan.py",
+    "tools/benchmark-runner/src/benchmark_runner/runner.py",
+    "tools/benchmark-runner/tests/test_plan.py",
+    "tools/benchmark-runner/tests/test_runner.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_plan.py::test_plan_rejects_cells_that_reference_undeclared_inputs",
+    "tools/benchmark-runner/tests/test_plan.py::test_plan_integrity_rejects_nested_payload_mutation",
+    "tools/benchmark-runner/tests/test_plan.py::test_plan_integrity_rejects_experiment_revision_mismatch",
+    "tools/benchmark-runner/tests/test_runner.py::test_execution_plan_tampering_is_detected"
+  ],
+  "verification": [
+    "Benchmark Runner 테스트 23개가 모두 통과했다.",
+    "새 교차참조 검사가 기존 r0-fake/fake 불일치를 검출했고 정식 ID를 fake로 통일한 뒤 전체 관통이 통과했다."
+  ],
+  "remaining_risks": [
+    "중첩 dict의 Python 수준 변경 자체는 가능하지만 실행·검증 경계의 fingerprint 재계산이 이를 거부한다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/general-benchmark-runner-design.md",
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/src/benchmark_runner/plan.py"
+  ]
+}
