@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 20건
-- 해결: 20건
+- 전체: 21건
+- 해결: 21건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -31,6 +31,7 @@
 | DEV-20260805-016 | resolved | benchmark-runner-r6 | integration | R6 Driver 봉인 뒤 controller lifecycle append가 Evidence hash를 변경 |
 | DEV-20260805-017 | resolved | benchmark-runner-r6 | integration | B1 wheel에서 공개 JSON Schema 묶음이 누락됨 |
 | DEV-20260805-018 | resolved | benchmark-runner-r6 | tooling | R6 artifact builder가 한글 경로의 CLI JSON을 손상함 |
+| DEV-20260805-019 | resolved | benchmark-runner-r6 | integration | R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -1057,6 +1058,60 @@ build와 installed CLI 및 non-live regression 자식 프로세스에 PYTHONUTF8
 ### 검증 결과
 
 - PYTHONUTF8=1과 PYTHONIOENCODING=utf-8 환경의 child JSON path가 한글을 포함한 현재 저장소 절대경로와 exact match
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-019 — R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `integration`
+- 발견: 2026-08-05T08:41:35Z / installed-wheel authenticated preflight
+- 해결: 2026-08-05T08:41:35Z
+
+### 증상
+
+Codex CLI 로그인 뒤에도 B1 doctor가 workspace healthy false로 exit 7을 반환해 첫 Cell 전 동결이 불가능했다
+
+### 재현
+
+- 메인 저장소 하위 benchmarks/fixtures/code-change를 lao doctor의 project로 직접 전달한다
+
+### 증거
+
+- `direct-observation`: doctor JSON은 worktree clean true지만 repository_root가 메인 저장소라 workspace healthy false를 반환했다
+
+### 근본 원인
+
+B1 GitWorkspace doctor는 Project root와 Git top-level의 exact match를 요구하는데 R6 collector가 source tree 안의 중첩 fixture 경로를 직접 사용했다
+
+### 검토한 해결안
+
+- `rejected` B1 doctor의 standalone repository 조건 완화 — 실제 B1 Run의 clean 독립 workspace 불변식을 약화한다
+- `rejected` 첫 실험 Cell workspace를 preflight에서 미리 준비 — 유효한 preflight 전 Cell 부작용 0회 조건을 위반한다
+- `adopted` 별도 임시 standalone fixture 복원 후 doctor — Cell 상태를 건드리지 않고 실제 실행 형태를 검증한다
+
+### 채택한 해결
+
+manifest source commit에서 임시 독립 Git fixture를 복원해 doctor를 실행하고 healthy와 clean을 모두 확인한 뒤 임시 디렉터리를 폐기한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/r6.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_collect_environment_checks_doctor_profile_without_turn
+
+### 검증 결과
+
+- Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증
 
 ### 남은 위험
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -135,11 +136,15 @@ def test_collect_environment_checks_doctor_profile_without_turn(
     def fake_run_json(command, *, pythonpath=None, timeout_seconds=30):
         assert "doctor" in command
         assert pythonpath == profile.b1_pythonpath
+        doctor_project = Path(command[command.index("--project") + 1])
+        assert (doctor_project / ".git").is_dir()
         return (
             0,
             {
                 "codex_sdk": {"installed": True, "pinned": True, "version": "0.144.4"},
                 "codex_login": {"checked": True, "authenticated": True, "method": "chatgpt"},
+                "workspace": {"healthy": True},
+                "worktree": {"clean": True, "entries": []},
                 "runtime_profiles_path": str(profiles_path),
             },
             "",
@@ -147,15 +152,18 @@ def test_collect_environment_checks_doctor_profile_without_turn(
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr(r6_module, "_run_json", fake_run_json)
-    monkeypatch.setattr(
-        r6_module.subprocess,
-        "run",
-        lambda *args, **kwargs: SimpleNamespace(
-            returncode=0,
-            stdout="codex-cli 0.144.4\n",
-            stderr="",
-        ),
-    )
+    original_run = subprocess.run
+
+    def fake_subprocess_run(command, *args, **kwargs):
+        if command == [profile.codex_executable, "--version"]:
+            return SimpleNamespace(
+                returncode=0,
+                stdout="codex-cli 0.144.4\n",
+                stderr="",
+            )
+        return original_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(r6_module.subprocess, "run", fake_subprocess_run)
     evidence = collect_r6_environment(profile)
     assert evidence["validated_without_model_turn"] is True
     assert evidence["actual_model_turns"] == "0"
