@@ -820,3 +820,32 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `src/benchmark_runner`는 Python 파일 8개, 물리 964줄·공백/주석 제외 795줄이다. 설계의 약 600줄 목표보다 크지만 공개 Schema 3개의 전체 필드와 명시적 Measurement 조립을 포함하며 R1 이후 기능은 넣지 않았다. R1 확장 전에 불필요한 중복을 다시 감사한다.
 - editable install과 wheel 빌드는 실행하지 않았다. 현재 검증은 `src`를 직접 import했으며 packaging artifact 고정은 R6 범위다.
 - R0는 실제 fixture·Judge·B0/B1 효율성을 증명하지 않는다. 다음 단계는 R1 fixture 복원과 독립 Judge다.
+
+## Benchmark Runner R0 감사와 R1 착수 명세 보강
+
+### R0 계약 수정
+
+- 작업일: 2026-08-05.
+- `ExecutionPlan`이 fixture·variant·baseline·candidate·Cell 교차참조를 검증하도록 보강했다.
+- 새 검사가 기존 Plan의 Variant artifact `r0-fake`와 Cell·Adapter `fake` 불일치를 발견해 정식 Variant ID를 `fake`로 통일했다.
+- Pydantic `frozen=True`가 중첩 dict mutation까지 막지 않는 한계를 숨기지 않고, Plan 생성 직후·Cell 실행 직전·봉인 검증 시 canonical fingerprint와 Experiment ID를 재검산해 변경된 Plan을 거부한다.
+- 봉인 검증은 Plan 자체의 무결성, Cell 선언 존재, Measurement identity와 manifest hash 일치까지 확인한다.
+- 회귀시험은 18개에서 23개로 늘었고 전부 통과했다. 실제 모델 turn은 0회다.
+
+### R1 명세 수정
+
+- 두 동결 fixture의 source commit과 manifest tree를 직접 대조했고 모두 일치했다.
+- 복원한 baseline acceptance는 두 fixture 모두 exit 1이었다. 이는 결함이 아니라 아직 과제를 풀지 않은 출발점의 의도된 상태다.
+- 기존 “두 fixture 원본에서 통과”를 baseline 복원/의도적 실패, hash가 고정된 test-only golden positive, Check 변조·scope 위반·tree 불일치 negative로 분리했다.
+- write scope v1은 exact POSIX file과 `<directory>/**` 두 형태만 허용한다.
+- Python Judge는 `PYTHONDONTWRITEBYTECODE=1`을 강제한다. 미설정 재현에서는 `benchmark_checks/__pycache__`, `src/__pycache__`가 생성됐고 설정 시 Judge 뒤 worktree가 clean이었다.
+- Judge stream은 각 1 MiB만 보존하되 전체 크기·SHA-256·잘림 여부를 기록하고, timeout process group 종료 grace는 5초로 고정했다.
+- YAML loader는 R1 구현 시 `PyYAML>=6,<7`과 `safe_load`, `extra=forbid` 내부 계약을 함께 추가한다. 아직 R1 코드는 구현하지 않았다.
+
+### 기록과 동결
+
+- `DEV-20260805-005`: Execution Plan 교차참조와 fingerprint 경계 검증 누락.
+- `DEV-20260805-006`: R1 baseline 통과 조건 모순과 Python Check workspace 부작용.
+- Benchmark Runner 설계 판본 5를 다시 동결했다.
+- 판본 5는 1,710줄, SHA-256 `A6E6789DA54C9A314C1551FE71B8F1424ED2A86E64A8E8A50D8AF7540E924B85`다.
+- 다른 세션이 소유한 tradition·Claude skill·handoff 경로는 읽거나 수정하지 않았다.

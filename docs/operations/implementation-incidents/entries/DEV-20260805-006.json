@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-006",
+  "title": "R1 완료 조건이 의도적으로 실패하는 baseline fixture의 통과를 요구함",
+  "status": "resolved",
+  "stage": "benchmark-runner-r1-readiness",
+  "category": "design",
+  "discovered_at": "2026-08-05T04:05:58Z",
+  "resolved_at": "2026-08-05T04:06:12Z",
+  "discovered_by": "R1 specification readiness audit",
+  "symptom": "R1은 두 fixture 원본 통과를 요구하지만 원본은 아직 정답이 적용되지 않은 문제 상태라 acceptance가 모두 실패하며, Python Check는 기본 설정에서 __pycache__를 생성한다.",
+  "reproduction": [
+    "source commit에서 두 fixture를 archive로 복원하고 tree를 확인한 뒤 각 acceptance Check를 실행한다.",
+    "code-change Check를 PYTHONDONTWRITEBYTECODE 없이 실행한 뒤 git status를 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "두 tree hash는 manifest와 일치했지만 code-change와 document-read baseline acceptance는 모두 exit 1이었다. bytecode guard가 없으면 benchmark_checks/__pycache__와 src/__pycache__가 생성됐다."
+    }
+  ],
+  "root_cause": "R1 설계가 fixture 복원 성공과 과제 해결 후 Judge 성공을 한 문장으로 합쳤고, 실제 Python Check의 workspace 부작용과 scope pattern 의미를 사전 재현하지 않았다.",
+  "considered_options": [
+    {
+      "option": "baseline fixture 자체를 정답 상태로 수정",
+      "decision": "rejected",
+      "reason": "동결된 실제 비교 과제를 없애고 manifest tree를 바꾼다"
+    },
+    {
+      "option": "동결 baseline과 test-only golden patch 분리",
+      "decision": "adopted",
+      "reason": "실제 실험 입력을 보존하면서 Judge의 성공·실패 경로를 모두 결정론적으로 시험한다"
+    }
+  ],
+  "resolution": "설계 판본 5에서 baseline 복원/의도적 acceptance 실패, hash가 고정된 test-only golden positive case, 변조·scope·tree negative case를 분리했다. write scope 문법, PyYAML safe_load, bytecode 방지 환경, 1 MiB 출력 보존, timeout process-group 종료 계약을 명시했다.",
+  "affected_files": [
+    "docs/design/general-benchmark-runner-design.md",
+    "docs/README.md"
+  ],
+  "regression_tests": [
+    "R1: 두 baseline tree 일치와 acceptance exit 1 확인",
+    "R1 구현 예정: golden positive, check tamper, scope violation, tree mismatch, no-bytecode contract tests"
+  ],
+  "verification": [
+    "source commit e915914c0494cd21969de5bc60f81ad74ec1b037의 두 fixture tree가 manifest hash와 일치했다.",
+    "PYTHONDONTWRITEBYTECODE=1에서는 Check 뒤 worktree가 clean이고, 미설정 시 code-change에 __pycache__ 두 경로가 생김을 재현했다."
+  ],
+  "remaining_risks": [
+    "golden patch 파일과 SHA-256은 R1 구현에서 생성·고정하고 그때 실제 positive Check를 실행해야 한다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "benchmarks/fixtures/code-change/benchmark_checks/test_acceptance.py",
+    "benchmarks/fixtures/document-read/benchmark_checks/check_report.py",
+    "benchmarks/manifests/b0-b1-frozen.yaml",
+    "docs/design/general-benchmark-runner-design.md"
+  ]
+}

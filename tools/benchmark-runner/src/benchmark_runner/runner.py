@@ -17,6 +17,7 @@ from benchmark_runner.contract import (
     CellLifecycleState,
     CellStateRecord,
     EvidenceRef,
+    ExecutionPlan,
     LifecycleEntry,
     Measurement,
     MeasurementEffort,
@@ -33,7 +34,12 @@ from benchmark_runner.contract import (
     utc_now,
 )
 from benchmark_runner.judge import StubJudge
-from benchmark_runner.plan import ZERO_GIT_ID, ZERO_SHA256, build_r0_plan
+from benchmark_runner.plan import (
+    ZERO_GIT_ID,
+    ZERO_SHA256,
+    assert_plan_integrity,
+    build_r0_plan,
+)
 
 
 class IntegrityError(RuntimeError):
@@ -155,6 +161,7 @@ class R0Runner:
 
     def run(self, state_root: Path, created_at: datetime | None = None) -> R0RunResult:
         plan = build_r0_plan(created_at)
+        assert_plan_integrity(plan)
         planned_cell = plan.cells[0]
         experiment_dir = state_root.resolve() / plan.experiment_id
         experiment_dir.mkdir(parents=True, exist_ok=False)
@@ -357,10 +364,34 @@ def verify_sealed_cell(cell_dir: Path) -> Measurement:
     state = CellStateRecord.model_validate_json((root / "cell-state.json").read_bytes())
     if state.state is not CellLifecycleState.SEALED or not state.sealed_measurement_sha256:
         raise IntegrityError("Cell is not sealed")
+    if state.cell_id != root.name:
+        raise IntegrityError("Cell state identity does not match its directory")
+    plan_path = root.parents[1] / "execution-plan.json"
+    try:
+        plan = ExecutionPlan.model_validate_json(plan_path.read_bytes())
+        assert_plan_integrity(plan)
+    except (OSError, ValueError) as exc:
+        raise IntegrityError("Execution Plan integrity check failed") from exc
     measurement_path = root / "sealed" / "measurement.json"
     if sha256_file(measurement_path) != state.sealed_measurement_sha256:
         raise IntegrityError("Measurement hash does not match the Cell seal")
     measurement = Measurement.model_validate_json(measurement_path.read_bytes())
+    planned_cell = next((cell for cell in plan.cells if cell.cell_id == state.cell_id), None)
+    if planned_cell is None:
+        raise IntegrityError("Sealed Cell is not declared in the Execution Plan")
+    expected_identity = MeasurementIdentity(
+        experiment_id=plan.experiment_id,
+        block_id=planned_cell.block_id,
+        cell_id=planned_cell.cell_id,
+        fixture_id=planned_cell.fixture_id,
+        repetition=planned_cell.repetition,
+        variant_id=planned_cell.variant_id,
+        execution_ordinal=planned_cell.execution_ordinal,
+    )
+    if measurement.identity != expected_identity:
+        raise IntegrityError("Measurement identity does not match the Execution Plan")
+    if measurement.provenance.manifest_sha256 != plan.source_manifest.sha256:
+        raise IntegrityError("Measurement manifest hash does not match the Execution Plan")
     for evidence in measurement.evidence:
         candidate = root / Path(evidence.path)
         cursor = root

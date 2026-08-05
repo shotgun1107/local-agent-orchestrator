@@ -1,8 +1,8 @@
 # 범용 오케스트레이터 Benchmark Runner 설계
 
-- 문서 상태: 동결(freeze) — R0 계약 명명 erratum 반영
+- 문서 상태: 동결(freeze) — R0 계약 감사와 R1 착수 명세 erratum 반영
 - 동결일: 2026-08-05
-- 설계 판본: 4
+- 설계 판본: 5
 - 작성일: 2026-08-05
 - 적용 범위: B0~B3 비교 실험을 실행·측정·판정하는 중립 Runner
 - 최초 적용: 동결된 B0/B1 비교 실험
@@ -727,6 +727,8 @@ tar entry가 fixture prefix 밖으로 나가거나 symlink면 거부한다.
 
 fixture Check의 `python`은 우연히 PATH에서 발견한 인터프리터에 맡기지 않는다. Runner preflight에서 고정한 benchmark Python의 Scripts 디렉터리를 Cell subprocess PATH 앞에 두고 실제 executable/version을 기록한다. B0·B1 Judge가 같은 Python을 사용해야 한다.
 
+Judge의 Python 환경에는 `PYTHONDONTWRITEBYTECODE=1`, `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`을 강제한다. 특히 bytecode 생성을 막지 않으면 acceptance Check 자체가 `__pycache__`를 만들어 final workspace를 오염시킬 수 있다. R1 시험은 Check 전후 worktree가 Judge 자체 부작용 없이 유지되는지 확인한다.
+
 ---
 
 ## 13. B0 Manual Adapter
@@ -1297,8 +1299,10 @@ Runner는 사용자가 소유하고 신뢰하는 로컬 fixture만 실행한다.
 - `shell=True` 금지
 - cwd는 Cell workspace 아래로 제한
 - timeout 명시
-- stdout/stderr 크기 제한과 원본 hash 보존
+- stdout/stderr는 stream별 최대 1 MiB만 Evidence 파일에 보존하되 전체 stream bytes를 계속 읽어 전체 크기·SHA-256·잘림 여부를 기록
 - 환경 변수 allow-list
+
+Judge Check는 별도 process group에서 실행한다. timeout이면 group 전체에 종료를 요청하고 5초 안에 끝나지 않으면 강제 종료하며 `runner_judge:<check_id>` timeout 실패로 기록한다. R1은 동기 실행의 자식 정리를 구현하고, controller crash 뒤 PID/group 재발견과 복구는 R4에서 추가한다.
 
 ### 23.3 비밀 검사
 
@@ -1359,9 +1363,26 @@ artifact 수집, 실제 Check, lock, retry, 비교 summary는 이 단계에서 �
 - 실제 acceptance/diff Check
 - scope와 Check 변조 감지
 
+원본 fixture는 정답이 아니라 문제 출발점이다. 따라서 복원 직후 acceptance 실패는 정상이며 “원본에서 통과”로 해석하지 않는다. R1 시험은 다음 세 종류를 분리한다.
+
+1. `baseline`: source commit 복원과 tree/clean 검증은 통과하고, 아직 답이 없으므로 acceptance는 실패해야 한다.
+2. `positive`: 동결 fixture 밖의 `tools/benchmark-runner/tests/fixtures/r1-golden/`에 둔 고정 정답 patch를 허용 write scope 안에서 적용한 뒤 acceptance와 diff Check가 모두 통과해야 한다. patch bytes와 SHA-256도 시험 입력으로 고정한다.
+3. `negative`: Check 변조, write scope 위반, 잘못된 source tree를 각각 독립적으로 만들어 Judge가 Check 실행 전 또는 해당 검증 단계에서 실패해야 한다.
+
+R1의 write scope 문법은 범용 glob 전체가 아니라 두 형태만 허용한다.
+
+- `report.md` 같은 정규화된 POSIX 상대 파일 경로는 그 파일 하나와 정확히 일치한다.
+- `src/**` 같은 `<directory>/**`는 해당 디렉터리 아래의 자손만 재귀적으로 일치한다.
+
+그 밖의 wildcard, 절대 경로, `..`, 역슬래시, symlink는 거부한다. changed path는 worker 종료 후 Judge 실행 전에 `git status --porcelain=v2 -z`와 baseline Git tree에서 계산한다. `.orchestrator/checks.yaml`, `benchmark_checks/**`와 write scope 밖의 모든 변경은 acceptance 실행 전에 실패시킨다.
+
+legacy manifest와 fixture YAML은 R1에서 `PyYAML>=6,<7`의 `safe_load`로 읽고 `extra=forbid` Pydantic 내부 계약으로 즉시 검증한다. 이 의존성은 YAML loader를 추가하는 R1 변경에서 `pyproject.toml`에 함께 고정한다. Check subprocess는 §12.4와 §23.2의 환경·출력·timeout 계약을 따른다.
+
 완료 조건:
 
-- 두 fixture 원본에서 통과
+- 두 fixture가 source commit에서 복원되고 manifest tree와 일치하며 clean Git worktree가 됨
+- 두 baseline에서 acceptance 실패가 정상적인 Judge 실패로 기록됨
+- 두 고정 정답 patch에서 acceptance와 diff Check가 모두 통과하고 Judge 전후에 `__pycache__` 등 자체 변경이 0건
 - 의도적 check 변조·scope 위반·tree 불일치에서 실패
 
 ### R2. B1 공개 계약과 FakeRuntime Adapter
@@ -1476,6 +1497,8 @@ artifact 수집, 실제 Check, lock, retry, 비교 summary는 이 단계에서 �
 - archive traversal·symlink 거부
 - Cell 간 경로·Git history 분리
 - final diff와 tree hash 재현
+- baseline 두 개는 복원·tree 검증에 통과하지만 미해결 과제이므로 acceptance에는 실패
+- test-only golden patch의 경로·SHA-256 고정과 허용 scope 안 적용
 
 ### 25.4 Adapter 시험
 
@@ -1509,6 +1532,9 @@ artifact 수집, 실제 Check, lock, retry, 비교 summary는 이 단계에서 �
 - Check 변조
 - write scope 위반
 - stdout/stderr 제한
+- Python Check 뒤 `__pycache__` 등 Judge 자체 workspace 변경 0건
+- stream별 1 MiB 초과 출력의 전체 크기·전체 SHA-256·잘림 표시 보존
+- exact path와 `<directory>/**` 이외 write scope pattern 거부
 - B0/B1 같은 workspace 결과에서 같은 판정
 
 ### 25.7 집계 시험
@@ -1670,3 +1696,15 @@ B2/B3 manifest + B3ReviewedAdapter
 R0 Pydantic 계약 구현에서 §8.1의 공통 envelope와 §8.7의 Intervention Event 예시가 `kind` 필드를 서로 다른 의미로 요구하는 충돌을 확인했다. 공통 envelope는 `kind`를 문서 종류에 사용하므로 Intervention Event도 `kind=intervention_event`로 고정하고, `correction`, `manual_retry` 같은 실제 이벤트 종류는 `intervention_kind`에 기록한다.
 
 이 변경은 이벤트 계수 의미나 실험 판정식을 바꾸지 않고, 한 JSON 필드에 두 의미를 담을 수 없던 명명 충돌만 해소한다. 발견·원인·해결·회귀시험은 구현 오류 로그 `DEV-20260805-004`로 추적한다. 해당 erratum을 반영한 설계 판본 4를 2026-08-05에 다시 동결한다.
+
+---
+
+## 32. R0 계약 감사와 R1 착수 명세 erratum
+
+R0 구현 감사에서 `ExecutionPlan`이 Cell의 `fixture_id`·`variant_id`가 선언 목록을 실제로 참조하는지 검사하지 않았고, Pydantic의 `frozen=True`가 중첩 dict 변경까지 막지는 않는다는 점을 확인했다. R0 Plan 안에서도 Variant artifact는 `r0-fake`, Cell과 Adapter는 `fake`로 달랐지만 기존 계약이 이를 잡지 못했다.
+
+판본 5에서는 fixture·variant·Cell 참조와 baseline/candidate 관계를 Pydantic 계약에서 검증한다. Plan 생성 직후, Cell 실행 직전, 봉인 결과 검증 시 canonical payload의 fingerprint와 Experiment ID를 다시 대조한다. 중첩 자료구조의 Python 수준 mutation 자체를 deep-freeze한다고 주장하지 않으며, 변경된 Plan으로 실행하거나 봉인 결과를 검증하는 경계에서 반드시 거부하는 방식이다.
+
+R1 사전 점검에서는 두 동결 fixture의 manifest tree가 source commit `e915914c0494cd21969de5bc60f81ad74ec1b037`과 일치했지만, 두 baseline acceptance는 각각 미구현 코드와 누락된 `report.md` 때문에 의도대로 실패했다. 따라서 기존 “두 fixture 원본에서 통과” 완료 조건을 baseline 복원 검증과 test-only golden positive case로 분리했다. Python Check가 bytecode guard 없이 workspace에 `__pycache__`를 만든다는 재현 결과도 반영해 Judge 환경을 고정했다.
+
+이 erratum은 실제 fixture나 B0/B1 실행 조건을 바꾸지 않는다. R1의 시험 입력과 판정 절차를 구현자가 임의로 해석하지 않도록 명시한 것이다. 해당 변경을 반영한 설계 판본 5를 2026-08-05에 다시 동결한다.

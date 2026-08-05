@@ -102,12 +102,33 @@ class ExecutionPlan(PublicEnvelope):
 
     @model_validator(mode="after")
     def ids_are_unique(self) -> ExecutionPlan:
+        fixture_ids = [fixture.fixture_id for fixture in self.fixtures]
+        variant_ids = [variant.artifact_id for variant in self.variants]
         cell_ids = [cell.cell_id for cell in self.cells]
         ordinals = [cell.execution_ordinal for cell in self.cells]
+        if len(fixture_ids) != len(set(fixture_ids)):
+            raise ValueError("fixture_id values must be unique")
+        if len(variant_ids) != len(set(variant_ids)):
+            raise ValueError("variant artifact_id values must be unique")
         if len(cell_ids) != len(set(cell_ids)):
             raise ValueError("cell_id values must be unique")
         if sorted(ordinals) != list(range(1, len(ordinals) + 1)):
             raise ValueError("execution ordinals must be contiguous from one")
+        if self.baseline_variant not in variant_ids:
+            raise ValueError("baseline_variant must reference a declared variant")
+        if len(self.candidate_variants) != len(set(self.candidate_variants)):
+            raise ValueError("candidate_variants must be unique")
+        if self.baseline_variant in self.candidate_variants:
+            raise ValueError("baseline_variant cannot also be a candidate")
+        unknown_candidates = set(self.candidate_variants) - set(variant_ids)
+        if unknown_candidates:
+            raise ValueError("candidate_variants must reference declared variants")
+        unknown_cell_fixtures = {cell.fixture_id for cell in self.cells} - set(fixture_ids)
+        if unknown_cell_fixtures:
+            raise ValueError("every Cell fixture_id must reference a declared fixture")
+        unknown_cell_variants = {cell.variant_id for cell in self.cells} - set(variant_ids)
+        if unknown_cell_variants:
+            raise ValueError("every Cell variant_id must reference a declared variant")
         return self
 
 

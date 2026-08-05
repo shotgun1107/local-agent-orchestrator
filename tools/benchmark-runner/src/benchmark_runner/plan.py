@@ -36,6 +36,20 @@ def recompute_plan_fingerprint(plan: ExecutionPlan) -> str:
     return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
 
+def assert_plan_integrity(plan: ExecutionPlan) -> None:
+    fingerprint = recompute_plan_fingerprint(plan)
+    if fingerprint != plan.plan_fingerprint:
+        raise ValueError("Execution Plan fingerprint does not match its canonical payload")
+    _, experiment_date, short_fingerprint, revision = plan.experiment_id.split("_")
+    expected_date = plan.created_at.astimezone(timezone.utc).strftime("%Y%m%d")
+    if (
+        experiment_date != expected_date
+        or short_fingerprint != fingerprint[:8]
+        or int(revision) != plan.revision
+    ):
+        raise ValueError("Experiment ID does not match the Execution Plan fingerprint")
+
+
 def build_r0_plan(created_at: datetime | None = None) -> ExecutionPlan:
     created = created_at or utc_now()
     if created.tzinfo is None or created.utcoffset() is None:
@@ -58,7 +72,7 @@ def build_r0_plan(created_at: datetime | None = None) -> ExecutionPlan:
         ),
         variants=[
             ArtifactIdentity(
-                artifact_id="r0-fake",
+                artifact_id="fake",
                 version="0.1.0",
                 sha256=ZERO_SHA256,
             )
@@ -92,9 +106,11 @@ def build_r0_plan(created_at: datetime | None = None) -> ExecutionPlan:
         environment_fingerprint={"surface_kind": "fake", "model_turns": "0"},
     )
     fingerprint = recompute_plan_fingerprint(placeholder)
-    return placeholder.model_copy(
+    plan = placeholder.model_copy(
         update={
             "plan_fingerprint": fingerprint,
             "experiment_id": f"exp_{date}_{fingerprint[:8]}_1",
         }
     )
+    assert_plan_integrity(plan)
+    return plan
