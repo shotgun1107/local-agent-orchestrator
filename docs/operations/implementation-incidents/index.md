@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 8건
-- 해결: 8건
+- 전체: 12건
+- 해결: 12건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -19,6 +19,10 @@
 | DEV-20260805-004 | resolved | benchmark-runner-r0 | design | Intervention Event의 kind 필드가 envelope와 이벤트 종류에 중복됨 |
 | DEV-20260805-005 | resolved | benchmark-runner-r0-audit | implementation | Execution Plan이 미선언 fixture·variant와 변경된 payload를 허용함 |
 | DEV-20260805-006 | resolved | benchmark-runner-r1-readiness | design | R1 완료 조건이 의도적으로 실패하는 baseline fixture의 통과를 요구함 |
+| DEV-20260805-007 | resolved | benchmark-runner-r1 | implementation | git archive 상위 디렉터리 항목을 경로 탈출로 오판 |
+| DEV-20260805-008 | resolved | benchmark-runner-r1 | implementation | Windows Judge timeout이 process group을 종료하지 못함 |
+| DEV-20260805-009 | resolved | benchmark-runner-r1 | implementation | Git rename의 원래 경로를 write scope 검사에서 누락 |
+| DEV-20260805-010 | resolved | benchmark-runner-r1 | implementation | Judge 자체 변경 검사가 동일 경로의 내용 변조를 놓침 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -387,6 +391,218 @@ R1 설계가 fixture 복원 성공과 과제 해결 후 Judge 성공을 한 문�
 - 출처: benchmarks/fixtures/document-read/benchmark_checks/check_report.py
 - 출처: benchmarks/manifests/b0-b1-frozen.yaml
 - 출처: docs/design/general-benchmark-runner-design.md
+
+## DEV-20260805-007 — git archive 상위 디렉터리 항목을 경로 탈출로 오판
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r1`
+- 분류: `implementation`
+- 발견: 2026-08-05T04:26:33Z / FixtureRestorer 회귀시험
+- 해결: 2026-08-05T04:26:41Z
+
+### 증상
+
+정상 source commit의 fixture archive 복원이 archive member escapes fixture prefix 오류로 중단된다
+
+### 재현
+
+- b0-b1-frozen manifest의 code-change fixture를 source commit에서 git archive로 복원한다
+
+### 증거
+
+- `reproducible-test`: git archive가 benchmarks/와 benchmarks/fixtures/ 디렉터리 항목을 먼저 포함해 test_restore_from_source_commit_reproduces_clean_tree가 실패했다
+
+### 근본 원인
+
+안전 추출기가 모든 archive member가 fixture prefix 자체이거나 그 자손이라고 가정했지만 git archive pathspec은 prefix의 상위 디렉터리 항목도 포함한다
+
+### 검토한 해결안
+
+- `rejected` 상위 항목을 전부 허용 — 파일이나 특수 항목을 통한 범위 혼동을 허용한다
+- `adopted` fixture prefix의 조상은 디렉터리 항목만 허용 — 정상 git archive 형식과 탈출 방지를 함께 유지한다
+
+### 채택한 해결
+
+member가 fixture prefix의 조상일 때 디렉터리인지 확인한 뒤 내용 생성 없이 건너뛰고, 파일·링크·특수 항목은 계속 거부하도록 수정했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/workspace.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_workspace.py::test_restore_from_source_commit_reproduces_clean_tree
+
+### 검증 결과
+
+- 두 동결 fixture 복원 및 전체 Benchmark Runner pytest 48개 통과
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-008 — Windows Judge timeout이 process group을 종료하지 못함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r1`
+- 분류: `implementation`
+- 발견: 2026-08-05T04:26:58Z / FixtureJudge timeout 회귀시험
+- 해결: 2026-08-05T04:27:06Z
+
+### 증상
+
+0.1초 timeout 뒤 1초 grace가 끝나도 Check Python 프로세스가 살아 있어 TimeoutExpired가 전파된다
+
+### 재현
+
+- CREATE_NEW_PROCESS_GROUP으로 30초 sleep Check를 시작하고 taskkill /PID /T 뒤 1초간 종료를 기다린다
+
+### 증거
+
+- `reproducible-test`: test_check_timeout_terminates_process_group가 _terminate_process_group 내부 process.wait에서 실패했다
+
+### 근본 원인
+
+Windows taskkill /T는 강제 옵션 없이 생성된 콘솔 Python process group을 종료한다는 보장이 없는데 명령 반환만으로 soft termination을 가정했다
+
+### 검토한 해결안
+
+- `rejected` timeout 즉시 parent process.kill만 호출 — 자식 process가 남을 수 있고 5초 grace 계약을 지키지 않는다
+- `adopted` CTRL_BREAK_EVENT 후 grace, taskkill /T /F, 최후 parent kill — 협조 종료 기회와 group 강제 정리를 순서대로 수행한다
+
+### 채택한 해결
+
+Windows process group에 CTRL_BREAK_EVENT를 보내고 grace 내 미종료 시 taskkill /T /F를 실행하며, 도구 자체 timeout에도 parent kill과 종료 확인을 수행하도록 수정했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_judge.py::test_check_timeout_terminates_process_group
+
+### 검증 결과
+
+- 30초 sleep Check가 timed_out으로 기록되고 5초 이내 반환하며 전체 Benchmark Runner pytest 48개 통과
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-009 — Git rename의 원래 경로를 write scope 검사에서 누락
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r1`
+- 분류: `implementation`
+- 발견: 2026-08-05T04:31:37Z / R1 scope parser code audit
+- 해결: 2026-08-05T04:31:44Z
+
+### 증상
+
+범위 밖 파일을 허용 디렉터리로 rename하면 새 경로만 검사되어 write scope 위반이 누락될 수 있다
+
+### 재현
+
+- code-change fixture에서 README.md를 src/moved-readme.md로 git mv한 뒤 Judge scope 검사를 실행한다
+
+### 증거
+
+- `reproducible-test`: porcelain v2 type 2 record의 destination만 paths에 추가하고 뒤따르는 NUL source path를 건너뛰는 코드를 확인했다
+
+### 근본 원인
+
+porcelain v2 rename/copy record의 두 번째 NUL 경로를 레코드 정렬용으로만 소비하고 rename source도 변경 범위 판정 대상이라는 점을 반영하지 않았다
+
+### 검토한 해결안
+
+- `rejected` type 2의 source를 항상 검사 — copy에서는 원본이 변경되지 않아 허위 scope 위반이 된다
+- `adopted` R score일 때 source와 destination을 모두 검사 — rename의 삭제·생성 양쪽을 검사하고 copy source는 제외한다
+
+### 채택한 해결
+
+type 2의 score가 R로 시작하면 뒤따르는 source path를 정규화해 changed paths에 함께 추가하고, C record는 destination만 유지하도록 수정했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_judge.py::test_rename_checks_both_source_and_destination_scope
+
+### 검증 결과
+
+- README.md에서 src 아래로의 rename이 Check 실행 전에 write_scope 실패하고 전체 Benchmark Runner pytest 48개 통과
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-010 — Judge 자체 변경 검사가 동일 경로의 내용 변조를 놓침
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r1`
+- 분류: `implementation`
+- 발견: 2026-08-05T04:33:48Z / R1 Judge evidence code audit
+- 해결: 2026-08-05T04:33:56Z
+
+### 증상
+
+Check가 이미 변경된 파일의 내용을 다시 바꿔도 전후 changed path 목록이 같아 judge_workspace_unchanged가 true가 될 수 있다
+
+### 재현
+
+- golden patch로 src/config.py를 변경한 뒤 acceptance Check가 같은 파일에 주석을 추가하게 하고 Judge를 실행한다
+
+### 증거
+
+- `reproducible-test`: changed_before와 changed_after가 모두 src/config.py 하나라 경로 목록 비교만으로는 내용 변경을 구별하지 못했다
+
+### 근본 원인
+
+Judge 자체 부작용 판정을 변경 경로 집합의 동일성에만 의존해 같은 경로의 byte 변경을 비교하지 않았다
+
+### 검토한 해결안
+
+- `rejected` Check 전후 파일 mtime 비교 — timestamp 정밀도와 원상복구를 신뢰할 수 없다
+- `adopted` Check 직전과 직후의 canonical Git tree 비교 — 경로가 같아도 mode와 content hash 변경을 검출한다
+
+### 채택한 해결
+
+Check 직전 worker tree를 임시 index로 계산하고 Check 뒤 final tree와 changed paths를 모두 비교해 하나라도 다르면 self_modified_workspace로 실패시킨다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_judge.py::test_check_content_change_is_detected_even_when_path_list_is_unchanged
+
+### 검증 결과
+
+- 동일 src/config.py 내용 변조가 self_modified_workspace로 기록되고 전체 Benchmark Runner pytest 48개 통과
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

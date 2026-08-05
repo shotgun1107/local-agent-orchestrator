@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-010",
+  "title": "Judge 자체 변경 검사가 동일 경로의 내용 변조를 놓침",
+  "status": "resolved",
+  "stage": "benchmark-runner-r1",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T04:33:48Z",
+  "resolved_at": "2026-08-05T04:33:56Z",
+  "discovered_by": "R1 Judge evidence code audit",
+  "symptom": "Check가 이미 변경된 파일의 내용을 다시 바꿔도 전후 changed path 목록이 같아 judge_workspace_unchanged가 true가 될 수 있다",
+  "reproduction": [
+    "golden patch로 src/config.py를 변경한 뒤 acceptance Check가 같은 파일에 주석을 추가하게 하고 Judge를 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "changed_before와 changed_after가 모두 src/config.py 하나라 경로 목록 비교만으로는 내용 변경을 구별하지 못했다"
+    }
+  ],
+  "root_cause": "Judge 자체 부작용 판정을 변경 경로 집합의 동일성에만 의존해 같은 경로의 byte 변경을 비교하지 않았다",
+  "considered_options": [
+    {
+      "option": "Check 전후 파일 mtime 비교",
+      "decision": "rejected",
+      "reason": "timestamp 정밀도와 원상복구를 신뢰할 수 없다"
+    },
+    {
+      "option": "Check 직전과 직후의 canonical Git tree 비교",
+      "decision": "adopted",
+      "reason": "경로가 같아도 mode와 content hash 변경을 검출한다"
+    }
+  ],
+  "resolution": "Check 직전 worker tree를 임시 index로 계산하고 Check 뒤 final tree와 changed paths를 모두 비교해 하나라도 다르면 self_modified_workspace로 실패시킨다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_judge.py::test_check_content_change_is_detected_even_when_path_list_is_unchanged"
+  ],
+  "verification": [
+    "동일 src/config.py 내용 변조가 self_modified_workspace로 기록되고 전체 Benchmark Runner pytest 48개 통과"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

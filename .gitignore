@@ -2,3 +2,5 @@ benchmarks/results/*/*
 !benchmarks/results/*/.gitkeep
 __pycache__/
 *.py[cod]
+docs/operations/claude-session-handoff.md
+tools/claude-skills/

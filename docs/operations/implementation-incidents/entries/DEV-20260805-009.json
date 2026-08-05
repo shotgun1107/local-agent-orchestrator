@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-009",
+  "title": "Git rename의 원래 경로를 write scope 검사에서 누락",
+  "status": "resolved",
+  "stage": "benchmark-runner-r1",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T04:31:37Z",
+  "resolved_at": "2026-08-05T04:31:44Z",
+  "discovered_by": "R1 scope parser code audit",
+  "symptom": "범위 밖 파일을 허용 디렉터리로 rename하면 새 경로만 검사되어 write scope 위반이 누락될 수 있다",
+  "reproduction": [
+    "code-change fixture에서 README.md를 src/moved-readme.md로 git mv한 뒤 Judge scope 검사를 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "porcelain v2 type 2 record의 destination만 paths에 추가하고 뒤따르는 NUL source path를 건너뛰는 코드를 확인했다"
+    }
+  ],
+  "root_cause": "porcelain v2 rename/copy record의 두 번째 NUL 경로를 레코드 정렬용으로만 소비하고 rename source도 변경 범위 판정 대상이라는 점을 반영하지 않았다",
+  "considered_options": [
+    {
+      "option": "type 2의 source를 항상 검사",
+      "decision": "rejected",
+      "reason": "copy에서는 원본이 변경되지 않아 허위 scope 위반이 된다"
+    },
+    {
+      "option": "R score일 때 source와 destination을 모두 검사",
+      "decision": "adopted",
+      "reason": "rename의 삭제·생성 양쪽을 검사하고 copy source는 제외한다"
+    }
+  ],
+  "resolution": "type 2의 score가 R로 시작하면 뒤따르는 source path를 정규화해 changed paths에 함께 추가하고, C record는 destination만 유지하도록 수정했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_judge.py::test_rename_checks_both_source_and_destination_scope"
+  ],
+  "verification": [
+    "README.md에서 src 아래로의 rename이 Check 실행 전에 write_scope 실패하고 전체 Benchmark Runner pytest 48개 통과"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

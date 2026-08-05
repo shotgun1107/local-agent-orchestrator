@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-007",
+  "title": "git archive 상위 디렉터리 항목을 경로 탈출로 오판",
+  "status": "resolved",
+  "stage": "benchmark-runner-r1",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T04:26:33Z",
+  "resolved_at": "2026-08-05T04:26:41Z",
+  "discovered_by": "FixtureRestorer 회귀시험",
+  "symptom": "정상 source commit의 fixture archive 복원이 archive member escapes fixture prefix 오류로 중단된다",
+  "reproduction": [
+    "b0-b1-frozen manifest의 code-change fixture를 source commit에서 git archive로 복원한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "git archive가 benchmarks/와 benchmarks/fixtures/ 디렉터리 항목을 먼저 포함해 test_restore_from_source_commit_reproduces_clean_tree가 실패했다"
+    }
+  ],
+  "root_cause": "안전 추출기가 모든 archive member가 fixture prefix 자체이거나 그 자손이라고 가정했지만 git archive pathspec은 prefix의 상위 디렉터리 항목도 포함한다",
+  "considered_options": [
+    {
+      "option": "상위 항목을 전부 허용",
+      "decision": "rejected",
+      "reason": "파일이나 특수 항목을 통한 범위 혼동을 허용한다"
+    },
+    {
+      "option": "fixture prefix의 조상은 디렉터리 항목만 허용",
+      "decision": "adopted",
+      "reason": "정상 git archive 형식과 탈출 방지를 함께 유지한다"
+    }
+  ],
+  "resolution": "member가 fixture prefix의 조상일 때 디렉터리인지 확인한 뒤 내용 생성 없이 건너뛰고, 파일·링크·특수 항목은 계속 거부하도록 수정했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/workspace.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_workspace.py::test_restore_from_source_commit_reproduces_clean_tree"
+  ],
+  "verification": [
+    "두 동결 fixture 복원 및 전체 Benchmark Runner pytest 48개 통과"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}
