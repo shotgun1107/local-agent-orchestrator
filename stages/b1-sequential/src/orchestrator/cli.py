@@ -327,7 +327,14 @@ def dispatch(args: argparse.Namespace) -> int:
     if args.command == "doctor":
         result = _doctor(args.project)
         _print(result)
-        healthy = result["workspace"].get("healthy") and result["codex_sdk"]["pinned"]
+        healthy = (
+            result["workspace"].get("healthy")
+            and result["codex_sdk"]["pinned"]
+            and not result["api_key_present"]
+            and result["codex_login"]["checked"]
+            and result["codex_login"]["authenticated"]
+            and result["codex_login"]["method"] == "chatgpt"
+        )
         return EXIT_OK if healthy else EXIT_RUNTIME
     if args.command == "run" and args.run_command == "validate":
         loaded = load_project(args.project)
