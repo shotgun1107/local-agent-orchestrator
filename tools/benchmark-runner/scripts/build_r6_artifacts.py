@@ -88,6 +88,8 @@ def main() -> int:
     build_env = os.environ.copy()
     build_env["SOURCE_DATE_EPOCH"] = commit_epoch
     build_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    build_env["PYTHONUTF8"] = "1"
+    build_env["PYTHONIOENCODING"] = "utf-8"
     for project in (repository / "tools" / "benchmark-runner", repository / "stages" / "b1-sequential"):
         run(
             [
@@ -126,6 +128,8 @@ def main() -> int:
     installed_env = os.environ.copy()
     installed_env["PYTHONPATH"] = str(package_root)
     installed_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    installed_env["PYTHONUTF8"] = "1"
+    installed_env["PYTHONIOENCODING"] = "utf-8"
     schema_root = local_root / "b1-public-schemas"
     run(
         [

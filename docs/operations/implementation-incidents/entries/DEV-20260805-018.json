@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-018",
+  "title": "R6 artifact builder가 한글 경로의 CLI JSON을 손상함",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T08:29:52Z",
+  "resolved_at": "2026-08-05T08:29:52Z",
+  "discovered_by": "clean-commit installed-wheel artifact build",
+  "symptom": "wheel과 Experiment 생성 뒤 child CLI가 출력한 plan_path의 한글이 replacement character로 바뀌어 local root 상대경로 검증이 실패했다",
+  "reproduction": [
+    "한글 저장소 경로에서 installed Runner CLI로 r6 create를 실행하고 부모 build script가 JSON stdout을 UTF-8로 해석한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "build_r6_artifacts.py의 Path(created plan_path).relative_to(local_root)가 ValueError를 발생시켰다"
+    }
+  ],
+  "root_cause": "부모는 UTF-8로 stdout을 읽었지만 자식 Python에 PYTHONUTF8과 PYTHONIOENCODING을 전달하지 않아 Windows 기본 console encoding으로 JSON이 출력됐다",
+  "considered_options": [
+    {
+      "option": "손상된 경로 문자열을 replacement character 기준으로 복구",
+      "decision": "rejected",
+      "reason": "원문 bytes를 잃었으므로 안전하게 복원할 수 없다"
+    },
+    {
+      "option": "경로를 JSON에서 제거",
+      "decision": "rejected",
+      "reason": "build record와 Experiment 위치 대조 증거가 약해진다"
+    },
+    {
+      "option": "모든 build와 regression child에 UTF-8 환경 고정",
+      "decision": "adopted",
+      "reason": "한글 경로를 원형 보존한다"
+    }
+  ],
+  "resolution": "build와 installed CLI 및 non-live regression 자식 프로세스에 PYTHONUTF8=1, PYTHONIOENCODING=utf-8을 명시했다",
+  "affected_files": [
+    "tools/benchmark-runner/scripts/build_r6_artifacts.py",
+    "tools/benchmark-runner/scripts/run_r6_nonlive_regression.py"
+  ],
+  "regression_tests": [
+    "한글 저장소 경로를 child Python JSON stdout으로 출력하고 부모 PowerShell에서 exact path로 재파싱"
+  ],
+  "verification": [
+    "PYTHONUTF8=1과 PYTHONIOENCODING=utf-8 환경의 child JSON path가 한글을 포함한 현재 저장소 절대경로와 exact match"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}
