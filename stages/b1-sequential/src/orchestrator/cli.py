@@ -32,6 +32,7 @@ from .recover import (
     verify_backup,
 )
 from .runtime import RuntimeBoundaryError
+from .schemas import export_public_schemas
 from .schedule import (
     ConfigurationError,
     Orchestrator,
@@ -95,6 +96,11 @@ def _parser() -> argparse.ArgumentParser:
     report = sub.add_parser("report")
     report.add_argument("run_id")
     report.add_argument("--format", choices=["json", "md"], required=True)
+
+    schema = sub.add_parser("schema")
+    schema_sub = schema.add_subparsers(dest="schema_command", required=True)
+    schema_export = schema_sub.add_parser("export")
+    schema_export.add_argument("--output", type=Path, required=True)
 
     recover = sub.add_parser("recover")
     recover_sub = recover.add_subparsers(dest="recover_command", required=True)
@@ -398,6 +404,9 @@ def dispatch(args: argparse.Namespace) -> int:
         if not path.is_file():
             raise IntegrityViolation(f"report Artifact missing: {path}")
         print(path.read_text(encoding="utf-8"), end="")
+        return EXIT_OK
+    if args.command == "schema" and args.schema_command == "export":
+        _print(export_public_schemas(args.output))
         return EXIT_OK
     if args.command == "recover" and args.recover_command == "unlock":
         force_unlock(args.state_root, confirmed=args.confirm_no_controller)

@@ -1005,3 +1005,30 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Benchmark Runner 전체 pytest 101개와 B1 전체 pytest 63개가 통과했다. 구현 오류 로그 16개와 하네스 단위시험 10개도 검증했다.
 - R4 시험에서 실제 Codex·OpenAI model turn은 0회다. generic Fake driver로 상태·복구 계약을 검증했으며 실제 B0/B1 12-Cell 비교는 실행하지 않았다.
 - 다음 단계는 R5 paired summary·판정·sanitized export다. 실제 비교 실행은 R6 artifact·환경 동결 뒤에만 시작한다.
+
+## Benchmark Runner R5 비교·판정·sanitized export 구현
+
+### 결정론적 paired summary와 판정
+
+- 작업일: 2026-08-05.
+- 12개 봉인 Measurement를 Execution Plan의 6개 Block으로 짝지어 Cell 원자료·pair delta·Variant 전체 집계·execution ordinal 추세를 같은 `summary.json`에 결정론적으로 만든다. 실패·중단·unknown Cell은 `cell_results`와 outcome count에서 빠지지 않는다.
+- 첫 B0/B1 정책을 `b0-b1-v1`로 명명하고 Plan `decision_policy`와 정확히 일치할 때만 분석한다. fixture별 Judge 성공 비열등, B1 사람 사후 오류 비증가, 시작 제외 사람 중계 전체 합의 엄격한 감소, 수동 복구 시간 비증가를 gate로 고정했다.
+- 중계 합 동률, 필수 지표 unknown, blocked·interrupted·timeout·infrastructure error, baseline 무결성 실패는 `INCONCLUSIVE`다. B1 품질 하락·사람 부담 악화·B1 무결성 실패는 `REJECT_B1`, 모든 gate 통과만 `ADOPT_B1`이다.
+- B0와 B1이 모두 Judge 성공 0건인데 단순 비열등만으로 채택되는 것을 막기 위해 B1 Judge 성공 최소 1건을 사전 정책에 추가했다. 실제 첫 Cell 전 Plan fingerprint에 들어가므로 결과를 본 뒤 바꿀 수 없다.
+- fixture별 사람 중계 median 악화는 전체 합 gate와 별개 경고로 남긴다. `treatment_control`이 전부 `full`이 아니면 오케스트레이션 하나의 인과효과가 아니라 실제 workflow 비교라는 한계를 JSON과 Markdown에 함께 기록한다.
+
+### 봉인 export와 독립 검증
+
+- `compare`, `export`, `verify-export` CLI를 추가했다. analysis hash는 canonical `summary.json` bytes에 고정되고 같은 입력의 JSON·Markdown은 byte-identical이다.
+- 각 Cell의 canonical Measurement bytes와 그 Evidence를 `benchmarks/results/<variant>/<experiment>/<cell>/` 형태로 내보내고, 내부 Cell state의 Measurement hash·SEALED 시각을 Cell ID 순 `seals.json`에 기록한다.
+- 독립 verifier는 export만으로 Plan fingerprint, 12개 Measurement hash, 각 Evidence size/hash, Measurement identity, summary 재계산 결과와 exact file set을 다시 확인한다. Measurement 한 byte 수정과 예상 밖 파일 추가를 모두 거부한다.
+- 기존 export가 완전히 같으면 멱등 성공하고, 한 파일이라도 다르거나 추가되면 덮어쓰지 않는다. export tree 전체는 상대 경로·크기·file hash로 다시 hash해 control record의 `export_sha256`에 기록한다.
+- 봉인 뒤 redaction은 원래 Measurement seal을 깨므로 R5는 bytes를 사후 변경하지 않는다. Adapter/Collector가 봉인 전에 공개 Evidence를 redaction하며, R5가 token 형태·email·홈 절대 경로·`auth.json`·금지 artifact를 찾으면 fail-closed로 export를 중단하고 새 revision을 요구한다.
+
+### 오류와 검증
+
+- JSON Evidence 안의 Windows 경로가 이중 백슬래시로 직렬화되면 홈 경로 탐지를 우회한 결함을 보안 시험에서 발견했다. 원본 hash를 바꾸지 않고 검사 입력만 실제 문자열 형태로 정규화했으며 `DEV-20260805-015`에 재현·원인·대안·회귀시험을 기록했다.
+- UTF-8이 아닌 binary Evidence도 ASCII로 남은 token 형태 문자열은 검사하도록 보강했다. 압축·암호화되거나 미지 패턴인 비밀은 봉인 전 공개 Evidence에서 제외해야 한다.
+- R5 전용 시험 19개와 Benchmark Runner 전체 회귀시험 120개, B1 전체 시험 63개, 구현 로그 17개 검증과 하네스 단위시험 10개가 통과했다.
+- R5 구현과 시험에서 실제 Codex·OpenAI model turn은 0회다. 실제 B0/B1 결과가 없으므로 생성된 판정은 모두 합성 Measurement에 대한 계약 검증이며 B1 성능 결론이 아니다.
+- 다음 단계는 R6에서 실제 driver·새 Runner/B1 artifact·환경·Execution Plan·decision policy·전체 비라이브 회귀 증거를 확정하고 첫 유료 Cell 직전 상태로 동결하는 것이다.

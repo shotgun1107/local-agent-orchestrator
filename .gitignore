@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 docs/operations/claude-session-handoff.md
 tools/claude-skills/
+benchmarks/.local-r6/

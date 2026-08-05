@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-017",
+  "title": "B1 wheel에서 공개 JSON Schema 묶음이 누락됨",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "integration",
+  "discovered_at": "2026-08-05T08:14:40Z",
+  "resolved_at": "2026-08-05T08:14:41Z",
+  "discovered_by": "R6 installed-artifact boundary audit",
+  "symptom": "source checkout의 schemas/v1을 참조하면 검증되지만 설치된 B1 wheel만으로는 run-status와 run-report 계약 Schema를 얻을 수 없다",
+  "reproduction": [
+    "B1 pyproject의 wheel packages와 force-include를 대조하고 임시 환경에 wheel만 설치한다"
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "pyproject.toml은 Project Pack만 force-include하고 schemas/v1은 포함하지 않았다"
+    }
+  ],
+  "root_cause": "R2에서 Schema 파일과 source-tree contract test는 만들었지만 배포 artifact 경계와 public export 경로를 별도 검증하지 않았다",
+  "considered_options": [
+    {
+      "option": "Runner가 B1 Pydantic 모델을 직접 import",
+      "decision": "rejected",
+      "reason": "독립 Adapter 경계와 artifact 고정을 깨뜨린다"
+    },
+    {
+      "option": "Runner가 B1 source checkout의 schemas/v1을 참조",
+      "decision": "rejected",
+      "reason": "frozen wheel만으로 재현할 수 없다"
+    },
+    {
+      "option": "Schema를 wheel에 포함하고 lao schema export로 내보냄",
+      "decision": "adopted",
+      "reason": "B1 public CLI 경계와 독립 artifact 검증을 보존한다"
+    }
+  ],
+  "resolution": "schemas/v1 5개를 orchestrator/_schemas/v1에 force-include하고 비어 있는 출력 디렉터리에 exact file-set과 SHA-256을 반환하는 schema export 명령을 추가했다",
+  "affected_files": [
+    "stages/b1-sequential/pyproject.toml",
+    "stages/b1-sequential/src/orchestrator/schemas.py",
+    "stages/b1-sequential/src/orchestrator/cli.py"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/integration/test_cli.py::test_schema_export_copies_public_bundle_with_hashes",
+    "stages/b1-sequential/tests/integration/test_cli.py::test_schema_export_refuses_nonempty_destination"
+  ],
+  "verification": [
+    "B1 전체 65 tests passed",
+    "임시 디렉터리에 wheel만 설치한 뒤 source checkout 밖에서 Schema 5개 export와 hash 출력을 확인했다"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

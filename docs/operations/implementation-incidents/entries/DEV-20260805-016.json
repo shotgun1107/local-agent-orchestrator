@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-016",
+  "title": "R6 Driver 봉인 뒤 controller lifecycle append가 Evidence hash를 변경",
+  "status": "resolved",
+  "stage": "benchmark-runner-r6",
+  "category": "integration",
+  "discovered_at": "2026-08-05T08:07:48Z",
+  "resolved_at": "2026-08-05T08:07:59Z",
+  "discovered_by": "12-Cell real driver boundary non-live test",
+  "symptom": "Driver가 만든 Measurement를 R4 controller가 SEALED로 전환한 직후 events/lifecycle.jsonl hash가 Measurement EvidenceRef와 달라져 verify_sealed_cell이 실패한다",
+  "reproduction": [
+    "실제 R6 B0/B1 Driver로 12개 Fake Cell을 R4 controller에서 모두 실행한 뒤 각 Cell의 seal을 재검증한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "test_r6_real_driver_boundary_runs_all_12_nonlive_cells이 cell_code-change_1_b1의 events/lifecycle.jsonl Evidence hash mismatch로 실패했다"
+    }
+  ],
+  "root_cause": "Driver의 Measurement seal 시점과 controller의 Cell SEALED 전이 시점이 다르지만 Evidence 수집이 controller 소유 lifecycle JSONL까지 포함해 봉인 후 변경 가능한 파일을 불변 Evidence로 잘못 분류했다",
+  "considered_options": [
+    {
+      "option": "SEALED lifecycle Event를 쓰지 않는다",
+      "decision": "rejected",
+      "reason": "controller 감사 이력을 잃는다"
+    },
+    {
+      "option": "Measurement를 controller가 다시 봉인한다",
+      "decision": "rejected",
+      "reason": "Driver와 controller 사이 봉인 책임이 중복되고 crash 경계가 복잡해진다"
+    },
+    {
+      "option": "controller lifecycle JSONL을 Cell Measurement Evidence에서 제외",
+      "decision": "adopted",
+      "reason": "작업 결과와 판정 근거만 봉인하고 controller 상태 이력은 별도 제어 기록으로 유지한다"
+    }
+  ],
+  "resolution": "R6 Evidence 수집에서 events/lifecycle.jsonl만 제외했다. Intervention Event와 raw/Judge Evidence는 계속 봉인하며 controller lifecycle은 state root의 별도 감사 기록으로 보존한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/runner.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_r6_live_drivers.py::test_r6_real_driver_boundary_runs_all_12_nonlive_cells"
+  ],
+  "verification": [
+    "실제 R6 Driver 경계의 12개 비라이브 Cell이 모두 SEALED 후 verify_sealed_cell을 통과",
+    "12개 결과의 R5 분석·export·독립 재검증까지 관통"
+  ],
+  "remaining_risks": [
+    "controller lifecycle은 Git sanitized export 대상이 아니므로 저장소 감사자는 Cell Measurement와 seals.json을 기준으로 검증한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/general-benchmark-runner-design.md:1105",
+    "docs/design/general-benchmark-runner-design.md:512"
+  ]
+}

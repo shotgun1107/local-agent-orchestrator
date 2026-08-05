@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 16건
-- 해결: 16건
+- 전체: 19건
+- 해결: 19건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -27,6 +27,9 @@
 | DEV-20260805-012 | resolved | benchmark-runner-r3 | implementation | B1 시작 동작을 공통 startup 지표에서 누락 |
 | DEV-20260805-013 | resolved | benchmark-runner-r4 | implementation | Windows Judge 고아 프로세스 복구가 taskkill 단독 경로에서 실패 |
 | DEV-20260805-014 | resolved | benchmark-runner-r4 | implementation | Windows Judge process record 원자 교체가 일시적 공유 잠금으로 실패 |
+| DEV-20260805-015 | resolved | benchmark-runner-r5 | implementation | R5 export scanner가 JSON 이스케이프된 Windows 홈 경로를 누락 |
+| DEV-20260805-016 | resolved | benchmark-runner-r6 | integration | R6 Driver 봉인 뒤 controller lifecycle append가 Evidence hash를 변경 |
+| DEV-20260805-017 | resolved | benchmark-runner-r6 | integration | B1 wheel에서 공개 JSON Schema 묶음이 누락됨 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -834,6 +837,178 @@ _write_process_record의 os.replace에 Windows PermissionError 한정 bounded re
 - 관련 커밋: 기록 없음
 - 출처: docs/design/general-benchmark-runner-design.md:626
 - 출처: docs/design/general-benchmark-runner-design.md:1199
+
+## DEV-20260805-015 — R5 export scanner가 JSON 이스케이프된 Windows 홈 경로를 누락
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r5`
+- 분류: `implementation`
+- 발견: 2026-08-05T07:43:15Z / R5 sanitized export security test
+- 해결: 2026-08-05T07:43:27Z
+
+### 증상
+
+Evidence JSON의 Windows 홈 경로가 이중 백슬래시로 직렬화되면 export 안전성 검사가 이를 탐지하지 못하고 파일을 내보낸다
+
+### 재현
+
+- sealed Evidence에 C:\Users\alex\private\file.txt 문자열을 넣고 export_r5_experiment를 실행한다
+
+### 증거
+
+- `reproducible-test`: test_r5_export_blocks_sensitive_sealed_evidence의 Windows 경로 case가 DID NOT RAISE로 실패했다
+
+### 근본 원인
+
+export scanner가 UTF-8 JSON 원문에 정규식을 직접 적용해 C:\Users 형태만 검사했고 JSON 직렬화가 만든 C:\\Users 형태를 실제 경로 문자열로 정규화하지 않았다
+
+### 검토한 해결안
+
+- `rejected` Windows 경로 검사를 제거 — 홈 절대 경로와 사용자명을 저장소에 노출한다
+- `adopted` JSON 이스케이프 백슬래시를 정규화한 별도 scan_text 검사 — 봉인 bytes와 hash는 바꾸지 않으면서 직렬화 표현과 실제 문자열 표현을 모두 차단한다
+
+### 채택한 해결
+
+원본 bytes는 수정하지 않고 보안 검사 입력에서 이중 백슬래시를 단일 백슬래시로 정규화한 뒤 auth.json과 token·email·홈 경로 패턴을 검사한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r5_reporter.py::test_r5_export_blocks_sensitive_sealed_evidence
+- tools/benchmark-runner/tests/test_r5_reporter.py::test_r5_export_scans_ascii_secrets_inside_non_utf8_evidence
+
+### 검증 결과
+
+- Windows 홈 경로를 포함한 민감정보 4종 export 차단 시험 통과
+- 비 UTF-8 Evidence 안의 ASCII token 형태 문자열 차단 시험 통과
+- R5 시험 19개와 Benchmark Runner 전체 회귀시험 120개 통과
+
+### 남은 위험
+
+- 압축·암호화되거나 알려진 패턴과 다른 비밀은 내용 검사만으로 식별할 수 없으므로 그런 artifact는 봉인 전 공개 Evidence에서 제외해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:1555
+
+## DEV-20260805-016 — R6 Driver 봉인 뒤 controller lifecycle append가 Evidence hash를 변경
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `integration`
+- 발견: 2026-08-05T08:07:48Z / 12-Cell real driver boundary non-live test
+- 해결: 2026-08-05T08:07:59Z
+
+### 증상
+
+Driver가 만든 Measurement를 R4 controller가 SEALED로 전환한 직후 events/lifecycle.jsonl hash가 Measurement EvidenceRef와 달라져 verify_sealed_cell이 실패한다
+
+### 재현
+
+- 실제 R6 B0/B1 Driver로 12개 Fake Cell을 R4 controller에서 모두 실행한 뒤 각 Cell의 seal을 재검증한다
+
+### 증거
+
+- `reproducible-test`: test_r6_real_driver_boundary_runs_all_12_nonlive_cells이 cell_code-change_1_b1의 events/lifecycle.jsonl Evidence hash mismatch로 실패했다
+
+### 근본 원인
+
+Driver의 Measurement seal 시점과 controller의 Cell SEALED 전이 시점이 다르지만 Evidence 수집이 controller 소유 lifecycle JSONL까지 포함해 봉인 후 변경 가능한 파일을 불변 Evidence로 잘못 분류했다
+
+### 검토한 해결안
+
+- `rejected` SEALED lifecycle Event를 쓰지 않는다 — controller 감사 이력을 잃는다
+- `rejected` Measurement를 controller가 다시 봉인한다 — Driver와 controller 사이 봉인 책임이 중복되고 crash 경계가 복잡해진다
+- `adopted` controller lifecycle JSONL을 Cell Measurement Evidence에서 제외 — 작업 결과와 판정 근거만 봉인하고 controller 상태 이력은 별도 제어 기록으로 유지한다
+
+### 채택한 해결
+
+R6 Evidence 수집에서 events/lifecycle.jsonl만 제외했다. Intervention Event와 raw/Judge Evidence는 계속 봉인하며 controller lifecycle은 state root의 별도 감사 기록으로 보존한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_live_drivers.py::test_r6_real_driver_boundary_runs_all_12_nonlive_cells
+
+### 검증 결과
+
+- 실제 R6 Driver 경계의 12개 비라이브 Cell이 모두 SEALED 후 verify_sealed_cell을 통과
+- 12개 결과의 R5 분석·export·독립 재검증까지 관통
+
+### 남은 위험
+
+- controller lifecycle은 Git sanitized export 대상이 아니므로 저장소 감사자는 Cell Measurement와 seals.json을 기준으로 검증한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md:1105
+- 출처: docs/design/general-benchmark-runner-design.md:512
+
+## DEV-20260805-017 — B1 wheel에서 공개 JSON Schema 묶음이 누락됨
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `integration`
+- 발견: 2026-08-05T08:14:40Z / R6 installed-artifact boundary audit
+- 해결: 2026-08-05T08:14:41Z
+
+### 증상
+
+source checkout의 schemas/v1을 참조하면 검증되지만 설치된 B1 wheel만으로는 run-status와 run-report 계약 Schema를 얻을 수 없다
+
+### 재현
+
+- B1 pyproject의 wheel packages와 force-include를 대조하고 임시 환경에 wheel만 설치한다
+
+### 증거
+
+- `source-inspection`: pyproject.toml은 Project Pack만 force-include하고 schemas/v1은 포함하지 않았다
+
+### 근본 원인
+
+R2에서 Schema 파일과 source-tree contract test는 만들었지만 배포 artifact 경계와 public export 경로를 별도 검증하지 않았다
+
+### 검토한 해결안
+
+- `rejected` Runner가 B1 Pydantic 모델을 직접 import — 독립 Adapter 경계와 artifact 고정을 깨뜨린다
+- `rejected` Runner가 B1 source checkout의 schemas/v1을 참조 — frozen wheel만으로 재현할 수 없다
+- `adopted` Schema를 wheel에 포함하고 lao schema export로 내보냄 — B1 public CLI 경계와 독립 artifact 검증을 보존한다
+
+### 채택한 해결
+
+schemas/v1 5개를 orchestrator/_schemas/v1에 force-include하고 비어 있는 출력 디렉터리에 exact file-set과 SHA-256을 반환하는 schema export 명령을 추가했다
+
+### 수정 파일
+
+- stages/b1-sequential/pyproject.toml
+- stages/b1-sequential/src/orchestrator/schemas.py
+- stages/b1-sequential/src/orchestrator/cli.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/integration/test_cli.py::test_schema_export_copies_public_bundle_with_hashes
+- stages/b1-sequential/tests/integration/test_cli.py::test_schema_export_refuses_nonempty_destination
+
+### 검증 결과
+
+- B1 전체 65 tests passed
+- 임시 디렉터리에 wheel만 설치한 뒤 source checkout 밖에서 Schema 5개 export와 hash 출력을 확인했다
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
 
 ## DEV-20260805-001 — 동결 benchmark fixture의 commit 값이 placeholder로 남음
 

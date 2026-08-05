@@ -6,7 +6,21 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from benchmark_runner.runner import run_r0_fake_cell, verify_sealed_cell
+from benchmark_runner.runner import (
+    analyze_r5_experiment,
+    export_r5_experiment,
+    run_r6_adapter_sidecar,
+    run_r0_fake_cell,
+    verify_r5_export,
+    verify_sealed_cell,
+)
+from benchmark_runner.r6 import (
+    create_r6_experiment,
+    freeze_r6_pre_execution,
+    preflight_r6_experiment,
+    run_next_r6_cell,
+    status_r6_experiment,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,29 +35,105 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = r0_commands.add_parser("verify", help="verify an R0 sealed Cell")
     verify.add_argument("--cell-dir", type=Path, required=True)
+
+    compare = commands.add_parser("compare", help="derive the deterministic R5 summary")
+    compare.add_argument("--experiment-dir", type=Path, required=True)
+
+    export = commands.add_parser("export", help="write the sanitized R5 Git export")
+    export.add_argument("--experiment-dir", type=Path, required=True)
+    export.add_argument("--results-root", type=Path, required=True)
+
+    verify_export = commands.add_parser(
+        "verify-export",
+        help="verify an R5 exported comparison and every Cell seal",
+    )
+    verify_export.add_argument("--results-root", type=Path, required=True)
+    verify_export.add_argument("--experiment-id", required=True)
+
+    r6 = commands.add_parser("r6", help="R6 frozen installed-artifact experiment")
+    r6_commands = r6.add_subparsers(dest="r6_command", required=True)
+    r6_create = r6_commands.add_parser("create")
+    r6_create.add_argument("--profile", type=Path, required=True)
+    r6_create.add_argument("--state-root", type=Path, required=True)
+    r6_preflight = r6_commands.add_parser("preflight")
+    r6_preflight.add_argument("--experiment-dir", type=Path, required=True)
+    r6_status = r6_commands.add_parser("status")
+    r6_status.add_argument("--experiment-dir", type=Path, required=True)
+    r6_run_next = r6_commands.add_parser("run-next")
+    r6_run_next.add_argument("--experiment-dir", type=Path, required=True)
+    r6_run_next.add_argument("--confirm-model-usage", action="store_true")
+    r6_freeze = r6_commands.add_parser("freeze")
+    r6_freeze.add_argument("--experiment-dir", type=Path, required=True)
+    r6_freeze.add_argument("--regression-record", type=Path, required=True)
+    r6_freeze.add_argument("--output-dir", type=Path, required=True)
+
+    internal = commands.add_parser(
+        "internal-run-adapter",
+        help=argparse.SUPPRESS,
+    )
+    internal.add_argument("--config", type=Path, required=True)
+    internal.add_argument("--result", type=Path, required=True)
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        if args.r0_command == "fake-cell":
-            result = run_r0_fake_cell(args.state_root, args.outcome)
+        if args.command == "r0":
+            if args.r0_command == "fake-cell":
+                result = run_r0_fake_cell(args.state_root, args.outcome)
+                print(
+                    json.dumps(
+                        result.model_dump(mode="json"),
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    )
+                )
+                return 0
+            measurement = verify_sealed_cell(args.cell_dir)
+            print(
+                json.dumps(
+                    {
+                        "cell_id": measurement.identity.cell_id,
+                        "check_success": measurement.outcome.check_success,
+                        "outcome_state": measurement.outcome.state,
+                        "verified": True,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        if args.command == "internal-run-adapter":
+            run_r6_adapter_sidecar(args.config, args.result)
+            return 0
+        if args.command == "r6":
+            if args.r6_command == "create":
+                result = create_r6_experiment(args.profile, args.state_root)
+            elif args.r6_command == "preflight":
+                result = preflight_r6_experiment(args.experiment_dir)
+            elif args.r6_command == "status":
+                result = status_r6_experiment(args.experiment_dir)
+            elif args.r6_command == "freeze":
+                result = freeze_r6_pre_execution(
+                    args.experiment_dir,
+                    args.regression_record,
+                    args.output_dir,
+                )
+            else:
+                result = run_next_r6_cell(
+                    args.experiment_dir,
+                    confirm_model_usage=args.confirm_model_usage,
+                )
             print(json.dumps(result.model_dump(mode="json"), ensure_ascii=False, sort_keys=True))
             return 0
-        measurement = verify_sealed_cell(args.cell_dir)
-        print(
-            json.dumps(
-                {
-                    "cell_id": measurement.identity.cell_id,
-                    "check_success": measurement.outcome.check_success,
-                    "outcome_state": measurement.outcome.state,
-                    "verified": True,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-        )
+        if args.command == "compare":
+            result = analyze_r5_experiment(args.experiment_dir)
+        elif args.command == "export":
+            result = export_r5_experiment(args.experiment_dir, args.results_root)
+        else:
+            result = verify_r5_export(args.results_root, args.experiment_id)
+        print(json.dumps(result.model_dump(mode="json"), ensure_ascii=False, sort_keys=True))
         return 0
     except Exception as exc:
         print(f"lao-bench: {exc}", file=sys.stderr)

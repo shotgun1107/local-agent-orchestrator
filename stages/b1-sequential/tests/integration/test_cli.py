@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from orchestrator.cli import EXIT_RUNTIME, _doctor, main
 from orchestrator.contract import RunReportEnvelope, RunStatusEnvelope
+from orchestrator.schemas import PUBLIC_SCHEMA_FILENAMES
 from tests.conftest import git, make_spec
 
 
@@ -47,6 +48,23 @@ def test_project_init_creates_valid_pack(tmp_path: Path, capsys) -> None:
     output = json.loads(capsys.readouterr().out)
     assert output["created"] is True
     assert (project / ".orchestrator" / "project.yaml").is_file()
+
+
+def test_schema_export_copies_public_bundle_with_hashes(tmp_path: Path, capsys) -> None:
+    destination = tmp_path / "schemas"
+    assert main(["schema", "export", "--output", str(destination)]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert tuple(item["path"] for item in output["files"]) == PUBLIC_SCHEMA_FILENAMES
+    assert tuple(sorted(path.name for path in destination.iterdir())) == PUBLIC_SCHEMA_FILENAMES
+    assert all(len(item["sha256"]) == 64 and item["size_bytes"] > 0 for item in output["files"])
+
+
+def test_schema_export_refuses_nonempty_destination(tmp_path: Path, capsys) -> None:
+    destination = tmp_path / "schemas"
+    destination.mkdir()
+    (destination / "foreign.txt").write_text("do not overwrite", encoding="utf-8")
+    assert main(["schema", "export", "--output", str(destination)]) == 2
+    assert "not empty" in capsys.readouterr().err
 
 
 def test_doctor_uses_sdk_account_without_exposing_account_data(project_factory, monkeypatch) -> None:

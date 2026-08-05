@@ -27,6 +27,7 @@ packages = ["src/orchestrator"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "templates/project-pack/.orchestrator" = "orchestrator/_project_pack"
+"schemas/v1" = "orchestrator/_schemas/v1"
 
 [tool.pytest.ini_options]
 addopts = "-ra"
