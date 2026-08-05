@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 21건
-- 해결: 21건
+- 전체: 22건
+- 해결: 22건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -32,6 +32,7 @@
 | DEV-20260805-017 | resolved | benchmark-runner-r6 | integration | B1 wheel에서 공개 JSON Schema 묶음이 누락됨 |
 | DEV-20260805-018 | resolved | benchmark-runner-r6 | tooling | R6 artifact builder가 한글 경로의 CLI JSON을 손상함 |
 | DEV-20260805-019 | resolved | benchmark-runner-r6 | integration | R6 preflight doctor가 중첩 fixture를 standalone 저장소로 오판 |
+| DEV-20260805-020 | resolved | benchmark-runner-r6 | tooling | 동일 commit의 R6 wheel hash가 checkout 줄바꿈에 따라 달라짐 |
 | DEV-20260805-001 | resolved | b1-dod-audit | test | 동결 benchmark fixture의 commit 값이 placeholder로 남음 |
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 
@@ -1112,6 +1113,60 @@ manifest source commit에서 임시 독립 Git fixture를 복원해 doctor를 �
 ### 검증 결과
 
 - Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260805-020 — 동일 commit의 R6 wheel hash가 checkout 줄바꿈에 따라 달라짐
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-r6`
+- 분류: `tooling`
+- 발견: 2026-08-05T08:52:41Z / detached clean-checkout artifact reproduction
+- 해결: 2026-08-05T08:52:41Z
+
+### 증상
+
+같은 c413f66 source commit과 SOURCE_DATE_EPOCH으로 만든 Runner와 B1 wheel hash가 원래 worktree build와 달랐다
+
+### 재현
+
+- 원래 worktree와 detached worktree에서 같은 commit의 두 wheel을 각각 빌드해 SHA-256을 비교한다
+
+### 증거
+
+- `reproducible-test`: Runner와 B1 wheel 모두 두 checkout 사이에서 SHA-256이 불일치했다
+
+### 근본 원인
+
+build script가 source commit을 기록했지만 wheel 입력은 Git blob이 아니라 checkout의 platform-dependent line-ending bytes였다
+
+### 검토한 해결안
+
+- `rejected` 첫 wheel hash를 권위값으로 수용 — 다른 clean checkout에서 같은 artifact를 재현할 수 없다
+- `rejected` 전체 저장소에 급히 eol 정책 추가 — 이번 artifact 문제보다 넓은 source 변경이며 기존 파일 영향 검토가 필요하다
+- `adopted` git archive HEAD의 blob snapshot에서 build — commit bytes와 wheel 입력을 직접 결합한다
+
+### 채택한 해결
+
+Runner와 B1 build 입력을 git archive HEAD에서 추출한 임시 snapshot으로 바꾸고 checkout 경로는 fixture 및 Plan source에만 사용한다
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+
+### 회귀시험
+
+- 같은 source commit을 서로 다른 worktree 경로에서 build해 Runner와 B1 wheel SHA-256 exact match 확인
+
+### 검증 결과
+
+- 수정 source commit 고정 뒤 원래 저장소와 detached worktree의 두 build로 검증 예정
 
 ### 남은 위험
 
