@@ -40,10 +40,13 @@ lao recover backup RUN_ID
 
 `require_clean_worktree=true`이므로 새 Run은 깨끗한 Git 저장소에서만 시작한다. 시험에서는 `LAO_STATE_ROOT`를 별도 임시 경로로 지정한다.
 
+`run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. `run-status.schema.json`, `run-report.schema.json`도 같은 Pydantic 모델에서 생성되므로 외부 실행기는 B1 내부 DB나 Python 모듈을 읽지 않고 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
+
 ## 검증 상태
 
 - 비라이브 단위·계약·통합 시험: 통과
 - 독립 code-change/document fixture의 FakeRuntime 관통: 통과
+- Benchmark Runner의 CLI-only Adapter·독립 Judge·Measurement 봉인 관통: 통과
 - 실제 Codex smoke: ChatGPT 인증으로 document-read 1회 통과
 - B0/B1 실험: `benchmarks/manifests/b0-b1-frozen.yaml` 기준으로 실행 예정
 

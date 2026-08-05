@@ -885,3 +885,33 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - R1 구현과 시험에서 실제 Codex·OpenAI 모델 turn은 0회다.
 - R1 구성요소는 아직 CLI/Cell 상태기계와 연결하지 않았다. B0/B1 실제 효율성이나 세션 자동화 성공을 증명하지 않으며, 다음 단계 R2가 B1 FakeRuntime으로 `fixture → run → Judge → seal`을 연결한다.
 - 다른 세션이 소유한 tradition·Claude skill·handoff 경로는 수정하지 않았다.
+
+## Benchmark Runner R2 1~3단계 정상 관통
+
+### B1 공개 계약
+
+- 작업일: 2026-08-05.
+- 기존 dict 출력인 `run status`와 JSON report를 `RunStatusEnvelope`, `RunReportEnvelope` Pydantic 공개 계약으로 승격했다.
+- `run-status.schema.json`, `run-report.schema.json`은 `scripts/export_schemas.py`가 같은 모델에서 생성한다. CLI 실제 JSON과 모델·checked-in Schema의 동기화 시험을 추가했다.
+- status는 session별 `measured|unknown|unsupported`를 공개한다. report 집계는 `measured|partial_or_unknown`을 사용하며, 후자의 정수 token 값은 불완전한 부분합이라는 의미를 Schema 설명에 명시했다.
+
+### B1SequentialAdapter
+
+- Runner는 B1 내부 모듈과 SQLite를 import하지 않고 `lao` CLI argv와 공개 JSON Schema만 사용한다.
+- Cell 전용 `LAO_STATE_ROOT`, Run Spec validate, CLI 실행, status·report·integrity 수집을 구현했다.
+- stdout/stderr는 임시 파일로 받아 메모리 사용을 제한하고, 각 1 MiB만 보존하면서 전체 byte 수·SHA-256·잘림 여부를 기록한다.
+- report 집계가 `measured`일 때만 core token usage를 측정값으로 사용한다. 원래 subtotal과 session usage 상태는 B1 variant namespace에 보존한다.
+
+### FakeRuntime 전체 관통
+
+- 두 동결 fixture 모두 `source commit 복원 → B1 FakeRuntime → B1 내부 Check → Runner 독립 Judge → canonical Measurement → SEALED`를 통과했다.
+- Measurement Evidence에는 공개 Adapter 결과, FakeRuntime 시험 입력, Judge 결과·stdout/stderr·final diff를 포함했다. B1 내부 SQLite와 variant state는 Evidence에서 제외했다.
+- B1 source·공개 Schema·Project Pack과 Runner source를 각각 결정론적으로 fingerprint해 Execution Plan과 Measurement provenance에 기록했다.
+- B1 runtime turn은 1회지만 실제 Codex·OpenAI 모델 turn은 0회이며, 두 값을 혼동하지 않도록 variant metrics에 `actual_model_turns=0`을 별도로 기록했다.
+
+### 검증 범위와 미완료
+
+- B1 전체 단위·계약·통합 시험 63개가 통과했다.
+- Benchmark Runner 전체 시험 53개가 통과했다. 이 중 R2 신규 정상 관통 시험은 Adapter 3개와 seal 2개다.
+- R2 전체 완료 판정은 아직 아니다. schema 불일치, exit 130, exit 0 nonterminal, `partial_or_unknown` subtotal을 core measured로 승격하지 않는 실패 주입 시험은 사용자가 지정한 다음 단계 4에 남겼다.
+- 실제 Codex 실행, B0 연결, B0/B1 비교 실험은 수행하지 않았다.

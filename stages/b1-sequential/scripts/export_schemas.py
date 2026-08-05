@@ -5,7 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from orchestrator.contract import ResultEnvelope, RunSpec, TaskEnvelope
+from orchestrator.contract import (
+    ResultEnvelope,
+    RunReportEnvelope,
+    RunSpec,
+    RunStatusEnvelope,
+    TaskEnvelope,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_ROOT = ROOT / "schemas" / "v1"
@@ -13,6 +19,8 @@ MODELS = {
     "run-spec.schema.json": RunSpec,
     "task-envelope.schema.json": TaskEnvelope,
     "result-envelope.schema.json": ResultEnvelope,
+    "run-status.schema.json": RunStatusEnvelope,
+    "run-report.schema.json": RunReportEnvelope,
 }
 
 

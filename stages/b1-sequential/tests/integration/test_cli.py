@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from orchestrator.cli import EXIT_RUNTIME, _doctor, main
+from orchestrator.contract import RunReportEnvelope, RunStatusEnvelope
 from tests.conftest import git, make_spec
 
 
@@ -22,9 +23,16 @@ def test_validate_start_status_report_and_recover_cli(tmp_path: Path, project_fa
     capsys.readouterr()
     assert main(["run", "start", "--project", str(root), "--spec", str(spec_path), "--runtime", "fake"]) == 0
     started = json.loads(capsys.readouterr().out)
+    RunStatusEnvelope.model_validate(started)
     run_id = started["run_id"]
     assert main(["run", "status", run_id, "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["state"] == "COMPLETED"
+    status = RunStatusEnvelope.model_validate_json(capsys.readouterr().out)
+    assert status.state == "COMPLETED"
+    assert status.session_usage_statuses == ["measured"]
+    assert main(["report", run_id, "--format", "json"]) == 0
+    report = RunReportEnvelope.model_validate_json(capsys.readouterr().out)
+    assert report.state == "COMPLETED"
+    assert report.metrics.usage_status == "measured"
     assert main(["report", run_id, "--format", "md"]) == 0
     assert f"# Run {run_id}" in capsys.readouterr().out
     assert main(["recover", "check", run_id]) == 0

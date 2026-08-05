@@ -115,6 +115,11 @@ class UsageStatus(StrEnum):
     UNSUPPORTED = "unsupported"
 
 
+class ReportUsageStatus(StrEnum):
+    MEASURED = "measured"
+    PARTIAL_OR_UNKNOWN = "partial_or_unknown"
+
+
 class TerminalStatus(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
@@ -488,6 +493,70 @@ class TokenCounts(StrictModel):
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)
+
+
+class RunStatusTask(StrictModel):
+    key: str = Field(min_length=1)
+    state: TaskState
+    attempts: int = Field(ge=0)
+    active_attempt_id: str | None
+
+
+class RunStatusEnvelope(StrictModel):
+    schema_version: Literal[1]
+    run_id: str = Field(min_length=1)
+    state: RunState
+    turns_used: int = Field(ge=0)
+    tasks: list[RunStatusTask]
+    session_usage_statuses: list[UsageStatus] = Field(
+        description=(
+            "Per-session measurement availability. unsupported remains unknown to "
+            "benchmark consumers and is never treated as not_applicable."
+        )
+    )
+
+
+class RunReportAttempt(StrictModel):
+    attempt_no: int = Field(ge=1)
+    state: AttemptState
+    failure_kind: str | None
+    resume_count: int = Field(ge=0)
+
+
+class RunReportTask(StrictModel):
+    key: str = Field(min_length=1)
+    state: TaskState
+    attempts: list[RunReportAttempt]
+
+
+class RunReportMetrics(StrictModel):
+    turns: int = Field(ge=0)
+    sessions: int = Field(ge=0)
+    tasks: int = Field(ge=0)
+    attempts: int = Field(ge=0)
+    checks_passed: int = Field(ge=0)
+    checks_failed: int = Field(ge=0)
+    wall_clock_seconds: float | None = Field(default=None, ge=0)
+    usage_status: ReportUsageStatus
+    token_usage: TokenCounts = Field(
+        description=(
+            "Aggregate token counts only when usage_status=measured; otherwise these "
+            "integers are an incomplete subtotal and must not be promoted to a measured total."
+        )
+    )
+    decisions: int = Field(ge=0)
+    manual_copy_or_relay_count: int | None = Field(default=None, ge=0)
+    manual_recovery_seconds: float | None = Field(default=None, ge=0)
+
+
+class RunReportEnvelope(StrictModel):
+    schema_version: Literal[1]
+    run_id: str = Field(min_length=1)
+    state: RunState
+    project_id: str = Field(min_length=1)
+    request: str
+    metrics: RunReportMetrics
+    tasks: list[RunReportTask]
 
 
 class UsageSnapshot(StrictModel):

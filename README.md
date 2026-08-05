@@ -8,4 +8,4 @@
 - [B0~B3 벤치마크](./benchmarks/README.md)
 - [Benchmark Runner](./tools/benchmark-runner/README.md)
 
-현재 오케스트레이터 구현 단계는 B1이며, 비교 실행기는 실제 모델 호출 없이 fixture 복원과 독립 Judge까지 수행하는 R1까지 구현했다. B2 병렬 실행과 B3 조건부 Reviewer는 B0/B1 비교 게이트를 통과하기 전까지 구현하지 않는다.
+현재 오케스트레이터 구현 단계는 B1이며, 비교 실행기는 실제 모델 호출 없이 B1 FakeRuntime을 CLI로 실행하고 독립 Judge와 Measurement 봉인까지 연결한 R2 정상 경로를 구현했다. B2 병렬 실행과 B3 조건부 Reviewer는 B0/B1 비교 게이트를 통과하기 전까지 구현하지 않는다.
