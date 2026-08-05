@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-002",
+  "title": "하네스 검증 명령이 Windows Python launcher 가용성을 가정함",
+  "status": "resolved",
+  "stage": "implementation-log-harness",
+  "category": "tooling",
+  "discovered_at": "2026-08-05T12:00:00+09:00",
+  "resolved_at": "2026-08-05T12:15:00+09:00",
+  "discovered_by": "direct harness test execution",
+  "symptom": "문서의 py -3.12 명령이 No installed Python found로 종료됐지만 저장소의 B1 가상환경 Python 3.12는 정상 실행됐다.",
+  "reproduction": [
+    "저장소 루트에서 py -3.12 tools/implementation-log/implementation_log.py validate를 실행한다.",
+    "같은 명령을 stages/b1-sequential/.venv/Scripts/python.exe로 실행해 결과를 비교한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "Windows Python launcher는 No installed Python found를 반환했다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "B1 가상환경의 Python으로 하네스 단위시험 10개와 incident validation을 실행해 통과했다."
+    }
+  ],
+  "root_cause": "사용 안내가 Python 버전만 지정하면 Windows launcher가 항상 해당 설치를 발견한다고 가정했고, 실제 검증 환경에서 이미 설치·고정된 프로젝트 가상환경을 사용하지 않았다.",
+  "considered_options": [
+    {
+      "option": "Windows Python launcher 설치를 하네스 필수 조건으로 추가한다",
+      "decision": "rejected",
+      "reason": "하네스는 표준 라이브러리만 사용하며 프로젝트가 이미 가진 Python 3.12 가상환경으로 충분하다."
+    },
+    {
+      "option": "문서에서 프로젝트 가상환경 Python을 명시적으로 호출한다",
+      "decision": "adopted",
+      "reason": "실제 검증에 사용한 인터프리터와 사용자 실행 절차가 일치한다."
+    }
+  ],
+  "resolution": "하네스 README의 모든 명령이 stages/b1-sequential/.venv/Scripts/python.exe를 $python 변수로 지정해 호출하도록 수정했다.",
+  "affected_files": [
+    "tools/implementation-log/README.md"
+  ],
+  "regression_tests": [
+    "tools/implementation-log/tests/test_implementation_log.py"
+  ],
+  "verification": [
+    "명시적 가상환경 Python에서 하네스 단위시험 10개가 통과했다.",
+    "동일 인터프리터에서 incident validation과 generated Markdown check가 통과했다."
+  ],
+  "remaining_risks": [
+    "새 clone에서는 B1 가상환경을 먼저 생성해야 하며 README가 이를 전제로 명시한다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "tools/implementation-log/README.md",
+    "docs/operations/codex-revision-log.md"
+  ]
+}
