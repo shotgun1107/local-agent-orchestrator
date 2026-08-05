@@ -1032,3 +1032,37 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - R5 전용 시험 19개와 Benchmark Runner 전체 회귀시험 120개, B1 전체 시험 63개, 구현 로그 17개 검증과 하네스 단위시험 10개가 통과했다.
 - R5 구현과 시험에서 실제 Codex·OpenAI model turn은 0회다. 실제 B0/B1 결과가 없으므로 생성된 판정은 모두 합성 Measurement에 대한 계약 검증이며 B1 성능 결론이 아니다.
 - 다음 단계는 R6에서 실제 driver·새 Runner/B1 artifact·환경·Execution Plan·decision policy·전체 비라이브 회귀 증거를 확정하고 첫 유료 Cell 직전 상태로 동결하는 것이다.
+
+## Benchmark Runner R6 실제 실행 전 동결
+
+### 실제 driver와 실행 경계
+
+- 작업일: 2026-08-05.
+- R4 controller에 실제 `R6B0ManualDriver`와 `R6B1SequentialDriver`를 연결했다. B0는 별도 Codex App 작업과 console Event sidecar를 사용하고, B1은 B1 내부 모듈을 import하지 않은 채 installed `lao` public CLI만 호출한다.
+- Variant 전체를 별도 process group sidecar로 실행하고 manifest의 900초 deadline을 부모가 집행한다. timeout과 controller crash에서는 기록된 PID·process start identity를 대조해 process group을 회수하며 ACTIVE Variant를 자동 재호출하지 않는다.
+- `r6 create`, `preflight`, `status`, `run-next`, `freeze` CLI를 추가했다. `run-next`는 `--confirm-model-usage`가 없으면 거부되므로 artifact 생성·preflight·동결이 실수로 유료 Cell을 시작하지 않는다.
+- B1 공개 Schema 5개를 wheel에 포함하고 `lao schema export`로만 내보낸다. source checkout 밖의 임시 설치 환경에서 exact file set과 각 SHA-256을 확인했다.
+
+### 재현 가능한 artifact와 Plan
+
+- 최종 source commit은 `bef6f8e4b291d8724c8d78160d4559595cc0489c`다. Runner wheel SHA-256은 `6da66546d24aca56340d22a213c047859633f639474eb5eff09a46149e8171e1`, B1 wheel은 `596c98239491fdcb27e4cfc9afa00cbc020ea81830cb3bf1a67979e1023f367a`다.
+- wheel 입력은 checkout bytes가 아니라 `git archive HEAD`의 blob snapshot이다. Plan과 fixture 복원은 `core.autocrlf=false`로 source commit을 detached checkout한 canonical local clone을 사용한다.
+- 서로 다른 두 worktree와 local runtime 경로에서 build한 결과 Runner/B1 wheel hash, 공개 Schema 5개 hash, manifest SHA-256 `5633cb18…`, Plan fingerprint `d90cff38…`, Experiment ID `exp_20260805_d90cff38_1`이 모두 일치했다.
+- 이전 `b188954`, `c413f66` bundle은 각각 preflight doctor 경계와 checkout 재현성 문제로 동결하지 않았으며 각 `NOT-FROZEN.md`에 사유를 남겼다. 최종 후보는 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`뿐이다.
+
+### 비라이브 회귀와 preflight
+
+- 최종 source에서 B1 pytest 65개, Benchmark Runner pytest 128개, 구현 오류 로그 23건 검증, 로그 하네스 단위시험 10개가 한 번에 통과했다. 전체 기록은 `nonlive-regression.json`에 있으며 actual model turn은 0회다.
+- Python `3.12.10`, Git `2.54.0.windows.1`, Codex CLI/SDK `0.144.4`, ChatGPT 인증, runtime profile의 `gpt-5.6-terra`·reasoning `low`, 두 fixture source tree, artifact hash를 모델 호출 없이 확인했다.
+- B1 doctor는 Cell workspace가 아니라 source commit에서 복원한 임시 standalone Git fixture에서 실행한다. preflight Evidence SHA-256은 `32da949980bea634944853a9a76106dbe5123a20757a0e9877a207afeb1546ea`다.
+- 고정 seed는 `20260805`, baseline은 B0, candidate는 B1, decision policy는 `b0-b1-v1`이다. B0 App과 B1 CLI/SDK 표면 차이 때문에 `treatment_control=partial`이며 B0 model·reasoning은 각 Cell 시작 시 사용자 attestation으로 다시 확인한다.
+- 동결 시점 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이다. `pre-execution-freeze.json`은 actual model turn 0과 “아직 채택 판정 없음”을 명시한다.
+
+### 구현 중 발견한 경계 오류
+
+- `DEV-20260805-016`: controller가 seal 뒤 lifecycle JSONL을 append해 Evidence hash가 달라지는 문제를 controller-owned lifecycle의 Measurement 제외로 해결했다.
+- `DEV-20260805-017`: B1 source에만 있던 공개 Schema를 wheel bundle과 public export CLI로 승격했다.
+- `DEV-20260805-018`: 한글 경로의 child JSON 출력에 UTF-8 환경을 명시했다.
+- `DEV-20260805-019`: nested fixture를 직접 doctor하던 오류를 임시 standalone fixture doctor로 교체했다.
+- `DEV-20260805-020`, `DEV-20260805-021`: checkout 줄바꿈에 따라 wheel hash와 Plan fingerprint가 달라지던 문제를 Git blob snapshot과 canonical source clone으로 닫았다.
+- 이 단계는 B1이 B0보다 낫다는 결과가 아니다. 실제 12-Cell을 순서대로 실행하고 R5 policy가 봉인 결과를 분석해야만 `ADOPT_B1`, `REJECT_B1`, `INCONCLUSIVE` 중 하나를 낼 수 있다.

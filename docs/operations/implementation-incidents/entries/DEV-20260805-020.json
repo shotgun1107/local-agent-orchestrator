@@ -45,9 +45,11 @@
     "같은 source commit을 서로 다른 worktree 경로에서 build해 Runner와 B1 wheel SHA-256 exact match 확인"
   ],
   "verification": [
-    "수정 source commit 고정 뒤 원래 저장소와 detached worktree의 두 build로 검증 예정"
+    "bef6f8e를 서로 다른 두 worktree와 local root에서 build해 Runner 6da66546, B1 596c9823 wheel SHA-256 exact match"
   ],
   "remaining_risks": [],
-  "related_commits": [],
+  "related_commits": [
+    "35a54739c78649f1950cd253d2e4606d3a590e41"
+  ],
   "source_references": []
 }

@@ -45,9 +45,12 @@
     "tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_collect_environment_checks_doctor_profile_without_turn"
   ],
   "verification": [
-    "Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증"
+    "Fake doctor 호출 시 project가 독립 .git을 가진 임시 fixture인지 확인하고 환경 Evidence actual_model_turns 0을 검증",
+    "installed bef6f8e Runner의 실제 ChatGPT preflight가 Evidence hash 32da9499로 통과하고 12개 Cell 모두 PLANNED 유지"
   ],
   "remaining_risks": [],
-  "related_commits": [],
+  "related_commits": [
+    "c413f66d448ac736ea4b1607081d2ce4210dd751"
+  ],
   "source_references": []
 }
