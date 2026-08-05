@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 25건
-- 해결: 25건
+- 전체: 26건
+- 해결: 26건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -38,6 +38,7 @@
 | DEV-20260805-002 | resolved | implementation-log-harness | tooling | 하네스 검증 명령이 Windows Python launcher 가용성을 가정함 |
 | DEV-20260806-001 | resolved | r6 | integration | 비대화형 B0 입력 실패가 Cell을 봉인함 |
 | DEV-20260806-002 | resolved | r6 | tooling | git archive가 core.autocrlf에 따라 다른 wheel을 생성함 |
+| DEV-20260806-003 | resolved | r6 | tooling | 동결 artifact JSON이 checkout EOL 변환 대상이었음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1476,3 +1477,62 @@ build_r6_artifacts.py가 git -c core.autocrlf=false archive로 snapshot을 만�
 - 출처: docs/operations/codex-revision-log.md
 - 출처: tools/benchmark-runner/scripts/build_r6_artifacts.py
 - 출처: tools/benchmark-runner/tests/test_r6_build_reproducibility.py
+
+## DEV-20260806-003 — 동결 artifact JSON이 checkout EOL 변환 대상이었음
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `tooling`
+- 발견: 2026-08-05T23:53:07Z / revision 2 최종 이식성 감사
+- 해결: 2026-08-05T23:53:17Z
+
+### 증상
+
+동결 JSON이 text 속성 미지정 상태여서 core.autocrlf=true인 clone에서 byte hash가 달라질 수 있었다
+
+### 재현
+
+- 동결 bundle의 execution-plan.json에 대해 git check-attr text를 확인한다
+- freeze record가 JSON의 exact SHA-256을 검증한다는 계약과 checkout EOL 변환 가능성을 대조한다
+
+### 증거
+
+- `source-inspection`: 속성 추가 전 execution-plan.json의 text 속성은 unspecified였고 freeze record는 해당 파일의 exact byte hash를 저장했다
+
+### 근본 원인
+
+동결 bundle의 JSON과 wheel에 checkout byte 보존 Git attribute가 없어 저장소 전역 core.autocrlf 설정이 exact-hash Evidence를 바꿀 수 있었다
+
+### 검토한 해결안
+
+- `rejected` clone 뒤 hash를 새로 계산해 기록 갱신 — 동결 시점 기준을 결과를 받은 뒤 바꾸게 되어 Evidence 의미가 사라진다
+- `adopted` artifact JSON은 -text, wheel은 binary로 고정 — Git checkout이 committed blob bytes를 그대로 복원하게 한다
+
+### 채택한 해결
+
+루트 .gitattributes에 benchmarks/artifacts 하위 JSON -text와 wheel binary 규칙을 추가하고 core.autocrlf=true인 no-checkout clone에서 bundle 7개 전체 byte와 내부 SHA를 재검증했다
+
+### 수정 파일
+
+- .gitattributes
+
+### 회귀시험
+
+- core.autocrlf=true fresh-clone artifact byte audit
+
+### 검증 결과
+
+- fresh clone의 bundle 7개가 원본과 byte-identical
+- execution Plan·nonlive regression·Runner wheel·B1 wheel 내부 SHA 검증 통과
+- fresh clone worktree clean 확인
+
+### 남은 위험
+
+- 새 artifact 확장자를 추가하면 byte 보존 attribute와 clone 감사를 함께 갱신해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: .gitattributes
+- 출처: benchmarks/artifacts/r6-b0-b1-2c33500-r2/pre-execution-freeze.json
+- 출처: docs/operations/codex-revision-log.md
