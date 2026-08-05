@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-008",
+  "title": "Windows Judge timeout이 process group을 종료하지 못함",
+  "status": "resolved",
+  "stage": "benchmark-runner-r1",
+  "category": "implementation",
+  "discovered_at": "2026-08-05T04:26:58Z",
+  "resolved_at": "2026-08-05T04:27:06Z",
+  "discovered_by": "FixtureJudge timeout 회귀시험",
+  "symptom": "0.1초 timeout 뒤 1초 grace가 끝나도 Check Python 프로세스가 살아 있어 TimeoutExpired가 전파된다",
+  "reproduction": [
+    "CREATE_NEW_PROCESS_GROUP으로 30초 sleep Check를 시작하고 taskkill /PID /T 뒤 1초간 종료를 기다린다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "test_check_timeout_terminates_process_group가 _terminate_process_group 내부 process.wait에서 실패했다"
+    }
+  ],
+  "root_cause": "Windows taskkill /T는 강제 옵션 없이 생성된 콘솔 Python process group을 종료한다는 보장이 없는데 명령 반환만으로 soft termination을 가정했다",
+  "considered_options": [
+    {
+      "option": "timeout 즉시 parent process.kill만 호출",
+      "decision": "rejected",
+      "reason": "자식 process가 남을 수 있고 5초 grace 계약을 지키지 않는다"
+    },
+    {
+      "option": "CTRL_BREAK_EVENT 후 grace, taskkill /T /F, 최후 parent kill",
+      "decision": "adopted",
+      "reason": "협조 종료 기회와 group 강제 정리를 순서대로 수행한다"
+    }
+  ],
+  "resolution": "Windows process group에 CTRL_BREAK_EVENT를 보내고 grace 내 미종료 시 taskkill /T /F를 실행하며, 도구 자체 timeout에도 parent kill과 종료 확인을 수행하도록 수정했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_judge.py::test_check_timeout_terminates_process_group"
+  ],
+  "verification": [
+    "30초 sleep Check가 timed_out으로 기록되고 5초 이내 반환하며 전체 Benchmark Runner pytest 48개 통과"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}

@@ -849,3 +849,39 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Benchmark Runner 설계 판본 5를 다시 동결했다.
 - 판본 5는 1,710줄, SHA-256 `A6E6789DA54C9A314C1551FE71B8F1424ED2A86E64A8E8A50D8AF7540E924B85`다.
 - 다른 세션이 소유한 tradition·Claude skill·handoff 경로는 읽거나 수정하지 않았다.
+
+## Benchmark Runner R1 fixture 복원·독립 Judge 구현
+
+### 구현 범위
+
+- 작업일: 2026-08-05.
+- 동결 manifest를 `PyYAML safe_load`와 `extra=forbid` Pydantic 계약으로 읽고, source commit의 fixture tree를 검증한 뒤 `git archive`에서 Cell별 clean Git worktree를 만든다.
+- archive 추출은 절대 경로·`..`·역슬래시·중복·대소문자 충돌·symlink·hardlink·특수 항목을 거부한다.
+- write scope는 exact POSIX 상대 파일과 `<directory>/**`만 허용한다. Check 실행 전에 changed path, symlink component, `.orchestrator/checks.yaml`과 `benchmark_checks/**` 보호 hash를 검사한다.
+- acceptance와 `diff_check`를 Variant 외부의 같은 Judge가 순서대로 실행한다. `python`과 `git`은 preflight에서 받은 절대 executable로 치환하고 shell은 사용하지 않는다.
+- Check는 별도 process group에서 실행한다. timeout이면 협조 종료와 grace 뒤 group 강제 종료를 수행한다.
+- stdout/stderr는 stream별 1 MiB까지만 파일에 보존하지만 전체 bytes를 끝까지 읽어 전체 크기·SHA-256·잘림 여부를 결과에 남긴다.
+- Judge는 `result.json`, Check별 stdout/stderr, `final.diff`, baseline/final tree를 Evidence로 남긴다.
+
+### baseline·positive·negative 검증
+
+- 두 동결 fixture는 source commit에서 manifest tree와 동일하게 복원됐고 최초 worktree가 clean이었다.
+- 두 baseline은 과제를 아직 풀지 않은 상태이므로 acceptance 실패·diff 통과로 정확히 판정됐다.
+- 저장소 밖 실험 입력을 바꾸지 않도록 test-only golden patch 두 개를 별도로 만들고 LF bytes와 SHA-256을 고정했다. 두 patch는 허용 scope 안에서 acceptance·diff를 모두 통과했다.
+- Check 변조와 scope 위반은 Check command 실행 전에 실패했다. manifest source tree 불일치, archive traversal, symlink도 복원 단계에서 거부됐다.
+- Python Check 뒤 `__pycache__` 등 Judge 자체 worktree 변경은 없었다. final diff hash와 저장된 `result.json`의 재파싱 일치도 확인했다.
+
+### 구현 중 오류와 해결
+
+- `DEV-20260805-007`: 정상 `git archive`가 포함하는 fixture 상위 디렉터리를 경로 탈출로 오판했다. prefix의 조상은 디렉터리 항목일 때만 허용하고 내용 생성 없이 건너뛰도록 수정했다.
+- `DEV-20260805-008`: Windows의 비강제 `taskkill /T`가 timeout process group을 실제 종료하지 않았다. `CTRL_BREAK_EVENT → grace → taskkill /T /F → 최후 parent kill`과 종료 확인 순서로 수정했다.
+- `DEV-20260805-009`: Git rename의 destination만 검사해 범위 밖 source 삭제를 놓칠 수 있었다. rename은 source와 destination 모두, copy는 destination만 검사하도록 수정했다.
+- `DEV-20260805-010`: Check 전후 changed path 목록만 비교해 같은 파일의 내용 변조를 놓칠 수 있었다. 경로 목록과 실제 Git tree를 함께 비교하도록 수정했다.
+- 네 오류 모두 재현 절차·근본 원인·대안·회귀시험을 구현 오류 로그 JSON과 자동 생성 index에 기록했다.
+
+### 검증과 경계
+
+- 전체 Benchmark Runner 회귀시험 48개가 통과했다. R0의 계약·Plan·CLI·봉인 시험을 포함하므로 R1 추가로 기존 vertical slice가 깨지지 않았음을 함께 확인했다.
+- R1 구현과 시험에서 실제 Codex·OpenAI 모델 turn은 0회다.
+- R1 구성요소는 아직 CLI/Cell 상태기계와 연결하지 않았다. B0/B1 실제 효율성이나 세션 자동화 성공을 증명하지 않으며, 다음 단계 R2가 B1 FakeRuntime으로 `fixture → run → Judge → seal`을 연결한다.
+- 다른 세션이 소유한 tradition·Claude skill·handoff 경로는 수정하지 않았다.
