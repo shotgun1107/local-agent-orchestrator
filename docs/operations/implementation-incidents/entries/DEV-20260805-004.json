@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260805-004",
+  "title": "Intervention Event의 kind 필드가 envelope와 이벤트 종류에 중복됨",
+  "status": "resolved",
+  "stage": "benchmark-runner-r0",
+  "category": "design",
+  "discovered_at": "2026-08-05T03:33:52Z",
+  "resolved_at": "2026-08-05T03:35:18Z",
+  "discovered_by": "R0 Pydantic contract implementation",
+  "symptom": "공개 JSON envelope는 kind를 문서 종류로 요구하지만 Intervention Event 예시는 같은 kind에 correction 같은 이벤트 종류를 넣어 단일 JSON에서 두 의미를 동시에 표현할 수 없다.",
+  "reproduction": [
+    "동결 설계 §8.1의 Contract Envelope와 §8.7 Intervention Event 예시를 하나의 extra-forbid Pydantic 모델로 구현한다."
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "§8.1은 kind=measurement 형식의 공통 envelope를 요구하고 §8.7은 kind=correction을 요구해 필드 이름이 충돌한다."
+    }
+  ],
+  "root_cause": "공통 JSON envelope와 Intervention Event 예시를 별도 절에서 설계하면서 kind 필드의 namespace 충돌을 계약 모델로 검증하지 않았다.",
+  "considered_options": [
+    {
+      "option": "Intervention Event에서 공통 envelope를 제거",
+      "decision": "rejected",
+      "reason": "모든 공개 JSON이 같은 envelope를 가진다는 계약을 깨뜨린다"
+    },
+    {
+      "option": "kind에 correction만 기록",
+      "decision": "rejected",
+      "reason": "문서 종류를 기계적으로 판별할 수 없다"
+    },
+    {
+      "option": "kind와 intervention_kind 분리",
+      "decision": "adopted",
+      "reason": "envelope 종류와 이벤트 의미를 각각 단일 필드로 보존한다"
+    }
+  ],
+  "resolution": "Intervention Event는 kind=intervention_event를 사용하고 실제 이벤트 종류는 intervention_kind에 기록하도록 Pydantic 계약과 설계 판본 4를 일치시켰다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/tests/test_contract.py",
+    "docs/design/general-benchmark-runner-design.md"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_contract.py::test_intervention_event_separates_document_and_event_kinds"
+  ],
+  "verification": [
+    "Benchmark Runner R0 pytest 18개가 모두 통과했다.",
+    "생성된 intervention-event.schema.json이 kind=intervention_event와 intervention_kind enum을 별도 필드로 요구한다."
+  ],
+  "remaining_risks": [
+    "향후 공개 Schema 판본을 소비하는 도구는 kind와 intervention_kind를 혼동하지 않아야 한다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/general-benchmark-runner-design.md:305",
+    "docs/design/general-benchmark-runner-design.md:475",
+    "tools/benchmark-runner/schemas/v1/intervention-event.schema.json"
+  ]
+}
