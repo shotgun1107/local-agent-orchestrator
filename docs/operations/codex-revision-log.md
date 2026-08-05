@@ -1075,3 +1075,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `r6 create --revision N`을 추가해 중단된 revision 1과 분리된 새 Plan·Experiment ID를 만들 수 있게 했다. artifact build harness에도 같은 인자를 전달한다.
 - 다음 Cell이 `PLANNED/PREPARED` B0일 때 stdin이 TTY가 아니면 environment 수집·workspace 준비·상태 전이 전에 거부한다. B1 Cell과 crash/Judge 복구 경로에는 이 검사를 적용하지 않는다.
 - revision 1의 로컬 runtime Evidence는 수정하거나 재사용하지 않는다. 수정된 Runner artifact와 전체 비라이브 회귀 결과로 revision 2를 새로 build·preflight·동결한 뒤 유료 비교를 재시작한다.
+
+## R6 revision 2 재현 build 경계 보강
+
+- 작업일: 2026-08-06.
+- `2f4385d`에서 revision 2 wheel·runtime·Plan을 만들고 비라이브 회귀와 preflight까지 통과했으나, 독립 clean clone에서 다시 build한 wheel hash와 Plan fingerprint가 일치하지 않았다. 이 첫 bundle은 실행하지 않고 폐기 대상으로 분류했다.
+- 두 build의 source commit은 같았지만 첫 저장소는 `core.autocrlf=true`, canonical clone은 `false`였다. 같은 HEAD의 `git archive` SHA가 달랐고, 명령에 `-c core.autocrlf=false`를 붙이면 두 archive SHA가 일치했다.
+- build harness가 `git -c core.autocrlf=false archive`를 사용하도록 수정했다. `core.autocrlf=true/false`인 두 독립 clone을 실제 생성해 archive bytes가 같은지 확인하는 회귀시험을 추가했다.
+- 수정 뒤 Benchmark Runner 132개, B1 65개가 통과했다. 원인·대안·해결·잔여 위험은 `DEV-20260806-002`에 기록했다.
+- 실제 모델 호출은 0회다. revision 2는 이 수정이 포함된 새 clean commit에서 wheel·runtime·회귀 기록·preflight·freeze를 처음부터 다시 생성한다.
