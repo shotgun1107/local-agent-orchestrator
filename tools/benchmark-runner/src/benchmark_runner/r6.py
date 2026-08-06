@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Literal
 
@@ -15,11 +15,14 @@ from pydantic import Field, model_validator
 
 from .contract import (
     ArtifactIdentity,
+    B0Attestation,
     CellLifecycleState,
+    CellStateRecord,
     ExecutionPlan,
     ExperimentControl,
     ExperimentDisplayState,
     StrictModel,
+    utc_now,
 )
 from .plan import assert_plan_integrity
 from .workspace import FixtureRestorer, load_frozen_manifest
@@ -27,12 +30,17 @@ from .runner import (
     R4ControllerError,
     R4ExperimentController,
     R4ExperimentCreated,
+    R4PrepareNextResult,
     R4RunNextResult,
+    R6B0ControlKind,
     R6B0ManualDriver,
     R6B1SequentialDriver,
+    _process_is_alive,
+    _process_start_identity,
     atomic_write,
     canonical_json_bytes,
     create_r4_experiment_from_manifest,
+    enqueue_r6_b0_control_command,
     frozen_b0_b1_decision_policy,
     sha256_file,
 )
@@ -81,6 +89,54 @@ class R6FreezeResult(StrictModel):
     execution_plan_path: str
     freeze_record_path: str
     actual_model_turns: Literal[0] = 0
+
+
+class R6B0PreparedResult(StrictModel):
+    experiment_id: str
+    cell_id: str
+    action: Literal["prepared", "already_prepared"]
+    workspace: str
+    prompt_path: str
+    cell_state: Literal["PREPARED"] = "PREPARED"
+    actual_model_turns: Literal[0] = 0
+
+
+class R6B0StartResult(StrictModel):
+    experiment_id: str
+    cell_id: str
+    controller_pid: int
+    cell_state: Literal["ACTIVE"] = "ACTIVE"
+    workspace: str
+    prompt_path: str
+
+
+class R6B0CommandResult(StrictModel):
+    experiment_id: str
+    cell_id: str
+    sequence: int
+    kind: str
+    received_at: str
+
+
+class R6B0CompleteResult(StrictModel):
+    experiment_id: str
+    cell_id: str
+    cell_state: str
+    display_state: ExperimentDisplayState
+    stop_reason: str | None = None
+
+
+class R6B0ControllerProcess(StrictModel):
+    schema_version: Literal[1] = 1
+    experiment_id: str
+    cell_id: str
+    pid: int
+    process_start_identity: str
+    status: Literal["running", "completed"]
+    started_at: str
+    completed_at: str | None = None
+    stdout_path: str
+    stderr_path: str
 
 
 def _resolve(value: str, base: Path) -> str:
@@ -372,35 +428,267 @@ def status_r6_experiment(experiment_dir: Path):
     return _controller(experiment_dir).status()
 
 
-def _require_interactive_b0_stdin(experiment_dir: Path) -> None:
-    """Fail before state mutation when the next live B0 Cell cannot read input."""
-
+def _next_r6_cell(experiment_dir: Path):
     experiment_dir = experiment_dir.resolve()
     status = status_r6_experiment(experiment_dir)
     next_cell_id = status.next_cell_id
     if next_cell_id is None:
-        return
-    state = status.cell_states[next_cell_id]
-    if state not in {CellLifecycleState.PLANNED, CellLifecycleState.PREPARED}:
-        return
+        raise R4ControllerError("No R6 Cell remains")
     plan = ExecutionPlan.model_validate_json(
         (experiment_dir / "execution-plan.json").read_bytes()
     )
     assert_plan_integrity(plan)
     next_cell = next(cell for cell in plan.cells if cell.cell_id == next_cell_id)
-    if next_cell.variant_id != "b0":
-        return
-    is_interactive = getattr(sys.stdin, "isatty", lambda: False)()
-    if not is_interactive:
-        raise R4ControllerError(
-            "B0 run-next requires interactive stdin; no Cell state was changed"
+    return status, next_cell
+
+
+def _require_next_b0(experiment_dir: Path, *states: CellLifecycleState):
+    status, cell = _next_r6_cell(experiment_dir)
+    if cell.variant_id != "b0":
+        raise R4ControllerError("The next R6 Cell is not B0")
+    state = status.cell_states[cell.cell_id]
+    if states and state not in set(states):
+        expected = ", ".join(item.value for item in states)
+        raise R4ControllerError(f"B0 Cell must be in {expected}, not {state.value}")
+    return status, cell
+
+
+def prepare_r6_b0_cell(experiment_dir: Path) -> R6B0PreparedResult:
+    """Prepare the next B0 workspace without activating its 900-second deadline."""
+
+    experiment_dir = experiment_dir.resolve()
+    _require_next_b0(
+        experiment_dir,
+        CellLifecycleState.PLANNED,
+        CellLifecycleState.PREPARED,
+    )
+    prepared: R4PrepareNextResult = _controller(experiment_dir).prepare_next()
+    cell_dir = experiment_dir / "cells" / prepared.cell_id
+    return R6B0PreparedResult(
+        experiment_id=prepared.experiment_id,
+        cell_id=prepared.cell_id,
+        action=prepared.action,
+        workspace=str((cell_dir / "workspace").resolve()),
+        prompt_path=str((cell_dir / "raw" / "b0-fixed-prompt.md").resolve()),
+    )
+
+
+def _b0_controller_record_path(experiment_dir: Path, cell_id: str) -> Path:
+    return (
+        experiment_dir
+        / "cells"
+        / cell_id
+        / "variant-state"
+        / "b0-controller-process"
+        / "process.json"
+    )
+
+
+def _require_b0_controller_running(
+    experiment_dir: Path,
+    cell_id: str,
+) -> R6B0ControllerProcess:
+    path = _b0_controller_record_path(experiment_dir, cell_id)
+    try:
+        record = R6B0ControllerProcess.model_validate_json(path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise R4ControllerError("B0 controller process record is missing or invalid") from exc
+    if (
+        record.status != "running"
+        or not _process_is_alive(record.pid)
+        or _process_start_identity(record.pid) != record.process_start_identity
+    ):
+        raise R4ControllerError("B0 controller process is not running")
+    return record
+
+
+def start_r6_b0_cell(
+    experiment_dir: Path,
+    *,
+    confirm_model_usage: bool,
+    activation_timeout_seconds: float = 30.0,
+) -> R6B0StartResult:
+    """Start run-next in a hidden process and return only after the B0 Cell is ACTIVE."""
+
+    if not confirm_model_usage:
+        raise R4ControllerError("R6 B0 start requires --confirm-model-usage")
+    experiment_dir = experiment_dir.resolve()
+    status, cell = _require_next_b0(experiment_dir, CellLifecycleState.PREPARED)
+    profile = load_r6_profile(experiment_dir / "runtime" / "r6-runtime.json")
+    _assert_profile_artifacts(profile)
+    record_path = _b0_controller_record_path(experiment_dir, cell.cell_id)
+    if record_path.exists():
+        raise R4ControllerError("B0 controller process record already exists")
+    process_dir = record_path.parent
+    process_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = process_dir / "stdout.txt"
+    stderr_path = process_dir / "stderr.txt"
+    environment = os.environ.copy()
+    package_root = str(Path(__file__).resolve().parents[1])
+    environment["PYTHONPATH"] = os.pathsep.join(
+        value for value in (package_root, environment.get("PYTHONPATH")) if value
+    )
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONUTF8"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    command = [
+        profile.runner_python,
+        "-m",
+        "benchmark_runner",
+        "r6",
+        "run-next",
+        "--experiment-dir",
+        str(experiment_dir),
+        "--confirm-model-usage",
+    ]
+    popen_options: dict[str, object] = {}
+    if os.name == "nt":
+        popen_options["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
         )
+    else:
+        popen_options["start_new_session"] = True
+    with stdout_path.open("xb") as stdout, stderr_path.open("xb") as stderr:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=stdout,
+            stderr=stderr,
+            cwd=experiment_dir,
+            env=environment,
+            shell=False,
+            **popen_options,
+        )
+    identity = _process_start_identity(process.pid)
+    if identity is None:
+        process.terminate()
+        raise R4ControllerError("R6 could not establish B0 controller identity")
+    process_record = R6B0ControllerProcess(
+        experiment_id=status.experiment_id,
+        cell_id=cell.cell_id,
+        pid=process.pid,
+        process_start_identity=identity,
+        status="running",
+        started_at=utc_now().isoformat(),
+        stdout_path=str(stdout_path),
+        stderr_path=str(stderr_path),
+    )
+    atomic_write(record_path, canonical_json_bytes(process_record))
+    deadline = time.monotonic() + activation_timeout_seconds
+    state_path = experiment_dir / "cells" / cell.cell_id / "cell-state.json"
+    while time.monotonic() < deadline:
+        state = CellStateRecord.model_validate_json(state_path.read_bytes()).state
+        if state is CellLifecycleState.ACTIVE:
+            return R6B0StartResult(
+                experiment_id=process_record.experiment_id,
+                cell_id=cell.cell_id,
+                controller_pid=process.pid,
+                workspace=str((state_path.parent / "workspace").resolve()),
+                prompt_path=str((state_path.parent / "raw" / "b0-fixed-prompt.md").resolve()),
+            )
+        exit_code = process.poll()
+        if exit_code is not None:
+            detail = stderr_path.read_text(encoding="utf-8", errors="replace").strip()
+            raise R4ControllerError(
+                f"B0 controller exited before activation (exit={exit_code}): {detail}"
+            )
+        time.sleep(0.05)
+    process.terminate()
+    raise R4ControllerError("B0 controller did not activate before the start timeout")
+
+
+def record_r6_b0_event(
+    experiment_dir: Path,
+    *,
+    kind: R6B0ControlKind,
+) -> R6B0CommandResult:
+    experiment_dir = experiment_dir.resolve()
+    status, cell = _require_next_b0(experiment_dir, CellLifecycleState.ACTIVE)
+    _require_b0_controller_running(experiment_dir, cell.cell_id)
+    if kind in {"complete", "abort"}:
+        raise R4ControllerError("Use B0 complete for terminal commands")
+    command = enqueue_r6_b0_control_command(
+        experiment_dir / "cells" / cell.cell_id / "variant-state" / "b0-control",
+        cell_id=cell.cell_id,
+        kind=kind,
+    )
+    return R6B0CommandResult(
+        experiment_id=status.experiment_id,
+        cell_id=cell.cell_id,
+        sequence=command.sequence,
+        kind=command.kind,
+        received_at=command.received_at.isoformat(),
+    )
+
+
+def complete_r6_b0_cell(
+    experiment_dir: Path,
+    *,
+    outcome: Literal["completed", "interrupted"],
+    confirm_timeline: bool,
+    model: str,
+    reasoning_effort: str,
+    surface_kind: str,
+    completion_timeout_seconds: float = 60.0,
+) -> R6B0CompleteResult:
+    experiment_dir = experiment_dir.resolve()
+    status, cell = _require_next_b0(experiment_dir, CellLifecycleState.ACTIVE)
+    _require_b0_controller_running(experiment_dir, cell.cell_id)
+    profile = load_r6_profile(experiment_dir / "runtime" / "r6-runtime.json")
+    if (
+        not confirm_timeline
+        or model != profile.model
+        or reasoning_effort != profile.reasoning_effort
+        or surface_kind != profile.b0_surface_kind
+    ):
+        raise R4ControllerError("B0 controls and complete timeline must be explicitly confirmed")
+    attestation = B0Attestation(
+        status="confirmed",
+        confirmed_at=utc_now(),
+        timeline_complete=True,
+        model=model,
+        reasoning_effort=reasoning_effort,
+        surface_kind=surface_kind,
+    )
+    enqueue_r6_b0_control_command(
+        experiment_dir / "cells" / cell.cell_id / "variant-state" / "b0-control",
+        cell_id=cell.cell_id,
+        kind="complete" if outcome == "completed" else "abort",
+        attestation=attestation,
+    )
+    deadline = time.monotonic() + completion_timeout_seconds
+    while time.monotonic() < deadline:
+        current = status_r6_experiment(experiment_dir)
+        state = current.cell_states[cell.cell_id]
+        if state in {CellLifecycleState.SEALED, CellLifecycleState.STOPPED}:
+            process_path = _b0_controller_record_path(experiment_dir, cell.cell_id)
+            if process_path.is_file():
+                record = R6B0ControllerProcess.model_validate_json(process_path.read_bytes())
+                atomic_write(
+                    process_path,
+                    canonical_json_bytes(
+                        record.model_copy(
+                            update={
+                                "status": "completed",
+                                "completed_at": utc_now().isoformat(),
+                            }
+                        )
+                    ),
+                )
+            return R6B0CompleteResult(
+                experiment_id=status.experiment_id,
+                cell_id=cell.cell_id,
+                cell_state=state.value,
+                display_state=current.display_state,
+                stop_reason=current.stop_reason,
+            )
+        time.sleep(0.05)
+    raise R4ControllerError("B0 Cell did not seal before the completion timeout")
 
 
 def run_next_r6_cell(experiment_dir: Path, *, confirm_model_usage: bool) -> R4RunNextResult:
     if not confirm_model_usage:
         raise R4ControllerError("R6 run-next requires --confirm-model-usage")
-    _require_interactive_b0_stdin(experiment_dir)
     profile = load_r6_profile(experiment_dir / "runtime" / "r6-runtime.json")
     environment = collect_r6_environment(profile)
     return _controller(experiment_dir, preflight_environment=environment).run_next()

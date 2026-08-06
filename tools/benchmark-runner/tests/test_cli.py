@@ -38,3 +38,48 @@ def test_r6_create_parser_accepts_explicit_revision() -> None:
     )
 
     assert args.revision == 2
+
+
+def test_r6_b0_control_commands_parse_without_interactive_stdin() -> None:
+    prepared = build_parser().parse_args(
+        ["r6", "b0-prepare", "--experiment-dir", "experiment"]
+    )
+    started = build_parser().parse_args(
+        [
+            "r6",
+            "b0-start",
+            "--experiment-dir",
+            "experiment",
+            "--confirm-model-usage",
+        ]
+    )
+    event = build_parser().parse_args(
+        [
+            "r6",
+            "b0-event",
+            "--experiment-dir",
+            "experiment",
+            "--kind",
+            "initial_prompt_copy",
+        ]
+    )
+    completed = build_parser().parse_args(
+        [
+            "r6",
+            "b0-complete",
+            "--experiment-dir",
+            "experiment",
+            "--confirm-timeline",
+            "--model",
+            "gpt-5.6-terra",
+            "--reasoning-effort",
+            "low",
+            "--surface-kind",
+            "codex_app_task",
+        ]
+    )
+
+    assert prepared.r6_command == "b0-prepare"
+    assert started.confirm_model_usage is True
+    assert event.kind == "initial_prompt_copy"
+    assert completed.confirm_timeline is True

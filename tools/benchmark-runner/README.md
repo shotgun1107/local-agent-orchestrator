@@ -37,7 +37,7 @@
 - Evidence·Measurement·summary·Plan의 민감정보와 위험 경로를 fail-closed 검사하고 byte-identical export만 멱등 허용
 - export된 모든 Measurement·Evidence hash와 summary 파생 결과를 저장소만으로 재검증
 - 실제 B0 console driver와 B1 public-CLI driver를 R4 controller에 연결하고 sidecar 전체 deadline·process group 복구·봉인 전 redaction 적용
-- `r6 create/preflight/status/run-next/freeze` installed-artifact CLI, 명시적 revision, 유료 실행 확인 flag
+- `r6 create/preflight/status/run-next/freeze`와 B0 `prepare/start/event/complete` installed-artifact CLI, 명시적 revision, 유료 실행 확인 flag
 - Git blob snapshot에서 재현 가능한 Runner/B1 wheel을 만들고 canonical source clone에서 manifest bytes와 Plan fingerprint 고정
 - Python 3.12.10·Git 2.54.0·Codex CLI/SDK 0.144.4·ChatGPT 인증을 모델 turn 없이 확인하고 12개 PLANNED Cell을 동결
 
@@ -73,7 +73,7 @@ $experiment = Join-Path $runtime 'experiments\exp_20260805_3b2f0a7b_2'
 & $python -m benchmark_runner r6 status --experiment-dir $experiment
 ```
 
-첫 Cell을 실제 실행할 때만 다음 확인 flag를 붙인다. 명령 한 번은 Plan 순서의 Cell 하나만 실행하며 자동으로 다음 Cell로 넘어가지 않는다.
+다음 Cell이 B1일 때만 아래 명령을 사용한다. 명령 한 번은 Plan 순서의 Cell 하나만 실행하며 자동으로 다음 Cell로 넘어가지 않는다.
 
 ```powershell
 & $python -m benchmark_runner r6 run-next `
@@ -81,7 +81,34 @@ $experiment = Join-Path $runtime 'experiments\exp_20260805_3b2f0a7b_2'
   --confirm-model-usage
 ```
 
-다음 Cell이 B0이면 이 명령은 반드시 사용자가 입력할 수 있는 대화형 PowerShell에서 실행한다. stdin이 TTY가 아니면 Runner는 `PLANNED/PREPARED` 상태를 바꾸거나 workspace를 만들기 전에 실패한다. B0 화면에 표시된 workspace와 고정 prompt로 별도 Codex App 작업을 실행하고, sidecar에 실제 개입 Event와 완료 attestation을 입력한다.
+다음 Cell이 B0이면 workspace 준비와 실제 측정 시작을 분리한다. `b0-prepare`는 Cell을 `PREPARED`로 만들지만 900초 deadline을 시작하지 않는다.
+
+```powershell
+& $python -m benchmark_runner r6 b0-prepare `
+  --experiment-dir $experiment
+
+& $python -m benchmark_runner r6 b0-start `
+  --experiment-dir $experiment `
+  --confirm-model-usage
+```
+
+`b0-start`가 `ACTIVE`를 반환한 뒤 고정 prompt를 Codex App 작업에 전송하고 즉시 최초 prompt Event를 기록한다. 추가 지시·교정·재시도 등은 실제 발생했을 때만 같은 방식으로 기록한다.
+
+```powershell
+& $python -m benchmark_runner r6 b0-event `
+  --experiment-dir $experiment `
+  --kind initial_prompt_copy
+
+& $python -m benchmark_runner r6 b0-complete `
+  --experiment-dir $experiment `
+  --outcome completed `
+  --confirm-timeline `
+  --model gpt-5.6-terra `
+  --reasoning-effort low `
+  --surface-kind codex_app_task
+```
+
+Event는 터미널 포커스가 아니라 Cell별 원자적 명령 큐로 전달된다. Runner가 수신 시각과 순서를 정하고, 최초 prompt 누락·중복, 잘못된 recovery 순서, terminal 뒤 추가 Event를 거부한다. `b0-complete` 뒤에는 기존 독립 Judge와 Measurement 봉인이 그대로 실행된다.
 
 ## 개발 실행
 

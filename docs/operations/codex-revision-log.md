@@ -1089,3 +1089,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최종 비라이브 기록은 B1 65개, Benchmark Runner 132개, 구현 오류 로그 25건, 로그 하네스 10개 통과다. preflight Evidence SHA-256은 `b8c786b420c76f4edcfe1adb96cc0fd79dbdd88181ce6cd8c91a8c73d477c928`다.
 - 최종 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, workspace 0, stop reason 없음이다. `benchmarks/artifacts/r6-b0-b1-2c33500-r2/`를 revision 2 실행 후보로 동결했고 실제 model turn은 0회다.
 - 동결 JSON이 Windows checkout에서 CRLF로 바뀌어 exact hash가 깨지지 않도록 `benchmarks/artifacts/**/*.json -text`, wheel `binary` 속성을 추가했다. `core.autocrlf=true`인 새 clone에서 bundle 7개가 byte-identical이고 Plan·회귀 기록·wheel 내부 SHA가 모두 유효함을 확인했으며 `DEV-20260806-003`에 기록했다.
+
+## R6 revision 2 라이브 결과와 B0 제어 경계 재구성
+
+- 작업일: 2026-08-06.
+- revision 2의 첫 B1 `code-change` Cell은 `src/config.py`만 수정하고 독립 Judge를 통과했다. 1 Attempt·1 Session·1 turn, 총 wall clock 46.781초, 입력 86,074·출력 750 token이며 Cell은 정상 봉인됐다.
+- 이어진 B0 Codex App 작업도 `src/config.py`만 수정하고 독립 Judge를 통과했다. 그러나 `run-next`가 workspace 준비와 동시에 시작한 900초 deadline이 먼저 끝났고, console 포커스에 의존한 `p/d/y` Event는 Sidecar에 전달되지 않았다.
+- 따라서 B0는 `check_success=true`지만 `outcome.state=timed_out`, `failure_kind=b0_deadline_exceeded`, `event_count=0`, `measurement_trusted=false`로 봉인됐다. 코드 정답은 확인됐지만 시간·개입량 비교 자료는 무효이며 Experiment는 STOPPED다. revision 2는 수정하거나 이어서 실행하지 않는다.
+- 원인은 두 경계의 결합이다. 첫째, `PLANNED → PREPARED → ACTIVE`가 한 `run-next` 호출 안에서 이어져 App 작업을 준비하는 시간도 deadline에 포함됐다. 둘째, Event 입력이 포커스를 가진 단일 console `input()`에만 연결돼 비대화형 제어자가 같은 측정 계약을 사용할 수 없었다.
+- Controller에 `prepare_next`를 추가하고 R6 공개 CLI를 `b0-prepare → b0-start → b0-event → b0-complete`로 분리했다. `PREPARED`는 deadline을 시작하지 않으며 `b0-start`가 별도 Controller process에서 Cell을 `ACTIVE`로 만든 뒤에만 900초 측정을 시작한다.
+- B0 Event는 Cell별 원자적 명령 파일로 전달한다. Runner가 시각과 연속 sequence를 생성하고 최초 prompt 누락·중복, recovery 순서 오류, terminal 뒤 추가 Event, attestation 없는 완료를 거부한다. 기존 B0 Adapter의 Event JSONL·파생 지표·독립 Judge·Measurement seal은 그대로 유지한다.
+- 회귀시험은 준비 상태에서 deadline·process가 시작되지 않는 경로, Event 순서·중복·terminal 검증, 비대화형 파일 제어로 `PREPARED → ACTIVE → CAPTURED → JUDGING → SEALED`를 관통하는 경로를 추가했다. Benchmark Runner 전체 pytest 136개가 통과했다.
+- 증상·원인·검토 대안·해결·잔여 위험은 `DEV-20260806-004`에 기록했다. 수정된 source commit에서 revision 3 wheel·runtime·Plan·비라이브 회귀·preflight·freeze를 새로 생성하고 첫 B1/B0 쌍부터 다시 실행한다.

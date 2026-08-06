@@ -1,6 +1,8 @@
 import json
 import shutil
 import sys
+import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,17 +10,20 @@ import pytest
 
 from benchmark_runner.contract import (
     ArtifactIdentity,
+    B0Attestation,
     CellLifecycleState,
     FixtureIdentity,
     Measurement,
 )
 from benchmark_runner.plan import build_r4_plan
 from benchmark_runner.runner import (
+    R4ControllerError,
     R4ExperimentController,
     R6B0ManualDriver,
     R6B1SequentialDriver,
     R6ScriptedB0Config,
     analyze_r5_experiment,
+    enqueue_r6_b0_control_command,
     export_r5_experiment,
     frozen_b0_b1_decision_policy,
     initialize_r4_experiment,
@@ -66,7 +71,7 @@ def _git() -> Path:
     return Path(executable)
 
 
-def _plan():
+def _plan(seed: int = 20260805):
     return build_r4_plan(
         source_manifest_path=MANIFEST_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
         source_manifest_sha256=sha256_file(MANIFEST_PATH),
@@ -94,7 +99,7 @@ def _plan():
         ],
         baseline_variant="b0",
         candidate_variant="b1",
-        seed=20260805,
+        seed=seed,
         primary_metrics=[
             "check_success",
             "manual_copy_or_relay_count_excluding_start",
@@ -250,6 +255,189 @@ def test_r6_prepare_is_idempotent_before_cell_activation(tmp_path: Path) -> None
     drivers["b0"].prepare(plan, cell, cell_dir)
 
     assert (cell_dir / "raw" / "prepared-fixture.json").read_bytes() == first
+
+
+def test_r6_prepare_next_does_not_start_b0_deadline(tmp_path: Path) -> None:
+    plan = _plan(seed=0)
+    created = initialize_r4_experiment(tmp_path / "state", plan)
+    drivers = _drivers(tmp_path)
+    controller = R4ExperimentController(
+        experiment_dir=Path(created.experiment_dir),
+        source_repository=REPOSITORY_ROOT,
+        manifest_path=MANIFEST_PATH,
+        benchmark_python=Path(sys.executable),
+        git_executable=_git(),
+        current_runner_sha256=RUNNER_SHA,
+        current_variant_sha256=VARIANT_SHA,
+        drivers=drivers,
+        preflight_environment={
+            "model": "fake",
+            "auth_method": "none",
+            "reasoning_effort": "not_applicable",
+            "surface_kind": "r6_nonlive",
+            "validated_without_model_turn": True,
+        },
+    )
+    controller.preflight()
+
+    prepared = controller.prepare_next()
+    time.sleep(0.25)
+    status = controller.status()
+    cell_dir = Path(created.experiment_dir) / "cells" / prepared.cell_id
+
+    assert prepared.variant_id == "b0"
+    assert status.cell_states[prepared.cell_id] is CellLifecycleState.PREPARED
+    assert not (cell_dir / "variant-state" / "sidecar-process" / "active-process.json").exists()
+    assert not (cell_dir / "variant-state" / "adapter-result.json").exists()
+
+
+def test_r6_b0_control_queue_rejects_out_of_order_and_duplicate_commands(
+    tmp_path: Path,
+) -> None:
+    control_dir = tmp_path / "control"
+    with pytest.raises(R4ControllerError, match="initial prompt"):
+        enqueue_r6_b0_control_command(
+            control_dir,
+            cell_id="cell_test",
+            kind="additional_prompt",
+        )
+    first = enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id="cell_test",
+        kind="initial_prompt_copy",
+    )
+    with pytest.raises(R4ControllerError, match="first and only"):
+        enqueue_r6_b0_control_command(
+            control_dir,
+            cell_id="cell_test",
+            kind="initial_prompt_copy",
+        )
+    with pytest.raises(R4ControllerError, match="matching recovery_start"):
+        enqueue_r6_b0_control_command(
+            control_dir,
+            cell_id="cell_test",
+            kind="recovery_end",
+        )
+    with pytest.raises(R4ControllerError, match="attestation"):
+        enqueue_r6_b0_control_command(
+            control_dir,
+            cell_id="cell_test",
+            kind="complete",
+        )
+    terminal = enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id="cell_test",
+        kind="complete",
+        attestation=B0Attestation(
+            status="confirmed",
+            confirmed_at=datetime.now(timezone.utc),
+            timeline_complete=True,
+            model="fake",
+            reasoning_effort="low",
+            surface_kind="codex_app_task",
+        ),
+    )
+    with pytest.raises(R4ControllerError, match="already terminal"):
+        enqueue_r6_b0_control_command(
+            control_dir,
+            cell_id="cell_test",
+            kind="status_observation",
+        )
+    assert first.sequence == 1
+    assert terminal.sequence == 2
+
+
+def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:
+    plan = _plan(seed=0)
+    created = initialize_r4_experiment(tmp_path / "state", plan)
+    drivers = _drivers(tmp_path)
+    common = {
+        "source_repository": REPOSITORY_ROOT,
+        "manifest_path": MANIFEST_PATH,
+        "benchmark_python": Path(sys.executable),
+        "git_executable": _git(),
+        "runner_python": Path(sys.executable),
+        "model": "fake",
+        "reasoning_effort": "not_applicable",
+        "surface_kind": "r6_b0_file_control",
+        "auth_method": "none",
+        "approval_mode": "not_applicable",
+        "model_control": "not_applicable",
+        "reasoning_control": "not_applicable",
+        "treatment_control": "not_applicable",
+    }
+    drivers["b0"] = R6B0ManualDriver(**common)
+    controller = R4ExperimentController(
+        experiment_dir=Path(created.experiment_dir),
+        source_repository=REPOSITORY_ROOT,
+        manifest_path=MANIFEST_PATH,
+        benchmark_python=Path(sys.executable),
+        git_executable=_git(),
+        current_runner_sha256=RUNNER_SHA,
+        current_variant_sha256=VARIANT_SHA,
+        drivers=drivers,
+        preflight_environment={
+            "model": "fake",
+            "auth_method": "none",
+            "reasoning_effort": "not_applicable",
+            "surface_kind": "r6_nonlive",
+            "validated_without_model_turn": True,
+        },
+    )
+    controller.preflight()
+    prepared = controller.prepare_next()
+    assert prepared.variant_id == "b0"
+    cell_dir = Path(created.experiment_dir) / "cells" / prepared.cell_id
+    results: list[object] = []
+    failures: list[BaseException] = []
+
+    def run_cell() -> None:
+        try:
+            results.append(controller.run_next())
+        except BaseException as exc:  # pragma: no cover - asserted below
+            failures.append(exc)
+
+    thread = threading.Thread(target=run_cell, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 10
+    while controller.status().cell_states[prepared.cell_id] is not CellLifecycleState.ACTIVE:
+        if time.monotonic() >= deadline:
+            pytest.fail("B0 Cell did not become ACTIVE")
+        time.sleep(0.02)
+    control_dir = cell_dir / "variant-state" / "b0-control"
+    enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id=prepared.cell_id,
+        kind="initial_prompt_copy",
+    )
+    solution = SOLUTIONS["code-change"]
+    (cell_dir / "workspace" / solution["path"]).write_text(
+        solution["content"],
+        encoding="utf-8",
+        newline="\n",
+    )
+    enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id=prepared.cell_id,
+        kind="complete",
+        attestation=B0Attestation(
+            status="confirmed",
+            confirmed_at=datetime.now(timezone.utc),
+            timeline_complete=True,
+            model="fake",
+            reasoning_effort="not_applicable",
+            surface_kind="r6_b0_file_control",
+        ),
+    )
+    thread.join(timeout=15)
+
+    assert not thread.is_alive()
+    assert failures == []
+    assert results and results[0].action == "sealed"
+    measurement = verify_sealed_cell(cell_dir)
+    assert measurement.outcome.check_success is True
+    assert measurement.variant_metrics.values["measurement_trusted"] is True
+    assert measurement.effort.startup_action_count.value == 1
 
 
 def test_r6_sidecar_deadline_seals_timeout_without_model_call(tmp_path: Path) -> None:

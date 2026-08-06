@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 26건
-- 해결: 26건
+- 전체: 27건
+- 해결: 27건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -39,6 +39,7 @@
 | DEV-20260806-001 | resolved | r6 | integration | 비대화형 B0 입력 실패가 Cell을 봉인함 |
 | DEV-20260806-002 | resolved | r6 | tooling | git archive가 core.autocrlf에 따라 다른 wheel을 생성함 |
 | DEV-20260806-003 | resolved | r6 | tooling | 동결 artifact JSON이 checkout EOL 변환 대상이었음 |
+| DEV-20260806-004 | resolved | r6 | implementation | B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1535,4 +1536,63 @@ build_r6_artifacts.py가 git -c core.autocrlf=false archive로 snapshot을 만�
 - 관련 커밋: 기록 없음
 - 출처: .gitattributes
 - 출처: benchmarks/artifacts/r6-b0-b1-2c33500-r2/pre-execution-freeze.json
+- 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260806-004 — B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `implementation`
+- 발견: 2026-08-06T01:18:53Z / revision 2 첫 B0 라이브 Cell
+- 해결: 2026-08-06T01:19:18Z
+
+### 증상
+
+Codex 작업과 Judge는 통과했지만 console sidecar가 900초에 도달해 event_count=0, measurement_trusted=false로 실험이 중단됐다
+
+### 재현
+
+- B0 run-next로 workspace를 준비한 뒤 별도 Codex App 작업을 생성하고 콘솔 포커스가 없는 경로에서 p와 완료 이벤트를 기록하려 한다
+
+### 증거
+
+- `direct-observation`: exp_20260805_3b2f0a7b_2의 cell_code-change_1_b0가 check_success=true이면서 failure_kind=b0_deadline_exceeded로 봉인됐다
+
+### 근본 원인
+
+run-next가 workspace 준비와 ACTIVE 전환을 한 명령에서 수행해 준비 대기시간까지 900초 deadline에 포함했고, B0 이벤트 수집이 포커스를 가진 단일 console input()에만 의존했다
+
+### 검토한 해결안
+
+- `rejected` timeout만 연장 — 시작 경계와 터미널 포커스 결합을 그대로 남긴다
+- `adopted` PREPARED 단계 분리와 원자적 파일 명령 큐 — 준비시간을 측정에서 제외하고 비대화형 제어에서도 같은 이벤트 계약을 보존한다
+
+### 채택한 해결
+
+prepare_next와 r6 b0-prepare/start/event/complete를 추가했다. B0 sidecar는 runner가 타임스탬프한 순서형 원자 명령 파일을 소비하며 최초 prompt, 복구 구간, terminal attestation의 순서를 검증한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+- tools/benchmark-runner/src/benchmark_runner/r6.py
+- tools/benchmark-runner/src/benchmark_runner/cli.py
+
+### 회귀시험
+
+- tests/test_r6_live_drivers.py::test_r6_prepare_next_does_not_start_b0_deadline
+- tests/test_r6_live_drivers.py::test_r6_b0_control_queue_rejects_out_of_order_and_duplicate_commands
+- tests/test_r6_live_drivers.py::test_r6_b0_file_control_runs_active_cell_to_sealed
+
+### 검증 결과
+
+- Benchmark Runner 전체 pytest 136개 통과
+- B0 file-control 통합 경로가 PREPARED-ACTIVE-CAPTURED-JUDGING-SEALED와 독립 Judge를 통과
+
+### 남은 위험
+
+- Codex App 작업을 자동 생성한 운영자는 사용자 직접 조작과 구분해 최종 실험 메타데이터에 해석 한계로 남겨야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
 - 출처: docs/operations/codex-revision-log.md

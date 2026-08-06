@@ -26,7 +26,6 @@ from benchmark_runner.adapter import (
     B1AdapterConfig,
     B1SequentialAdapter,
     CellContext,
-    ConsoleB0ManualInputProvider,
     FakeAdapter,
     VariantAdapter,
     VariantCapabilities,
@@ -1296,6 +1295,16 @@ class R4RunNextResult(BaseModel):
     stop_reason: str | None = None
 
 
+class R4PrepareNextResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    experiment_id: str
+    cell_id: str
+    variant_id: str
+    action: Literal["prepared", "already_prepared"]
+    display_state: ExperimentDisplayState
+
+
 def _process_start_identity(pid: int) -> str | None:
     if pid <= 0:
         return None
@@ -1874,6 +1883,48 @@ class R4ExperimentController:
             display_state=ExperimentDisplayState.STOPPED,
             stop_reason=reason,
         )
+
+    def prepare_next(self) -> R4PrepareNextResult:
+        """Restore and validate the next Cell without starting its deadline."""
+
+        plan = self._plan()
+        with _ControllerLock.acquire(self.experiment_dir, plan.experiment_id):
+            self._require_runnable(plan)
+            if any(
+                self._cell_state(cell).state is CellLifecycleState.ACTIVE
+                for cell in plan.cells
+            ):
+                raise R4ControllerError("An ACTIVE Cell cannot be prepared concurrently")
+            cell = next(
+                (
+                    item
+                    for item in plan.cells
+                    if self._cell_state(item).state is not CellLifecycleState.SEALED
+                ),
+                None,
+            )
+            if cell is None:
+                raise R4ControllerError("No Cell remains to prepare")
+            record = self._cell_state(cell)
+            if record.state is CellLifecycleState.PLANNED:
+                self.drivers[cell.variant_id].prepare(
+                    plan,
+                    cell,
+                    self.experiment_dir / "cells" / cell.cell_id,
+                )
+                self._write_transition(cell, record, CellLifecycleState.PREPARED)
+                action: Literal["prepared", "already_prepared"] = "prepared"
+            elif record.state is CellLifecycleState.PREPARED:
+                action = "already_prepared"
+            else:
+                raise R4ControllerError(f"Cell cannot be prepared from {record.state}")
+            return R4PrepareNextResult(
+                experiment_id=plan.experiment_id,
+                cell_id=cell.cell_id,
+                variant_id=cell.variant_id,
+                action=action,
+                display_state=self.status().display_state,
+            )
 
     def run_next(self) -> R4RunNextResult:
         plan = self._plan()
@@ -3220,12 +3271,141 @@ class R6SidecarConfig(BaseModel):
     reasoning_effort: str
     surface_kind: str
     b0_scripted: R6ScriptedB0Config | None = None
+    b0_control_dir: str | None = None
     b1_command_prefix: tuple[str, ...] = ()
     b1_state_root: str | None = None
     b1_schema_root: str | None = None
     b1_runtime: Literal["fake", "codex"] = "codex"
     b1_fake_fixture: str | None = None
     b1_pythonpath: str | None = None
+
+
+R6B0ControlKind = Literal[
+    "initial_prompt_copy",
+    "additional_prompt",
+    "correction",
+    "manual_retry",
+    "recovery_start",
+    "recovery_end",
+    "session_replacement",
+    "status_observation",
+    "complete",
+    "abort",
+]
+
+
+class R6B0ControlCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    sequence: int
+    cell_id: str
+    kind: R6B0ControlKind
+    received_at: datetime
+    attestation: B0Attestation | None = None
+
+
+def read_r6_b0_control_commands(
+    control_dir: Path,
+    *,
+    cell_id: str,
+) -> list[R6B0ControlCommand]:
+    commands_dir = control_dir.resolve() / "commands"
+    commands_dir.mkdir(parents=True, exist_ok=True)
+    unexpected = [
+        path.name
+        for path in commands_dir.iterdir()
+        if not path.is_file() or not re.fullmatch(r"\d{6}\.json", path.name)
+    ]
+    if unexpected:
+        raise R4ControllerError(f"B0 control queue contains unexpected entries: {unexpected}")
+    paths = sorted(commands_dir.glob("*.json"))
+    commands: list[R6B0ControlCommand] = []
+    for expected, path in enumerate(paths, start=1):
+        command = R6B0ControlCommand.model_validate_json(path.read_bytes())
+        if path.name != f"{expected:06d}.json" or command.sequence != expected:
+            raise R4ControllerError("B0 control command sequence is not contiguous")
+        if command.cell_id != cell_id:
+            raise R4ControllerError("B0 control command Cell identity differs")
+        commands.append(command)
+    return commands
+
+
+def _validate_r6_b0_control_append(
+    commands: list[R6B0ControlCommand],
+    kind: R6B0ControlKind,
+    attestation: B0Attestation | None,
+) -> None:
+    kinds = [command.kind for command in commands]
+    if any(item in {"complete", "abort"} for item in kinds):
+        raise R4ControllerError("B0 control queue is already terminal")
+    if kind == "initial_prompt_copy":
+        if commands:
+            raise R4ControllerError("B0 initial prompt must be the first and only start command")
+    elif "initial_prompt_copy" not in kinds:
+        raise R4ControllerError("B0 initial prompt must be recorded before other events")
+    if kind == "recovery_start" and kinds.count("recovery_start") != kinds.count("recovery_end"):
+        raise R4ControllerError("B0 recovery is already active")
+    if kind == "recovery_end" and kinds.count("recovery_start") != kinds.count("recovery_end") + 1:
+        raise R4ControllerError("B0 recovery_end has no matching recovery_start")
+    if kind in {"complete", "abort"}:
+        if kinds.count("recovery_start") != kinds.count("recovery_end"):
+            raise R4ControllerError("B0 recovery must end before completion")
+        if attestation is None:
+            raise R4ControllerError("B0 terminal command requires an attestation")
+    elif attestation is not None:
+        raise R4ControllerError("B0 non-terminal command cannot contain an attestation")
+
+
+def enqueue_r6_b0_control_command(
+    control_dir: Path,
+    *,
+    cell_id: str,
+    kind: R6B0ControlKind,
+    attestation: B0Attestation | None = None,
+    lock_timeout_seconds: float = 3.0,
+) -> R6B0ControlCommand:
+    """Append one runner-timestamped command without depending on terminal focus."""
+
+    control_dir = control_dir.resolve()
+    control_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = control_dir / "enqueue.lock"
+    deadline = time.monotonic() + lock_timeout_seconds
+    while True:
+        try:
+            with lock_path.open("xb") as handle:
+                handle.write(str(os.getpid()).encode("ascii"))
+                handle.flush()
+                os.fsync(handle.fileno())
+            break
+        except FileExistsError as exc:
+            try:
+                owner_pid = int(lock_path.read_text(encoding="ascii"))
+            except (OSError, ValueError):
+                owner_pid = 0
+            if owner_pid > 0 and not _process_is_alive(owner_pid):
+                lock_path.unlink(missing_ok=True)
+                continue
+            if time.monotonic() >= deadline:
+                raise R4ControllerError("B0 control queue is locked") from exc
+            time.sleep(0.02)
+    try:
+        commands = read_r6_b0_control_commands(control_dir, cell_id=cell_id)
+        _validate_r6_b0_control_append(commands, kind, attestation)
+        command = R6B0ControlCommand(
+            sequence=len(commands) + 1,
+            cell_id=cell_id,
+            kind=kind,
+            received_at=utc_now(),
+            attestation=attestation,
+        )
+        atomic_write(
+            control_dir / "commands" / f"{command.sequence:06d}.json",
+            canonical_json_bytes(command),
+        )
+        return command
+    finally:
+        lock_path.unlink(missing_ok=True)
 
 
 class R6VariantEvidenceRecord(BaseModel):
@@ -3276,6 +3456,41 @@ class _R6ScriptedB0Provider:
         )
 
 
+class _R6ControlledB0Provider:
+    """Consume atomic command files produced by the public R6 B0 control API."""
+
+    def __init__(self, control_dir: Path, *, poll_seconds: float = 0.05) -> None:
+        self.control_dir = control_dir.resolve()
+        self.poll_seconds = poll_seconds
+
+    def collect(self, session: B0ManualSession) -> B0ManualSubmission:
+        next_sequence = 1
+        while True:
+            path = self.control_dir / "commands" / f"{next_sequence:06d}.json"
+            if not path.is_file():
+                time.sleep(self.poll_seconds)
+                continue
+            try:
+                command = R6B0ControlCommand.model_validate_json(path.read_bytes())
+            except (OSError, ValueError) as exc:
+                raise R4ControllerError("B0 control command is invalid") from exc
+            if command.sequence != next_sequence or command.cell_id != session.context.cell_id:
+                raise R4ControllerError("B0 control command identity or sequence differs")
+            if command.kind == "complete":
+                return B0ManualSubmission(
+                    outcome_state="completed",
+                    attestation=command.attestation,
+                )
+            if command.kind == "abort":
+                session.recorder.record("abort")
+                return B0ManualSubmission(
+                    outcome_state="interrupted",
+                    attestation=command.attestation,
+                )
+            session.recorder.record(command.kind)  # type: ignore[arg-type]
+            next_sequence += 1
+
+
 def run_r6_adapter_sidecar(config_path: Path, result_path: Path) -> None:
     """Internal bounded-process entrypoint used by the R6 live Cell drivers."""
 
@@ -3289,15 +3504,15 @@ def run_r6_adapter_sidecar(config_path: Path, result_path: Path) -> None:
     if config.variant_id == "b0":
         if config.prompt_path is None:
             raise ValueError("R6 B0 sidecar requires a fixed prompt")
-        provider: B0ManualInputProvider = (
-            _R6ScriptedB0Provider(config.b0_scripted, config)
-            if config.b0_scripted is not None
-            else ConsoleB0ManualInputProvider(
-                expected_model=config.model,
-                expected_reasoning_effort=config.reasoning_effort,
-                expected_surface_kind=config.surface_kind,
+        if config.b0_scripted is not None:
+            provider: B0ManualInputProvider = _R6ScriptedB0Provider(
+                config.b0_scripted,
+                config,
             )
-        )
+        else:
+            if config.b0_control_dir is None:
+                raise ValueError("R6 B0 sidecar requires a control directory")
+            provider = _R6ControlledB0Provider(Path(config.b0_control_dir))
         adapter: VariantAdapter = B0ManualAdapter(
             B0AdapterConfig(
                 workspace=workspace,
@@ -4089,16 +4304,17 @@ class R6B0ManualDriver(_R6CellDriverBase):
         if prompt_path.exists() and prompt_path.read_bytes() != self._prompt_bytes():
             raise R4ControllerError("R6 B0 fixed prompt changed")
         atomic_write(prompt_path, self._prompt_bytes())
+        control_dir = cell_dir / "variant-state" / "b0-control"
+        commands_dir = control_dir / "commands"
+        commands_dir.mkdir(parents=True, exist_ok=True)
+        if any(commands_dir.iterdir()) or (control_dir / "enqueue.lock").exists():
+            raise R4ControllerError("R6 B0 control queue is not empty before activation")
         adapter = B0ManualAdapter(
             B0AdapterConfig(
                 workspace=prepared.workspace,
                 prompt_path=prompt_path,
                 events_path=cell_dir / "events" / "interventions.jsonl",
-                input_provider=ConsoleB0ManualInputProvider(
-                    expected_model=self.model,
-                    expected_reasoning_effort=self.reasoning_effort,
-                    expected_surface_kind=self.surface_kind,
-                ),
+                input_provider=_R6ControlledB0Provider(control_dir),
                 expected_model=self.model,
                 expected_reasoning_effort=self.reasoning_effort,
                 expected_surface_kind=self.surface_kind,
@@ -4129,6 +4345,9 @@ class R6B0ManualDriver(_R6CellDriverBase):
             reasoning_effort=self.reasoning_effort,
             surface_kind=self.surface_kind,
             b0_scripted=self.scripted_by_fixture.get(cell.fixture_id),
+            b0_control_dir=str(
+                (cell_dir / "variant-state" / "b0-control").resolve()
+            ),
         )
 
 
