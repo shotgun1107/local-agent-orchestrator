@@ -36,6 +36,7 @@ from benchmark_runner.runner import (
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]
+F1_ARTIFACT = REPOSITORY / "benchmarks" / "artifacts" / "f1-b0-b1-b8ad5bc-r1"
 
 
 def _profile(tmp_path: Path) -> tuple[Path, R6RuntimeProfile]:
@@ -91,6 +92,38 @@ def _profile(tmp_path: Path) -> tuple[Path, R6RuntimeProfile]:
     profile_path = tmp_path / "profile.json"
     profile_path.write_bytes(canonical_json_bytes(profile))
     return profile_path, profile
+
+
+def test_committed_f1_freeze_bundle_is_internally_consistent() -> None:
+    build = json.loads((F1_ARTIFACT / "build-record.json").read_text(encoding="utf-8"))
+    plan = ExecutionPlan.model_validate_json(
+        (F1_ARTIFACT / "execution-plan.json").read_bytes()
+    )
+    freeze = json.loads(
+        (F1_ARTIFACT / "pre-execution-freeze.json").read_text(encoding="utf-8")
+    )
+    regression = json.loads(
+        (F1_ARTIFACT / "nonlive-regression.json").read_text(encoding="utf-8")
+    )
+
+    assert build["source_commit"] == "b8ad5bc4ad70bcae37b254c0e1c5b5153df1f5ac"
+    assert build["experiment_id"] == plan.experiment_id == freeze["experiment_id"]
+    assert build["runner"]["sha256"] == sha256_file(
+        F1_ARTIFACT / build["runner"]["file"]
+    )
+    assert build["b1"]["sha256"] == sha256_file(F1_ARTIFACT / build["b1"]["file"])
+    assert freeze["execution_plan_sha256"] == sha256_file(
+        F1_ARTIFACT / "execution-plan.json"
+    )
+    assert freeze["nonlive_regression_sha256"] == sha256_file(
+        F1_ARTIFACT / "nonlive-regression.json"
+    )
+    assert freeze["plan_fingerprint"] == plan.plan_fingerprint
+    assert freeze["planned_cells"] == len(plan.cells) == 12
+    assert freeze["actual_model_turns"] == 0
+    assert regression["status"] == "passed"
+    assert regression["actual_model_turns"] == 0
+    assert all(case["exit_code"] == 0 for case in regression["cases"])
 
 
 def test_create_status_and_paid_run_guard(tmp_path: Path) -> None:

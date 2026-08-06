@@ -1182,3 +1182,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Runner는 B0 준비 시 `benchmark-run.yaml`의 Task 순서대로 고정 prompt와 prompt plan을 생성한다. 각 전달 명령은 Task key와 prompt SHA-256을 함께 기록하고, 다중 Task Cell은 전체 순서가 정확하지 않거나 prompt 파일이 변조되면 완료를 거부한다.
 - artifact build script는 저장소 상대 `--manifest`를 받도록 일반화했다. 기본 manifest는 유지되므로 기존 R6 재현 경계는 바뀌지 않는다.
 - 표적 검사 9개, Benchmark Runner 전체 146개, B1 전체 65개가 각각 통과했다. 다음 작업은 이 Runner 변경을 commit한 뒤 F1 artifact를 두 번 독립 build해 일치성을 확인하고 preflight·실행 전 freeze를 만드는 것이다.
+- Runner·manifest source commit `b8ad5bc4ad70bcae37b254c0e1c5b5153df1f5ac`에서 F1 artifact를 저장소 runtime과 별도 임시 runtime에 독립 build했다. source commit, manifest hash, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_d2099743_1`, Plan fingerprint `d20997433142cd445b22266c9ce3a4f37becfef3648c28e705ae20a77def581f`, 12개 Cell 순서가 모두 일치했다.
+- 동결용 비라이브 회귀는 B1 65개, Benchmark Runner 147개, 구현 오류 로그 31건, 로그 하네스 10개를 통과했고 실제 model turn은 0회다.
+- ChatGPT 인증·Codex SDK/CLI 0.144.4·fixture tree preflight를 통과했다. preflight Evidence SHA-256은 `b2c8e29a8b705684f00230d9bc863ef4c0506996f59503ec67e029e01646a540`이다.
+- `benchmarks/artifacts/f1-b0-b1-b8ad5bc-r1/`에 실행 전 bundle을 동결했다. Experiment의 12개 Cell은 전부 `PLANNED`, sealed 0, stop reason 없음, 다음 Cell은 `cell_sequential-code-change_1_b1`이다. 다음 작업은 계획 순서대로 F1 라이브 Cell을 한 번에 하나씩 실행하는 것이다.
