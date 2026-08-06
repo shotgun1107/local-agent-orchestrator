@@ -1120,3 +1120,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Judge가 Check 전에 Git 비추적 `__pycache__/*.pyc|*.pyo`만 제거하고 `normalized_transient_paths`에 기록하도록 보강했다. 다른 확장자, Git 추적 파일, symlink 경로는 제거하지 않고 기존 scope 위반으로 유지한다.
 - 실제 unittest로 두 pyc를 생성한 golden positive case와 `__pycache__` 안의 일반 파일을 숨기지 않는 negative case를 회귀시험으로 추가했다. 원인·대안·해결·잔여 위험은 `DEV-20260806-005`에 기록했다.
 - 수정 뒤 새 source commit에서 revision 4를 build·독립 재현·preflight·동결하고 첫 B1/B0 쌍부터 다시 실행한다. revision 3 runtime과 봉인 결과는 수정하거나 재사용하지 않는다.
+
+## R6 revision 4 첫 build의 비라이브 회귀 환경 오류
+
+- 작업일: 2026-08-06.
+- bytecode 정규화 commit `8968d4e`에서 revision 4 artifact와 runtime을 만들었고 이 단계의 실제 model turn은 0회였다.
+- 동결용 `run_r6_nonlive_regression.py`가 pytest 기본 공용 임시 폴더를 사용해, 이전 실행에서 접근 불가능해진 `%TEMP%/pytest-of-SSAFY`의 ACL 때문에 B1 47건과 Runner 110건이 setup 단계에서 실패했다. 같은 commit의 짧은 명시적 `--basetemp` 수동 회귀는 Runner 138개와 B1 65개가 통과했다.
+- 스크립트가 실행별 짧은 `TemporaryDirectory` 아래 B1·Runner 전용 `--basetemp`를 쓰고 pytest cache provider를 끄도록 수정했다. 다른 실행의 공용 폴더를 삭제하거나 재사용하지 않는다.
+- 원인·대안·해결·잔여 위험은 `DEV-20260806-006`에 기록했다. 실패한 `r6-b0-b1-8968d4e-r4` bundle과 외부 runtime은 실행 전 동결·모델 호출 전에 폐기하고, 수정 commit에서 revision 4를 처음부터 다시 생성한다.
