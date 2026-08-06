@@ -1128,3 +1128,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 동결용 `run_r6_nonlive_regression.py`가 pytest 기본 공용 임시 폴더를 사용해, 이전 실행에서 접근 불가능해진 `%TEMP%/pytest-of-SSAFY`의 ACL 때문에 B1 47건과 Runner 110건이 setup 단계에서 실패했다. 같은 commit의 짧은 명시적 `--basetemp` 수동 회귀는 Runner 138개와 B1 65개가 통과했다.
 - 스크립트가 실행별 짧은 `TemporaryDirectory` 아래 B1·Runner 전용 `--basetemp`를 쓰고 pytest cache provider를 끄도록 수정했다. 다른 실행의 공용 폴더를 삭제하거나 재사용하지 않는다.
 - 원인·대안·해결·잔여 위험은 `DEV-20260806-006`에 기록했다. 실패한 `r6-b0-b1-8968d4e-r4` bundle과 외부 runtime은 실행 전 동결·모델 호출 전에 폐기하고, 수정 commit에서 revision 4를 처음부터 다시 생성한다.
+
+## R6 revision 4 최종 재현 build와 실행 전 동결
+
+- 작업일: 2026-08-06.
+- 최종 source commit은 `825e00cf3d1fba073f382c99fbbaa85f44c01586`다. Runner wheel SHA-256은 `908eb97be2a17b08518e23509ade58315fe1ca6558d316cd718519386672c415`, B1 wheel은 `c51dd7d0cfbfc311d729e0271ca2a23ecf1925c0ee35cfc6962b4ce4d6ac488b`다.
+- 동결용 비라이브 회귀는 B1 65개, Benchmark Runner 138개, 구현 오류 로그 29건, 로그 하네스 10개를 통과했다. 이 과정의 실제 model turn은 0회다.
+- 현재 저장소와 독립 canonical source에서 각각 build했다. 두 build의 source commit, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_7ff7d501_4`, Plan fingerprint `7ff7d501c4d711dca0e20e31d9b598530accd61ebb79c8e58b3c1a739ce24575`가 모두 일치했다.
+- preflight Evidence SHA-256은 `cbfde47ad8ea86486e60c0394706c6cc3b5628816faed2e1489d35de380576ec`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 실제 model turn은 0회다.
+- `benchmarks/artifacts/r6-b0-b1-825e00c-r4/`를 revision 4 실행 후보로 동결했다. revision 3과 이전 runtime·봉인 결과는 수정·재사용하지 않으며 revision 4의 첫 B1/B0 쌍부터 새로 실행한다.
