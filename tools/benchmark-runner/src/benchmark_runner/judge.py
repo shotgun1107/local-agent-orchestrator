@@ -59,6 +59,7 @@ class JudgeResult(StrictModel):
     failed_check_ids: list[str]
     scope_violations: list[str] = Field(default_factory=list)
     changed_paths: list[str] = Field(default_factory=list)
+    normalized_transient_paths: list[str] = Field(default_factory=list)
     check_results: list[CheckResult] = Field(default_factory=list)
     judge_workspace_unchanged: bool = True
     baseline_tree: GitObjectId | None = None
@@ -510,6 +511,39 @@ def _git_bytes(
     return result.stdout
 
 
+def _normalize_untracked_python_bytecode(
+    git_executable: Path,
+    workspace: Path,
+    changed_paths: list[str],
+) -> list[str]:
+    tracked_raw = _git_bytes(
+        git_executable,
+        workspace,
+        ["ls-files", "-z", "--cached"],
+    )
+    tracked_paths = {
+        path.decode("utf-8", errors="strict")
+        for path in tracked_raw.split(b"\0")
+        if path
+    }
+    normalized: list[str] = []
+    for relative_path in changed_paths:
+        path = Path(relative_path)
+        if (
+            "__pycache__" not in path.parts
+            or path.suffix not in {".pyc", ".pyo"}
+            or relative_path in tracked_paths
+            or _has_symlink_component(workspace, relative_path)
+        ):
+            continue
+        candidate = workspace / path
+        if not candidate.is_file():
+            continue
+        candidate.unlink()
+        normalized.append(relative_path)
+    return sorted(normalized)
+
+
 def _snapshot_workspace(
     git_executable: Path,
     workspace: Path,
@@ -703,6 +737,8 @@ class FixtureJudge:
         if judge_dir.is_relative_to(workspace):
             raise ValueError("Judge Evidence directory must be outside the fixture workspace")
 
+        normalized_transient_paths: list[str] = []
+
         def finish(
             result: JudgeResult,
             snapshot: tuple[str, FileResult] | None = None,
@@ -715,6 +751,7 @@ class FixtureJudge:
                     "baseline_tree": prepared.fixture.git_tree,
                     "final_tree": final_tree,
                     "final_diff": final_diff,
+                    "normalized_transient_paths": normalized_transient_paths,
                 }
             )
             _write_result(judge_dir, completed)
@@ -733,6 +770,12 @@ class FixtureJudge:
                     failed_check_ids=["runner_judge:baseline_tree_integrity"],
                 )
             )
+
+        normalized_transient_paths = _normalize_untracked_python_bytecode(
+            self.git_executable,
+            workspace,
+            _status_paths(self.git_executable, workspace),
+        )
 
         integrity_failures: list[str] = []
         for relative_path, expected_hash in prepared.protected_hashes:

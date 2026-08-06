@@ -1110,3 +1110,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 현재 저장소와 독립 canonical source에서 각각 build했다. 두 build의 source commit, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_3ccb5c55_3`, Plan fingerprint `3ccb5c550e93b75762faa579e7f60a58bfd4821fa1ca2eca6ef34f94dcaa85bb`가 모두 일치했다.
 - preflight Evidence SHA-256은 `cb3fc2aa4d8ae3c75d517815ed842cd1830b974ce0b737b11df6e90b709695a8`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 실제 model turn은 0회다.
 - `benchmarks/artifacts/r6-b0-b1-d6c4383-r3/`를 revision 3 실행 후보로 동결했다. revision 2의 runtime과 봉인 결과는 수정·재사용하지 않으며 revision 3의 첫 B1/B0 쌍부터 새로 실행한다.
+
+## R6 revision 3 첫 비교 쌍과 Python bytecode 정규화
+
+- 작업일: 2026-08-06.
+- 첫 B1 `code-change` Cell은 독립 Judge를 통과했다. 1 Attempt·1 Session·1 turn, 총 45.609초, 입력 86,094·출력 819 token으로 정상 봉인됐다.
+- 첫 B0 App task도 요구된 `src/config.py` 수정과 자체 unittest를 완료했다. 1 Attempt·1 Session·1 turn, 추가 중계 0회, 총 52.141초로 측정됐지만 자체 unittest가 만든 `benchmark_checks/__pycache__/*.pyc`가 보호 경로 write scope 위반으로 판정됐다.
+- B1 sidecar는 `PYTHONDONTWRITEBYTECODE=1`을 상속하지만 별도 App task인 B0는 상속하지 않아 동일한 테스트 동작의 부산물 처리가 비대칭이었다. 따라서 revision 3의 B0 실패는 구현 품질 비교에 사용하지 않고 Experiment는 봉인된 STOPPED 상태로 보존한다.
+- Judge가 Check 전에 Git 비추적 `__pycache__/*.pyc|*.pyo`만 제거하고 `normalized_transient_paths`에 기록하도록 보강했다. 다른 확장자, Git 추적 파일, symlink 경로는 제거하지 않고 기존 scope 위반으로 유지한다.
+- 실제 unittest로 두 pyc를 생성한 golden positive case와 `__pycache__` 안의 일반 파일을 숨기지 않는 negative case를 회귀시험으로 추가했다. 원인·대안·해결·잔여 위험은 `DEV-20260806-005`에 기록했다.
+- 수정 뒤 새 source commit에서 revision 4를 build·독립 재현·preflight·동결하고 첫 B1/B0 쌍부터 다시 실행한다. revision 3 runtime과 봉인 결과는 수정하거나 재사용하지 않는다.

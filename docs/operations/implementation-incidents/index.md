@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 27건
-- 해결: 27건
+- 전체: 28건
+- 해결: 28건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -40,6 +40,7 @@
 | DEV-20260806-002 | resolved | r6 | tooling | git archive가 core.autocrlf에 따라 다른 wheel을 생성함 |
 | DEV-20260806-003 | resolved | r6 | tooling | 동결 artifact JSON이 checkout EOL 변환 대상이었음 |
 | DEV-20260806-004 | resolved | r6 | implementation | B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨 |
+| DEV-20260806-005 | resolved | r6 | implementation | B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1591,6 +1592,65 @@ prepare_next와 r6 b0-prepare/start/event/complete를 추가했다. B0 sidecar�
 ### 남은 위험
 
 - Codex App 작업을 자동 생성한 운영자는 사용자 직접 조작과 구분해 최종 실험 메타데이터에 해석 한계로 남겨야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260806-005 — B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `implementation`
+- 발견: 2026-08-06T01:40:06Z / revision 3 첫 B0 라이브 Cell
+- 해결: 2026-08-06T01:44:14Z
+
+### 증상
+
+B0가 요구된 src/config.py 수정과 자체 테스트를 완료했지만 benchmark_checks/__pycache__의 비추적 pyc가 write scope 위반으로 판정돼 독립 Judge가 중단됐다
+
+### 재현
+
+- code-change fixture에서 정답 patch를 적용한 뒤 PYTHONDONTWRITEBYTECODE 없이 python -m unittest discover -s benchmark_checks를 실행하고 FixtureJudge를 호출한다
+
+### 증거
+
+- `direct-observation`: exp_20260806_3ccb5c55_3의 cell_code-change_1_b0는 src/config.py와 두 pyc만 변경했고 runner_judge:write_scope로 봉인됐다
+- `source-inspection`: 같은 Block의 B1 parent process는 PYTHONDONTWRITEBYTECODE=1을 상속해 pyc를 만들지 않았으므로 B0/B1 실행 표면 사이에 비대칭이 있었다
+
+### 근본 원인
+
+Judge는 자기 Check에만 PYTHONDONTWRITEBYTECODE=1을 적용했고 Variant가 Judge 전에 만든 실행 부산물을 정규화하지 않았다. B1은 Runner child 환경에서 bytecode가 억제됐지만 별도 Codex App task인 B0에는 같은 환경이 적용되지 않았다
+
+### 검토한 해결안
+
+- `rejected` __pycache__ 전체를 scope 검사에서 무시 — 악의적이거나 비정상적인 파일과 보호 Check를 대체할 bytecode까지 숨길 수 있다
+- `rejected` B0 prompt에 환경변수 설정을 지시 — 모델 준수에 의존하며 B0/B1의 시스템 제어 계약을 더 다르게 만든다
+- `adopted` Judge가 비추적 Python bytecode만 제거하고 제거 목록을 Evidence에 기록 — 두 Variant의 실행 부산물을 대칭 정규화하면서 다른 파일과 추적 파일의 scope 검사는 유지한다
+
+### 채택한 해결
+
+Judge가 Check 전에 Git status와 tracked file 목록을 대조해 오직 비추적 __pycache__/*.pyc와 *.pyo만 제거한다. 제거 경로는 normalized_transient_paths에 기록하며 다른 확장자, 추적 파일, symlink 경로는 정규화하지 않는다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/judge.py
+
+### 회귀시험
+
+- tests/test_judge.py::test_untracked_python_bytecode_is_normalized_before_scope_and_checks
+- tests/test_judge.py::test_non_bytecode_file_inside_pycache_remains_a_scope_violation
+
+### 검증 결과
+
+- 실제 unittest가 만든 두 pyc를 정규화한 뒤 golden code-change가 acceptance와 diff Check를 통과
+- __pycache__ 안의 일반 파일은 기존 write scope 위반으로 유지
+- Benchmark Runner 138개, B1 65개, 로그 하네스 10개와 incident 28건 검증 통과
+
+### 남은 위험
+
+- Python bytecode 외의 도구별 실행 부산물은 실제 관측 뒤 개별 위협 검토와 사전 등록 없이는 자동 정규화하지 않는다
 
 ### 추적 정보
 
