@@ -66,6 +66,8 @@
 ## Standalone 실행 결과
 
 - 실행 루트: `%LOCALAPPDATA%/local-agent-orchestrator/preflight/codex-exec-20260806-161934`
+- fixture: `git init -b main`과 초기 커밋을 마친 독립 Git 저장소
+- workspace 지정: `codex exec`에 `-C <fixture 절대경로>`를 명시
 - thread ID: `019fd5f1-198d-7011-bb7f-1af7576f2c81`
 - 권한 직접 probe: 통과
 - T1 usage: input `91,336`, cached input `82,432`, output `1,022`, reasoning output `508`
@@ -82,6 +84,8 @@ rollout에서 확인한 실제 경계는 다음과 같다.
 - permission profile: fixture 루트 `write`, `.git`·`.agents`·`.codex` `read`
 
 따라서 이번 실패를 부모 앱의 read-only 상속으로 설명할 수 없다. 설치된 Windows CLI 0.144.4의 `codex exec` 쓰기 경로는 현재 자동 기준선 Adapter의 전제 조건을 충족하지 못했다.
+
+후속 Claude 검토에서 `-C`, `--add-dir`, `--skip-git-repo-check` 확인이 제안됐다. 실제 실행은 이미 `-C`로 Git fixture를 workspace root로 지정했다. rollout도 같은 절대경로를 `cwd`, `workspace_roots`, write entry로 기록했다. 따라서 별도 디렉터리를 추가 허용할 필요가 없고 Git 검사 우회도 이 실패의 판별 조건이 아니다. `codex sandbox -P :workspace` 직접 probe 역시 같은 루트에 파일을 정상 생성했다. 추가 모델 turn 없이 현재 결과를 CLI 0.144.4 도구 경계의 재현으로 보존한다.
 
 ## 다음 게이트
 

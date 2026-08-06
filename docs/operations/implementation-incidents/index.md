@@ -2037,12 +2037,12 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 ### 재현
 
 - 일반 Windows PowerShell에서 격리 Git fixture를 만든다
-- codex exec 0.144.4를 ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다
+- codex exec 0.144.4를 -C fixture 절대경로, ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다
 - JSONL 종료 뒤 요청 파일의 존재와 내용을 외부 스크립트로 검사한다
 
 ### 증거
 
-- `direct-observation`: 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context는 cwd와 workspace_roots를 fixture 루트로 기록하고 그 루트에 write 권한을 부여했다
+- `direct-observation`: 호출 명령에 -C fixture 절대경로를 전달했고 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context도 cwd와 workspace_roots를 같은 루트로 기록하고 그 루트에 write 권한을 부여했다
 - `direct-observation`: apply_patch로 preflight-state.txt와 ./preflight-state.txt를 추가한 두 호출이 모두 writing outside of the project로 거부됐다
 - `direct-observation`: PowerShell WriteAllText와 git apply 대체 시도는 approval_policy=never에서 blocked by policy로 거부됐다
 - `reproducible-test`: 권한 프로필 직접 probe는 같은 fixture에 파일을 정상 생성했지만 모델 turn은 산출물 없이 T1_COMPLETE와 exit code 0을 반환했고 외부 artifact 검사가 이를 실패로 판정했다

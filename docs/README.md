@@ -38,7 +38,7 @@ docs/
 
 - [인증·사용량 사전 점검](./experiments/codex-auth-usage-preflight.md)
 - [SDK 최소 turn 1회 결과](./experiments/codex-sdk-single-turn-experiment.md)
-- [`codex exec` 명시적 세션 재개 사전검증](./experiments/codex-exec-explicit-resume-preflight.md) — JSONL·usage·명시적 resume은 통과, standalone 쓰기 경로는 미확인
+- [`codex exec` 명시적 세션 재개 사전검증](./experiments/codex-exec-explicit-resume-preflight.md) — JSONL·usage·명시적 resume은 통과, standalone 쓰기 도구 경계는 실패
 
 ### `reviews/`
 
@@ -75,6 +75,6 @@ docs/
 - 비라이브 검증 및 실제 Codex smoke 1회: 완료
 - Benchmark Runner: 설계 판본 5 동결, R0~R6 reference 구현과 실제 실행 전 동결 완료. 새 Runner/B1 wheel·공개 Schema·Execution Plan·decision policy·비라이브 회귀·무과금 인증 preflight를 hash로 고정
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
-- 다음 단계: 부모 Codex 프로세스 밖의 독립 PowerShell에서 `codex exec` workspace-write 사전검증 1회 완료 후 C0/C1/C2/B1 통제 비교 명세를 확정
+- 다음 단계: 검증된 `openai-codex==0.144.4` SDK를 공통 표면으로 사용하는 C0/C1/C2/B1 통제 비교 명세 작성
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
