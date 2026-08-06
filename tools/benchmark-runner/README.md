@@ -57,6 +57,8 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 
 F1 후속 실험은 `benchmarks/manifests/b0-b1-sequential-followup.yaml`을 사용한다. artifact build script의 `--manifest`에 이 저장소 상대경로를 넘기며, 기본값은 기존 `b0-b1-frozen.yaml`이다. F1은 별도 artifact·runtime·Experiment ID로만 실행하고 revision 5 결과와 합산하지 않는다.
 
+`benchmarks/artifacts/f1-b0-b1-b8ad5bc-r1/`은 source commit `b8ad5bc`, Runner wheel `2634d6f…`, B1 wheel `6cada13…`, Plan fingerprint `d2099743…`를 고정한다. 서로 다른 두 경로의 독립 build 결과가 일치했고, 비라이브 회귀 B1 65개·Runner 147개·구현 로그 31건·로그 하네스 10개와 ChatGPT 인증 preflight를 통과했다. Experiment `exp_20260806_d2099743_1`은 12개 Cell 전부 `PLANNED`, 실제 model turn 0회로 실행 전 동결됐다.
+
 새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
 
 ```powershell
