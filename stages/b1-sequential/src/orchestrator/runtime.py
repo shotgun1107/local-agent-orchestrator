@@ -10,7 +10,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
 
 from .contract import (
     FailureKind,
@@ -34,6 +34,14 @@ SECRET_PATTERNS = [
     re.compile(r"(?i)(api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[^\s,;]+"),
     re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
 ]
+API_KEY_ENV_NAMES = ("OPENAI_API_KEY", "CODEX_API_KEY")
+
+
+def present_api_key_environment_names(
+    environ: Mapping[str, str] | None = None,
+) -> tuple[str, ...]:
+    source = os.environ if environ is None else environ
+    return tuple(name for name in API_KEY_ENV_NAMES if name in source)
 
 
 class RuntimeBoundaryError(RuntimeError):
@@ -329,8 +337,12 @@ class CodexRuntime:
     """Pinned openai-codex 0.144.4 adapter with fail-closed approvals."""
 
     def __init__(self, *, workspace: Path, interrupt_grace_seconds: float = 15.0) -> None:
-        if os.environ.get("OPENAI_API_KEY"):
-            raise RuntimeBoundaryError("OPENAI_API_KEY is present; B1 ChatGPT-auth mode fails closed")
+        present_keys = present_api_key_environment_names()
+        if present_keys:
+            raise RuntimeBoundaryError(
+                f"API key environment is present ({', '.join(present_keys)}); "
+                "B1 ChatGPT-auth mode fails closed"
+            )
         try:
             import openai_codex
             from openai_codex import ApprovalMode, Codex, Sandbox

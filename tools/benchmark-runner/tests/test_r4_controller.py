@@ -200,6 +200,7 @@ def _setup(
 @pytest.fixture(autouse=True)
 def _without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
 
 
 def test_preflight_is_required_before_any_cell_side_effect(tmp_path: Path) -> None:
@@ -209,6 +210,24 @@ def test_preflight_is_required_before_any_cell_side_effect(tmp_path: Path) -> No
         controller.run_next()
 
     assert controller.status().display_state is ExperimentDisplayState.CREATED
+    assert sum(driver.prepare_calls for driver in drivers.values()) == 0
+    assert all(
+        controller._cell_state(cell).state is CellLifecycleState.PLANNED
+        for cell in plan.cells
+    )
+
+
+@pytest.mark.parametrize("variable", ["OPENAI_API_KEY", "CODEX_API_KEY"])
+def test_preflight_fails_closed_for_api_key_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, variable: str
+) -> None:
+    controller, drivers, plan = _setup(tmp_path)
+    monkeypatch.setenv(variable, "not-read-or-logged")
+
+    with pytest.raises(R4ControllerError, match="API key environment is present") as exc_info:
+        controller.preflight()
+
+    assert "not-read-or-logged" not in str(exc_info.value)
     assert sum(driver.prepare_calls for driver in drivers.values()) == 0
     assert all(
         controller._cell_state(cell).state is CellLifecycleState.PLANNED

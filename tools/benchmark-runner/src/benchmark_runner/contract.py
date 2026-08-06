@@ -1,15 +1,24 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
 PRODUCER = "lao-bench/0.1.0"
+API_KEY_ENV_NAMES = ("OPENAI_API_KEY", "CODEX_API_KEY")
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+
+
+def present_api_key_environment_names(
+    environ: Mapping[str, str] | None = None,
+) -> tuple[str, ...]:
+    source = os.environ if environ is None else environ
+    return tuple(name for name in API_KEY_ENV_NAMES if name in source)
 
 
 def utc_now() -> datetime:

@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from orchestrator.cli import EXIT_RUNTIME, _doctor, main
 from orchestrator.contract import RunReportEnvelope, RunStatusEnvelope
 from orchestrator.schemas import PUBLIC_SCHEMA_FILENAMES
@@ -86,6 +88,7 @@ def test_doctor_uses_sdk_account_without_exposing_account_data(project_factory, 
             )
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
     monkeypatch.setattr(openai_codex, "Codex", FakeCodex)
     result = _doctor(project_factory())
     assert result["codex_login"] == {
@@ -113,6 +116,7 @@ def test_doctor_cli_fails_when_chatgpt_authentication_is_unavailable(
             return SimpleNamespace(account=None, requires_openai_auth=True)
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
     monkeypatch.setattr(openai_codex, "Codex", LoggedOutCodex)
 
     result = main(["doctor", "--project", str(project_factory()), "--json"])
@@ -124,3 +128,19 @@ def test_doctor_cli_fails_when_chatgpt_authentication_is_unavailable(
         "authenticated": False,
         "method": "unknown",
     }
+
+
+@pytest.mark.parametrize("variable", ["OPENAI_API_KEY", "CODEX_API_KEY"])
+def test_doctor_cli_fails_closed_for_api_key_environment(
+    project_factory, monkeypatch, capsys, variable: str
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    monkeypatch.setenv(variable, "not-read-or-logged")
+
+    result = main(["doctor", "--project", str(project_factory()), "--json"])
+    output = json.loads(capsys.readouterr().out)
+
+    assert result == EXIT_RUNTIME
+    assert output["api_key_present"] is True
+    assert "not-read-or-logged" not in json.dumps(output)

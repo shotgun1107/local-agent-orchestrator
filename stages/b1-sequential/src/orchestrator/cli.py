@@ -31,7 +31,7 @@ from .recover import (
     force_unlock,
     verify_backup,
 )
-from .runtime import RuntimeBoundaryError
+from .runtime import RuntimeBoundaryError, present_api_key_environment_names
 from .schemas import export_public_schemas
 from .schedule import (
     ConfigurationError,
@@ -155,7 +155,8 @@ def _doctor(project_path: Path) -> dict[str, Any]:
     except ImportError:
         sdk = {"installed": False, "version": None, "pinned": False}
     login: dict[str, Any] = {"checked": False, "authenticated": False, "method": "unknown"}
-    if sdk["pinned"] and not os.environ.get("OPENAI_API_KEY"):
+    present_api_keys = present_api_key_environment_names()
+    if sdk["pinned"] and not present_api_keys:
         try:
             from openai_codex import Codex
 
@@ -182,7 +183,7 @@ def _doctor(project_path: Path) -> dict[str, Any]:
         "worktree": workspace.status(),
         "state_root": str(state_root_for(loaded.pack.project.project_id)),
         "runtime_profiles_path": str(default_runtime_profiles_path()),
-        "api_key_present": bool(os.environ.get("OPENAI_API_KEY")),
+        "api_key_present": bool(present_api_keys),
         "codex_sdk": sdk,
         "codex_login": login,
     }

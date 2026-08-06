@@ -18,6 +18,7 @@ from jsonschema.exceptions import SchemaError, ValidationError as JsonSchemaVali
 from pydantic import JsonValue, ValidationError
 
 from benchmark_runner.contract import (
+    API_KEY_ENV_NAMES,
     B0Attestation,
     B0ManualSubmission,
     InterventionEvent,
@@ -605,7 +606,8 @@ class B1SequentialAdapter:
         environment["PYTHONUTF8"] = "1"
         environment["PYTHONIOENCODING"] = "utf-8"
         if self.config.runtime == "fake":
-            environment.pop("OPENAI_API_KEY", None)
+            for name in API_KEY_ENV_NAMES:
+                environment.pop(name, None)
         return environment
 
     def _invoke(self, arguments: list[str]) -> CommandCapture:

@@ -188,6 +188,7 @@ def _drivers(tmp_path: Path):
 @pytest.fixture(autouse=True)
 def _without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
 
 
 def test_r6_real_driver_boundary_runs_all_12_nonlive_cells(tmp_path: Path) -> None:

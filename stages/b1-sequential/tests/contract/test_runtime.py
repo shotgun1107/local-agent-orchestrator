@@ -90,6 +90,7 @@ def test_codex_adapter_sets_deny_all_on_thread_and_turn(monkeypatch, tmp_path: P
             return None
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
     monkeypatch.setattr(openai_codex, "Codex", FakeContext)
     runtime = CodexRuntime(workspace=tmp_path)
     profile = RuntimeProfile(runtime="codex", model="gpt-test", auth_method="chatgpt", reasoning_effort="low")
@@ -101,8 +102,13 @@ def test_codex_adapter_sets_deny_all_on_thread_and_turn(monkeypatch, tmp_path: P
     assert calls["turn"]["output_schema"]["title"] == "ResultEnvelope"
 
 
-def test_codex_adapter_fails_closed_when_api_key_is_present(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "not-read-or-logged")
+@pytest.mark.parametrize("variable", ["OPENAI_API_KEY", "CODEX_API_KEY"])
+def test_codex_adapter_fails_closed_when_api_key_is_present(
+    monkeypatch, tmp_path: Path, variable: str
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    monkeypatch.setenv(variable, "not-read-or-logged")
     with pytest.raises(Exception, match="fails closed"):
         CodexRuntime(workspace=tmp_path)
 
@@ -122,6 +128,7 @@ def test_codex_adapter_fails_closed_when_sdk_account_is_not_chatgpt(monkeypatch,
             return None
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
     monkeypatch.setattr(openai_codex, "Codex", FakeContext)
     with pytest.raises(Exception, match="requires ChatGPT authentication"):
         CodexRuntime(workspace=tmp_path)

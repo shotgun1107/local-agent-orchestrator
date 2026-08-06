@@ -22,6 +22,7 @@ from .contract import (
     ExperimentControl,
     ExperimentDisplayState,
     StrictModel,
+    present_api_key_environment_names,
     utc_now,
 )
 from .plan import assert_plan_integrity
@@ -307,8 +308,11 @@ def _run_json(
 def collect_r6_environment(profile: R6RuntimeProfile) -> dict[str, str | bool]:
     """Verify the real B1 auth/profile boundary without consuming a model turn."""
 
-    if os.environ.get("OPENAI_API_KEY"):
-        raise R4ControllerError("OPENAI_API_KEY is present")
+    present_keys = present_api_key_environment_names()
+    if present_keys:
+        raise R4ControllerError(
+            f"API key environment is present ({', '.join(present_keys)})"
+        )
     manifest = load_frozen_manifest(Path(profile.manifest_path))
     with tempfile.TemporaryDirectory(prefix="lao-r6-doctor-") as temporary:
         doctor_project = Path(temporary) / "project"

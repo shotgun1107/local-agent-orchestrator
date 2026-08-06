@@ -63,6 +63,7 @@ from benchmark_runner.contract import (
     PRODUCER,
     StopHistoryEntry,
     VariantMetrics,
+    present_api_key_environment_names,
     utc_now,
     validate_relative_path,
 )
@@ -1696,8 +1697,11 @@ class R4ExperimentController:
                 for cell in plan.cells
             ):
                 raise R4ControllerError("Preflight cannot change after Cell execution begins")
-            if os.environ.get("OPENAI_API_KEY"):
-                raise R4ControllerError("OPENAI_API_KEY is present")
+            present_keys = present_api_key_environment_names()
+            if present_keys:
+                raise R4ControllerError(
+                    f"API key environment is present ({', '.join(present_keys)})"
+                )
             if not self.benchmark_python.is_file() or not self.git_executable.is_file():
                 raise R4ControllerError("Benchmark Python or Git executable is missing")
             if sha256_file(self.manifest_path) != plan.source_manifest.sha256:

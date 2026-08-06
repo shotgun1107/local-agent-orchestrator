@@ -108,7 +108,7 @@ class _StreamAccumulator:
             stream.close()
 
 
-def _minimal_environment(benchmark_python: Path, git_executable: Path) -> dict[str, str]:
+def build_check_environment(benchmark_python: Path, git_executable: Path) -> dict[str, str]:
     keep = ("SystemRoot", "WINDIR", "COMSPEC", "TEMP", "TMP", "PATHEXT")
     environment = {key: os.environ[key] for key in keep if key in os.environ}
     path_parts = [str(benchmark_python.parent), str(git_executable.parent)]
@@ -118,6 +118,7 @@ def _minimal_environment(benchmark_python: Path, git_executable: Path) -> dict[s
         {
             "PATH": os.pathsep.join(dict.fromkeys(path_parts)),
             "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONHASHSEED": "0",
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
         }
@@ -643,7 +644,7 @@ class FixtureJudge:
         cwd = (workspace / check.cwd).resolve()
         if not cwd.is_relative_to(workspace) or not cwd.is_dir():
             raise RuntimeError(f"unsafe Check cwd: {check.cwd}")
-        environment = _minimal_environment(self.benchmark_python, self.git_executable)
+        environment = build_check_environment(self.benchmark_python, self.git_executable)
         popen_options: dict[str, object] = {}
         if os.name == "nt":
             popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP

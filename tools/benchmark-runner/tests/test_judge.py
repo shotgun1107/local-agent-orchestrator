@@ -18,6 +18,7 @@ from benchmark_runner.judge import (
     _pid_is_alive,
     _process_start_identity,
     _write_process_record,
+    build_check_environment,
     recover_orphan_judge_process,
 )
 from benchmark_runner.contract import utc_now
@@ -45,6 +46,37 @@ def _prepare(tmp_path: Path, fixture_id: str):
         fixture,
         tmp_path / fixture_id,
     )
+
+
+def test_check_environment_contract_is_exact(tmp_path: Path, monkeypatch) -> None:
+    python = tmp_path / "python" / "python.exe"
+    git_executable = tmp_path / "git" / "git.exe"
+    monkeypatch.setenv("SystemRoot", str(tmp_path / "Windows"))
+    monkeypatch.setenv("WINDIR", str(tmp_path / "Windows"))
+    monkeypatch.setenv("COMSPEC", str(tmp_path / "cmd.exe"))
+    monkeypatch.setenv("TEMP", str(tmp_path / "temp"))
+    monkeypatch.setenv("TMP", str(tmp_path / "tmp"))
+    monkeypatch.setenv("PATHEXT", ".EXE;.CMD")
+    monkeypatch.setenv("OPENAI_API_KEY", "secret")
+    monkeypatch.setenv("UNRELATED", "value")
+
+    environment = build_check_environment(python, git_executable)
+
+    assert environment == {
+        "SystemRoot": str(tmp_path / "Windows"),
+        "WINDIR": str(tmp_path / "Windows"),
+        "COMSPEC": str(tmp_path / "cmd.exe"),
+        "TEMP": str(tmp_path / "temp"),
+        "TMP": str(tmp_path / "tmp"),
+        "PATHEXT": ".EXE;.CMD",
+        "PATH": os.pathsep.join(
+            [str(python.resolve().parent), str(git_executable.resolve().parent), str(tmp_path / "Windows" / "System32")]
+        ),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
 
 
 def _apply_golden(prepared, fixture_id: str) -> None:

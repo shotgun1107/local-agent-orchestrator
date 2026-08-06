@@ -13,7 +13,20 @@ from benchmark_runner.contract import (
     MetricValue,
     PUBLIC_SCHEMAS,
     export_public_schemas,
+    present_api_key_environment_names,
 )
+
+
+def test_api_key_environment_detection_reports_names_not_values() -> None:
+    environment = {
+        "OPENAI_API_KEY": "first-secret",
+        "CODEX_API_KEY": "second-secret",
+        "OTHER": "ignored",
+    }
+    assert present_api_key_environment_names(environment) == (
+        "OPENAI_API_KEY",
+        "CODEX_API_KEY",
+    )
 
 
 def test_metric_value_distinguishes_unknown_from_zero() -> None:

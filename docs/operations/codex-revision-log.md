@@ -1205,3 +1205,27 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 12개 중 5번째 Cell `cell_sequential-code-change_2_b0`는 `PREPARED`였지만 타이머·모델 호출 전에 중단했다. `active-workspace`와 일치하는 소유권 표식은 로컬 runtime의 `abandoned-experiments` 보존 영역으로 이동했으며 Runner의 Cell 상태를 완료나 실패로 조작하지 않았다. 나머지 7개는 `PLANNED` 상태다.
 - `benchmarks/results/partial/exp_20260806_bac45bc4_3/`에 봉인 Measurement 원본 4개와 부분 종료 기록을 저장했다. 전체 Evidence export는 만들지 않았으므로 저장소만으로 Evidence hash를 재검증할 수 없다고 명시했다.
 - 최종 상태는 `기능 확인`, `성능 미판정`, `채택 판정 미발행`이다. 이후 성능 실험은 사람을 통제 실행 경로에서 제외하고, 실제 사용성은 장기간 자연 사용 로그로 별도 측정해야 한다.
+
+## SDK 통제 비교 명세 1차 심사 반영
+
+- 작업일: 2026-08-06.
+- 수동 F1의 사람 지연을 제거하기 위해 C0(one-shot), C1(same-thread staged), C2(fresh-thread relay), B1(순차 오케스트레이터)을 같은 `openai-codex==0.144.4` SDK 표면에서 비교하는 명세를 작성했다. 실제 구현과 model turn은 수행하지 않았다.
+- 1차 Claude 심사는 P0 3건·P1 6건·P2 5건·P3 2건을 보고했다. C2 handoff와 현재 B1 TaskEnvelope가 같다는 코드 대조는 유지했다.
+- 심사의 P0-1은 재검증 결과 기각했다. `stage1` Check가 미추적 Python bytecode를 만드는 사실은 맞지만 최종 Judge가 scope 검사 전에 이를 정규화한다. 관련 positive·negative 회귀시험 2건을 Python 3.12.10으로 실행해 `2 passed`를 확인했고, B1 내부도 scope 검사 뒤 Check 실행 순서라 자기 Check 산출물로 즉시 scope 실패하지 않는다.
+- 나머지 지적은 반영했다. F2를 union 밖 F2a와 union 안·T1 밖 F2b로 분리하고 failure-injection을 9-Cell 선행 조건으로 바꿨다. 비용은 B1 full outcome의 `ΣB1/ΣC2` token·wall 비율로 계산하며, 재시도 없는 first-attempt 비율은 통제 타당성 자료로만 사용한다.
+- C0는 모든 Task goal·completion criteria를 받는 탐색 Variant로 고쳤다. 기본 채택 판단은 C2·B1 8 Cell에 집중하고, 32 Cell 의무 실행을 폐기했다. 새 순서는 `9 non-live → 4 pilot → 8 decision → 실제 프로젝트 3~5건 또는 2~4주 telemetry → 필요할 때만 16/32 confirmatory`다.
+- 32 Cell 축소는 분리된 다른 프로젝트의 가치 판단이 아니라 이 비교 자체의 검증력과 비용만으로 결정했다. 기존 32 Cell 중 C0·C1 16개는 최종 판정식에 기여하지 않고, 정상 fixture에는 품질 천장 효과가 있으며 두 fixture로 범용성을 주장할 수도 없다. 그래서 C2·B1 기본 8 Cell 뒤 실제 판정이 바뀔 수 있을 때만 16/32 Cell로 확대한다.
+- 개정 명세는 `docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md`, 658줄, SHA-256 `9F20B34FBB2A7E0748BF37B5514906F1ECAEE1693F0C45CA13BD539816B932D5`다. 1차 심사 보고서는 수정하지 않았으며 469줄, SHA-256 `7A668F049236C291B7D7DCF227F6E27B77124C974EF5E86FC3FA50C0DCC65CAB`다.
+- 재심사 프롬프트는 `docs/prompts/benchmark-runner/claude-rereview-prompt-sdk-controlled-comparison-spec.md`, 33줄, SHA-256 `E5C7CB779B81D2FEC486DFB676F0FE39922A56BE94E5FE85970A40B8FE6E6764`다. 이 실행용 프롬프트는 SHA-256 `E15D...` 명세를 대상으로 사용됐으며 재심사 결과 파일이 생성됐다.
+
+## SDK 통제 비교 명세 재심사·v3 동결과 구현 1단계
+
+- 작업일: 2026-08-06.
+- Claude 재심사는 `경미한 수정 후 구현 착수`로 판정했다. 잔여 항목은 P0 0건·P1 1건·P2 4건·P3 3건이며, 1차 지적 16건 중 15건 해결·1건 심사 오류로 기각됐다. 재심사 보고서는 `docs/reviews/benchmark-runner/claude-rereview-sdk-controlled-comparison-spec.md`, 352줄, SHA-256 `D51AF9043E15AE655BF754D131BA66B14878EBAAFA9B61F3F6ADD6C92AA61507`다.
+- 1차 P0-1 기각 근거를 다시 확인했다. Judge는 scope 판정 전에 미추적 Python bytecode를 정규화하며, 해당 positive·negative 회귀시험 2건을 Python 3.12.10에서 실행해 `2 passed`를 확인했다.
+- 재심사의 N1~N8을 명세에 반영했다. 공통 Check 환경 변경을 기능 revision으로 규정하고, 최종 Judge의 중간 Task Check 미실행 한계, F1의 즉시 `BLOCKED`, 재시도 0회 시 token gate `not_applicable`, telemetry의 제한된 결정 역할, `NOT_READY`, 정규화 경로 증거, C0 Check 이름 노출 가능성을 명시했다.
+- 동결한 v3 명세는 `docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md`, 709줄, SHA-256 `50F4A6E579DFA21443FD64D5303BD1D36157520234F76BCBED1F9B28D81E97BA`다. 재심사가 실제로 읽은 판본은 SHA-256 `E15D...`였고, 이후 별도 프로젝트에 근거하던 §21.3의 축소 사유만 이 비교 자체의 검증력·비용 근거로 교체한 뒤 N1~N8을 반영했다. 재심사 보고서는 읽기 전용으로 유지했다.
+- 구현 1단계로 B1과 Benchmark Runner에 각각 독립된 결정적 Check 환경 builder를 적용했다. 최소 OS 변수와 Python·Git 실행 경로만 허용하고 `PYTHONDONTWRITEBYTECODE=1`, `PYTHONHASHSEED=0`, UTF-8 변수를 고정한다. 두 패키지를 직접 결합하지 않고 동일 계약 시험으로 drift를 막는다.
+- 코드 대조 중 `OPENAI_API_KEY`만 차단하고 `CODEX_API_KEY`는 차단하지 않던 간극을 발견했다. 두 패키지의 runtime·doctor·preflight가 두 변수 중 하나라도 존재하면 값 노출 없이 fail-closed하도록 수정했고, FakeRuntime 경계에서도 두 변수를 제거한다. 이는 공식 지원 여부 판단이 아니라 이 실험의 ChatGPT 구독 인증 통제 정책이다.
+- 표적 회귀는 B1 23개와 Benchmark Runner 68개가 통과했다. 전체 회귀는 B1 69개와 Benchmark Runner 155개가 통과했으며 `git diff --check`도 통과했다. 이 단계에서 실제 model turn, 라이브 비교 Cell, 새 wheel·artifact build는 수행하지 않았다.
+- 다음 구현 단위는 C0·C1·C2 중 하나를 따로 완성하는 방식이 아니라, 공통 Experiment 계약에서 세 Variant가 같은 fixture를 끝까지 통과하는 최소 vertical slice다. 그 뒤 9개 non-live failure-injection gate를 통과해야 4개 live pilot으로 진행한다.
