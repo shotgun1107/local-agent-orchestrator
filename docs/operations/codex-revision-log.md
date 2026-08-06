@@ -1178,3 +1178,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `sequential-code-change`와 `sequential-document` fixture를 추가했다. 두 fixture 모두 T1 산출물이 T2 입력이 되며 Task별 write scope와 Check가 분리된다.
 - pristine 실패, T1 golden 적용 뒤 1단계 Check 통과·최종 Check 실패, T2 golden 적용 뒤 최종 통과를 자동시험했다. 두 Run Spec은 B1 공개 계약으로 각각 Task 2개가 유효함을 확인했다.
 - Benchmark Runner 전체 회귀는 새 fixture 시험 4개를 포함해 143개가 통과했다. 다음 작업은 fixture source commit/tree 고정, B0 Task별 prompt hash 증거 구현, 새 manifest·artifact·preflight 동결이다. 이 조건을 통과하기 전에는 F1 라이브 Cell이나 B2를 시작하지 않는다.
+- fixture source commit을 `dd8044b8818a4ca7b6af281fec5f8992bdd4cd43`으로 고정했다. `sequential-code-change` tree는 `7593579d0094e6254563127ae9f0d3508b8dc748`, `sequential-document` tree는 `84879dd6db89bb65ae8422f0d1932a102da0a2e9`이며 새 manifest가 이 값들을 가리킨다.
+- Runner는 B0 준비 시 `benchmark-run.yaml`의 Task 순서대로 고정 prompt와 prompt plan을 생성한다. 각 전달 명령은 Task key와 prompt SHA-256을 함께 기록하고, 다중 Task Cell은 전체 순서가 정확하지 않거나 prompt 파일이 변조되면 완료를 거부한다.
+- artifact build script는 저장소 상대 `--manifest`를 받도록 일반화했다. 기본 manifest는 유지되므로 기존 R6 재현 경계는 바뀌지 않는다.
+- 표적 검사 9개, Benchmark Runner 전체 146개, B1 전체 65개가 각각 통과했다. 다음 작업은 이 Runner 변경을 commit한 뒤 F1 artifact를 두 번 독립 build해 일치성을 확인하고 preflight·실행 전 freeze를 만드는 것이다.

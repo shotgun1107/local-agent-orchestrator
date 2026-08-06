@@ -6,9 +6,17 @@ from pathlib import Path
 
 import pytest
 
+from benchmark_runner.contract import ArtifactIdentity, ExecutionPlan
+from benchmark_runner.runner import (
+    create_r4_experiment_from_manifest,
+    frozen_b0_b1_decision_policy,
+)
+from benchmark_runner.workspace import FixtureRestorer, load_frozen_manifest
+
 
 REPOSITORY = Path(__file__).resolve().parents[3]
 FIXTURES = REPOSITORY / "benchmarks" / "fixtures"
+MANIFEST = REPOSITORY / "benchmarks" / "manifests" / "b0-b1-sequential-followup.yaml"
 
 
 def _run(workspace: Path, *argv: str) -> subprocess.CompletedProcess[str]:
@@ -110,3 +118,54 @@ def test_sequential_fixture_declares_two_ordered_tasks(fixture_id: str) -> None:
     assert [task["key"] for task in tasks] == ["T1", "T2"]
     assert tasks[0]["depends_on"] == []
     assert tasks[1]["depends_on"] == ["T1"]
+
+
+def test_followup_manifest_restores_both_frozen_fixture_trees(tmp_path: Path) -> None:
+    manifest = load_frozen_manifest(MANIFEST)
+    assert [item.id for item in manifest.fixtures] == [
+        "sequential-code-change",
+        "sequential-document",
+    ]
+    restorer = FixtureRestorer(REPOSITORY, shutil.which("git") or "git")
+    for fixture in manifest.fixtures:
+        prepared = restorer.restore(fixture, tmp_path / fixture.id)
+        assert prepared.fixture.git_tree == fixture.git_tree
+
+
+def test_followup_manifest_builds_a_balanced_twelve_cell_plan(tmp_path: Path) -> None:
+    created = create_r4_experiment_from_manifest(
+        state_root=tmp_path / "state",
+        source_repository=REPOSITORY,
+        manifest_path=MANIFEST,
+        runner_artifact=ArtifactIdentity(
+            artifact_id="benchmark-runner",
+            version="test",
+            sha256="1" * 64,
+        ),
+        variant_artifacts=[
+            ArtifactIdentity(artifact_id="b0", version="test", sha256="1" * 64),
+            ArtifactIdentity(artifact_id="b1", version="test", sha256="2" * 64),
+        ],
+        baseline_variant="b0",
+        candidate_variant="b1",
+        seed=20260806,
+        primary_metrics=[
+            "check_success",
+            "manual_copy_or_relay_count_excluding_start",
+        ],
+        decision_policy=frozen_b0_b1_decision_policy(),
+        reasoning_control="test",
+        environment_fingerprint={
+            "model": "gpt-5.6-terra",
+            "auth_method": "chatgpt",
+        },
+        revision=1,
+    )
+    plan = ExecutionPlan.model_validate_json(Path(created.plan_path).read_bytes())
+    assert len(plan.cells) == 12
+    assert {cell.fixture_id for cell in plan.cells} == {
+        "sequential-code-change",
+        "sequential-document",
+    }
+    assert sum(cell.variant_id == "b0" for cell in plan.cells) == 6
+    assert sum(cell.variant_id == "b1" for cell in plan.cells) == 6

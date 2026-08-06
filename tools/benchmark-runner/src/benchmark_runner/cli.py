@@ -88,6 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
             "status_observation",
         ),
     )
+    r6_b0_event.add_argument(
+        "--task-key",
+        help="record the frozen Task prompt identity for sequential B0",
+    )
     r6_b0_complete = r6_commands.add_parser("b0-complete")
     r6_b0_complete.add_argument("--experiment-dir", type=Path, required=True)
     r6_b0_complete.add_argument(
@@ -166,6 +170,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result = record_r6_b0_event(
                     args.experiment_dir,
                     kind=args.kind,
+                    task_key=args.task_key,
                 )
             elif args.r6_command == "b0-complete":
                 result = complete_r6_b0_cell(

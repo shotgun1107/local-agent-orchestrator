@@ -35,6 +35,7 @@ from .runner import (
     R6PreparedRecord,
     R6B0ControlKind,
     R6B0ManualDriver,
+    R6B0TaskPromptPlan,
     R6B1SequentialDriver,
     _process_is_alive,
     _process_start_identity,
@@ -43,6 +44,7 @@ from .runner import (
     create_r4_experiment_from_manifest,
     enqueue_r6_b0_control_command,
     frozen_b0_b1_decision_policy,
+    read_r6_b0_control_commands,
     sha256_file,
 )
 
@@ -108,6 +110,8 @@ class R6B0PreparedResult(StrictModel):
     action: Literal["prepared", "already_prepared"]
     workspace: str
     prompt_path: str
+    prompt_paths: list[str]
+    prompt_plan_path: str
     codex_project_root: str | None = None
     codex_project_name: str = "AI 오케스트레이터 실험실"
     launch_policy: Literal["background_thread_only"] = "background_thread_only"
@@ -122,6 +126,8 @@ class R6B0StartResult(StrictModel):
     cell_state: Literal["ACTIVE"] = "ACTIVE"
     workspace: str
     prompt_path: str
+    prompt_paths: list[str]
+    prompt_plan_path: str
     codex_project_root: str | None = None
     codex_project_name: str = "AI 오케스트레이터 실험실"
     launch_policy: Literal["background_thread_only"] = "background_thread_only"
@@ -133,6 +139,9 @@ class R6B0CommandResult(StrictModel):
     sequence: int
     kind: str
     received_at: str
+    task_key: str | None = None
+    prompt_path: str | None = None
+    prompt_sha256: str | None = None
 
 
 class R6B0CompleteResult(StrictModel):
@@ -482,6 +491,29 @@ def _require_next_b0(experiment_dir: Path, *states: CellLifecycleState):
     return status, cell
 
 
+def _b0_task_prompt_plan(cell_dir: Path) -> R6B0TaskPromptPlan:
+    path = cell_dir / "raw" / "b0-task-prompt-plan.json"
+    try:
+        plan = R6B0TaskPromptPlan.model_validate_json(path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise R4ControllerError("B0 Task prompt plan is missing or invalid") from exc
+    if not plan.prompts:
+        raise R4ControllerError("B0 Task prompt plan is empty")
+    for expected_ordinal, prompt in enumerate(plan.prompts, start=1):
+        if prompt.ordinal != expected_ordinal:
+            raise R4ControllerError("B0 Task prompt ordinals are not contiguous")
+        prompt_path = (cell_dir / prompt.relative_path).resolve()
+        if not prompt_path.is_relative_to(cell_dir.resolve()):
+            raise R4ControllerError("B0 Task prompt escaped its Cell directory")
+        if not prompt_path.is_file() or sha256_file(prompt_path) != prompt.sha256:
+            raise R4ControllerError("B0 Task prompt is missing or changed")
+    return plan
+
+
+def _b0_task_prompt_paths(cell_dir: Path, plan: R6B0TaskPromptPlan) -> list[str]:
+    return [str((cell_dir / item.relative_path).resolve()) for item in plan.prompts]
+
+
 def prepare_r6_b0_cell(experiment_dir: Path) -> R6B0PreparedResult:
     """Prepare the next B0 workspace without activating its 900-second deadline."""
 
@@ -497,13 +529,17 @@ def prepare_r6_b0_cell(experiment_dir: Path) -> R6B0PreparedResult:
     record = R6PreparedRecord.model_validate_json(
         (cell_dir / "raw" / "prepared-fixture.json").read_bytes()
     )
+    prompt_plan = _b0_task_prompt_plan(cell_dir)
+    prompt_paths = _b0_task_prompt_paths(cell_dir, prompt_plan)
     workspace = record.workspace or str((cell_dir / "workspace").resolve())
     return R6B0PreparedResult(
         experiment_id=prepared.experiment_id,
         cell_id=prepared.cell_id,
         action=prepared.action,
         workspace=workspace,
-        prompt_path=str((cell_dir / "raw" / "b0-fixed-prompt.md").resolve()),
+        prompt_path=prompt_paths[0],
+        prompt_paths=prompt_paths,
+        prompt_plan_path=str((cell_dir / "raw" / "b0-task-prompt-plan.json").resolve()),
         codex_project_root=profile.b0_codex_project_root,
         codex_project_name=profile.b0_codex_project_name,
         launch_policy=profile.b0_launch_policy,
@@ -616,6 +652,9 @@ def start_r6_b0_cell(
     while time.monotonic() < deadline:
         state = CellStateRecord.model_validate_json(state_path.read_bytes()).state
         if state is CellLifecycleState.ACTIVE:
+            cell_dir = state_path.parent
+            prompt_plan = _b0_task_prompt_plan(cell_dir)
+            prompt_paths = _b0_task_prompt_paths(cell_dir, prompt_plan)
             return R6B0StartResult(
                 experiment_id=process_record.experiment_id,
                 cell_id=cell.cell_id,
@@ -626,7 +665,9 @@ def start_r6_b0_cell(
                     ).workspace
                     or str((state_path.parent / "workspace").resolve())
                 ),
-                prompt_path=str((state_path.parent / "raw" / "b0-fixed-prompt.md").resolve()),
+                prompt_path=prompt_paths[0],
+                prompt_paths=prompt_paths,
+                prompt_plan_path=str((cell_dir / "raw" / "b0-task-prompt-plan.json").resolve()),
                 codex_project_root=profile.b0_codex_project_root,
                 codex_project_name=profile.b0_codex_project_name,
                 launch_policy=profile.b0_launch_policy,
@@ -646,16 +687,38 @@ def record_r6_b0_event(
     experiment_dir: Path,
     *,
     kind: R6B0ControlKind,
+    task_key: str | None = None,
 ) -> R6B0CommandResult:
     experiment_dir = experiment_dir.resolve()
     status, cell = _require_next_b0(experiment_dir, CellLifecycleState.ACTIVE)
     _require_b0_controller_running(experiment_dir, cell.cell_id)
     if kind in {"complete", "abort"}:
         raise R4ControllerError("Use B0 complete for terminal commands")
+    cell_dir = experiment_dir / "cells" / cell.cell_id
+    prompt_path: str | None = None
+    prompt_sha256: str | None = None
+    if task_key is not None:
+        plan = _b0_task_prompt_plan(cell_dir)
+        existing = read_r6_b0_control_commands(
+            cell_dir / "variant-state" / "b0-control",
+            cell_id=cell.cell_id,
+        )
+        recorded = [command for command in existing if command.task_key is not None]
+        if len(recorded) >= len(plan.prompts):
+            raise R4ControllerError("Every planned B0 Task prompt is already recorded")
+        expected = plan.prompts[len(recorded)]
+        if task_key != expected.task_key or kind != expected.event_kind:
+            raise R4ControllerError(
+                f"Next B0 Task prompt must be {expected.event_kind} for {expected.task_key}"
+            )
+        prompt_path = str((cell_dir / expected.relative_path).resolve())
+        prompt_sha256 = expected.sha256
     command = enqueue_r6_b0_control_command(
-        experiment_dir / "cells" / cell.cell_id / "variant-state" / "b0-control",
+        cell_dir / "variant-state" / "b0-control",
         cell_id=cell.cell_id,
         kind=kind,
+        task_key=task_key,
+        prompt_sha256=prompt_sha256,
     )
     return R6B0CommandResult(
         experiment_id=status.experiment_id,
@@ -663,7 +726,34 @@ def record_r6_b0_event(
         sequence=command.sequence,
         kind=command.kind,
         received_at=command.received_at.isoformat(),
+        task_key=command.task_key,
+        prompt_path=prompt_path,
+        prompt_sha256=command.prompt_sha256,
     )
+
+
+def _assert_b0_task_prompt_evidence(experiment_dir: Path, cell_id: str) -> None:
+    cell_dir = experiment_dir / "cells" / cell_id
+    plan = _b0_task_prompt_plan(cell_dir)
+    if len(plan.prompts) == 1:
+        return
+    commands = read_r6_b0_control_commands(
+        cell_dir / "variant-state" / "b0-control",
+        cell_id=cell_id,
+    )
+    recorded = [command for command in commands if command.task_key is not None]
+    expected = [
+        (prompt.event_kind, prompt.task_key, prompt.sha256)
+        for prompt in plan.prompts
+    ]
+    actual = [
+        (command.kind, command.task_key, command.prompt_sha256)
+        for command in recorded
+    ]
+    if actual != expected:
+        raise R4ControllerError(
+            "B0 completion requires every planned Task prompt in the frozen order"
+        )
 
 
 def complete_r6_b0_cell(
@@ -687,6 +777,7 @@ def complete_r6_b0_cell(
         or surface_kind != profile.b0_surface_kind
     ):
         raise R4ControllerError("B0 controls and complete timeline must be explicitly confirmed")
+    _assert_b0_task_prompt_evidence(experiment_dir, cell.cell_id)
     attestation = B0Attestation(
         status="confirmed",
         confirmed_at=utc_now(),
