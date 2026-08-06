@@ -90,7 +90,17 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--revision", type=int, default=1)
     value.add_argument("--model", default="gpt-5.6-terra")
     value.add_argument("--reasoning-effort", default="low")
+    value.add_argument("--b0-codex-project-root", type=Path)
     return value
+
+
+def default_b0_codex_project_root() -> Path:
+    return (
+        Path.home()
+        / "Documents"
+        / "ChatGPT"
+        / "AI 오케스트레이터 실험실"
+    ).resolve()
 
 
 def main() -> int:
@@ -101,6 +111,11 @@ def main() -> int:
     codex = args.codex.resolve()
     artifact_root = args.artifact_root.resolve()
     local_root = args.local_root.resolve()
+    b0_codex_project_root = (
+        args.b0_codex_project_root.resolve()
+        if args.b0_codex_project_root is not None
+        else default_b0_codex_project_root()
+    )
     for path in (repository, python, git, codex):
         if not path.exists():
             raise RuntimeError(f"required R6 path is missing: {path}")
@@ -233,6 +248,9 @@ def main() -> int:
         "common_surface_kind": "mixed_b0_codex_app_b1_codex_sdk",
         "b0_surface_kind": "codex_app_task",
         "b1_surface_kind": "codex_sdk_via_lao_cli",
+        "b0_codex_project_root": str(b0_codex_project_root),
+        "b0_codex_project_name": "AI 오케스트레이터 실험실",
+        "b0_launch_policy": "background_thread_only",
         "treatment_control": "partial",
     }
     profile_path = local_root / "r6-runtime-profile.json"

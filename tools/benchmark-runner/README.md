@@ -39,6 +39,8 @@
 - export된 모든 Measurement·Evidence hash와 summary 파생 결과를 저장소만으로 재검증
 - 실제 B0 console driver와 B1 public-CLI driver를 R4 controller에 연결하고 sidecar 전체 deadline·process group 복구·봉인 전 redaction 적용
 - `r6 create/preflight/status/run-next/freeze`와 B0 `prepare/start/event/complete` installed-artifact CLI, 명시적 revision, 유료 실행 확인 flag
+- 모든 B0 Codex App 작업을 한 로컬 프로젝트에 모으는 고정 `active-workspace` 슬롯, Cell 소유권 충돌 차단과 봉인 뒤 workspace 보존 이동
+- Cell마다 `codex app`을 호출하지 않는 `background_thread_only` 시작 정책과 프로젝트명·프로젝트 루트의 CLI 출력
 - Git blob snapshot에서 재현 가능한 Runner/B1 wheel을 만들고 canonical source clone에서 manifest bytes와 Plan fingerprint 고정
 - Python 3.12.10·Git 2.54.0·Codex CLI/SDK 0.144.4·ChatGPT 인증을 모델 turn 없이 확인하고 12개 PLANNED Cell을 동결
 
@@ -83,6 +85,8 @@ $experiment = Join-Path $runtime 'experiments\exp_20260806_7ff7d501_4'
 ```
 
 다음 Cell이 B0이면 workspace 준비와 실제 측정 시작을 분리한다. `b0-prepare`는 Cell을 `PREPARED`로 만들지만 900초 deadline을 시작하지 않는다.
+
+다음 artifact build부터 B0 workspace는 `%USERPROFILE%\Documents\ChatGPT\AI 오케스트레이터 실험실\active-workspace`에 준비된다. 상위 폴더는 Codex App의 `AI 오케스트레이터 실험실` 프로젝트로 최초 한 번만 등록한다. 각 Cell에서 별도 프로젝트를 만들거나 `codex app <workspace>`를 다시 호출하지 않는다. `b0-prepare`·`b0-start` JSON의 `codex_project_root`, `codex_project_name`, `launch_policy`가 이 계약을 표시한다.
 
 ```powershell
 & $python -m benchmark_runner r6 b0-prepare `

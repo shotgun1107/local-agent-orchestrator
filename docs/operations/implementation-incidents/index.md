@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 29건
-- 해결: 29건
+- 전체: 30건
+- 해결: 30건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -42,6 +42,7 @@
 | DEV-20260806-004 | resolved | r6 | implementation | B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨 |
 | DEV-20260806-005 | resolved | r6 | implementation | B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨 |
 | DEV-20260806-006 | resolved | r6 | tooling | R6 비라이브 회귀가 공유 pytest 임시 폴더 ACL에 의존함 |
+| DEV-20260806-007 | resolved | r6 | integration | B0 Cell별 workspace가 Codex 로컬 프로젝트를 증식시킴 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1711,3 +1712,73 @@ run_r6_nonlive_regression.py가 실행마다 r6- 접두사의 전용 임시 루�
 
 - 관련 커밋: 기록 없음
 - 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260806-007 — B0 Cell별 workspace가 Codex 로컬 프로젝트를 증식시킴
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `integration`
+- 발견: 2026-08-06T02:40:00Z / 사용자 Codex App 사이드바 점검
+- 해결: 2026-08-06T02:56:18Z
+
+### 증상
+
+B0 비교 Cell을 실행할 때마다 이름이 workspace인 Codex 로컬 프로젝트가 하나씩 추가되고, workspace를 여는 과정에서 Codex 앱이 현재 작업 앞으로 이동했다
+
+### 재현
+
+- 서로 다른 R6 revision의 B0 Cell workspace를 준비한다
+- 각 Cell의 고유한 .../cells/<cell-id>/workspace 경로를 Codex App 프로젝트로 연다
+- Codex App 프로젝트 목록에 같은 label=workspace와 서로 다른 절대경로가 누적되는지 확인한다
+
+### 증거
+
+- `direct-observation`: Codex App list_projects에서 revision 2·3·4의 서로 다른 Cell 경로를 가진 label=workspace 프로젝트 3개를 확인했다
+- `source-inspection`: Runner는 B0 workspace를 Cell 디렉터리 아래에 만들었고 Codex App에는 Cell별 경로를 매번 새 프로젝트로 여는 운영 절차를 사용했다
+- `reproducible-test`: 고정 프로젝트의 active-workspace를 준비하고 다른 Cell의 동시 소유를 거부한 뒤 봉인 완료 시 원래 Cell 디렉터리로 이동하는 통합시험이 통과했다
+
+### 근본 원인
+
+실험 증거를 Cell별 절대경로로 격리하는 저장 구조와 Codex App의 프로젝트 식별 경로를 같은 것으로 사용했다. 따라서 매번 달라지는 실행 workspace가 매번 새로운 App 프로젝트가 되었고, 프로젝트 등록을 위해 앱 열기 명령도 반복됐다
+
+### 검토한 해결안
+
+- `rejected` 모든 과거 Cell workspace를 한 Codex 프로젝트의 보조 폴더로 추가 — 한 B0 작업이 다른 Cell workspace를 읽거나 수정할 수 있어 비교 격리를 약화한다
+- `adopted` 고정 Codex 프로젝트 루트 아래 active-workspace 슬롯 하나를 순차 재사용 — App 프로젝트 ID와 경로는 고정하면서 실제 fixture는 한 번에 하나만 노출하고, 종료 후 기존 Cell 증거 폴더에 보존할 수 있다
+- `rejected` Cell마다 codex app 명령을 계속 호출하되 프로젝트 이름만 바꿈 — 프로젝트 증식과 앱 포커스 이동 원인을 그대로 남긴다
+
+### 채택한 해결
+
+R6 profile에 고정 AI 오케스트레이터 실험실 프로젝트 루트와 background_thread_only 정책을 추가했다. B0 Driver는 프로젝트의 active-workspace를 Cell 소유권 record로 독점하고, Judge와 Measurement 봉인 뒤 해당 workspace를 Cell의 기존 보존 경로로 이동한다. 운영 runbook은 Codex App 프로젝트를 최초 한 번만 등록하고 Cell마다 codex app 또는 화면 이동을 호출하지 않도록 변경했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+- tools/benchmark-runner/src/benchmark_runner/r6.py
+- tools/benchmark-runner/scripts/build_r6_artifacts.py
+- tools/benchmark-runner/tests/test_r6_live_drivers.py
+- tools/benchmark-runner/tests/test_r6_freeze_boundary.py
+- stages/b0-manual/runbook/b0-runbook.md
+- tools/benchmark-runner/README.md
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_live_drivers.py::test_r6_b0_file_control_runs_active_cell_to_sealed
+- tools/benchmark-runner/tests/test_r6_freeze_boundary.py::test_create_status_and_paid_run_guard
+
+### 검증 결과
+
+- Benchmark Runner 전체 회귀시험 138개 통과
+- 고정 active-workspace가 다른 Cell 소유권 요청을 거부하고 봉인 뒤 Cell workspace로 이동하며 owner record가 제거됨을 확인
+- 등록된 AI 오케스트레이터 실험실 프로젝트에서 create_thread만으로 점검 작업을 생성·완료했고 사용자가 Codex App 화면 포커스가 이동하지 않았음을 확인
+
+### 남은 위험
+
+- 현재 Codex App 도구에는 로컬 프로젝트 생성 API가 없어 프로젝트 최초 등록은 UI에서 한 번 수행해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: stages/b0-manual/runbook/b0-runbook.md
+- 출처: https://learn.chatgpt.com/docs/projects#use-local-projects-for-folders-and-codebases
+- 출처: https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app
