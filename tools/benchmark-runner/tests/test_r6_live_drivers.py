@@ -366,7 +366,11 @@ def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:
         "reasoning_control": "not_applicable",
         "treatment_control": "not_applicable",
     }
-    drivers["b0"] = R6B0ManualDriver(**common)
+    codex_project_root = tmp_path / "AI 오케스트레이터 실험실"
+    drivers["b0"] = R6B0ManualDriver(
+        **common,
+        codex_project_root=codex_project_root,
+    )
     controller = R4ExperimentController(
         experiment_dir=Path(created.experiment_dir),
         source_repository=REPOSITORY_ROOT,
@@ -388,6 +392,24 @@ def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:
     prepared = controller.prepare_next()
     assert prepared.variant_id == "b0"
     cell_dir = Path(created.experiment_dir) / "cells" / prepared.cell_id
+    active_workspace = codex_project_root / "active-workspace"
+    owner_path = codex_project_root.parent / (
+        f".{codex_project_root.name}.active-workspace.owner.json"
+    )
+    assert active_workspace.is_dir()
+    assert owner_path.is_file()
+    assert not (cell_dir / "workspace").exists()
+    other_b0 = next(
+        cell
+        for cell in plan.cells
+        if cell.variant_id == "b0" and cell.cell_id != prepared.cell_id
+    )
+    with pytest.raises(R4ControllerError, match="owned by another Cell"):
+        drivers["b0"]._claim_workspace(  # type: ignore[attr-defined]
+            plan,
+            other_b0,
+            Path(created.experiment_dir) / "cells" / other_b0.cell_id,
+        )
     results: list[object] = []
     failures: list[BaseException] = []
 
@@ -411,7 +433,7 @@ def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:
         kind="initial_prompt_copy",
     )
     solution = SOLUTIONS["code-change"]
-    (cell_dir / "workspace" / solution["path"]).write_text(
+    (active_workspace / solution["path"]).write_text(
         solution["content"],
         encoding="utf-8",
         newline="\n",
@@ -434,6 +456,9 @@ def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:
     assert not thread.is_alive()
     assert failures == []
     assert results and results[0].action == "sealed"
+    assert not active_workspace.exists()
+    assert not owner_path.exists()
+    assert (cell_dir / "workspace" / solution["path"]).is_file()
     measurement = verify_sealed_cell(cell_dir)
     assert measurement.outcome.check_success is True
     assert measurement.variant_metrics.values["measurement_trusted"] is True

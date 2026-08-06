@@ -3247,6 +3247,16 @@ class R6PreparedRecord(BaseModel):
     checks: ChecksFile
     write_scopes: list[str]
     protected_hashes: list[tuple[str, str]]
+    workspace: str | None = None
+
+
+class R6B0WorkspaceOwner(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    experiment_id: str
+    cell_id: str
+    cell_dir: str
 
 
 class R6ScriptedB0Config(BaseModel):
@@ -3679,6 +3689,9 @@ class _R6CellDriverBase:
     def _prepared_record_path(cell_dir: Path) -> Path:
         return cell_dir / "raw" / "prepared-fixture.json"
 
+    def _workspace_path(self, cell_dir: Path) -> Path:
+        return (cell_dir / "workspace").resolve()
+
     def _prepared(self, cell_dir: Path) -> PreparedFixture:
         try:
             record = R6PreparedRecord.model_validate_json(
@@ -3686,9 +3699,17 @@ class _R6CellDriverBase:
             )
         except (OSError, ValueError) as exc:
             raise R4ControllerError("R6 prepared fixture record is missing or invalid") from exc
+        workspace = (
+            Path(record.workspace).resolve()
+            if record.workspace is not None
+            else self._workspace_path(cell_dir)
+        )
+        archived_workspace = (cell_dir / "workspace").resolve()
+        if not workspace.is_dir() and archived_workspace.is_dir():
+            workspace = archived_workspace
         return PreparedFixture(
             fixture=record.fixture,
-            workspace=(cell_dir / "workspace").resolve(),
+            workspace=workspace,
             checks=record.checks,
             write_scopes=tuple(record.write_scopes),
             protected_hashes=tuple(record.protected_hashes),
@@ -3699,12 +3720,12 @@ class _R6CellDriverBase:
             raise R4ControllerError("R6 driver received another Variant's Cell")
         fixture = self._fixture(plan, cell)
         restorer = FixtureRestorer(self.source_repository, str(self.git_executable))
-        workspace = cell_dir / "workspace"
+        workspace = self._workspace_path(cell_dir)
         record_path = self._prepared_record_path(cell_dir)
         if workspace.is_dir():
             prepared = restorer.open_existing(fixture, workspace, require_clean=True)
         else:
-            temporary = cell_dir / f".prepare-{uuid.uuid4().hex}"
+            temporary = workspace.parent / f".{workspace.name}.prepare-{uuid.uuid4().hex}"
             prepared_temporary = restorer.restore(fixture, temporary)
             os.replace(temporary, workspace)
             prepared = PreparedFixture(
@@ -3719,11 +3740,14 @@ class _R6CellDriverBase:
             checks=prepared.checks,
             write_scopes=list(prepared.write_scopes),
             protected_hashes=list(prepared.protected_hashes),
+            workspace=str(prepared.workspace),
         )
-        if record_path.exists() and R6PreparedRecord.model_validate_json(
-            record_path.read_bytes()
-        ) != record:
-            raise R4ControllerError("R6 prepared fixture metadata changed")
+        if record_path.exists():
+            existing = R6PreparedRecord.model_validate_json(record_path.read_bytes())
+            if existing.workspace is None:
+                existing = existing.model_copy(update={"workspace": str(prepared.workspace)})
+            if existing != record:
+                raise R4ControllerError("R6 prepared fixture metadata changed")
         atomic_write(record_path, canonical_json_bytes(record))
         self._prepare_variant(plan, cell, cell_dir, prepared)
 
@@ -3758,7 +3782,7 @@ class _R6CellDriverBase:
         record: R6VariantEvidenceRecord,
     ) -> set[str]:
         replacements = {
-            str((cell_dir / "workspace").resolve()): "<WORKSPACE>",
+            str(self._workspace_path(cell_dir)): "<WORKSPACE>",
             str((cell_dir / "variant-state").resolve()): "<VARIANT_STATE>",
             str(self.source_repository): "<SOURCE_REPOSITORY>",
             str(Path.home().resolve()): "<HOME>",
@@ -3959,7 +3983,7 @@ class _R6CellDriverBase:
 
     def _redact_public_evidence(self, cell_dir: Path) -> set[str]:
         replacements = {
-            str((cell_dir / "workspace").resolve()): "<WORKSPACE>",
+            str(self._workspace_path(cell_dir)): "<WORKSPACE>",
             str((cell_dir / "variant-state").resolve()): "<VARIANT_STATE>",
             str(self.source_repository): "<SOURCE_REPOSITORY>",
             str(Path.home().resolve()): "<HOME>",
@@ -4271,10 +4295,108 @@ class R6B0ManualDriver(_R6CellDriverBase):
         self,
         *,
         scripted_by_fixture: dict[str, R6ScriptedB0Config] | None = None,
+        codex_project_root: Path | None = None,
         **kwargs: object,
     ) -> None:
         super().__init__(**kwargs)  # type: ignore[arg-type]
         self.scripted_by_fixture = dict(scripted_by_fixture or {})
+        self.codex_project_root = (
+            codex_project_root.resolve() if codex_project_root is not None else None
+        )
+
+    def _workspace_path(self, cell_dir: Path) -> Path:
+        if self.codex_project_root is None:
+            return super()._workspace_path(cell_dir)
+        return (self.codex_project_root / "active-workspace").resolve()
+
+    def _workspace_owner_path(self) -> Path:
+        assert self.codex_project_root is not None
+        return self.codex_project_root.parent / (
+            f".{self.codex_project_root.name}.active-workspace.owner.json"
+        )
+
+    def _expected_workspace_owner(
+        self,
+        plan: ExecutionPlan,
+        cell: PlannedCell,
+        cell_dir: Path,
+    ) -> R6B0WorkspaceOwner:
+        return R6B0WorkspaceOwner(
+            experiment_id=plan.experiment_id,
+            cell_id=cell.cell_id,
+            cell_dir=str(cell_dir.resolve()),
+        )
+
+    def _claim_workspace(
+        self,
+        plan: ExecutionPlan,
+        cell: PlannedCell,
+        cell_dir: Path,
+    ) -> None:
+        if self.codex_project_root is None:
+            return
+        owner_path = self._workspace_owner_path()
+        expected = self._expected_workspace_owner(plan, cell, cell_dir)
+        if owner_path.is_file():
+            try:
+                actual = R6B0WorkspaceOwner.model_validate_json(owner_path.read_bytes())
+            except (OSError, ValueError) as exc:
+                raise R4ControllerError("B0 fixed workspace owner record is invalid") from exc
+            if actual != expected:
+                raise R4ControllerError("B0 fixed workspace is owned by another Cell")
+            return
+        if self._workspace_path(cell_dir).exists():
+            raise R4ControllerError("B0 fixed workspace exists without an owner record")
+        atomic_write(owner_path, canonical_json_bytes(expected))
+
+    def prepare(self, plan: ExecutionPlan, cell: PlannedCell, cell_dir: Path) -> None:
+        self._claim_workspace(plan, cell, cell_dir)
+        try:
+            super().prepare(plan, cell, cell_dir)
+        except BaseException:
+            if (
+                self.codex_project_root is not None
+                and not self._workspace_path(cell_dir).exists()
+            ):
+                self._workspace_owner_path().unlink(missing_ok=True)
+            raise
+
+    def _archive_fixed_workspace(
+        self,
+        plan: ExecutionPlan,
+        cell: PlannedCell,
+        cell_dir: Path,
+    ) -> None:
+        if self.codex_project_root is None:
+            return
+        source = self._workspace_path(cell_dir)
+        destination = (cell_dir / "workspace").resolve()
+        if source.is_dir():
+            owner_path = self._workspace_owner_path()
+            try:
+                owner = R6B0WorkspaceOwner.model_validate_json(owner_path.read_bytes())
+            except (OSError, ValueError) as exc:
+                raise R4ControllerError("B0 fixed workspace owner record is missing") from exc
+            if owner != self._expected_workspace_owner(plan, cell, cell_dir):
+                raise R4ControllerError("B0 fixed workspace owner changed before archive")
+            if destination.exists():
+                raise R4ControllerError("B0 archived workspace destination already exists")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(source), str(destination))
+        elif not destination.is_dir():
+            raise R4ControllerError("B0 fixed workspace disappeared before archive")
+        self._workspace_owner_path().unlink(missing_ok=True)
+
+    def judge_and_seal(
+        self,
+        plan: ExecutionPlan,
+        cell: PlannedCell,
+        cell_dir: Path,
+        captured: R4CapturedCell,
+    ) -> R4SealedCell:
+        sealed = super().judge_and_seal(plan, cell, cell_dir, captured)
+        self._archive_fixed_workspace(plan, cell, cell_dir)
+        return sealed
 
     def capabilities(self) -> VariantCapabilities:
         return VariantCapabilities(
@@ -4283,12 +4405,16 @@ class R6B0ManualDriver(_R6CellDriverBase):
             supports_attempt_count=True,
         )
 
-    @staticmethod
-    def _prompt_bytes() -> bytes:
+    def _prompt_bytes(self) -> bytes:
+        workspace_instruction = (
+            "이 Codex 프로젝트의 `active-workspace` 디렉터리에서 작업하라.\n\n"
+            if self.codex_project_root is not None
+            else "Sidecar가 표시한 전용 workspace에서 새 Codex 작업을 시작하라.\n\n"
+        )
         return (
             "# B0 manual benchmark prompt\n\n"
-            "Sidecar가 표시한 전용 workspace에서 새 Codex 작업을 시작하라.\n\n"
-            "`benchmark-run.yaml`의 request, completion criteria, constraints를 읽고 작업하라.\n"
+            + workspace_instruction
+            + "`benchmark-run.yaml`의 request, completion criteria, constraints를 읽고 작업하라.\n"
             "`.orchestrator/checks.yaml`과 `benchmark_checks/**`는 수정하지 마라.\n"
             "완료 주장은 독립 Judge가 다시 검사한다.\n"
         ).encode("utf-8")
@@ -4336,7 +4462,7 @@ class R6B0ManualDriver(_R6CellDriverBase):
             variant_id="b0",
             experiment_id=plan.experiment_id,
             cell_id=cell.cell_id,
-            workspace=str((cell_dir / "workspace").resolve()),
+            workspace=str(self._workspace_path(cell_dir)),
             prompt_path=str((cell_dir / "raw" / "b0-fixed-prompt.md").resolve()),
             events_path=str(
                 (cell_dir / "events" / "interventions.jsonl").resolve()

@@ -86,6 +86,7 @@ def _profile(tmp_path: Path) -> tuple[Path, R6RuntimeProfile]:
         common_surface_kind="mixed_b0_codex_app_b1_codex_sdk",
         b0_surface_kind="codex_app_task",
         b1_surface_kind="codex_sdk_via_lao_cli",
+        b0_codex_project_root=str(tmp_path / "AI 오케스트레이터 실험실"),
     )
     profile_path = tmp_path / "profile.json"
     profile_path.write_bytes(canonical_json_bytes(profile))
@@ -99,6 +100,8 @@ def test_create_status_and_paid_run_guard(tmp_path: Path) -> None:
     assert status_r6_experiment(experiment_dir).display_state == "CREATED"
     stored = json.loads((experiment_dir / "runtime" / "r6-runtime.json").read_text(encoding="utf-8"))
     assert Path(stored["runner_artifact_path"]).is_absolute()
+    assert Path(stored["b0_codex_project_root"]).name == "AI 오케스트레이터 실험실"
+    assert stored["b0_launch_policy"] == "background_thread_only"
     with pytest.raises(R4ControllerError, match="confirm-model-usage"):
         run_next_r6_cell(experiment_dir, confirm_model_usage=False)
     assert status_r6_experiment(experiment_dir).display_state == "CREATED"

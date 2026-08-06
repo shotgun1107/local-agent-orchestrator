@@ -32,6 +32,7 @@ from .runner import (
     R4ExperimentCreated,
     R4PrepareNextResult,
     R4RunNextResult,
+    R6PreparedRecord,
     R6B0ControlKind,
     R6B0ManualDriver,
     R6B1SequentialDriver,
@@ -72,6 +73,12 @@ class R6RuntimeProfile(StrictModel):
     common_surface_kind: str = Field(min_length=1)
     b0_surface_kind: str = Field(min_length=1)
     b1_surface_kind: str = Field(min_length=1)
+    b0_codex_project_root: str | None = None
+    b0_codex_project_name: str = Field(
+        default="AI 오케스트레이터 실험실",
+        min_length=1,
+    )
+    b0_launch_policy: Literal["background_thread_only"] = "background_thread_only"
     treatment_control: Literal["partial"] = "partial"
 
     @model_validator(mode="after")
@@ -81,6 +88,10 @@ class R6RuntimeProfile(StrictModel):
             raise ValueError("R6 requires exactly one b0 and one b1 artifact")
         if by_id["b0"].sha256 != self.runner_artifact.sha256:
             raise ValueError("R6 b0 manual driver must be the frozen Runner artifact")
+        if self.b0_codex_project_root is not None:
+            root = Path(self.b0_codex_project_root)
+            if root.name != self.b0_codex_project_name:
+                raise ValueError("R6 B0 Codex project path and project name must match")
         return self
 
 
@@ -97,6 +108,9 @@ class R6B0PreparedResult(StrictModel):
     action: Literal["prepared", "already_prepared"]
     workspace: str
     prompt_path: str
+    codex_project_root: str | None = None
+    codex_project_name: str = "AI 오케스트레이터 실험실"
+    launch_policy: Literal["background_thread_only"] = "background_thread_only"
     cell_state: Literal["PREPARED"] = "PREPARED"
     actual_model_turns: Literal[0] = 0
 
@@ -108,6 +122,9 @@ class R6B0StartResult(StrictModel):
     cell_state: Literal["ACTIVE"] = "ACTIVE"
     workspace: str
     prompt_path: str
+    codex_project_root: str | None = None
+    codex_project_name: str = "AI 오케스트레이터 실험실"
+    launch_policy: Literal["background_thread_only"] = "background_thread_only"
 
 
 class R6B0CommandResult(StrictModel):
@@ -161,6 +178,8 @@ def load_r6_profile(path: Path) -> R6RuntimeProfile:
         "b1_schema_root",
     )
     updates = {field: _resolve(str(getattr(profile, field)), base) for field in path_fields}
+    if profile.b0_codex_project_root is not None:
+        updates["b0_codex_project_root"] = _resolve(profile.b0_codex_project_root, base)
     command = list(profile.b1_command_prefix)
     command[0] = _resolve(command[0], base)
     updates["b1_command_prefix"] = command
@@ -188,6 +207,11 @@ def _assert_profile_artifacts(profile: R6RuntimeProfile) -> None:
     )
     if any(not Path(value).exists() for value in required_paths):
         raise R4ControllerError("R6 runtime profile references a missing path")
+    if profile.b0_codex_project_root is not None:
+        source_repository = Path(profile.source_repository).resolve()
+        project_root = Path(profile.b0_codex_project_root).resolve()
+        if project_root == source_repository or project_root.is_relative_to(source_repository):
+            raise R4ControllerError("R6 B0 Codex project must be outside the source repository")
     schema_names = sorted(path.name for path in Path(profile.b1_schema_root).glob("*.json"))
     if schema_names != [
         "result-envelope.schema.json",
@@ -392,6 +416,11 @@ def _controller(
             approval_mode="not_applicable_user_session",
             model_control="user_attested_each_cell",
             reasoning_control="user_attested_each_cell",
+            codex_project_root=(
+                Path(profile.b0_codex_project_root)
+                if profile.b0_codex_project_root is not None
+                else None
+            ),
         ),
         "b1": R6B1SequentialDriver(
             **common,
@@ -464,12 +493,20 @@ def prepare_r6_b0_cell(experiment_dir: Path) -> R6B0PreparedResult:
     )
     prepared: R4PrepareNextResult = _controller(experiment_dir).prepare_next()
     cell_dir = experiment_dir / "cells" / prepared.cell_id
+    profile = load_r6_profile(experiment_dir / "runtime" / "r6-runtime.json")
+    record = R6PreparedRecord.model_validate_json(
+        (cell_dir / "raw" / "prepared-fixture.json").read_bytes()
+    )
+    workspace = record.workspace or str((cell_dir / "workspace").resolve())
     return R6B0PreparedResult(
         experiment_id=prepared.experiment_id,
         cell_id=prepared.cell_id,
         action=prepared.action,
-        workspace=str((cell_dir / "workspace").resolve()),
+        workspace=workspace,
         prompt_path=str((cell_dir / "raw" / "b0-fixed-prompt.md").resolve()),
+        codex_project_root=profile.b0_codex_project_root,
+        codex_project_name=profile.b0_codex_project_name,
+        launch_policy=profile.b0_launch_policy,
     )
 
 
@@ -583,8 +620,16 @@ def start_r6_b0_cell(
                 experiment_id=process_record.experiment_id,
                 cell_id=cell.cell_id,
                 controller_pid=process.pid,
-                workspace=str((state_path.parent / "workspace").resolve()),
+                workspace=(
+                    R6PreparedRecord.model_validate_json(
+                        (state_path.parent / "raw" / "prepared-fixture.json").read_bytes()
+                    ).workspace
+                    or str((state_path.parent / "workspace").resolve())
+                ),
                 prompt_path=str((state_path.parent / "raw" / "b0-fixed-prompt.md").resolve()),
+                codex_project_root=profile.b0_codex_project_root,
+                codex_project_name=profile.b0_codex_project_name,
+                launch_policy=profile.b0_launch_policy,
             )
         exit_code = process.poll()
         if exit_code is not None:
