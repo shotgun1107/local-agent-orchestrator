@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260806-012",
+  "title": "standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판",
+  "status": "investigating",
+  "stage": "benchmark-runner-track-a",
+  "category": "integration",
+  "discovered_at": "2026-08-06T07:19:34Z",
+  "resolved_at": null,
+  "discovered_by": "standalone codex exec workspace-write preflight",
+  "symptom": "정확한 workspace root에 write 권한이 적용됐는데도 상대경로 apply_patch가 프로젝트 외부 쓰기로 거부됐고 에이전트는 산출물 없이 완료를 주장했다",
+  "reproduction": [
+    "일반 Windows PowerShell에서 격리 Git fixture를 만든다",
+    "codex exec 0.144.4를 ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다",
+    "JSONL 종료 뒤 요청 파일의 존재와 내용을 외부 스크립트로 검사한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context는 cwd와 workspace_roots를 fixture 루트로 기록하고 그 루트에 write 권한을 부여했다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "apply_patch로 preflight-state.txt와 ./preflight-state.txt를 추가한 두 호출이 모두 writing outside of the project로 거부됐다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "PowerShell WriteAllText와 git apply 대체 시도는 approval_policy=never에서 blocked by policy로 거부됐다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "권한 프로필 직접 probe는 같은 fixture에 파일을 정상 생성했지만 모델 turn은 산출물 없이 T1_COMPLETE와 exit code 0을 반환했고 외부 artifact 검사가 이를 실패로 판정했다"
+    }
+  ],
+  "root_cause": "미확인. OS 수준 write 권한은 정상이나 codex exec 0.144.4의 apply_patch 프로젝트 경계 판정이 rollout의 workspace_roots와 일치하지 않는다",
+  "considered_options": [
+    {
+      "option": "danger-full-access 또는 sandbox 우회로 CLI 시험을 강행",
+      "decision": "rejected",
+      "reason": "격리 VM이 아닌 사용자 환경에서 공식 안전 경계를 약화하며 B1의 deny-all 조건과도 달라진다"
+    },
+    {
+      "option": "사용자가 위치와 옵션을 바꿔 동일 모델 시험을 계속 반복",
+      "decision": "rejected",
+      "reason": "이미 유효 권한과 workspace root가 확인돼 반복 실행은 원인을 좁히지 못하고 구독 토큰만 소비한다"
+    },
+    {
+      "option": "같은 openai-codex SDK 표면으로 one-shot, 동일 thread relay, 새 thread relay 기준선을 구성",
+      "decision": "deferred",
+      "reason": "B1과 모델·인증·sandbox·usage 수집 표면을 통제할 수 있으므로 다음 비교 명세 후보로 검토한다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [
+    "현재 CLI 또는 후속 버전에서 standalone workspace-write turn이 상대경로 파일을 만들고 외부 artifact 검사와 Judge를 통과하는지 확인한다"
+  ],
+  "verification": [
+    "CODEX_PERMISSION_PROFILE과 API key 환경 변수 미설정을 사전 확인했다",
+    "codex sandbox -P :workspace 직접 probe가 같은 fixture 루트에 파일을 생성함을 확인했다",
+    "rollout turn_context의 cwd, workspace_roots, permission_profile write entry, approval_policy를 직접 대조했다",
+    "T1 JSONL, stderr, rollout tool arguments, 실제 파일 부재를 서로 대조했다"
+  ],
+  "remaining_risks": [
+    "현재 Windows CLI 0.144.4에서 codex exec 기반 쓰기 Adapter를 신뢰할 수 없다",
+    "에이전트 최종 메시지와 프로세스 exit code 0만으로 완료를 판정하면 허위 성공이 된다",
+    "SDK 기준선으로 전환할 경우 Claude 심사의 CLI 기반 제안과 달라지므로 비교 명세를 다시 고정해야 한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "https://learn.chatgpt.com/docs/non-interactive-mode.md",
+    "https://learn.chatgpt.com/docs/agent-approvals-security.md"
+  ]
+}

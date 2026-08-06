@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 34건
-- 해결: 33건
+- 전체: 35건
+- 해결: 34건
 - 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -46,7 +46,8 @@
 | DEV-20260806-008 | resolved | r5 | integration | R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함 |
 | DEV-20260806-009 | resolved | benchmark-runner-f1 | integration | B0 prompt 준비 전에 측정 deadline 시작 |
 | DEV-20260806-010 | resolved | benchmark-runner-f1 | design | F1 B0 wall-clock에 사용자 주의 지연 혼입 |
-| DEV-20260806-011 | investigating | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
+| DEV-20260806-011 | resolved | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
+| DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1959,11 +1960,11 @@ revision 3를 4개 SEALED Cell에서 부분 종료하고 PREPARED workspace를 �
 
 ## DEV-20260806-011 — 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `benchmark-runner-track-a`
 - 분류: `integration`
 - 발견: 2026-08-06T06:57:47Z / codex exec explicit-resume preflight
-- 해결: 미해결
+- 해결: 2026-08-06T07:19:34Z
 
 ### 증상
 
@@ -1988,7 +1989,73 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 
 - `rejected` 부모 권한 프로필 환경 변수를 제거하거나 sandbox를 우회 — 현재 세션의 보안 경계를 의도적으로 약화하므로 사전검증 방법으로 부적절하다
 - `adopted` 현재 세션에서는 읽기 전용 JSONL·resume·usage·문맥 검증만 수행 — 보안 경계를 유지하면서 프로그램 인터페이스 계약 대부분을 직접 확인할 수 있다
-- `deferred` 독립 PowerShell에서 쓰기 fixture를 한 번 실행 — 부모 Codex 권한 프로필을 상속하지 않는 실제 Benchmark Runner 실행 환경에서 workspace-write를 확인해야 한다
+- `adopted` 독립 PowerShell에서 쓰기 fixture를 한 번 실행 — 부모 Codex 권한 프로필을 상속하지 않는 환경에서 중첩 실행 문제와 standalone 문제를 분리할 수 있다
+
+### 채택한 해결
+
+독립 PowerShell 전용 사전검증 스크립트가 CODEX_PERMISSION_PROFILE 미설정을 확인한 뒤 실행하도록 했다. standalone rollout에서 workspace-write와 정확한 workspace root가 적용돼 부모 프로필 상속 문제의 제거를 확인했다. 이후 발견한 standalone patch 거부는 별도 DEV-20260806-012로 분리했다.
+
+### 수정 파일
+
+- benchmarks/.local-r6/codex-exec-standalone-preflight.ps1
+- docs/experiments/codex-exec-explicit-resume-preflight.md
+
+### 회귀시험
+
+- 독립 PowerShell에서 실행한 codex exec rollout의 sandbox_policy가 workspace-write이고 workspace_roots와 write entry가 fixture 루트와 일치하는지 대조한다
+
+### 검증 결과
+
+- ChatGPT 로그인과 API key 환경 변수 미설정을 확인했다
+- 세션 019fd5da-4004-7452-8ac0-33ad268d3faf의 T1과 T2에서 thread.started, turn.started, item.completed, turn.completed 및 usage를 확인했다
+- T2가 같은 thread ID를 방출하고 T2_CONTEXT_OK:LAO-PREFLIGHT-6F4A를 정확히 반환했다
+- 독립 PowerShell 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context에서 workspace-write, 정확한 workspace_roots, 해당 루트 write 권한을 확인했다
+
+### 남은 위험
+
+- standalone codex exec의 모델 도구를 통한 파일 변경은 DEV-20260806-012에서 별도 조사 중이다
+- 프로세스 exit code 0이 Task 완료를 뜻하지 않으므로 외부 Judge와 산출물 검사가 반드시 필요하다
+- ChatGPT 인증 경로는 확인했지만 계정 UI의 구독 미터 변화는 직접 확인하지 않았다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: https://learn.chatgpt.com/docs/non-interactive-mode.md
+
+## DEV-20260806-012 — standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판
+
+- 상태: `investigating`
+- 단계: `benchmark-runner-track-a`
+- 분류: `integration`
+- 발견: 2026-08-06T07:19:34Z / standalone codex exec workspace-write preflight
+- 해결: 미해결
+
+### 증상
+
+정확한 workspace root에 write 권한이 적용됐는데도 상대경로 apply_patch가 프로젝트 외부 쓰기로 거부됐고 에이전트는 산출물 없이 완료를 주장했다
+
+### 재현
+
+- 일반 Windows PowerShell에서 격리 Git fixture를 만든다
+- codex exec 0.144.4를 ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다
+- JSONL 종료 뒤 요청 파일의 존재와 내용을 외부 스크립트로 검사한다
+
+### 증거
+
+- `direct-observation`: 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context는 cwd와 workspace_roots를 fixture 루트로 기록하고 그 루트에 write 권한을 부여했다
+- `direct-observation`: apply_patch로 preflight-state.txt와 ./preflight-state.txt를 추가한 두 호출이 모두 writing outside of the project로 거부됐다
+- `direct-observation`: PowerShell WriteAllText와 git apply 대체 시도는 approval_policy=never에서 blocked by policy로 거부됐다
+- `reproducible-test`: 권한 프로필 직접 probe는 같은 fixture에 파일을 정상 생성했지만 모델 turn은 산출물 없이 T1_COMPLETE와 exit code 0을 반환했고 외부 artifact 검사가 이를 실패로 판정했다
+
+### 근본 원인
+
+미확인. OS 수준 write 권한은 정상이나 codex exec 0.144.4의 apply_patch 프로젝트 경계 판정이 rollout의 workspace_roots와 일치하지 않는다
+
+### 검토한 해결안
+
+- `rejected` danger-full-access 또는 sandbox 우회로 CLI 시험을 강행 — 격리 VM이 아닌 사용자 환경에서 공식 안전 경계를 약화하며 B1의 deny-all 조건과도 달라진다
+- `rejected` 사용자가 위치와 옵션을 바꿔 동일 모델 시험을 계속 반복 — 이미 유효 권한과 workspace root가 확인돼 반복 실행은 원인을 좁히지 못하고 구독 토큰만 소비한다
+- `deferred` 같은 openai-codex SDK 표면으로 one-shot, 동일 thread relay, 새 thread relay 기준선을 구성 — B1과 모델·인증·sandbox·usage 수집 표면을 통제할 수 있으므로 다음 비교 명세 후보로 검토한다
 
 ### 채택한 해결
 
@@ -2000,21 +2067,23 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 
 ### 회귀시험
 
-- 독립 PowerShell에서 codex exec --json --sandbox workspace-write로 파일 생성 후 명시적 SESSION_ID resume을 실행하고 외부 파일 검사로 완료를 판정한다
+- 현재 CLI 또는 후속 버전에서 standalone workspace-write turn이 상대경로 파일을 만들고 외부 artifact 검사와 Judge를 통과하는지 확인한다
 
 ### 검증 결과
 
-- ChatGPT 로그인과 API key 환경 변수 미설정을 확인했다
-- 세션 019fd5da-4004-7452-8ac0-33ad268d3faf의 T1과 T2에서 thread.started, turn.started, item.completed, turn.completed 및 usage를 확인했다
-- T2가 같은 thread ID를 방출하고 T2_CONTEXT_OK:LAO-PREFLIGHT-6F4A를 정확히 반환했다
+- CODEX_PERMISSION_PROFILE과 API key 환경 변수 미설정을 사전 확인했다
+- codex sandbox -P :workspace 직접 probe가 같은 fixture 루트에 파일을 생성함을 확인했다
+- rollout turn_context의 cwd, workspace_roots, permission_profile write entry, approval_policy를 직접 대조했다
+- T1 JSONL, stderr, rollout tool arguments, 실제 파일 부재를 서로 대조했다
 
 ### 남은 위험
 
-- standalone codex exec의 workspace-write 파일 변경은 아직 미확인이다
-- 프로세스 exit code 0이 Task 완료를 뜻하지 않으므로 외부 Judge와 산출물 검사가 반드시 필요하다
-- ChatGPT 인증 경로는 확인했지만 계정 UI의 구독 미터 변화는 직접 확인하지 않았다
+- 현재 Windows CLI 0.144.4에서 codex exec 기반 쓰기 Adapter를 신뢰할 수 없다
+- 에이전트 최종 메시지와 프로세스 exit code 0만으로 완료를 판정하면 허위 성공이 된다
+- SDK 기준선으로 전환할 경우 Claude 심사의 CLI 기반 제안과 달라지므로 비교 명세를 다시 고정해야 한다
 
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
 - 출처: https://learn.chatgpt.com/docs/non-interactive-mode.md
+- 출처: https://learn.chatgpt.com/docs/agent-approvals-security.md
