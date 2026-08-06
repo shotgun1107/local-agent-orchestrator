@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260806-004",
+  "title": "B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨",
+  "status": "resolved",
+  "stage": "r6",
+  "category": "implementation",
+  "discovered_at": "2026-08-06T01:18:53Z",
+  "resolved_at": "2026-08-06T01:19:18Z",
+  "discovered_by": "revision 2 첫 B0 라이브 Cell",
+  "symptom": "Codex 작업과 Judge는 통과했지만 console sidecar가 900초에 도달해 event_count=0, measurement_trusted=false로 실험이 중단됐다",
+  "reproduction": [
+    "B0 run-next로 workspace를 준비한 뒤 별도 Codex App 작업을 생성하고 콘솔 포커스가 없는 경로에서 p와 완료 이벤트를 기록하려 한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "exp_20260805_3b2f0a7b_2의 cell_code-change_1_b0가 check_success=true이면서 failure_kind=b0_deadline_exceeded로 봉인됐다"
+    }
+  ],
+  "root_cause": "run-next가 workspace 준비와 ACTIVE 전환을 한 명령에서 수행해 준비 대기시간까지 900초 deadline에 포함했고, B0 이벤트 수집이 포커스를 가진 단일 console input()에만 의존했다",
+  "considered_options": [
+    {
+      "option": "timeout만 연장",
+      "decision": "rejected",
+      "reason": "시작 경계와 터미널 포커스 결합을 그대로 남긴다"
+    },
+    {
+      "option": "PREPARED 단계 분리와 원자적 파일 명령 큐",
+      "decision": "adopted",
+      "reason": "준비시간을 측정에서 제외하고 비대화형 제어에서도 같은 이벤트 계약을 보존한다"
+    }
+  ],
+  "resolution": "prepare_next와 r6 b0-prepare/start/event/complete를 추가했다. B0 sidecar는 runner가 타임스탬프한 순서형 원자 명령 파일을 소비하며 최초 prompt, 복구 구간, terminal attestation의 순서를 검증한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/runner.py",
+    "tools/benchmark-runner/src/benchmark_runner/r6.py",
+    "tools/benchmark-runner/src/benchmark_runner/cli.py"
+  ],
+  "regression_tests": [
+    "tests/test_r6_live_drivers.py::test_r6_prepare_next_does_not_start_b0_deadline",
+    "tests/test_r6_live_drivers.py::test_r6_b0_control_queue_rejects_out_of_order_and_duplicate_commands",
+    "tests/test_r6_live_drivers.py::test_r6_b0_file_control_runs_active_cell_to_sealed"
+  ],
+  "verification": [
+    "Benchmark Runner 전체 pytest 136개 통과",
+    "B0 file-control 통합 경로가 PREPARED-ACTIVE-CAPTURED-JUDGING-SEALED와 독립 Judge를 통과"
+  ],
+  "remaining_risks": [
+    "Codex App 작업을 자동 생성한 운영자는 사용자 직접 조작과 구분해 최종 실험 메타데이터에 해석 한계로 남겨야 한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/operations/codex-revision-log.md"
+  ]
+}

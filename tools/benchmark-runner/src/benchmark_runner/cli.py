@@ -15,10 +15,14 @@ from benchmark_runner.runner import (
     verify_sealed_cell,
 )
 from benchmark_runner.r6 import (
+    complete_r6_b0_cell,
     create_r6_experiment,
     freeze_r6_pre_execution,
     preflight_r6_experiment,
+    prepare_r6_b0_cell,
+    record_r6_b0_event,
     run_next_r6_cell,
+    start_r6_b0_cell,
     status_r6_experiment,
 )
 
@@ -63,6 +67,38 @@ def build_parser() -> argparse.ArgumentParser:
     r6_run_next = r6_commands.add_parser("run-next")
     r6_run_next.add_argument("--experiment-dir", type=Path, required=True)
     r6_run_next.add_argument("--confirm-model-usage", action="store_true")
+    r6_b0_prepare = r6_commands.add_parser("b0-prepare")
+    r6_b0_prepare.add_argument("--experiment-dir", type=Path, required=True)
+    r6_b0_start = r6_commands.add_parser("b0-start")
+    r6_b0_start.add_argument("--experiment-dir", type=Path, required=True)
+    r6_b0_start.add_argument("--confirm-model-usage", action="store_true")
+    r6_b0_event = r6_commands.add_parser("b0-event")
+    r6_b0_event.add_argument("--experiment-dir", type=Path, required=True)
+    r6_b0_event.add_argument(
+        "--kind",
+        required=True,
+        choices=(
+            "initial_prompt_copy",
+            "additional_prompt",
+            "correction",
+            "manual_retry",
+            "recovery_start",
+            "recovery_end",
+            "session_replacement",
+            "status_observation",
+        ),
+    )
+    r6_b0_complete = r6_commands.add_parser("b0-complete")
+    r6_b0_complete.add_argument("--experiment-dir", type=Path, required=True)
+    r6_b0_complete.add_argument(
+        "--outcome",
+        choices=("completed", "interrupted"),
+        default="completed",
+    )
+    r6_b0_complete.add_argument("--confirm-timeline", action="store_true")
+    r6_b0_complete.add_argument("--model", required=True)
+    r6_b0_complete.add_argument("--reasoning-effort", required=True)
+    r6_b0_complete.add_argument("--surface-kind", required=True)
     r6_freeze = r6_commands.add_parser("freeze")
     r6_freeze.add_argument("--experiment-dir", type=Path, required=True)
     r6_freeze.add_argument("--regression-record", type=Path, required=True)
@@ -119,17 +155,40 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result = preflight_r6_experiment(args.experiment_dir)
             elif args.r6_command == "status":
                 result = status_r6_experiment(args.experiment_dir)
+            elif args.r6_command == "b0-prepare":
+                result = prepare_r6_b0_cell(args.experiment_dir)
+            elif args.r6_command == "b0-start":
+                result = start_r6_b0_cell(
+                    args.experiment_dir,
+                    confirm_model_usage=args.confirm_model_usage,
+                )
+            elif args.r6_command == "b0-event":
+                result = record_r6_b0_event(
+                    args.experiment_dir,
+                    kind=args.kind,
+                )
+            elif args.r6_command == "b0-complete":
+                result = complete_r6_b0_cell(
+                    args.experiment_dir,
+                    outcome=args.outcome,
+                    confirm_timeline=args.confirm_timeline,
+                    model=args.model,
+                    reasoning_effort=args.reasoning_effort,
+                    surface_kind=args.surface_kind,
+                )
             elif args.r6_command == "freeze":
                 result = freeze_r6_pre_execution(
                     args.experiment_dir,
                     args.regression_record,
                     args.output_dir,
                 )
-            else:
+            elif args.r6_command == "run-next":
                 result = run_next_r6_cell(
                     args.experiment_dir,
                     confirm_model_usage=args.confirm_model_usage,
                 )
+            else:  # pragma: no cover - argparse constrains this branch
+                raise AssertionError(f"unknown R6 command: {args.r6_command}")
             print(json.dumps(result.model_dump(mode="json"), ensure_ascii=False, sort_keys=True))
             return 0
         if args.command == "compare":
