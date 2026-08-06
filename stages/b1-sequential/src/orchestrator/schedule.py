@@ -30,8 +30,6 @@ from .contract import (
     RuntimeProfilesConfig,
     SandboxMode,
     SessionState,
-    TaskEnvelope,
-    TaskLimits,
     TaskSpec,
     TaskState,
     TerminalStatus,
@@ -46,6 +44,7 @@ from .contract import (
 from .ledger import IntegrityViolation, Ledger, LedgerError, StateConflict
 from .recover import ControllerLock, reconcile
 from .runtime import CodexRuntime, DispatchUncertain, FakeRuntime, RuntimePort
+from .worker import build_task_envelope
 from .verify import (
     ArtifactStore,
     GitWorkspace,
@@ -380,25 +379,14 @@ class Orchestrator:
         baseline = self.workspace.capture_baseline()
         fingerprint = self.workspace.fingerprint_inputs(spec)
         attempt_id = new_id("attempt")
-        envelope = TaskEnvelope(
-            schema_version=1,
+        envelope = build_task_envelope(
+            spec,
             run_id=run_id,
             task_id=task["task_id"],
             attempt_id=attempt_id,
             requirements_version=run["requirements_version"],
-            dispatch_token=f"{attempt_id}:1",
-            goal=spec.goal,
-            completion_criteria=[criterion.text for criterion in spec.completion_criteria],
-            inputs=spec.inputs,
-            read_scope=spec.read_scope,
-            write_scope=spec.write_scope,
-            workspace_mode=spec.workspace_mode,
-            check_names=spec.check_names,
-            limits=TaskLimits(
-                timeout_seconds=self.policy.task_timeout_seconds,
-                remaining_attempts=self.policy.max_attempts_per_task - attempt_no,
-            ),
-            result_schema_path="schemas/v1/result-envelope.schema.json",
+            timeout_seconds=self.policy.task_timeout_seconds,
+            remaining_attempts=self.policy.max_attempts_per_task - attempt_no,
         )
         attempt = ledger.begin_attempt(
             task["task_id"], attempt_no, self._attempt_reason(attempts), canonical_json(envelope),

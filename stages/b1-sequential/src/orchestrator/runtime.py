@@ -16,19 +16,19 @@ from .contract import (
     FailureKind,
     InterruptOutcome,
     InterruptState,
-    ResultEnvelope,
     RuntimeCapabilities,
     RuntimeFailure,
     RuntimeOutcome,
     RuntimeProfile,
     SandboxMode,
+    ResultEnvelope,
     TaskEnvelope,
     TerminalStatus,
     TokenCounts,
     UsageSnapshot,
     UsageStatus,
-    canonical_json,
 )
+from .worker import render_worker_prompt
 
 SECRET_PATTERNS = [
     re.compile(r"(?i)(api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[^\s,;]+"),
@@ -189,6 +189,12 @@ class FakeRuntime:
     def _produce(self, handle: TurnHandle) -> RuntimeOutcome:
         scenario = self.scenario
         fixture = self.fixture
+        scripted_turns = fixture.get("turns")
+        if isinstance(scripted_turns, list) and handle.turn_no <= len(scripted_turns):
+            scripted = scripted_turns[handle.turn_no - 1]
+            if not isinstance(scripted, dict):
+                raise RuntimeBoundaryError("FakeRuntime turn script must be an object")
+            fixture = {**fixture, **scripted}
         delay_ms = int(fixture.get("delay_ms", 5))
         if scenario.startswith("timeout_"):
             delay_ms = int(fixture.get("delay_ms", 60_000))
@@ -320,19 +326,6 @@ def normalize_exception(exc: BaseException) -> RuntimeFailure:
     )
 
 
-def _codex_prompt(envelope: TaskEnvelope, feedback: dict[str, Any] | None = None) -> str:
-    payload = envelope.model_dump(mode="json")
-    instructions = (
-        "Execute only the TaskEnvelope below. Respect read_scope and write_scope. "
-        "Do not perform external actions. Return only JSON matching the supplied ResultEnvelope schema. "
-        "Your completed claim is evidence only; the controller will independently verify it."
-    )
-    if feedback:
-        instructions += " Correct only the listed verification failure; do not broaden scope."
-        payload["resume_feedback"] = feedback
-    return f"{instructions}\n\n{canonical_json(payload)}"
-
-
 class CodexRuntime:
     """Pinned openai-codex 0.144.4 adapter with fail-closed approvals."""
 
@@ -402,7 +395,7 @@ class CodexRuntime:
 
     def start_turn(self, session_handle: SessionHandle, task_envelope: TaskEnvelope) -> TurnHandle:
         raw = session_handle.raw.turn(
-            _codex_prompt(task_envelope),
+            render_worker_prompt(task_envelope),
             approval_mode=self._ApprovalMode.deny_all,
             effort=session_handle.runtime_profile.reasoning_effort,
             output_schema=ResultEnvelope.model_json_schema(),
@@ -412,7 +405,7 @@ class CodexRuntime:
 
     def resume_session(self, session_handle: SessionHandle, feedback_envelope: dict[str, Any]) -> TurnHandle:
         raw = session_handle.raw.turn(
-            _codex_prompt(session_handle.envelope, feedback_envelope),
+            render_worker_prompt(session_handle.envelope, feedback_envelope),
             approval_mode=self._ApprovalMode.deny_all,
             effort=session_handle.runtime_profile.reasoning_effort,
             output_schema=ResultEnvelope.model_json_schema(),
