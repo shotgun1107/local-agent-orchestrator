@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 28건
-- 해결: 28건
+- 전체: 29건
+- 해결: 29건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -41,6 +41,7 @@
 | DEV-20260806-003 | resolved | r6 | tooling | 동결 artifact JSON이 checkout EOL 변환 대상이었음 |
 | DEV-20260806-004 | resolved | r6 | implementation | B0 측정 타이머와 이벤트 입력이 콘솔 수명에 결합됨 |
 | DEV-20260806-005 | resolved | r6 | implementation | B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨 |
+| DEV-20260806-006 | resolved | r6 | tooling | R6 비라이브 회귀가 공유 pytest 임시 폴더 ACL에 의존함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1651,6 +1652,60 @@ Judge가 Check 전에 Git status와 tracked file 목록을 대조해 오직 비�
 ### 남은 위험
 
 - Python bytecode 외의 도구별 실행 부산물은 실제 관측 뒤 개별 위협 검토와 사전 등록 없이는 자동 정규화하지 않는다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260806-006 — R6 비라이브 회귀가 공유 pytest 임시 폴더 ACL에 의존함
+
+- 상태: `resolved`
+- 단계: `r6`
+- 분류: `tooling`
+- 발견: 2026-08-06T01:55:05Z / revision 4 첫 비라이브 회귀 기록 생성
+- 해결: 2026-08-06T01:55:32Z
+
+### 증상
+
+수동 전체 회귀는 통과했지만 동결용 run_r6_nonlive_regression.py에서는 B1 47건과 Runner 110건이 pytest tmp_path setup PermissionError로 실패했다
+
+### 재현
+
+- 접근 불가능한 %TEMP%/pytest-of-<user>가 남은 환경에서 run_r6_nonlive_regression.py를 실행한다
+
+### 증거
+
+- `direct-observation`: 같은 source commit에서 짧은 명시적 --basetemp를 쓴 수동 회귀는 Runner 138개와 B1 65개가 통과했지만 기존 스크립트는 공용 pytest 임시 폴더 PermissionError로 실패했다
+
+### 근본 원인
+
+동결용 회귀 스크립트가 pytest의 사용자 공용 임시 폴더와 저장소 .pytest_cache 기본값을 그대로 사용해 이전 프로세스가 남긴 ACL과 경로 상태에 의존했다
+
+### 검토한 해결안
+
+- `rejected` 기존 pytest 공용 임시 폴더를 강제 삭제 — 다른 실행의 파일을 파괴하며 ACL 원인을 반복할 수 있다
+- `adopted` 회귀 실행별 짧은 TemporaryDirectory와 cache provider 비활성화 — 다른 실행과 격리되고 Windows 경로 길이와 저장소 cache 쓰기까지 함께 피한다
+
+### 채택한 해결
+
+run_r6_nonlive_regression.py가 실행마다 r6- 접두사의 전용 임시 루트를 만들고 B1과 Runner에 서로 다른 --basetemp를 전달하며 pytest cache provider를 비활성화한다
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/run_r6_nonlive_regression.py
+
+### 회귀시험
+
+- 접근 불가능한 기존 pytest 공용 임시 폴더가 있는 현재 환경에서 전체 non-live regression 재실행
+
+### 검증 결과
+
+- 수정된 스크립트에서 B1·Runner·구현 로그 검증과 하네스 시험을 한 번에 통과
+
+### 남은 위험
+
+- Windows TEMP 자체에 새 디렉터리를 만들 수 없는 환경은 preflight 이전 환경 오류로 실패한다
 
 ### 추적 정보
 

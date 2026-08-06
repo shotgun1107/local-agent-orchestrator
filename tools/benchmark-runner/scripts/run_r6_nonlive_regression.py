@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,11 +41,34 @@ def main() -> int:
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTHONUTF8"] = "1"
     environment["PYTHONIOENCODING"] = "utf-8"
+    temporary = tempfile.TemporaryDirectory(prefix="r6-")
+    pytest_root = Path(temporary.name)
+    pytest_options = ["-q", "-p", "no:cacheprovider"]
     cases = [
-        ("b1_full", [str(python), "-m", "pytest", "-q"], repository / "stages" / "b1-sequential", None),
+        (
+            "b1_full",
+            [
+                str(python),
+                "-m",
+                "pytest",
+                *pytest_options,
+                "--basetemp",
+                str(pytest_root / "b"),
+            ],
+            repository / "stages" / "b1-sequential",
+            None,
+        ),
         (
             "runner_full",
-            [str(python), "-m", "pytest", "-q", "tools/benchmark-runner/tests"],
+            [
+                str(python),
+                "-m",
+                "pytest",
+                *pytest_options,
+                "--basetemp",
+                str(pytest_root / "r"),
+                "tools/benchmark-runner/tests",
+            ],
             repository,
             str(repository / "tools" / "benchmark-runner" / "src"),
         ),
@@ -106,6 +130,7 @@ def main() -> int:
         newline="\n",
     )
     print(json.dumps(record, ensure_ascii=False, sort_keys=True))
+    temporary.cleanup()
     return 1 if failed else 0
 
 
