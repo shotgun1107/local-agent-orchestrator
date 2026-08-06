@@ -320,6 +320,7 @@ class FixtureRestorer:
         _safe_extract_fixture(archive, fixture.path, workspace)
 
         _run_git(self.git_executable, workspace, ["init", "-q", "-b", "main"])
+        _run_git(self.git_executable, workspace, ["config", "core.longpaths", "true"])
         _run_git(self.git_executable, workspace, ["config", "user.name", "benchmark-runner"])
         _run_git(
             self.git_executable,

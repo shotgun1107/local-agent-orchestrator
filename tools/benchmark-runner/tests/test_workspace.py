@@ -56,8 +56,15 @@ def test_restore_from_source_commit_reproduces_clean_tree(
         capture_output=True,
         text=True,
     ).stdout
+    longpaths = subprocess.run(
+        [_git(), "-C", str(prepared.workspace), "config", "--bool", "core.longpaths"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
     assert tree == EXPECTED_TREES[fixture_id] == fixture.git_tree
     assert status == ""
+    assert longpaths == "true"
 
 
 def test_restore_rejects_manifest_tree_mismatch(tmp_path: Path) -> None:
