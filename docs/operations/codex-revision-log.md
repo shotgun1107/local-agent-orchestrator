@@ -1137,3 +1137,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 현재 저장소와 독립 canonical source에서 각각 build했다. 두 build의 source commit, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_7ff7d501_4`, Plan fingerprint `7ff7d501c4d711dca0e20e31d9b598530accd61ebb79c8e58b3c1a739ce24575`가 모두 일치했다.
 - preflight Evidence SHA-256은 `cbfde47ad8ea86486e60c0394706c6cc3b5628816faed2e1489d35de380576ec`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 실제 model turn은 0회다.
 - `benchmarks/artifacts/r6-b0-b1-825e00c-r4/`를 revision 4 실행 후보로 동결했다. revision 3과 이전 runtime·봉인 결과는 수정·재사용하지 않으며 revision 4의 첫 B1/B0 쌍부터 새로 실행한다.
+
+## R6 revision 4 첫 유효 B1/B0 비교 쌍
+
+- 작업일: 2026-08-06.
+- `code-change` repetition 1의 B1과 B0가 모두 `src/config.py`만 결과 변경으로 남기고 독립 acceptance·diff Check를 통과해 정상 봉인됐다. Experiment stop reason은 없고 12개 중 2개 Cell이 `SEALED`, 다음 Cell은 `cell_document-read_1_b0`다.
+- B1은 총 41.094초, Variant 40.562초, 1 Attempt·1 Session·1 turn, 시작 제외 중계 0회였다. token usage는 입력 85,736·출력 735·합계 86,471로 측정됐다.
+- B0는 총 58.657초, Variant 58.047초, 1 Attempt·1 Session·1 turn, 시작 제외 중계 0회였다. Codex App 표면이 runtime usage를 제공하지 않아 token usage는 0이 아니라 `unknown`으로 봉인됐다.
+- B0 자체 unittest가 만든 `benchmark_checks/__pycache__/test_acceptance.cpython-312.pyc`와 `src/__pycache__/config.cpython-312.pyc`는 새 Judge의 `normalized_transient_paths`에 기록된 뒤 제거됐다. scope 위반·실패 Check는 0건이므로 revision 3의 비대칭이 실제 라이브 경로에서 해소됐음을 확인했다.
+- 이 한 쌍에서는 B1이 B0보다 17.563초 짧았지만 6개 사전 등록 Block 중 1개뿐이므로 B1 채택·기각 결론을 내리지 않는다. B0 App task 생성이 사용자 직접 조작이 아니라 현재 제어 세션을 통해 이뤄졌고 두 surface가 다르므로 `treatment_control=partial` 해석 한계도 유지한다.
