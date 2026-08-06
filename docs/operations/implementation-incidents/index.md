@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 32건
-- 해결: 32건
+- 전체: 33건
+- 해결: 33건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -45,6 +45,7 @@
 | DEV-20260806-007 | resolved | r6 | integration | B0 Cell별 workspace가 Codex 로컬 프로젝트를 증식시킴 |
 | DEV-20260806-008 | resolved | r5 | integration | R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함 |
 | DEV-20260806-009 | resolved | benchmark-runner-f1 | integration | B0 prompt 준비 전에 측정 deadline 시작 |
+| DEV-20260806-010 | resolved | benchmark-runner-f1 | design | F1 B0 wall-clock에 사용자 주의 지연 혼입 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1890,6 +1891,62 @@ F1 실행 문서에 b0-prepare 뒤 입력창에 prompt를 붙여넣고 사용자
 ### 검증 결과
 
 - revision 2 독립 build 일치, B1 65개, Runner 148개, 구현 로그 31건과 로그 하네스 10개 통과, preflight와 12 PLANNED Cell freeze 완료
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260806-010 — F1 B0 wall-clock에 사용자 주의 지연 혼입
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-f1`
+- 분류: `design`
+- 발견: 2026-08-06T06:00:56Z / F1 revision 3 live comparison
+- 해결: 2026-08-06T06:01:26Z
+
+### 증상
+
+B0 실행시간이 모델 작업뿐 아니라 사용자가 다른 작업을 하다가 T1 완료를 확인하고 T2를 전달한 대기시간까지 포함했다
+
+### 재현
+
+- B0 T1을 보낸 뒤 사용자가 다른 작업을 수행하고 나중에 T2를 전달하는 순차 Cell을 실행한다
+
+### 증거
+
+- `direct-observation`: exp_20260806_bac45bc4_3에서 코드 B0 497.109초 대 B1 89.047초, 문서 B0 166.328초 대 B1 78.172초가 기록됐지만 B0 relay 대기는 통제되지 않았다
+
+### 근본 원인
+
+F1은 B0의 운영 wall-clock을 측정했지만 통제된 실행 성능과 자연 사용 중 사람 응답 지연을 별도 지표와 별도 실험으로 분리하지 않았다
+
+### 검토한 해결안
+
+- `rejected` 현재 B0/B1 시간 차이를 B1 속도 우위로 채택 — 사용자 응답 지연이라는 교란 요인을 원인 효과로 오해한다
+- `adopted` F1을 기능 확인만 남기고 부분 종료 — 확인된 자동 중계 기능은 유지하되 성능·채택 판정은 발행하지 않는다
+- `deferred` 통제 자동 기준선과 자연 사용 로그를 분리 — 순수 실행 성능과 실제 주의 비용을 각각 측정한다
+
+### 채택한 해결
+
+revision 3를 4개 SEALED Cell에서 부분 종료하고 PREPARED workspace를 보존 이동했다. Measurement 4개와 termination 기록을 저장소에 남기고 performance_verdict를 not_evaluated로 고정했다
+
+### 수정 파일
+
+- benchmarks/results/partial/exp_20260806_bac45bc4_3/termination.json
+- benchmarks/results/partial/exp_20260806_bac45bc4_3/README.md
+- docs/operations/codex-revision-log.md
+
+### 회귀시험
+
+- termination.json의 performance_verdict=not_evaluated, adoption_verdict=not_issued와 Measurement SHA-256 4개를 검증한다
+
+### 검증 결과
+
+- 4개 Measurement 모두 completed, check_success=true, scope_ok=true, secret_findings=0이며 저장된 SHA-256이 로컬 봉인 원본과 일치한다
 
 ### 남은 위험
 

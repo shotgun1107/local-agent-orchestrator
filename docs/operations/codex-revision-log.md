@@ -1195,3 +1195,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - source commit `c7953806966effec9e2a42effed9a2fcc3b89fb9`에서 revision 2를 두 경로로 독립 build했다. source commit, manifest, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_b7f3ca21_2`, Plan fingerprint `b7f3ca21157f0d52109575eae58ea9b1e86d0ca9f5efd0d2dc9f2528ade3463b`가 모두 일치했다.
 - 비실시간 회귀는 B1 65개, Benchmark Runner 148개, 구현 오류 로그 31건, 로그 하네스 10개를 통과했고 실제 model turn은 0회다. preflight Evidence SHA-256은 `68a8ad1de9722feb29e22611630af4f8d055c4c4059102d731192d0b8a486d17`이다.
 - `benchmarks/artifacts/f1-b0-b1-c795380-r2/`를 실행 전 동결했다. 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 revision 1의 runtime·Cell과 합치거나 이어서 사용하지 않는다.
+
+## F1 revision 3 부분 종료
+
+- 작업일: 2026-08-06.
+- 사용자의 요청에 따라 revision 2의 독립 artifact를 재사용하고 새 독립 build·전체 회귀·freeze를 반복하지 않은 revision 3 `exp_20260806_bac45bc4_3`를 만들었다. 최소 preflight 뒤 코드·문서 fixture에서 B0/B1 한 쌍씩 실행했다.
+- 4개 Cell은 모두 `completed`, Check 성공, scope 정상, 비밀정보 0건으로 봉인됐다. 각 B0는 시작 제외 사람 중계 1회, 각 B1은 0회였고 수동 복구는 모두 0초였다. 따라서 B1이 T1 검사 뒤 T2를 자동 진행한다는 기능은 두 종류의 과제에서 확인됐다.
+- 코드 fixture의 Variant 시간은 B0 497.109초, B1 89.047초였고 문서 fixture는 B0 166.328초, B1 78.172초였다. 그러나 B0 시간에는 사용자가 다른 작업을 하며 T1 완료를 확인하고 T2를 전달하기까지의 통제되지 않은 지연이 포함됐다. 이 차이를 순수 실행 성능이나 B1 속도 우위로 해석하지 않는다.
+- 12개 중 5번째 Cell `cell_sequential-code-change_2_b0`는 `PREPARED`였지만 타이머·모델 호출 전에 중단했다. `active-workspace`와 일치하는 소유권 표식은 로컬 runtime의 `abandoned-experiments` 보존 영역으로 이동했으며 Runner의 Cell 상태를 완료나 실패로 조작하지 않았다. 나머지 7개는 `PLANNED` 상태다.
+- `benchmarks/results/partial/exp_20260806_bac45bc4_3/`에 봉인 Measurement 원본 4개와 부분 종료 기록을 저장했다. 전체 Evidence export는 만들지 않았으므로 저장소만으로 Evidence hash를 재검증할 수 없다고 명시했다.
+- 최종 상태는 `기능 확인`, `성능 미판정`, `채택 판정 미발행`이다. 이후 성능 실험은 사람을 통제 실행 경로에서 제외하고, 실제 사용성은 장기간 자연 사용 로그로 별도 측정해야 한다.
