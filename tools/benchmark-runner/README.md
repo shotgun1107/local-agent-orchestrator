@@ -52,7 +52,7 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 
 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`는 revision 1 실행 전 동결 bundle이다. 첫 라이브 실행에서 B1 Cell 하나는 성공했지만, 뒤이은 B0 Cell은 비대화형 stdin으로 sidecar 입력이 끊겨 infrastructure error로 봉인됐다. 이 외부 runtime 상태는 저장소에 없으며 revision 1을 비교 결론에 사용하거나 이어서 실행하지 않는다.
 
-현재 실행 후보는 `benchmarks/artifacts/r6-b0-b1-825e00c-r4/`의 revision 4다. source commit `825e00c`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 첫 Cell 전 상태로 동결했다. revision 3은 B0 자체 테스트의 비추적 bytecode 처리 비대칭으로 중단했으며 봉인된 bundle과 외부 runtime은 수정·재사용하지 않는다.
+현재 실행 후보는 `benchmarks/artifacts/r6-b0-b1-f96e718-r5/`의 revision 5다. source commit `f96e718`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 첫 Cell 전 상태로 동결했다. revision 4에는 유효한 첫 비교 쌍이 있지만 B0 고정 프로젝트·백그라운드 시작 경계가 바뀌어 이어서 실행하지 않으며, 이전 revision의 봉인된 bundle과 외부 runtime도 수정·재사용하지 않는다.
 
 새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
 
@@ -60,18 +60,18 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 & $python -m benchmark_runner r6 create `
   --profile <runtime-profile.json> `
   --state-root <state-root> `
-  --revision 4
+  --revision 5
 ```
 
 ### R6 실제 실행 명령 경계
 
-로컬 runtime은 `%LOCALAPPDATA%\local-agent-orchestrator\r6\825e00c-r4`에 있으며 저장소에는 비밀값·절대경로를 제외한 동결 bundle만 보존한다. 상태 확인은 installed Runner wheel로 실행한다.
+로컬 runtime은 `%LOCALAPPDATA%\local-agent-orchestrator\r6\f96e718-r5`에 있으며 저장소에는 비밀값·절대경로를 제외한 동결 bundle만 보존한다. 상태 확인은 installed Runner wheel로 실행한다.
 
 ```powershell
-$runtime = Join-Path $env:LOCALAPPDATA 'local-agent-orchestrator\r6\825e00c-r4'
+$runtime = Join-Path $env:LOCALAPPDATA 'local-agent-orchestrator\r6\f96e718-r5'
 $python = '<B1 Python 3.12 절대경로>'
 $env:PYTHONPATH = Join-Path $runtime 'site'
-$experiment = Join-Path $runtime 'experiments\exp_20260806_7ff7d501_4'
+$experiment = Join-Path $runtime 'experiments\exp_20260806_bc754895_5'
 
 & $python -m benchmark_runner r6 status --experiment-dir $experiment
 ```
@@ -86,7 +86,7 @@ $experiment = Join-Path $runtime 'experiments\exp_20260806_7ff7d501_4'
 
 다음 Cell이 B0이면 workspace 준비와 실제 측정 시작을 분리한다. `b0-prepare`는 Cell을 `PREPARED`로 만들지만 900초 deadline을 시작하지 않는다.
 
-다음 artifact build부터 B0 workspace는 `%USERPROFILE%\Documents\ChatGPT\AI 오케스트레이터 실험실\active-workspace`에 준비된다. 상위 폴더는 Codex App의 `AI 오케스트레이터 실험실` 프로젝트로 최초 한 번만 등록한다. 각 Cell에서 별도 프로젝트를 만들거나 `codex app <workspace>`를 다시 호출하지 않는다. `b0-prepare`·`b0-start` JSON의 `codex_project_root`, `codex_project_name`, `launch_policy`가 이 계약을 표시한다.
+revision 5부터 B0 workspace는 `%USERPROFILE%\Documents\ChatGPT\AI 오케스트레이터 실험실\active-workspace`에 준비된다. 상위 폴더는 Codex App의 `AI 오케스트레이터 실험실` 프로젝트로 최초 한 번만 등록한다. 각 Cell에서 별도 프로젝트를 만들거나 `codex app <workspace>`를 다시 호출하지 않는다. `b0-prepare`·`b0-start` JSON의 `codex_project_root`, `codex_project_name`, `launch_policy`가 이 계약을 표시한다.
 
 ```powershell
 & $python -m benchmark_runner r6 b0-prepare `
