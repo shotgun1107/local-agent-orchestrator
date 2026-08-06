@@ -12,6 +12,7 @@
 - 성공과 실패 모두 hash로 봉인된 `SEALED` 결과로 보존하고 로컬 변조를 검출
 - 동결 manifest의 source commit에서 fixture를 안전하게 복원하고 manifest tree·clean worktree를 검증
 - exact path와 `<directory>/**`만 허용하는 write scope 검사
+- Variant가 만든 Git 비추적 `__pycache__/*.pyc|*.pyo`만 Check 전에 제거하고 경로를 Judge Evidence에 남기는 대칭 정규화
 - Check 파일·`benchmark_checks/**` hash 변조를 명령 실행 전에 차단
 - Variant와 독립된 acceptance·diff Check 실행
 - Check별 timeout process group 정리, stdout/stderr 1 MiB 보존과 전체 stream hash·크기 기록
@@ -45,11 +46,11 @@ Runner 자동 retry는 의도적으로 제공하지 않는다. R0의 내부 seal
 
 봉인 후 Evidence를 고치면 원래 seal이 무효가 되므로 R5는 위험 문자열을 사후 치환하지 않는다. Adapter와 Collector가 봉인 전에 공개 Evidence를 redaction하고, R5에서 token·email·홈 절대 경로·`auth.json` 등을 발견하면 export를 중단해 새 revision에서 다시 봉인하도록 한다.
 
-R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·복구, R5는 비교·판정·export, R6는 실제 driver·artifact·환경·Plan 동결을 담당한다. 실제 Codex B0/B1 효율성 비교는 아직 실행하지 않았다.
+R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·복구, R5는 비교·판정·export, R6는 실제 driver·artifact·환경·Plan 동결을 담당한다. 실제 B1/B0 비교 쌍은 revision 3까지 실행했지만 실행 표면 비대칭을 발견했으므로 효율성 판정에는 사용하지 않는다.
 
 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`는 revision 1 실행 전 동결 bundle이다. 첫 라이브 실행에서 B1 Cell 하나는 성공했지만, 뒤이은 B0 Cell은 비대화형 stdin으로 sidecar 입력이 끊겨 infrastructure error로 봉인됐다. 이 외부 runtime 상태는 저장소에 없으며 revision 1을 비교 결론에 사용하거나 이어서 실행하지 않는다.
 
-현재 실행 후보는 `benchmarks/artifacts/r6-b0-b1-d6c4383-r3/`의 revision 3이다. source commit `d6c4383`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 첫 Cell 전 상태로 동결했다. revision 2는 B0 측정 타이머와 이벤트 입력 경계가 결합된 문제로 비교 자료가 무효가 되어 중단했다.
+현재 실행 후보는 없다. `benchmarks/artifacts/r6-b0-b1-d6c4383-r3/`의 revision 3은 첫 B1/B0 쌍에서 B0 자체 테스트의 비추적 bytecode 처리 비대칭을 발견해 중단했다. 봉인된 bundle과 외부 runtime은 수정·재사용하지 않으며, Judge 정규화 수정이 포함된 새 source commit에서 revision 4를 동결한다.
 
 새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
 

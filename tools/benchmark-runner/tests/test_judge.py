@@ -116,6 +116,60 @@ def test_golden_patch_passes_acceptance_diff_and_scope(
     assert not list(prepared.workspace.rglob("__pycache__"))
 
 
+def test_untracked_python_bytecode_is_normalized_before_scope_and_checks(
+    tmp_path: Path,
+) -> None:
+    prepared = _prepare(tmp_path, "code-change")
+    _apply_golden(prepared, "code-change")
+    environment = os.environ.copy()
+    environment.pop("PYTHONDONTWRITEBYTECODE", None)
+    subprocess.run(
+        [sys.executable, "-m", "unittest", "discover", "-s", "benchmark_checks"],
+        cwd=prepared.workspace,
+        env=environment,
+        check=True,
+        capture_output=True,
+    )
+    generated = sorted(
+        path.relative_to(prepared.workspace).as_posix()
+        for path in prepared.workspace.rglob("*.pyc")
+    )
+    cache_tag = sys.implementation.cache_tag
+    assert cache_tag is not None
+    assert generated == [
+        f"benchmark_checks/__pycache__/test_acceptance.{cache_tag}.pyc",
+        f"src/__pycache__/config.{cache_tag}.pyc",
+    ]
+
+    result = FixtureJudge(Path(sys.executable), _git()).evaluate(
+        prepared,
+        tmp_path / "judge" / "code-change-with-bytecode",
+    )
+
+    assert result.check_success is True
+    assert result.changed_paths == ["src/config.py"]
+    assert result.normalized_transient_paths == generated
+    assert not list(prepared.workspace.rglob("*.pyc"))
+
+
+def test_non_bytecode_file_inside_pycache_remains_a_scope_violation(tmp_path: Path) -> None:
+    prepared = _prepare(tmp_path, "code-change")
+    cache_dir = prepared.workspace / "benchmark_checks" / "__pycache__"
+    cache_dir.mkdir()
+    injected = cache_dir / "injected.txt"
+    injected.write_text("not bytecode\n", encoding="utf-8")
+
+    result = FixtureJudge(Path(sys.executable), _git()).evaluate(
+        prepared,
+        tmp_path / "judge" / "non-bytecode-cache-file",
+    )
+
+    assert result.failed_check_ids == ["runner_judge:write_scope"]
+    assert result.scope_violations == ["benchmark_checks/__pycache__/injected.txt"]
+    assert result.normalized_transient_paths == []
+    assert injected.is_file()
+
+
 def test_check_tampering_fails_before_commands_run(tmp_path: Path) -> None:
     prepared = _prepare(tmp_path, "code-change")
     checks_path = prepared.workspace / ".orchestrator" / "checks.yaml"

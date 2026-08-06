@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260806-005",
+  "title": "B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨",
+  "status": "resolved",
+  "stage": "r6",
+  "category": "implementation",
+  "discovered_at": "2026-08-06T01:40:06Z",
+  "resolved_at": "2026-08-06T01:44:14Z",
+  "discovered_by": "revision 3 첫 B0 라이브 Cell",
+  "symptom": "B0가 요구된 src/config.py 수정과 자체 테스트를 완료했지만 benchmark_checks/__pycache__의 비추적 pyc가 write scope 위반으로 판정돼 독립 Judge가 중단됐다",
+  "reproduction": [
+    "code-change fixture에서 정답 patch를 적용한 뒤 PYTHONDONTWRITEBYTECODE 없이 python -m unittest discover -s benchmark_checks를 실행하고 FixtureJudge를 호출한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "exp_20260806_3ccb5c55_3의 cell_code-change_1_b0는 src/config.py와 두 pyc만 변경했고 runner_judge:write_scope로 봉인됐다"
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "같은 Block의 B1 parent process는 PYTHONDONTWRITEBYTECODE=1을 상속해 pyc를 만들지 않았으므로 B0/B1 실행 표면 사이에 비대칭이 있었다"
+    }
+  ],
+  "root_cause": "Judge는 자기 Check에만 PYTHONDONTWRITEBYTECODE=1을 적용했고 Variant가 Judge 전에 만든 실행 부산물을 정규화하지 않았다. B1은 Runner child 환경에서 bytecode가 억제됐지만 별도 Codex App task인 B0에는 같은 환경이 적용되지 않았다",
+  "considered_options": [
+    {
+      "option": "__pycache__ 전체를 scope 검사에서 무시",
+      "decision": "rejected",
+      "reason": "악의적이거나 비정상적인 파일과 보호 Check를 대체할 bytecode까지 숨길 수 있다"
+    },
+    {
+      "option": "B0 prompt에 환경변수 설정을 지시",
+      "decision": "rejected",
+      "reason": "모델 준수에 의존하며 B0/B1의 시스템 제어 계약을 더 다르게 만든다"
+    },
+    {
+      "option": "Judge가 비추적 Python bytecode만 제거하고 제거 목록을 Evidence에 기록",
+      "decision": "adopted",
+      "reason": "두 Variant의 실행 부산물을 대칭 정규화하면서 다른 파일과 추적 파일의 scope 검사는 유지한다"
+    }
+  ],
+  "resolution": "Judge가 Check 전에 Git status와 tracked file 목록을 대조해 오직 비추적 __pycache__/*.pyc와 *.pyo만 제거한다. 제거 경로는 normalized_transient_paths에 기록하며 다른 확장자, 추적 파일, symlink 경로는 정규화하지 않는다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/judge.py"
+  ],
+  "regression_tests": [
+    "tests/test_judge.py::test_untracked_python_bytecode_is_normalized_before_scope_and_checks",
+    "tests/test_judge.py::test_non_bytecode_file_inside_pycache_remains_a_scope_violation"
+  ],
+  "verification": [
+    "실제 unittest가 만든 두 pyc를 정규화한 뒤 golden code-change가 acceptance와 diff Check를 통과",
+    "__pycache__ 안의 일반 파일은 기존 write scope 위반으로 유지",
+    "Benchmark Runner 138개, B1 65개, 로그 하네스 10개와 incident 28건 검증 통과"
+  ],
+  "remaining_risks": [
+    "Python bytecode 외의 도구별 실행 부산물은 실제 관측 뒤 개별 위협 검토와 사전 등록 없이는 자동 정규화하지 않는다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/operations/codex-revision-log.md"
+  ]
+}
