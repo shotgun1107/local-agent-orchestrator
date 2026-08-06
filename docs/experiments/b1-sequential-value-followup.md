@@ -54,6 +54,18 @@ B0가 한 prompt로 T1과 T2를 모두 처리하게 두지 않는다. 그렇게 
 
 예상값을 판정으로 사용하지 않는다. 다만 정상적인 수동 순차 B0라면 Cell당 T2 전달 1회, B1이라면 0회가 기록되어야 한다. 이 차이가 실제 품질·복구 비용과 함께 유지되는지를 시험한다.
 
+### B0 실행 준비 경계
+
+B0의 900초 제한시간에 프로젝트 탐색·작업 생성·클립보드 준비 시간을 섞지 않는다. 각 B0 Cell은 아래 순서를 지킨다.
+
+1. `b0-prepare`로 `active-workspace`와 고정 prompt만 만들고 Cell은 `PREPARED`에 둔다.
+2. 사용자가 해당 Codex 작업을 열고 T1 prompt를 입력창에 붙여넣되 아직 전송하지 않는다.
+3. 사용자가 `READY`를 알린 뒤에만 `b0-start`를 실행한다.
+4. `ACTIVE` 응답을 확인하면 사용자가 준비된 T1 prompt를 즉시 전송하고, 전송 직후 `initial_prompt_copy` Event를 기록한다.
+5. T1 완료 뒤 같은 작업에 T2 prompt를 전송하고, 전송 직후 `additional_prompt` Event를 기록한다.
+
+`b0-start`를 먼저 실행한 뒤 작업 생성이나 prompt 복사를 안내하지 않는다. 이 순서를 어긴 Cell은 Task 성능과 무관한 준비 지연이 섞인 실행 오류로 취급하고 다음 revision에서 처음부터 다시 실행한다.
+
 ## 7. 구현 순서
 
 1. 두 fixture와 결정론적 Check를 만들고 pristine 실패/T1 통과/T2 최종 통과를 시험한다.

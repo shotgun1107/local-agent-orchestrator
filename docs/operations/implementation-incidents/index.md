@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 31건
-- 해결: 31건
+- 전체: 32건
+- 해결: 32건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -44,6 +44,7 @@
 | DEV-20260806-006 | resolved | r6 | tooling | R6 비라이브 회귀가 공유 pytest 임시 폴더 ACL에 의존함 |
 | DEV-20260806-007 | resolved | r6 | integration | B0 Cell별 workspace가 Codex 로컬 프로젝트를 증식시킴 |
 | DEV-20260806-008 | resolved | r5 | integration | R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함 |
+| DEV-20260806-009 | resolved | benchmark-runner-f1 | integration | B0 prompt 준비 전에 측정 deadline 시작 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1843,3 +1844,57 @@ R6 profile에 고정 AI 오케스트레이터 실험실 프로젝트 루트와 b
 
 - 관련 커밋: 기록 없음
 - 출처: docs/design/general-benchmark-runner-design.md §3.5, §8.8, §19.3
+
+## DEV-20260806-009 — B0 prompt 준비 전에 측정 deadline 시작
+
+- 상태: `resolved`
+- 단계: `benchmark-runner-f1`
+- 분류: `integration`
+- 발견: 2026-08-06T05:09:53Z / F1 revision 1 live execution
+- 해결: 2026-08-06T05:10:05Z
+
+### 증상
+
+T1/T2 작업 시간 대신 프로젝트 확인과 prompt 전달 준비 시간이 900초 제한에 포함되어 T2 기록 전에 Cell이 종료됐다
+
+### 재현
+
+- b0-prepare 직후 사용자의 Codex 작업과 입력창이 준비되지 않은 상태에서 b0-start를 실행하고 수동 안내를 진행한다
+
+### 증거
+
+- `direct-observation`: exp_20260806_d2099743_1이 cell_sequential-code-change_1_b0를 b0_deadline_exceeded로 봉인하고 STOPPED가 됐다
+
+### 근본 원인
+
+하네스는 b0-prepare와 b0-start를 분리했지만 운영 절차가 사용자 READY 확인을 게이트로 요구하지 않아 Controller를 너무 일찍 시작했다
+
+### 검토한 해결안
+
+- `rejected` deadline을 initial_prompt_copy 뒤로 이동 — 사전 등록된 Variant 실행시간 경계를 변경한다
+- `adopted` READY handshake를 b0-start 선행조건으로 고정 — 기존 측정 계약을 유지하며 준비 지연을 제거한다
+
+### 채택한 해결
+
+F1 실행 문서에 b0-prepare 뒤 입력창에 prompt를 붙여넣고 사용자 READY를 받은 다음 b0-start를 실행하는 순서를 고정하고 revision 1을 비교에서 제외한 채 revision 2를 새로 동결했다
+
+### 수정 파일
+
+- docs/experiments/b1-sequential-value-followup.md
+- benchmarks/README.md
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_live_drivers.py::test_r6_prepare_next_does_not_start_b0_deadline
+
+### 검증 결과
+
+- revision 2 독립 build 일치, B1 65개, Runner 148개, 구현 로그 31건과 로그 하네스 10개 통과, preflight와 12 PLANNED Cell freeze 완료
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
