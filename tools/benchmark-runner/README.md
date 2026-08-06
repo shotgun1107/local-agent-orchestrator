@@ -49,7 +49,7 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 
 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`는 revision 1 실행 전 동결 bundle이다. 첫 라이브 실행에서 B1 Cell 하나는 성공했지만, 뒤이은 B0 Cell은 비대화형 stdin으로 sidecar 입력이 끊겨 infrastructure error로 봉인됐다. 이 외부 runtime 상태는 저장소에 없으며 revision 1을 비교 결론에 사용하거나 이어서 실행하지 않는다.
 
-현재 실행 후보는 `benchmarks/artifacts/r6-b0-b1-2c33500-r2/`의 revision 2다. source commit `2c33500`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 첫 Cell 전 상태로 동결했다. 중간 `2f4385d` build는 `core.autocrlf`에 따른 archive 불일치를 발견해 실행·보존하지 않았다.
+현재 실행 후보는 `benchmarks/artifacts/r6-b0-b1-d6c4383-r3/`의 revision 3이다. source commit `d6c4383`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 첫 Cell 전 상태로 동결했다. revision 2는 B0 측정 타이머와 이벤트 입력 경계가 결합된 문제로 비교 자료가 무효가 되어 중단했다.
 
 새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
 
@@ -57,18 +57,18 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 & $python -m benchmark_runner r6 create `
   --profile <runtime-profile.json> `
   --state-root <state-root> `
-  --revision 2
+  --revision 3
 ```
 
 ### R6 실제 실행 명령 경계
 
-로컬 runtime은 `%LOCALAPPDATA%\local-agent-orchestrator\r6\2c33500-r2\runtime`에 있으며 저장소에는 비밀값·절대경로를 제외한 동결 bundle만 보존한다. 상태 확인은 installed Runner wheel로 실행한다.
+로컬 runtime은 `%LOCALAPPDATA%\local-agent-orchestrator\r6\d6c4383-r3`에 있으며 저장소에는 비밀값·절대경로를 제외한 동결 bundle만 보존한다. 상태 확인은 installed Runner wheel로 실행한다.
 
 ```powershell
-$runtime = Join-Path $env:LOCALAPPDATA 'local-agent-orchestrator\r6\2c33500-r2\runtime'
+$runtime = Join-Path $env:LOCALAPPDATA 'local-agent-orchestrator\r6\d6c4383-r3'
 $python = '<B1 Python 3.12 절대경로>'
 $env:PYTHONPATH = Join-Path $runtime 'site'
-$experiment = Join-Path $runtime 'experiments\exp_20260805_3b2f0a7b_2'
+$experiment = Join-Path $runtime 'experiments\exp_20260806_3ccb5c55_3'
 
 & $python -m benchmark_runner r6 status --experiment-dir $experiment
 ```

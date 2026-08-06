@@ -9,4 +9,4 @@
 
 구현 단계의 소스 코드는 이 디렉터리에 두지 않는다. 결과를 얻기 전에 해당 실험 manifest를 먼저 동결한다.
 
-현재 실제 실행 후보는 revision 2인 `artifacts/r6-b0-b1-2c33500-r2/`다. `pre-execution-freeze.json`의 상태는 `frozen_before_first_cell`, 12개 Cell은 모두 `PLANNED`, 실제 model turn은 0회다. `r6-b0-b1-bef6f8e/`는 첫 B1 뒤 B0 입력 경계 오류로 중단된 revision 1의 실행 전 bundle이므로 이어서 사용하지 않는다. `r6-b0-b1-b188954/`, `r6-b0-b1-c413f66/`도 각각의 `NOT-FROZEN.md` 사유로 실행에 사용하지 않는다.
+현재 실제 실행 후보는 revision 3인 `artifacts/r6-b0-b1-d6c4383-r3/`다. `pre-execution-freeze.json`의 상태는 `frozen_before_first_cell`, 12개 Cell은 모두 `PLANNED`, 실제 model turn은 0회다. revision 2인 `r6-b0-b1-2c33500-r2/`는 첫 B1 뒤 B0 측정 타이머·입력 경계 결합으로 비교가 무효가 되어 중단했으며 이어서 사용하지 않는다. `r6-b0-b1-bef6f8e/`는 비대화형 stdin 오류로 중단된 revision 1이다. `r6-b0-b1-b188954/`, `r6-b0-b1-c413f66/`도 각각의 `NOT-FROZEN.md` 사유로 실행에 사용하지 않는다.

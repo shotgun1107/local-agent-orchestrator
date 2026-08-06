@@ -1101,3 +1101,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - B0 Event는 Cell별 원자적 명령 파일로 전달한다. Runner가 시각과 연속 sequence를 생성하고 최초 prompt 누락·중복, recovery 순서 오류, terminal 뒤 추가 Event, attestation 없는 완료를 거부한다. 기존 B0 Adapter의 Event JSONL·파생 지표·독립 Judge·Measurement seal은 그대로 유지한다.
 - 회귀시험은 준비 상태에서 deadline·process가 시작되지 않는 경로, Event 순서·중복·terminal 검증, 비대화형 파일 제어로 `PREPARED → ACTIVE → CAPTURED → JUDGING → SEALED`를 관통하는 경로를 추가했다. Benchmark Runner 전체 pytest 136개가 통과했다.
 - 증상·원인·검토 대안·해결·잔여 위험은 `DEV-20260806-004`에 기록했다. 수정된 source commit에서 revision 3 wheel·runtime·Plan·비라이브 회귀·preflight·freeze를 새로 생성하고 첫 B1/B0 쌍부터 다시 실행한다.
+
+## R6 revision 3 재현 build와 실행 전 동결
+
+- 작업일: 2026-08-06.
+- B0 제어 경계 수정이 포함된 source commit은 `d6c4383e13497e91c2ef1a839c12b72986aaa2f1`다. Runner wheel SHA-256은 `739414b2841e195dbc09a3700c4c854a12a42dc4869938d4338c39e8b9509337`, B1 wheel은 `5b9f83da2f3fa7b23eb2e8aaf9742632c51d2dbf795be833485521b65401dddc`다.
+- 비라이브 회귀는 Benchmark Runner 136개, B1 65개, 구현 오류 로그 27건, 로그 하네스 10개를 통과했다. 이 과정의 실제 model turn은 0회다.
+- 현재 저장소와 독립 canonical source에서 각각 build했다. 두 build의 source commit, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_3ccb5c55_3`, Plan fingerprint `3ccb5c550e93b75762faa579e7f60a58bfd4821fa1ca2eca6ef34f94dcaa85bb`가 모두 일치했다.
+- preflight Evidence SHA-256은 `cb3fc2aa4d8ae3c75d517815ed842cd1830b974ce0b737b11df6e90b709695a8`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 실제 model turn은 0회다.
+- `benchmarks/artifacts/r6-b0-b1-d6c4383-r3/`를 revision 3 실행 후보로 동결했다. revision 2의 runtime과 봉인 결과는 수정·재사용하지 않으며 revision 3의 첫 B1/B0 쌍부터 새로 실행한다.
