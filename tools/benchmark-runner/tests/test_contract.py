@@ -88,4 +88,6 @@ def test_exported_schemas_match_pydantic_contracts(tmp_path: Path) -> None:
     committed = Path(__file__).parents[1] / "schemas" / "v1"
     assert sorted(path.name for path in tmp_path.iterdir()) == sorted(PUBLIC_SCHEMAS)
     for filename in PUBLIC_SCHEMAS:
-        assert (tmp_path / filename).read_bytes() == (committed / filename).read_bytes()
+        generated_text = (tmp_path / filename).read_text(encoding="utf-8")
+        committed_text = (committed / filename).read_text(encoding="utf-8")
+        assert generated_text == committed_text
