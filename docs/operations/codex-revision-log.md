@@ -1158,3 +1158,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - preflight Evidence SHA-256은 `3be2c616655d7b29811645139862bf436ad83b50c802185dad6287f6926908d7`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 다음 Cell은 `cell_code-change_1_b1`이다.
 - 첫 freeze 시도는 생성 대상인 `execution-plan.json`을 작업자가 미리 artifact에 복사해 둔 순서 오류를 fail-closed로 거부했다. 중복 파일만 제거하고 다시 실행해 정상 동결했으며 Cell 상태와 model turn에는 변화가 없었다.
 - `benchmarks/artifacts/r6-b0-b1-f96e718-r5/`를 revision 5 실행 후보로 동결했다. revision 4의 첫 유효 B1/B0 쌍은 원시 사실로 보존하지만, B0 실행 경계가 바뀌었으므로 후속 Cell을 이어서 실행하거나 revision 5 결과와 한 Experiment처럼 합치지 않는다.
+
+## R6 revision 5 12-Cell 완료와 판정
+
+- 작업일: 2026-08-06.
+- `exp_20260806_bc754895_5`의 12개 Cell을 사전 등록 순서대로 모두 실행했다. B0와 B1 각각 6개가 모두 `completed`·Check 성공·scope 정상·비밀정보 0으로 봉인됐고 Experiment는 stop reason 없이 `COMPLETED`가 됐다.
+- 모든 Cell은 1 Attempt·1 Session·1 turn이었다. 시작을 제외한 사람 중계와 수동 복구는 B0·B1 모두 총 0회였다. B0 App 표면이 token usage를 제공하지 않으므로 B0는 6개 모두 `unknown`으로 유지했고, B1의 측정 합계는 563,240 tokens다.
+- 전체 시간은 B0 290.701초, B1 265.518초로 B1이 25.183초(8.66%) 짧았다. 코드 수정에서는 B0 164.452초, B1 124.705초로 B1이 24.17% 짧았고, 문서 읽기에서는 B0 126.249초, B1 140.813초로 B1이 11.54% 길었다. 시간은 보조 지표이며 채택 정책을 사후 변경하지 않았다.
+- 사전 등록 정책 `b0-b1-v1`의 판정은 `INCONCLUSIVE`다. candidate·baseline 무결성, terminal Measurement, fixture별 품질 비열등, 최소 품질 증거, 복구 시간 비증가는 통과했다. 주 지표인 `manual_relay_reduction`은 B0와 B1이 모두 0회라 B1의 엄격한 감소를 증명할 수 없어 `inconclusive`가 됐다.
+- 이 결과는 B1의 실패나 범용 우위를 뜻하지 않는다. 현재 제어 세션이 B0 task도 백그라운드로 직접 생성해 단순한 1-turn 과제에서는 기준선의 추가 중계가 이미 0이었고, 2 fixture × 3 repetition의 로컬 방향성 게이트이며 두 surface 차이 때문에 `treatment_control=partial`이다.
+- export는 172개 파일이며 SHA-256은 `b64c262538e069b81fd9cacb2d1f033cef5149083171a4d62ec20cf6494e98b1`이다. `verify-export`로 12개 Measurement와 Evidence를 재검증했고 두 번째 export는 같은 해시로 `idempotent=true`였다.
+- 실제 export 뒤 결과가 `.gitignore`에 걸리고 Git 바이트 보존 속성이 없던 오류를 발견했다. `DEV-20260806-008`로 기록하고 results 무시 규칙 제거, `benchmarks/results/** -text -whitespace`, 추적 가능성·원시 Evidence 공백 허용 회귀시험을 추가했다. 짧은 독립 basetemp에서 Benchmark Runner 139개와 구현 로그 하네스 10개가 통과했고 export 해시는 수정 전후 동일했다.

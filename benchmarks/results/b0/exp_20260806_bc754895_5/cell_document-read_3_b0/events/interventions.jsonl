@@ -1,0 +1,1 @@
+{"actor":"user","cell_id":"cell_document-read_3_b0","created_at":"2026-08-06T03:49:21.815852Z","duration_seconds":null,"event_id":"evt_000001","intervention_kind":"initial_prompt_copy","kind":"intervention_event","monotonic_offset_seconds":4.077999999994063,"note":null,"producer":"lao-bench/0.1.0","schema_version":1,"timestamp":"2026-08-06T03:49:21.815852Z"}
