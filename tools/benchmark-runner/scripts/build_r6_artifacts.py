@@ -91,6 +91,11 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--model", default="gpt-5.6-terra")
     value.add_argument("--reasoning-effort", default="low")
     value.add_argument("--b0-codex-project-root", type=Path)
+    value.add_argument(
+        "--manifest",
+        default="benchmarks/manifests/b0-b1-frozen.yaml",
+        help="repository-relative frozen manifest path",
+    )
     return value
 
 
@@ -116,6 +121,12 @@ def main() -> int:
         if args.b0_codex_project_root is not None
         else default_b0_codex_project_root()
     )
+    manifest_relative = Path(args.manifest)
+    if manifest_relative.is_absolute() or ".." in manifest_relative.parts:
+        raise RuntimeError("R6 manifest must be a repository-relative path")
+    source_manifest = (repository / manifest_relative).resolve()
+    if not source_manifest.is_relative_to(repository) or not source_manifest.is_file():
+        raise RuntimeError("R6 manifest is missing or outside the repository")
     for path in (repository, python, git, codex):
         if not path.exists():
             raise RuntimeError(f"required R6 path is missing: {path}")
@@ -220,7 +231,7 @@ def main() -> int:
     profile = {
         "schema_version": 1,
         "source_repository": str(canonical_source),
-        "manifest_path": str(canonical_source / "benchmarks" / "manifests" / "b0-b1-frozen.yaml"),
+        "manifest_path": str(canonical_source / manifest_relative),
         "runner_python": str(python),
         "benchmark_python": str(python),
         "git_executable": str(git),
@@ -281,6 +292,8 @@ def main() -> int:
         "schema_version": 1,
         "status": "built_from_clean_commit",
         "source_commit": source_commit,
+        "manifest_path": manifest_relative.as_posix(),
+        "manifest_sha256": sha256(source_manifest),
         "actual_model_turns": 0,
         "runner": {"file": runner_wheel.name, "sha256": runner_sha},
         "b1": {"file": b1_wheel.name, "sha256": b1_sha, "public_schemas": schemas},

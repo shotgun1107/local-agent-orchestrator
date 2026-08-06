@@ -23,6 +23,7 @@ from benchmark_runner.runner import (
     R6B1SequentialDriver,
     R6ScriptedB0Config,
     analyze_r5_experiment,
+    create_r6_b0_task_prompt_plan,
     enqueue_r6_b0_control_command,
     export_r5_experiment,
     frozen_b0_b1_decision_policy,
@@ -31,6 +32,7 @@ from benchmark_runner.runner import (
     verify_r5_export,
     verify_sealed_cell,
 )
+from benchmark_runner.r6 import _assert_b0_task_prompt_evidence
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
 MANIFEST_PATH = REPOSITORY_ROOT / "benchmarks" / "manifests" / "b0-b1-frozen.yaml"
@@ -345,6 +347,54 @@ def test_r6_b0_control_queue_rejects_out_of_order_and_duplicate_commands(
         )
     assert first.sequence == 1
     assert terminal.sequence == 2
+
+
+def test_r6_b0_sequential_prompt_plan_is_hashed_and_required_in_order(
+    tmp_path: Path,
+) -> None:
+    experiment_dir = tmp_path / "experiment"
+    cell_dir = experiment_dir / "cells" / "cell_test"
+    workspace = tmp_path / "workspace"
+    shutil.copytree(
+        REPOSITORY_ROOT / "benchmarks" / "fixtures" / "sequential-code-change",
+        workspace,
+    )
+    plan = create_r6_b0_task_prompt_plan(
+        workspace=workspace,
+        cell_dir=cell_dir,
+        codex_project_root=None,
+    )
+
+    assert [(item.task_key, item.event_kind) for item in plan.prompts] == [
+        ("T1", "initial_prompt_copy"),
+        ("T2", "additional_prompt"),
+    ]
+    for item in plan.prompts:
+        assert sha256_file(cell_dir / item.relative_path) == item.sha256
+
+    control_dir = cell_dir / "variant-state" / "b0-control"
+    first, second = plan.prompts
+    enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id="cell_test",
+        kind=first.event_kind,
+        task_key=first.task_key,
+        prompt_sha256=first.sha256,
+    )
+    with pytest.raises(R4ControllerError, match="every planned Task prompt"):
+        _assert_b0_task_prompt_evidence(experiment_dir, "cell_test")
+    enqueue_r6_b0_control_command(
+        control_dir,
+        cell_id="cell_test",
+        kind=second.event_kind,
+        task_key=second.task_key,
+        prompt_sha256=second.sha256,
+    )
+    _assert_b0_task_prompt_evidence(experiment_dir, "cell_test")
+
+    (cell_dir / second.relative_path).write_text("changed\n", encoding="utf-8")
+    with pytest.raises(R4ControllerError, match="missing or changed"):
+        _assert_b0_task_prompt_evidence(experiment_dir, "cell_test")
 
 
 def test_r6_b0_file_control_runs_active_cell_to_sealed(tmp_path: Path) -> None:

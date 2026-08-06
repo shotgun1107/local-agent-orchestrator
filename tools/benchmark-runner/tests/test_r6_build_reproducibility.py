@@ -93,3 +93,18 @@ def test_exported_results_are_trackable_and_byte_preserving() -> None:
     attribute_lines = attribute.stdout.splitlines()
     assert any(line.endswith(": text: unset") for line in attribute_lines)
     assert any(line.endswith(": whitespace: unset") for line in attribute_lines)
+
+
+def test_build_script_accepts_a_repository_relative_manifest() -> None:
+    parser = runpy.run_path(str(BUILD_SCRIPT))["parser"]()
+    common = [
+        "--repository", ".",
+        "--python", "python.exe",
+        "--git", "git.exe",
+        "--codex", "codex.exe",
+        "--artifact-root", "artifacts",
+        "--local-root", "runtime",
+    ]
+    assert parser.parse_args(common).manifest == "benchmarks/manifests/b0-b1-frozen.yaml"
+    custom = "benchmarks/manifests/b0-b1-sequential-followup.yaml"
+    assert parser.parse_args([*common, "--manifest", custom]).manifest == custom

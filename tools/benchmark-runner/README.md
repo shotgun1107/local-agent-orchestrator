@@ -21,6 +21,7 @@
 - B1 내부 모듈·SQLite import 없이 `lao` CLI만 호출하는 `B1SequentialAdapter`
 - 두 동결 fixture에서 FakeRuntime으로 `fixture → B1 → Judge → Measurement seal` 관통
 - B0 작업용 고정 prompt와 별도 Codex 세션 측정 sidecar
+- 다중 Task B0의 Task별 고정 prompt·SHA-256·전달 순서를 봉인하고 누락·변조 시 완료를 거부
 - `initial_prompt_copy`·추가 지시·correction·manual retry·복구 구간·session 교체 Event의 즉시 JSONL 기록
 - 시작 동작을 제외한 사람 중계 수, turn·session·attempt·복구 시간의 기계적 파생
 - 사용자 timeline·model·reasoning·surface attestation 뒤 독립 Judge와 Measurement 봉인
@@ -53,6 +54,8 @@ R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·
 `benchmarks/artifacts/r6-b0-b1-bef6f8e/`는 revision 1 실행 전 동결 bundle이다. 첫 라이브 실행에서 B1 Cell 하나는 성공했지만, 뒤이은 B0 Cell은 비대화형 stdin으로 sidecar 입력이 끊겨 infrastructure error로 봉인됐다. 이 외부 runtime 상태는 저장소에 없으며 revision 1을 비교 결론에 사용하거나 이어서 실행하지 않는다.
 
 `benchmarks/artifacts/r6-b0-b1-f96e718-r5/`의 revision 5는 source commit `f96e718`, 독립 build 2회의 Runner/B1 wheel·Schema·Plan fingerprint·Experiment ID 일치, 전체 비라이브 회귀, ChatGPT 인증 preflight를 확인한 뒤 실행했다. 12개 Cell 모두 정상 봉인됐고 결과는 `benchmarks/results/**/exp_20260806_bc754895_5/`에 export했다. 판정은 `INCONCLUSIVE`이며 원인은 품질 실패가 아니라 B0와 B1의 추가 사람 중계가 모두 0회라 엄격한 감소 조건을 충족할 수 없었기 때문이다. 이전 revision의 봉인된 bundle과 외부 runtime은 수정·재사용하지 않는다.
+
+F1 후속 실험은 `benchmarks/manifests/b0-b1-sequential-followup.yaml`을 사용한다. artifact build script의 `--manifest`에 이 저장소 상대경로를 넘기며, 기본값은 기존 `b0-b1-frozen.yaml`이다. F1은 별도 artifact·runtime·Experiment ID로만 실행하고 revision 5 결과와 합산하지 않는다.
 
 새 Experiment는 revision을 명시한다. 같은 입력이라도 revision은 Plan identity와 Experiment ID에 포함되므로 중단된 실행과 충돌하지 않는다.
 
@@ -97,12 +100,19 @@ revision 5부터 B0 workspace는 `%USERPROFILE%\Documents\ChatGPT\AI 오케스�
   --confirm-model-usage
 ```
 
-`b0-start`가 `ACTIVE`를 반환한 뒤 고정 prompt를 Codex App 작업에 전송하고 즉시 최초 prompt Event를 기록한다. 추가 지시·교정·재시도 등은 실제 발생했을 때만 같은 방식으로 기록한다.
+`b0-start`가 `ACTIVE`를 반환한 뒤 고정 prompt를 Codex App 작업에 전송하고 즉시 최초 prompt Event를 기록한다. 다중 Task Cell의 응답에는 `prompt_paths`와 `prompt_plan_path`가 포함된다. 각 Task prompt를 순서대로 보낼 때 `--task-key`를 기록해야 하며, 마지막 Task까지 정확한 prompt hash가 없으면 완료가 거부된다. 그 밖의 추가 지시·교정·재시도는 실제 발생했을 때만 별도 Event로 기록한다.
 
 ```powershell
 & $python -m benchmark_runner r6 b0-event `
   --experiment-dir $experiment `
-  --kind initial_prompt_copy
+  --kind initial_prompt_copy `
+  --task-key T1
+
+# 다중 Task Cell에서 T1 완료 뒤 두 번째 고정 prompt를 보낸 직후
+& $python -m benchmark_runner r6 b0-event `
+  --experiment-dir $experiment `
+  --kind additional_prompt `
+  --task-key T2
 
 & $python -m benchmark_runner r6 b0-complete `
   --experiment-dir $experiment `

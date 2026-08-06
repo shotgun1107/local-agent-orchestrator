@@ -101,6 +101,10 @@ class BenchmarkRun(StrictModel):
     tasks: list[RunTask] = Field(min_length=1)
 
 
+def load_benchmark_run(path: Path) -> BenchmarkRun:
+    return BenchmarkRun.model_validate(_load_yaml(path))
+
+
 @dataclass(frozen=True)
 class PreparedFixture:
     fixture: FrozenFixtureSpec
@@ -287,9 +291,7 @@ class FixtureRestorer:
         checks = ChecksFile.model_validate(
             _load_yaml(workspace / ".orchestrator" / "checks.yaml")
         )
-        benchmark_run = BenchmarkRun.model_validate(
-            _load_yaml(workspace / "benchmark-run.yaml")
-        )
+        benchmark_run = load_benchmark_run(workspace / "benchmark-run.yaml")
         if fixture.success_check not in checks.checks:
             raise WorkspaceError(f"missing success Check: {fixture.success_check}")
         if fixture.success_check == "diff_check":

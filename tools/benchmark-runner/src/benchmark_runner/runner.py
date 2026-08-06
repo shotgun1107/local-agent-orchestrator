@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from benchmark_runner.adapter import (
     B0AdapterConfig,
@@ -83,10 +83,12 @@ from benchmark_runner.plan import (
     build_r4_plan,
 )
 from benchmark_runner.workspace import (
+    BenchmarkRun,
     ChecksFile,
     FixtureRestorer,
     FrozenFixtureSpec,
     PreparedFixture,
+    load_benchmark_run,
     load_frozen_manifest,
 )
 
@@ -3304,6 +3306,23 @@ R6B0ControlKind = Literal[
 ]
 
 
+class R6B0TaskPromptEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    ordinal: int = Field(ge=1)
+    task_key: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+    event_kind: Literal["initial_prompt_copy", "additional_prompt"]
+    relative_path: str = Field(pattern=r"^raw/[A-Za-z0-9._/-]+$")
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class R6B0TaskPromptPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    prompts: list[R6B0TaskPromptEntry] = Field(min_length=1)
+
+
 class R6B0ControlCommand(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -3313,6 +3332,8 @@ class R6B0ControlCommand(BaseModel):
     kind: R6B0ControlKind
     received_at: datetime
     attestation: B0Attestation | None = None
+    task_key: str | None = None
+    prompt_sha256: str | None = None
 
 
 def read_r6_b0_control_commands(
@@ -3367,12 +3388,31 @@ def _validate_r6_b0_control_append(
         raise R4ControllerError("B0 non-terminal command cannot contain an attestation")
 
 
+def _validate_r6_b0_prompt_metadata(
+    kind: R6B0ControlKind,
+    task_key: str | None,
+    prompt_sha256: str | None,
+) -> None:
+    if (task_key is None) != (prompt_sha256 is None):
+        raise R4ControllerError("B0 Task prompt key and hash must be recorded together")
+    if task_key is None:
+        return
+    if kind not in {"initial_prompt_copy", "additional_prompt"}:
+        raise R4ControllerError("B0 Task prompt metadata is valid only for prompt-copy events")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", task_key):
+        raise R4ControllerError("B0 Task prompt key is invalid")
+    if not re.fullmatch(r"[0-9a-f]{64}", prompt_sha256 or ""):
+        raise R4ControllerError("B0 Task prompt hash is invalid")
+
+
 def enqueue_r6_b0_control_command(
     control_dir: Path,
     *,
     cell_id: str,
     kind: R6B0ControlKind,
     attestation: B0Attestation | None = None,
+    task_key: str | None = None,
+    prompt_sha256: str | None = None,
     lock_timeout_seconds: float = 3.0,
 ) -> R6B0ControlCommand:
     """Append one runner-timestamped command without depending on terminal focus."""
@@ -3402,12 +3442,15 @@ def enqueue_r6_b0_control_command(
     try:
         commands = read_r6_b0_control_commands(control_dir, cell_id=cell_id)
         _validate_r6_b0_control_append(commands, kind, attestation)
+        _validate_r6_b0_prompt_metadata(kind, task_key, prompt_sha256)
         command = R6B0ControlCommand(
             sequence=len(commands) + 1,
             cell_id=cell_id,
             kind=kind,
             received_at=utc_now(),
             attestation=attestation,
+            task_key=task_key,
+            prompt_sha256=prompt_sha256,
         )
         atomic_write(
             control_dir / "commands" / f"{command.sequence:06d}.json",
@@ -3497,7 +3540,10 @@ class _R6ControlledB0Provider:
                     outcome_state="interrupted",
                     attestation=command.attestation,
                 )
-            session.recorder.record(command.kind)  # type: ignore[arg-type]
+            note = None
+            if command.task_key is not None:
+                note = f"task={command.task_key};prompt_sha256={command.prompt_sha256}"
+            session.recorder.record(command.kind, note=note)  # type: ignore[arg-type]
             next_sequence += 1
 
 
@@ -4288,6 +4334,89 @@ class _R6CellDriverBase:
         )
 
 
+def _r6_b0_task_prompt_bytes(
+    benchmark_run: BenchmarkRun,
+    *,
+    task_index: int,
+    codex_project_root: Path | None,
+) -> bytes:
+    task = benchmark_run.tasks[task_index]
+    workspace_instruction = (
+        "이 Codex 프로젝트의 `active-workspace` 디렉터리에서 작업하라.\n\n"
+        if codex_project_root is not None
+        else "Sidecar가 표시한 전용 workspace에서 작업하라.\n\n"
+    )
+    payload = {
+        "request": benchmark_run.request,
+        "constraints": benchmark_run.constraints,
+        "task": task.model_dump(mode="json"),
+        "completed_predecessors": [
+            item.key for item in benchmark_run.tasks[:task_index]
+        ],
+    }
+    body = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+    return (
+        "# B0 manual sequential benchmark prompt\n\n"
+        + workspace_instruction
+        + f"전체 {len(benchmark_run.tasks)}개 Task 중 {task_index + 1}번째 `{task.key}`만 수행하라.\n"
+        "이 prompt에 없는 다음 Task를 미리 수행하지 말고, 현재 Task가 끝나면 멈춰라.\n"
+        "`.orchestrator/checks.yaml`과 `benchmark_checks/**`는 수정하지 마라.\n"
+        "완료 주장은 독립 Judge가 다시 검사한다.\n\n"
+        "```json\n"
+        + body
+        + "\n```\n"
+    ).encode("utf-8")
+
+
+def create_r6_b0_task_prompt_plan(
+    *,
+    workspace: Path,
+    cell_dir: Path,
+    codex_project_root: Path | None,
+) -> R6B0TaskPromptPlan:
+    benchmark_run = load_benchmark_run(workspace / "benchmark-run.yaml")
+    seen: set[str] = set()
+    entries: list[R6B0TaskPromptEntry] = []
+    for index, task in enumerate(benchmark_run.tasks):
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", task.key):
+            raise R4ControllerError("B0 Task key cannot be used in a prompt filename")
+        if not set(task.depends_on).issubset(seen):
+            raise R4ControllerError("B0 Task list must be in dependency order")
+        seen.add(task.key)
+        relative_path = (
+            "raw/b0-fixed-prompt.md"
+            if index == 0
+            else f"raw/b0-task-prompts/{index + 1:03d}-{task.key}.md"
+        )
+        prompt_bytes = _r6_b0_task_prompt_bytes(
+            benchmark_run,
+            task_index=index,
+            codex_project_root=codex_project_root,
+        )
+        prompt_path = cell_dir / relative_path
+        if prompt_path.exists() and prompt_path.read_bytes() != prompt_bytes:
+            raise R4ControllerError("R6 B0 Task prompt changed after preparation")
+        atomic_write(prompt_path, prompt_bytes)
+        entries.append(
+            R6B0TaskPromptEntry(
+                ordinal=index + 1,
+                task_key=task.key,
+                event_kind=(
+                    "initial_prompt_copy" if index == 0 else "additional_prompt"
+                ),
+                relative_path=relative_path,
+                sha256=sha256_bytes(prompt_bytes),
+            )
+        )
+    plan = R6B0TaskPromptPlan(prompts=entries)
+    plan_path = cell_dir / "raw" / "b0-task-prompt-plan.json"
+    plan_bytes = canonical_json_bytes(plan)
+    if plan_path.exists() and plan_path.read_bytes() != plan_bytes:
+        raise R4ControllerError("R6 B0 Task prompt plan changed after preparation")
+    atomic_write(plan_path, plan_bytes)
+    return plan
+
+
 class R6B0ManualDriver(_R6CellDriverBase):
     variant_id: Literal["b0"] = "b0"
 
@@ -4405,20 +4534,6 @@ class R6B0ManualDriver(_R6CellDriverBase):
             supports_attempt_count=True,
         )
 
-    def _prompt_bytes(self) -> bytes:
-        workspace_instruction = (
-            "이 Codex 프로젝트의 `active-workspace` 디렉터리에서 작업하라.\n\n"
-            if self.codex_project_root is not None
-            else "Sidecar가 표시한 전용 workspace에서 새 Codex 작업을 시작하라.\n\n"
-        )
-        return (
-            "# B0 manual benchmark prompt\n\n"
-            + workspace_instruction
-            + "`benchmark-run.yaml`의 request, completion criteria, constraints를 읽고 작업하라.\n"
-            "`.orchestrator/checks.yaml`과 `benchmark_checks/**`는 수정하지 마라.\n"
-            "완료 주장은 독립 Judge가 다시 검사한다.\n"
-        ).encode("utf-8")
-
     def _prepare_variant(
         self,
         plan: ExecutionPlan,
@@ -4426,10 +4541,12 @@ class R6B0ManualDriver(_R6CellDriverBase):
         cell_dir: Path,
         prepared: PreparedFixture,
     ) -> None:
-        prompt_path = cell_dir / "raw" / "b0-fixed-prompt.md"
-        if prompt_path.exists() and prompt_path.read_bytes() != self._prompt_bytes():
-            raise R4ControllerError("R6 B0 fixed prompt changed")
-        atomic_write(prompt_path, self._prompt_bytes())
+        prompt_plan = create_r6_b0_task_prompt_plan(
+            workspace=prepared.workspace,
+            cell_dir=cell_dir,
+            codex_project_root=self.codex_project_root,
+        )
+        prompt_path = cell_dir / prompt_plan.prompts[0].relative_path
         control_dir = cell_dir / "variant-state" / "b0-control"
         commands_dir = control_dir / "commands"
         commands_dir.mkdir(parents=True, exist_ok=True)
