@@ -106,8 +106,11 @@ class SdkBaselineAdapter:
         total_usage = SdkUsage(0, 0, 0)
         usage_status = "measured"
         turns: list[dict[str, JsonValue]] = []
+        model_active_seconds = 0.0
 
         for task in self.config.tasks:
+            if turns:
+                turns[-1]["downstream_dispatched"] = True
             if self.id() == "c1":
                 if shared_thread is None:
                     shared_thread = self.config.runtime.start_thread()
@@ -134,8 +137,10 @@ class SdkBaselineAdapter:
                 "output_schema_sha256": schema_sha256,
                 "task_semantics_sha256": semantics_sha256,
                 "duration_seconds": result.duration_seconds,
+                "downstream_dispatched": False,
             }
             turns.append(turn_payload)
+            model_active_seconds += result.duration_seconds
             if result.terminal_status != "completed":
                 return self._failure(
                     failure_kind="sdk_terminal_failed",
@@ -151,6 +156,7 @@ class SdkBaselineAdapter:
                     thread_ids=thread_ids,
                 )
             turn_payload["status_claim"] = str(validated["status_claim"])
+            turn_payload["result_envelope"] = validated
             if validated["status_claim"] != "completed":
                 return self._failure(
                     failure_kind=f"worker_{validated['status_claim']}",
@@ -169,6 +175,7 @@ class SdkBaselineAdapter:
                 usage_status = "unknown"
                 continue
             previous_usage[thread.id] = current
+            turn_payload["usage_cumulative"] = current.public_payload()
             total_usage = SdkUsage(
                 total_usage.input_tokens + delta.input_tokens,
                 total_usage.output_tokens + delta.output_tokens,
@@ -181,6 +188,7 @@ class SdkBaselineAdapter:
             "turn_count": len(turns),
             "attempt_count": 1,
             "token_usage_status": usage_status,
+            "model_active_seconds": model_active_seconds,
         }
         if usage_status == "measured":
             metrics["token_usage"] = total_usage.public_payload()

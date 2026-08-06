@@ -2,148 +2,174 @@
 
 - 갱신일: 2026-08-06
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
-- 브랜치: `main`
-- 현재 목표: 범용 로컬 Codex 세션 오케스트레이터의 비교 Variant C0·C1·C2를 구현하고 B1의 가치를 통제된 방식으로 검증한다.
-- 인증 정책: ChatGPT 구독 계정 로그인만 사용한다. API key 입력·저장·호출 경로는 만들지 않는다.
+- 확인 대상 브랜치: `codex/sdk-measurement-seal`
+- 기준 브랜치: `main`
+- 인증 정책: ChatGPT 구독 계정만 사용한다. API key 경로는 발견 즉시 fail-closed한다.
+- 오늘 작업 상태: 비라이브 SDK 비교 장치의 Measurement·Evidence·봉인까지 완료. 실제 live pilot은 시작하지 않음.
 
-## 1. 현재 확정된 상태
+## 1. Git 기준점과 브랜치 적층
 
-### B1 순차 오케스트레이터
+브랜치는 다음 순서로 쌓여 있다.
 
-B1은 다음 기능을 구현한 상태다.
-
-- Run → Task → Attempt → Session 순차 실행
-- SQLite 원장과 상태 전이
-- 작업 범위와 Git diff 검사
-- Project Check 실행
-- 제한된 재시도와 중단 복구
-- Artifact hash와 구조화된 결과
-- Codex SDK 0.144.4를 통한 ChatGPT 구독 세션 실행
-
-기존 실험에서 확인된 사실은 다음과 같다.
-
-- B1이 의존 Task T1 → T2를 자동으로 진행하는 기능은 확인됐다.
-- 기존 수동 B0 비교에는 사람의 전달 지연이 섞여 성능 비교에는 사용할 수 없다.
-- 따라서 B1의 범용 효율성·속도 우위·비용 우위는 아직 확정되지 않았다.
-
-### SDK 통제 비교 설계
-
-[SDK 통제 비교 명세](../design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) v3를 동결했다.
-
-- C0: 전체 요청을 한 번에 실행하는 one-shot 기준선
-- C1: 같은 thread에서 T1 → T2를 순차 실행
-- C2: Task마다 새 thread를 만들고 결과만 단순 인계
-- B1: 원장·검증·재시도·복구를 포함한 현재 오케스트레이터
-
-주 판단은 C2와 B1을 비교한다. C0·C1은 비교 구조와 실행 경계가 올바른지 확인하는 보조 Variant다.
-
-Claude 1차 심사와 재심사를 거쳤고 최종 판정은 `경미한 수정 후 구현 착수`다.
-
-- 1차 심사: [claude-review-sdk-controlled-comparison-spec.md](../reviews/benchmark-runner/claude-review-sdk-controlled-comparison-spec.md)
-- 재심사: [claude-rereview-sdk-controlled-comparison-spec.md](../reviews/benchmark-runner/claude-rereview-sdk-controlled-comparison-spec.md)
-- 최종 잔여 등급: P0 0 / P1 1 / P2 4 / P3 3
-
-### 구현 1단계
-
-재심사의 유일한 P1을 반영했다.
-
-- B1과 Benchmark Runner의 Check 실행 환경을 최소 허용목록으로 고정했다.
-- 두 패키지는 서로 직접 import하지 않고 같은 계약 시험으로 동작 일치를 확인한다.
-- ChatGPT 구독 실험에 다른 인증 경로가 섞이지 않도록 보호 장치를 추가했다. API key를 사용하는 기능이 아니라 발견 시 실행을 거부하는 장치다.
-
-검증 결과:
-
-- B1 전체: `69 passed`
-- Benchmark Runner 전체: `155 passed`
-- `git diff --check`: 통과
-- 이 단계의 실제 model turn: 0회
-- 새 wheel·실험 artifact: 아직 만들지 않음
-
-상세 과정은 [codex-revision-log.md](./codex-revision-log.md)의 마지막 절을 따른다.
-
-## 2. 집 PC에서 시작하는 방법
-
-```powershell
-git clone https://github.com/shotgun1107/local-agent-orchestrator.git
-cd "local-agent-orchestrator"
-git pull origin main
-git status --short
-git log -1 --oneline
+```text
+main
+└─ codex/windows-runner-fixes
+   └─ codex/sdk-vertical-slice
+      └─ codex/sdk-measurement-seal
 ```
 
-이미 clone한 저장소라면 `git clone`은 생략한다. 로컬 변경이 있다면 덮어쓰지 말고 먼저 보존한다.
+고정 기준점:
 
-Python 3.12 환경을 각각 만든다.
+- `main`: `5e6284cafef5e8c14dc4be932940bb1e3a2cd3c2`
+- Windows 재현성 수정: `740c15c5f5be1da37dfafa98c71e71b8d6b2e835`
+- SDK vertical slice: `ccb71570f02c9270f02462ef100848f66a000f5f`
+- Measurement·seal 구현: `codex/sdk-measurement-seal` 원격 브랜치의 최신 commit
+
+비교 범위:
+
+- Windows 수정만: `main...codex/windows-runner-fixes`
+- vertical slice만: `codex/windows-runner-fixes...codex/sdk-vertical-slice`
+- Measurement·seal만: `codex/sdk-vertical-slice...codex/sdk-measurement-seal`
+- 전체 누적: `main...codex/sdk-measurement-seal`
+
+이 브랜치는 `main`에서 바로 갈라진 독립 변경이 아니다. 최종 승인이나 병합 시 위 적층 순서를 유지하거나 의도적으로 정리해야 한다.
+
+## 2. 오늘 완료한 작업
+
+### Windows Runner 재현성
+
+- B1 subprocess 시험의 `PYTHONPATH` 경계를 고쳤다.
+- CRLF 환경에서도 Schema 비교가 안정적으로 동작하게 했다.
+- 임시 Git fixture에서 Windows 긴 경로를 허용했다.
+
+### C0·C1·C2·B1 비라이브 vertical slice
+
+- B1의 TaskEnvelope compiler, prompt renderer, ResultEnvelope Schema, 의미 hash를 공통 Worker 계약으로 추출했다.
+- C0 one-shot, C1 same-thread, C2 fresh-thread SDK Adapter를 구현했다.
+- C0는 1 thread·1 turn, C1은 1 thread·2 turns, C2는 2 threads·2 turns 계약을 고정했다.
+- C1·C2의 동일 Task 의미 hash와 turn별 누적 usage delta를 검증했다.
+- B1 FakeRuntime도 같은 최종 FixtureJudge까지 연결했다.
+
+### F1·F2a·F2b 결정론적 실패주입
+
+- F1 false completion, F2a Run union 밖 scope violation, F2b T1 scope 밖·Run union 안 violation을 ScriptedRuntime으로 고정했다.
+- C1·C2는 T2를 실제 dispatch한 뒤 최종 Judge에서 판정한다.
+- B1은 세 시나리오 모두 T1 검증에서 `BLOCKED`되고 T2를 dispatch하지 않는다.
+- F2b에서는 C1·C2 최종 union Judge가 통과하지만 B1은 Task별 scope 위반을 조기에 차단한다.
+
+### Measurement·Evidence·봉인
+
+- 명시적 Cell 순서를 받는 SDK-controlled Execution Plan builder를 추가했다.
+- Cell을 `PLANNED → PREPARED → ACTIVE → CAPTURED → JUDGING → SEALED`로 전이한다.
+- FixtureJudge 결과와 원시 Adapter 결과를 Measurement에 연결하고 Evidence 파일의 크기와 SHA-256을 봉인한다.
+- 각 SDK turn의 ResultEnvelope, terminal status, prompt·Schema·Task 의미 hash, 누적 usage와 delta, downstream dispatch 여부를 보존한다.
+- 정상 C0·C1·C2·B1 4개 Cell과 F1·F2a·F2b 9개 Cell이 모두 `SEALED` 뒤 `verify_sealed_cell()`을 통과한다.
+- Evidence 한 바이트 변조 시 재검증이 실패하는 tamper 시험도 고정했다.
+
+### live 무과금 사전점검
+
+실제 model turn 없이 다음을 확인했다.
+
+- `openai-codex==0.144.4`
+- API key 환경 변수 이름 발견 없음
+- SDK account type `chatgpt`
+- 실제 model turn `0`
+
+고정 live 설정의 fail-closed 계약도 추가했다.
+
+- 모델 `gpt-5.6-terra`
+- reasoning effort `low`
+- thread·turn sandbox 모두 `workspace_write`
+- thread·turn approval 모두 `deny_all`
+- Cell workspace 절대경로
+- `ephemeral=False`
+- output Schema `ResultEnvelope`
+
+## 3. 최종 검증
+
+- B1 전체: `72 passed`
+- Benchmark Runner 전체: `169 passed`
+- 최종 Measurement·seal 표적 시험: `3 passed`
+- `git diff --check`: 통과
+- 이번 Measurement·seal 작업의 실제 model turn: `0`
+- 새 live Cell, wheel, manifest, frozen artifact: 생성하지 않음
+
+Python은 반드시 3.12를 사용한다. 3.14로 대체하지 않는다.
 
 ```powershell
 cd stages\b1-sequential
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --constraint requirements.lock -e ".[all]"
-.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
 
 cd ..\..\tools\benchmark-runner
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
 ```
 
-Codex는 집 PC에서 ChatGPT 구독 계정으로 로그인한다. API key는 만들거나 입력하지 않는다.
+가상환경이 없으면 각 패키지의 기존 문서와 lock 제약을 따라 Python 3.12로 별도 생성한다. 기존 `.venv`가 다른 Python 경로나 손상된 launcher를 가리키면 임의로 저장소 파일을 수정하지 말고 환경 문제로 분리한다.
 
-## 3. 다음 구현 단위
+## 4. 아직 하지 않은 작업
 
-다음 작업은 대규모 비교 실험이 아니다. 먼저 하나의 작은 fixture를 C0·C1·C2·B1 네 경로가 끝까지 통과하는 최소 vertical slice를 구현한다.
+- C0·C1·C2용 실제 `openai-codex` SDK runtime 구현
+- 실제 runtime의 thread/turn 옵션을 mocked SDK로 검증하는 계약 시험
+- live pilot용 새 manifest·artifact·Execution Plan 동결
+- 4-Cell ChatGPT 구독 live pilot
+- C2·B1 기본 8-Cell 의사결정 실행
+- 운영 telemetry 또는 조건부 16/32 Cell
 
-구현 순서:
+현재 `sdk_common.py`에는 `SdkRuntime` Protocol, FakeSdkRuntime, live 통제 validator만 있다. C0·C1·C2의 실제 SDK model turn을 수행하는 runtime은 아직 없다. 다음 구현은 먼저 이를 **모델 호출 없이 mocked SDK 계약 시험으로만** 추가하는 것이다.
 
-1. 네 Variant가 공유할 Task·결과·측정 계약을 확인한다.
-2. C0 one-shot adapter를 구현한다.
-3. C1 same-thread staged adapter를 구현한다.
-4. C2 fresh-thread relay adapter를 구현한다.
-5. FakeRuntime 하나로 네 Variant의 준비 → 실행 → 결과 수집 → Judge 판정을 끝까지 연결한다.
-6. Variant 사이 prompt·fixture·모델·인증·Check 환경이 같은지 계약 시험으로 고정한다.
+그 구현과 전체 회귀가 끝난 뒤에도 4-Cell pilot은 자동 실행하지 않는다. 사용자가 별도로 live 실행을 승인하고 예산·Plan·artifact를 확인한 뒤에만 진행한다.
 
-이 단계에서는 실제 모델을 호출하지 않는다.
+## 5. 다음 PC에서 먼저 할 일
 
-## 4. 이후 게이트
+1. 원격 브랜치를 fetch하고 `codex/sdk-measurement-seal`을 checkout한다.
+2. 로컬 변경이 있으면 reset·clean·stash로 숨기지 말고 먼저 목록을 보고한다.
+3. HEAD ancestry와 위 세 기준 commit을 확인한다.
+4. `codex/sdk-vertical-slice...codex/sdk-measurement-seal` diff를 검토한다.
+5. B1 72개와 Runner 169개 회귀를 재실행한다.
+6. 결과를 사용자에게 보고하고 최종 승인 전에는 새 코드나 live turn을 시작하지 않는다.
 
-vertical slice가 통과한 뒤에만 다음 순서로 진행한다.
+승인 후 다음 비라이브 구현 단위는 실제 SDK runtime adapter와 mocked SDK 옵션 계약 시험이다. 그 뒤 다시 Measurement·seal 회귀를 통과하고 live pilot 직전에서 멈춘다.
 
-```text
-9개 non-live failure-injection
-→ 4개 ChatGPT 구독 세션 live pilot
-→ C2/B1 판단용 8개 Cell
-→ 실제 프로젝트 3~5건 또는 2~4주 telemetry
-→ 결과가 실제 결정을 바꿀 때만 16/32 Cell 확대
-```
+## 6. 금지·주의사항
 
-32개 실험은 기본값이 아니다. 인증·상태·권한·scope·복구처럼 위험한 경계는 깊게 검증하되, 단순 문서나 낮은 위험 변경은 전체 심사 절차를 반복하지 않는다.
+- API key를 생성·요청·입력·출력하지 않는다.
+- 환경 변수는 값이 아니라 `OPENAI_API_KEY`, `CODEX_API_KEY`의 존재 여부만 확인한다.
+- 실제 model turn, live pilot, 대규모 비교를 자동으로 시작하지 않는다.
+- 기존 동결 manifest, artifact, 과거 결과를 수정하거나 새 결과와 합치지 않는다.
+- `git reset --hard`, `git clean`, 강제 checkout, 강제 push를 사용하지 않는다.
+- 기존 변경을 임의로 stash하거나 폐기하지 않는다.
+- 사용자가 승인하기 전 브랜치 적층을 rebase·squash하지 않는다.
+- 분리된 다른 프로젝트의 파일·경로·판단을 이 저장소에 섞지 않는다.
 
-## 5. 금지·주의사항
-
-- API key를 생성하거나 요구하지 않는다.
-- 수동 B0 시간과 자동 Variant 시간을 성능 비교로 합치지 않는다.
-- 기존 F1 부분 결과를 새 실험 결과와 합치지 않는다.
-- 동결된 기존 artifact와 runtime을 수정하지 않는다.
-- `docs/research/ai-orchestration-practical-cases-and-methods.md`는 동결 상태를 유지한다.
-- 분리된 `개인 AI 개발 전통` 프로젝트의 자료·가치 판단·경로를 이 저장소 설계 근거에 넣지 않는다.
-- 사용자가 인수인계를 요청하지 않은 작업에서는 이 문서를 임의로 갱신하지 않는다.
-
-## 6. 새 Codex 작업 시작 프롬프트
+## 7. 새 Codex 작업 시작 프롬프트
 
 ```text
-이 저장소에서 범용 로컬 Codex 세션 오케스트레이터 작업을 이어서 진행한다.
+너는 새 Windows PC에서 local-agent-orchestrator 저장소 작업을 인수인계받는 Codex다.
 
-먼저 현재 경로, git status, 최신 commit을 확인하고 다음 문서를 순서대로 읽어라.
+저장소:
+https://github.com/shotgun1107/local-agent-orchestrator.git
+
+검토할 원격 브랜치:
+codex/sdk-measurement-seal
+
+먼저 현재 경로, 저장소 여부, origin URL, git status를 확인하라. 로컬 변경이 있으면 reset·clean·checkout·stash로 숨기지 말고 파일 목록을 보고하고 중단하라. 저장소가 없으면 안전한 하위 폴더에 clone하라.
+
+그다음 아래 문서를 순서대로 처음부터 끝까지 읽어라.
 
 1. docs/operations/home-codex-handoff.md
 2. docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md
 3. docs/reviews/benchmark-runner/claude-rereview-sdk-controlled-comparison-spec.md
 4. docs/operations/codex-revision-log.md의 마지막 두 절
+5. stages/b1-sequential/README.md
+6. tools/benchmark-runner/README.md
 
-인증은 ChatGPT 구독 계정 로그인만 사용한다. API key를 생성·입력·저장·호출하지 마라.
-분리된 개인 AI 개발 전통 프로젝트의 내용이나 경로를 이번 작업에 포함하지 마라.
+Git 기준점은 main 5e6284c, Windows 수정 740c15c, SDK vertical slice ccb7157이다. 현재 브랜치가 이 순서의 후손인지 확인하고 `codex/sdk-vertical-slice...codex/sdk-measurement-seal` diff를 검토하라.
 
-현재 다음 작업은 C0·C1·C2·B1 최소 vertical slice 구현이다. 실제 model turn을 실행하지 말고 FakeRuntime으로 동일 fixture 하나가 네 Variant의 준비, 실행, 결과 수집, Judge 판정을 끝까지 통과하도록 구현하라. 명세의 동결된 판단 기준을 임의로 완화하거나 16/32 Cell 실험을 선행하지 마라.
+Python 3.12 환경만 사용해 B1 전체와 Benchmark Runner 전체 회귀를 실행하라. 기대값은 B1 72 passed, Runner 169 passed다. `git diff --check`와 최종 git status도 확인하라. 테스트 중 실제 model turn을 호출하지 마라.
 
-작업 전 관련 코드와 테스트의 실제 상태를 확인하고, 구현 후 B1과 Benchmark Runner의 관련 시험 및 전체 회귀를 실행하라. 확인한 사실과 미확인을 나누어 보고하고, 사용자가 요청하기 전에는 다음 인수인계 문서를 만들지 마라.
+인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요청·입력·출력하지 마라. OPENAI_API_KEY 또는 CODEX_API_KEY가 존재하는지 확인할 때도 값은 절대 읽거나 출력하지 말고 이름만 보고하라. 하나라도 존재하면 model 관련 실행은 중단하라.
+
+이번 첫 작업은 인수인계 검증과 diff 보고까지만이다. 새 코드를 구현하거나 live pilot을 실행하거나 commit·push·PR을 만들지 마라. 완료된 사실, 불일치, 미확인을 분리해 보고하고 사용자 최종 승인을 기다려라.
+
+승인 뒤의 다음 비라이브 구현 단위는 C0·C1·C2가 사용할 실제 openai-codex 0.144.4 SdkRuntime adapter와 mocked SDK 옵션 계약 시험이다. 그 구현에서도 모델을 호출하지 않고 전체 회귀와 Measurement·seal 검증 뒤 live 4-Cell pilot 직전에서 다시 멈춰라.
 ```

@@ -1229,3 +1229,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 코드 대조 중 `OPENAI_API_KEY`만 차단하고 `CODEX_API_KEY`는 차단하지 않던 간극을 발견했다. 두 패키지의 runtime·doctor·preflight가 두 변수 중 하나라도 존재하면 값 노출 없이 fail-closed하도록 수정했고, FakeRuntime 경계에서도 두 변수를 제거한다. 이는 공식 지원 여부 판단이 아니라 이 실험의 ChatGPT 구독 인증 통제 정책이다.
 - 표적 회귀는 B1 23개와 Benchmark Runner 68개가 통과했다. 전체 회귀는 B1 69개와 Benchmark Runner 155개가 통과했으며 `git diff --check`도 통과했다. 이 단계에서 실제 model turn, 라이브 비교 Cell, 새 wheel·artifact build는 수행하지 않았다.
 - 다음 구현 단위는 C0·C1·C2 중 하나를 따로 완성하는 방식이 아니라, 공통 Experiment 계약에서 세 Variant가 같은 fixture를 끝까지 통과하는 최소 vertical slice다. 그 뒤 9개 non-live failure-injection gate를 통과해야 4개 live pilot으로 진행한다.
+
+## SDK 통제 vertical slice·failure gate·Measurement 봉인 완료
+
+- 작업일: 2026-08-06.
+- Windows 새 PC에서 저장소를 안전한 하위 폴더에 clone하고 main `5e6284cafef5e8c14dc4be932940bb1e3a2cd3c2` 및 origin/main 일치를 확인했다. Python 3.12.10과 분리된 B1·Runner 가상환경, Codex CLI/SDK 0.144.4의 ChatGPT 로그인을 사용했다.
+- `codex/windows-runner-fixes`의 `740c15c5f5be1da37dfafa98c71e71b8d6b2e835`에서 Windows B1 subprocess `PYTHONPATH`, CRLF Schema 비교, 임시 fixture 긴 경로 문제를 수정했다. B1 69개와 Runner 155개가 통과했다.
+- `codex/sdk-vertical-slice`의 `ccb71570f02c9270f02462ef100848f66a000f5f`에서 공통 Worker 계약과 C0·C1·C2 SDK Adapter를 구현했다. 정상 C0·C1·C2·B1 vertical slice와 F1·F2a·F2b 9-Cell 결정론적 gate를 연결했다. B1 72개와 Runner 166개가 통과했고 실제 model turn은 0회였다.
+- `codex/sdk-measurement-seal`에서 명시적 SDK Execution Plan, Cell lifecycle, 원시 Evidence, FixtureJudge, Measurement, SHA-256 seal, `verify_sealed_cell()` 재검증을 연결했다. SDK turn의 ResultEnvelope, terminal 상태, prompt·Schema·Task 의미 hash, 누적 usage와 delta, downstream dispatch 여부를 보존한다.
+- 정상 4개 Cell과 실패주입 9개 Cell이 모두 `SEALED`됐다. Evidence 변조 검출을 포함한 표적 시험 3개, B1 전체 72개, Benchmark Runner 전체 169개, `git diff --check`가 통과했다.
+- 모델 호출 없는 SDK account preflight에서 `openai-codex==0.144.4`, API key 환경 변수 없음, account type `chatgpt`, actual model turns 0을 확인했다. live 고정값은 `gpt-5.6-terra`, low effort, thread·turn `workspace_write`, thread·turn `deny_all`, absolute Cell cwd, `ephemeral=False`, ResultEnvelope Schema로 fail-closed 검증한다.
+- 실제 C0·C1·C2 Codex SDK runtime, live용 artifact·manifest·Plan, 4-Cell pilot은 아직 만들거나 실행하지 않았다. 다음 PC는 먼저 `codex/sdk-vertical-slice...codex/sdk-measurement-seal` diff와 전체 회귀를 재검증해 최종 승인을 받아야 한다. 승인 뒤에도 실제 runtime adapter는 mocked SDK 시험으로 먼저 구현하고 live pilot 직전에서 다시 멈춘다.
