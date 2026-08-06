@@ -12,13 +12,13 @@
   "symptom": "정확한 workspace root에 write 권한이 적용됐는데도 상대경로 apply_patch가 프로젝트 외부 쓰기로 거부됐고 에이전트는 산출물 없이 완료를 주장했다",
   "reproduction": [
     "일반 Windows PowerShell에서 격리 Git fixture를 만든다",
-    "codex exec 0.144.4를 ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다",
+    "codex exec 0.144.4를 -C fixture 절대경로, ChatGPT 인증, gpt-5.6-terra, low effort, :workspace, approval never로 실행해 루트에 한 줄 파일 생성을 요청한다",
     "JSONL 종료 뒤 요청 파일의 존재와 내용을 외부 스크립트로 검사한다"
   ],
   "evidence": [
     {
       "kind": "direct-observation",
-      "detail": "세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context는 cwd와 workspace_roots를 fixture 루트로 기록하고 그 루트에 write 권한을 부여했다"
+      "detail": "호출 명령에 -C fixture 절대경로를 전달했고 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context도 cwd와 workspace_roots를 같은 루트로 기록하고 그 루트에 write 권한을 부여했다"
     },
     {
       "kind": "direct-observation",
