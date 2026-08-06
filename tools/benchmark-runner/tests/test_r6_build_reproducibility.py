@@ -66,3 +66,30 @@ def test_build_archive_is_independent_of_repository_autocrlf(tmp_path: Path) -> 
         git,
         checkout_false,
     )
+
+
+def test_exported_results_are_trackable_and_byte_preserving() -> None:
+    git = _git()
+    sample = (
+        "benchmarks/results/b1/exp_test/"
+        "cell_test/sealed/measurement.json"
+    )
+
+    ignored = subprocess.run(
+        [str(git), "check-ignore", "--quiet", "--", sample],
+        cwd=REPOSITORY,
+        check=False,
+    )
+    assert ignored.returncode == 1
+
+    attribute = subprocess.run(
+        [str(git), "check-attr", "text", "whitespace", "--", sample],
+        cwd=REPOSITORY,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    attribute_lines = attribute.stdout.splitlines()
+    assert any(line.endswith(": text: unset") for line in attribute_lines)
+    assert any(line.endswith(": whitespace: unset") for line in attribute_lines)

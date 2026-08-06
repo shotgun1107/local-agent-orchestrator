@@ -9,4 +9,4 @@
 
 구현 단계의 소스 코드는 이 디렉터리에 두지 않는다. 결과를 얻기 전에 해당 실험 manifest를 먼저 동결한다.
 
-현재 실제 실행 후보는 revision 5인 `artifacts/r6-b0-b1-f96e718-r5/`다. `pre-execution-freeze.json`의 상태는 `frozen_before_first_cell`, 12개 Cell은 모두 `PLANNED`, 실제 model turn은 0회다. revision 4인 `r6-b0-b1-825e00c-r4/`에는 유효한 첫 B1/B0 비교 쌍이 있지만, B0 작업을 고정 Codex 프로젝트에 모으고 백그라운드로 시작하는 실행 경계가 바뀌어 후속 Cell을 이어서 실행하지 않는다. revision 3인 `r6-b0-b1-d6c4383-r3/`는 B0 자체 테스트의 Python bytecode 처리 비대칭으로, revision 2인 `r6-b0-b1-2c33500-r2/`는 B0 측정 타이머·입력 경계 결합으로, revision 1인 `r6-b0-b1-bef6f8e/`는 비대화형 stdin 오류로 중단했다. 이 중단본은 수정·재사용하지 않는다. `r6-b0-b1-b188954/`, `r6-b0-b1-c413f66/`도 각각의 `NOT-FROZEN.md` 사유로 실행에 사용하지 않는다.
+revision 5인 `artifacts/r6-b0-b1-f96e718-r5/`로 12개 Cell을 모두 실행했다. B0와 B1은 각각 6/6 Check를 통과했고 scope 위반·비밀정보·추가 사람 중계·수동 복구는 모두 0건이었다. 사전 등록 판정은 `INCONCLUSIVE`다. 채택 조건인 사람 중계의 엄격한 감소를 요구하지만 B0와 B1이 모두 0회여서 B1의 개선을 증명할 수 없었다. 결정론적 결과는 `results/b0/exp_20260806_bc754895_5/`, `results/b1/exp_20260806_bc754895_5/`, `results/comparisons/exp_20260806_bc754895_5/`에 있으며 export SHA-256은 `b64c262538e069b81fd9cacb2d1f033cef5149083171a4d62ec20cf6494e98b1`이다. revision 4와 이전 중단본은 수정·재사용하거나 revision 5 결과와 합치지 않는다.

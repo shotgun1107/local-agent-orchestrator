@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 30건
-- 해결: 30건
+- 전체: 31건
+- 해결: 31건
 - 조사 중: 0건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -43,6 +43,7 @@
 | DEV-20260806-005 | resolved | r6 | implementation | B0 자체 테스트의 Python bytecode가 보호 경로 변조로 판정됨 |
 | DEV-20260806-006 | resolved | r6 | tooling | R6 비라이브 회귀가 공유 pytest 임시 폴더 ACL에 의존함 |
 | DEV-20260806-007 | resolved | r6 | integration | B0 Cell별 workspace가 Codex 로컬 프로젝트를 증식시킴 |
+| DEV-20260806-008 | resolved | r5 | integration | R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1782,3 +1783,63 @@ R6 profile에 고정 AI 오케스트레이터 실험실 프로젝트 루트와 b
 - 출처: stages/b0-manual/runbook/b0-runbook.md
 - 출처: https://learn.chatgpt.com/docs/projects#use-local-projects-for-folders-and-codebases
 - 출처: https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app
+
+## DEV-20260806-008 — R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함
+
+- 상태: `resolved`
+- 단계: `r5`
+- 분류: `integration`
+- 발견: 2026-08-06T03:54:22Z / revision 5 실제 export 후 git status 점검
+- 해결: 2026-08-06T03:59:00Z
+
+### 증상
+
+검증된 172개 export 파일이 git status에 나타나지 않고 결과 파일의 바이트 보존 속성도 없다
+
+### 재현
+
+- exp_20260806_bc754895_5를 benchmarks/results로 export한 뒤 git check-ignore와 git check-attr을 실행한다
+
+### 증거
+
+- `direct-observation`: .gitignore의 benchmarks/results/*/* 규칙이 measurement와 summary를 무시하고 .gitattributes에는 artifacts 규칙만 존재한다
+
+### 근본 원인
+
+초기 scaffold에서 생성 결과를 숨기기 위해 추가한 benchmarks/results/*/* 무시 규칙을 R5의 검증·봉인·Git 기준점 설계가 완성된 뒤에도 제거하지 않았고, artifacts에만 적용한 -text 바이트 보존 규칙을 results export에는 확장하지 않았다
+
+### 검토한 해결안
+
+- `rejected` 실험마다 git add -f 사용 — 작업자가 force-add를 잊을 수 있고 결과가 기본적으로 추적 가능해야 한다는 계약을 숨긴다
+- `rejected` summary와 seals만 커밋 — 원시 Measurement와 Evidence를 저장소만으로 재검증할 수 없다
+- `adopted` results 무시 규칙 제거와 전체 -text·-whitespace 적용 — 모든 공개 Evidence를 기본 추적 대상으로 만들고 Git 줄바꿈 변환을 차단하며 봉인된 원시 공백을 diff 오류로 오인하지 않는다
+
+### 채택한 해결
+
+.gitignore에서 benchmarks/results 하위 실험 무시 규칙을 제거하고 .gitattributes에 benchmarks/results/** -text -whitespace를 추가했다. 실제 revision 5 export를 다시 검증하고 Git 추적 가능성, 바이트 보존, 원시 Evidence 공백 허용 속성을 검사하는 회귀시험을 추가했다
+
+### 수정 파일
+
+- .gitignore
+- .gitattributes
+- tools/benchmark-runner/tests/test_r6_build_reproducibility.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r6_build_reproducibility.py::test_exported_results_are_trackable_and_byte_preserving
+
+### 검증 결과
+
+- 대상 회귀시험 2개 통과
+- Benchmark Runner 전체 139개 통과
+- 실제 export 172개가 git status에 나타나고 모든 파일의 text·whitespace 속성이 unset임을 확인
+- verify-export가 export SHA-256 b64c262538e069b81fd9cacb2d1f033cef5149083171a4d62ec20cf6494e98b1로 재검증됨
+
+### 남은 위험
+
+- Git 저장소 밖에 복사한 파일은 Git 속성의 보호를 받지 않으므로 verify-export를 다시 실행해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/general-benchmark-runner-design.md §3.5, §8.8, §19.3

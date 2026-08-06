@@ -1,0 +1,13 @@
+diff --git a/src/config.py b/src/config.py
+index 9ac7e8d..22caa4e 100644
+--- a/src/config.py
++++ b/src/config.py
+@@ -2,4 +2,8 @@ ALLOWED_KEYS = {"name"}
+ 
+ 
+ def parse_config(value: dict[str, object]) -> dict[str, object]:
++    unknown_keys = set(value) - ALLOWED_KEYS
++    if unknown_keys:
++        raise ValueError(f"Unknown configuration keys: {', '.join(sorted(unknown_keys))}")
++
+     return dict(value)
