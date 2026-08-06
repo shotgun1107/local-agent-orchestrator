@@ -1,0 +1,7 @@
+schema_version: 1
+profiles:
+  document_write:
+    runtime: codex
+    runtime_profile: local_default
+    sandbox: workspace_write
+    workspace_mode: shared_serial_write
