@@ -435,3 +435,88 @@ def build_r4_plan(
     if baseline_first_count * 2 != block_count:
         raise AssertionError("R4 block order is not balanced")
     return plan
+
+
+def build_sdk_controlled_plan(
+    *,
+    source_manifest_path: str,
+    source_manifest_sha256: str,
+    fixtures: list[FixtureIdentity],
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    cells: list[PlannedCell],
+    baseline_variant: str,
+    candidate_variants: list[str],
+    decision_policy: dict[str, object],
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+    seed: int = 0,
+) -> ExecutionPlan:
+    """Build an explicit C0/C1/C2/B1 plan without inventing Cell order."""
+
+    if revision < 1:
+        raise ValueError("SDK-controlled Plan revision must be positive")
+    if not fixtures:
+        raise ValueError("SDK-controlled Plan requires at least one fixture")
+    if not variants:
+        raise ValueError("SDK-controlled Plan requires at least one variant")
+    if not cells:
+        raise ValueError("SDK-controlled Plan requires at least one Cell")
+    created = created_at or utc_now()
+    if created.tzinfo is None or created.utcoffset() is None:
+        raise ValueError("created_at must include a timezone")
+    date = created.astimezone(timezone.utc).strftime("%Y%m%d")
+    placeholder = ExecutionPlan(
+        created_at=created,
+        producer=PRODUCER,
+        experiment_id=f"exp_{date}_00000000_{revision}",
+        plan_fingerprint=ZERO_SHA256,
+        revision=revision,
+        source_manifest=SourceManifest(
+            path=source_manifest_path,
+            sha256=source_manifest_sha256,
+        ),
+        runner=runner,
+        variants=variants,
+        fixtures=fixtures,
+        cells=cells,
+        seed=seed,
+        baseline_variant=baseline_variant,
+        candidate_variants=candidate_variants,
+        primary_metrics=[
+            "check_success",
+            "turn_count",
+            "token_usage",
+            "total_wall_clock_seconds",
+        ],
+        decision_policy=decision_policy,
+        reasoning_control="low_explicit_each_turn",
+        plan_supplemented=[
+            PlanSupplement(
+                field="track",
+                value="sdk_controlled_nonlive_gate",
+                source="frozen_design_section_17",
+            ),
+            PlanSupplement(
+                field="cell_order",
+                value=[cell.cell_id for cell in cells],
+                source="explicit_builder_input",
+            ),
+            PlanSupplement(
+                field="actual_model_turns",
+                value=0,
+                source="nonlive_runtime_guard",
+            ),
+        ],
+        environment_fingerprint=environment_fingerprint,
+    )
+    fingerprint = recompute_plan_fingerprint(placeholder)
+    plan = placeholder.model_copy(
+        update={
+            "plan_fingerprint": fingerprint,
+            "experiment_id": f"exp_{date}_{fingerprint[:8]}_{revision}",
+        }
+    )
+    assert_plan_integrity(plan)
+    return plan

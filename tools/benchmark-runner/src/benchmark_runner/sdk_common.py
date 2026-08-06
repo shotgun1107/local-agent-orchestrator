@@ -4,9 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from pydantic import JsonValue
+
+from benchmark_runner.contract import present_api_key_environment_names
+
+
+PINNED_SDK_VERSION = "0.144.4"
+PINNED_MODEL = "gpt-5.6-terra"
+PINNED_REASONING_EFFORT = "low"
+PINNED_SANDBOX = "workspace_write"
+PINNED_APPROVAL_MODE = "deny_all"
 
 
 @dataclass(frozen=True)
@@ -15,6 +24,67 @@ class WorkerContract:
     result_schema: Callable[[], dict[str, Any]]
     validate_result: Callable[[Any], dict[str, JsonValue]]
     semantics_sha256: Callable[[Any], str]
+
+
+@dataclass(frozen=True)
+class SdkLiveControlSettings:
+    sdk_version: str
+    account_type: str
+    model: str
+    reasoning_effort: str
+    thread_sandbox: str
+    turn_sandbox: str
+    thread_approval_mode: str
+    turn_approval_mode: str
+    cwd: Path
+    ephemeral: bool
+    output_schema_title: str
+    validated_without_model_turn: bool
+    actual_model_turns: int
+
+
+def validate_sdk_live_controls(
+    settings: SdkLiveControlSettings,
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, JsonValue]:
+    """Validate the frozen live controls without starting an SDK model turn."""
+
+    present_keys = present_api_key_environment_names(environ)
+    if present_keys:
+        raise RuntimeError(
+            f"API key environment is present ({', '.join(present_keys)}); "
+            "ChatGPT-auth mode fails closed"
+        )
+    expected = {
+        "sdk_version": PINNED_SDK_VERSION,
+        "account_type": "chatgpt",
+        "model": PINNED_MODEL,
+        "reasoning_effort": PINNED_REASONING_EFFORT,
+        "thread_sandbox": PINNED_SANDBOX,
+        "turn_sandbox": PINNED_SANDBOX,
+        "thread_approval_mode": PINNED_APPROVAL_MODE,
+        "turn_approval_mode": PINNED_APPROVAL_MODE,
+        "output_schema_title": "ResultEnvelope",
+        "validated_without_model_turn": True,
+        "actual_model_turns": 0,
+    }
+    for field, expected_value in expected.items():
+        if getattr(settings, field) != expected_value:
+            raise RuntimeError(f"SDK live control mismatch: {field}")
+    cwd = Path(settings.cwd)
+    if not cwd.is_absolute() or not cwd.resolve().is_dir():
+        raise RuntimeError("SDK live control cwd must be an existing absolute directory")
+    if settings.ephemeral is not False:
+        raise RuntimeError("SDK live control mismatch: ephemeral")
+    return {
+        **expected,
+        "cwd": str(cwd.resolve()),
+        "ephemeral": False,
+        "service_tier": "unspecified",
+        "summary": "unspecified",
+        "api_key_environment_names_present": [],
+    }
 
 
 @dataclass(frozen=True)
