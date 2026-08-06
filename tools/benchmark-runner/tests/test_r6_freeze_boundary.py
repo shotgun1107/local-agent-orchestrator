@@ -220,6 +220,7 @@ def test_collect_environment_checks_doctor_profile_without_turn(
         )
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
     monkeypatch.setattr(r6_module, "_run_json", fake_run_json)
     original_run = subprocess.run
 
@@ -237,6 +238,21 @@ def test_collect_environment_checks_doctor_profile_without_turn(
     assert evidence["validated_without_model_turn"] is True
     assert evidence["actual_model_turns"] == "0"
     assert evidence["b1_reasoning_control"] == "runtime_profile_verified"
+
+
+@pytest.mark.parametrize("variable", ["OPENAI_API_KEY", "CODEX_API_KEY"])
+def test_collect_r6_environment_fails_closed_for_api_key_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, variable: str
+) -> None:
+    _, profile = _profile(tmp_path)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    monkeypatch.setenv(variable, "not-read-or-logged")
+
+    with pytest.raises(R4ControllerError, match="API key environment is present") as exc_info:
+        collect_r6_environment(profile)
+
+    assert "not-read-or-logged" not in str(exc_info.value)
 
 
 def test_freeze_requires_preflight_and_preserves_zero_started_cells(tmp_path: Path) -> None:

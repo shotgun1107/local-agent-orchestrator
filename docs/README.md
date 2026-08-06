@@ -7,7 +7,8 @@
 1. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
 2. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 현재 동결된 구현 기준
 3. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
-4. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
+4. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 다음 구현·비교 기준
+5. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
 
 ## 디렉터리 역할
 
@@ -33,6 +34,7 @@ docs/
 - [범용 설계](./design/general-local-session-orchestrator-design.md) — 심사 반영 후 동결
 - [B1 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — SDK 0.144.4 대조와 Claude 심사를 반영한 동결 명세와 reference 구현 기준
 - [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — Claude 1차 심사·재심사 반영 후 동결된 구현 기준
+- [SDK 통제 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — C0/C1 탐색과 C2/B1 기본 판단을 분리한 판본 3 동결 기준
 
 ### `experiments/`
 
@@ -45,7 +47,7 @@ docs/
 - `literature/` — 문헌조사 심사
 - `general-design/` — 범용 설계 초기 심사·재검토·Codex 응답
 - `b1/` — B1 구현 명세 심사
-- `benchmark-runner/` — Benchmark Runner 1차 심사와 재심사 기록. 1차 18건 해결과 동결 근거
+- `benchmark-runner/` — Benchmark Runner와 SDK 통제 비교의 1차 심사·재심사 기록
 
 심사 보고서는 현재 설계를 대신하지 않는다. 지적이 반영된 뒤에는 **개정 이력과 판단 근거**로 읽는다.
 
@@ -55,6 +57,7 @@ docs/
 
 - [Benchmark Runner Claude 심사 프롬프트](./prompts/benchmark-runner/claude-review-prompt-general-benchmark-runner-design.md) — 실험 타당성·공정성·B2/B3 확장성 검토용
 - [Benchmark Runner Claude 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-general-benchmark-runner-design.md) — 실행 완료. 1차 18건 해결 여부와 축소 설계 회귀 검사용 기록
+- [SDK 통제 비교 Claude 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-controlled-comparison-spec.md) — 실행 완료한 판본의 심사 지시 기록
 
 ### `operations/`
 
@@ -75,6 +78,7 @@ docs/
 - 비라이브 검증 및 실제 Codex smoke 1회: 완료
 - Benchmark Runner: 설계 판본 5 동결, R0~R6 reference 구현과 실제 실행 전 동결 완료. 새 Runner/B1 wheel·공개 Schema·Execution Plan·decision policy·비라이브 회귀·무과금 인증 preflight를 hash로 고정
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
-- 다음 단계: 검증된 `openai-codex==0.144.4` SDK를 공통 표면으로 사용하는 C0/C1/C2/B1 통제 비교 명세 작성
+- SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
+- 다음 단계: C0/C1/C2 최소 vertical slice 구현
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

@@ -5,7 +5,9 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
@@ -233,9 +235,38 @@ def validate_declared_artifacts(result: ResultEnvelope, workspace: GitWorkspace)
     return evidence
 
 
-def _sanitized_environment() -> dict[str, str]:
-    forbidden = ("TOKEN", "SECRET", "PASSWORD", "COOKIE", "API_KEY", "AUTH_JSON", "CREDENTIAL")
-    return {key: value for key, value in os.environ.items() if not any(part in key.upper() for part in forbidden)}
+def build_check_environment(
+    *,
+    python_executable: Path | None = None,
+    git_executable: Path | None = None,
+    environ: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build the deterministic, secret-free environment used by command Checks."""
+
+    source = os.environ if environ is None else environ
+    python_path = Path(python_executable or sys.executable).resolve()
+    resolved_git = git_executable
+    if resolved_git is None:
+        discovered = shutil.which("git", path=source.get("PATH"))
+        if not discovered:
+            raise VerificationError("check_environment", "Git executable is unavailable")
+        resolved_git = Path(discovered)
+    git_path = Path(resolved_git).resolve()
+    keep = ("SystemRoot", "WINDIR", "COMSPEC", "TEMP", "TMP", "PATHEXT")
+    environment = {key: source[key] for key in keep if key in source}
+    path_parts = [str(python_path.parent), str(git_path.parent)]
+    if "SystemRoot" in environment:
+        path_parts.append(str(Path(environment["SystemRoot"]) / "System32"))
+    environment.update(
+        {
+            "PATH": os.pathsep.join(dict.fromkeys(path_parts)),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONHASHSEED": "0",
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUTF8": "1",
+        }
+    )
+    return environment
 
 
 def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorkspace) -> CheckResult:
@@ -253,7 +284,7 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
             capture_output=True,
             timeout=check.timeout_seconds,
             shell=False,
-            env=_sanitized_environment(),
+            env=build_check_environment(),
             check=False,
         )
         state = CheckState.PASSED if completed.returncode in check.expected_exit_codes else CheckState.FAILED

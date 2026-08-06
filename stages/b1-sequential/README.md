@@ -51,4 +51,4 @@ lao recover backup RUN_ID
 - 실제 Codex smoke: ChatGPT 인증으로 document-read 1회 통과
 - B0/B1 실험: `benchmarks/manifests/b0-b1-frozen.yaml` 기준으로 실행 예정
 
-실제 smoke에서는 Run·Task·Attempt·Session·Check·Artifact·usage·backup까지 검증했다. 다음 실제 실행도 `OPENAI_API_KEY`가 현재 셸에 없는지 먼저 확인한다. B1의 Codex 경로는 ChatGPT 인증만 허용하며 모든 thread·turn에 `ApprovalMode.deny_all`을 명시한다.
+실제 smoke에서는 Run·Task·Attempt·Session·Check·Artifact·usage·backup까지 검증했다. 다음 실제 실행도 `OPENAI_API_KEY`와 `CODEX_API_KEY`가 현재 셸에 없는지 먼저 확인한다. B1의 Codex 경로는 ChatGPT 인증만 허용하며 두 변수 중 하나라도 존재하면 값 노출 없이 실패하고, 모든 thread·turn에 `ApprovalMode.deny_all`을 명시한다. Command Check는 B1과 독립 Judge가 공유하는 최소 환경 계약에서 실행한다.
