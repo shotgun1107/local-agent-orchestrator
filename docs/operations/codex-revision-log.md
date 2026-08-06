@@ -1186,3 +1186,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 동결용 비라이브 회귀는 B1 65개, Benchmark Runner 147개, 구현 오류 로그 31건, 로그 하네스 10개를 통과했고 실제 model turn은 0회다.
 - ChatGPT 인증·Codex SDK/CLI 0.144.4·fixture tree preflight를 통과했다. preflight Evidence SHA-256은 `b2c8e29a8b705684f00230d9bc863ef4c0506996f59503ec67e029e01646a540`이다.
 - `benchmarks/artifacts/f1-b0-b1-b8ad5bc-r1/`에 실행 전 bundle을 동결했다. Experiment의 12개 Cell은 전부 `PLANNED`, sealed 0, stop reason 없음, 다음 Cell은 `cell_sequential-code-change_1_b1`이다. 다음 작업은 계획 순서대로 F1 라이브 Cell을 한 번에 하나씩 실행하는 것이다.
+
+## F1 revision 1 중단과 revision 2 재동결
+
+- 작업일: 2026-08-06.
+- revision 1에서 첫 B1 Cell은 정상 봉인됐으나 첫 B0 Cell은 작업과 prompt 입력이 준비되기 전에 `b0-start`를 실행했다. 900초 중 대부분이 프로젝트 확인과 수동 안내에 소비됐고, T2 전달 전에 `b0_deadline_exceeded`로 봉인돼 Experiment가 중단됐다. 이는 Task 구현 실패가 아니라 실행 순서 오류이며 효율성 비교에 사용하지 않는다.
+- 재발 방지 계약은 `b0-prepare → 작업 입력창에 T1 붙여넣기 → 사용자 READY → b0-start → 즉시 전송·Event 기록`이다. `docs/experiments/b1-sequential-value-followup.md`에 이 경계를 명시했다.
+- source commit `c7953806966effec9e2a42effed9a2fcc3b89fb9`에서 revision 2를 두 경로로 독립 build했다. source commit, manifest, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_b7f3ca21_2`, Plan fingerprint `b7f3ca21157f0d52109575eae58ea9b1e86d0ca9f5efd0d2dc9f2528ade3463b`가 모두 일치했다.
+- 비실시간 회귀는 B1 65개, Benchmark Runner 148개, 구현 오류 로그 31건, 로그 하네스 10개를 통과했고 실제 model turn은 0회다. preflight Evidence SHA-256은 `68a8ad1de9722feb29e22611630af4f8d055c4c4059102d731192d0b8a486d17`이다.
+- `benchmarks/artifacts/f1-b0-b1-c795380-r2/`를 실행 전 동결했다. 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 revision 1의 runtime·Cell과 합치거나 이어서 사용하지 않는다.
