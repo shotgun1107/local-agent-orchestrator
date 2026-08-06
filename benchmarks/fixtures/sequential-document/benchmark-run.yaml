@@ -1,0 +1,42 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "운영 메모에서 근거 원장을 만든 뒤, 확인 사실과 미확인을 분리한 보고서를 작성한다."
+completion_criteria:
+  - id: RC1
+    text: "근거 원장과 최종 보고서 검사가 모두 통과한다."
+    satisfied_by_tasks: [T1, T2]
+constraints:
+  - "sources/, benchmark_checks/, .orchestrator/checks.yaml은 수정하지 않는다."
+  - "report.md는 evidence.md에 기록된 내용만 근거로 사용한다."
+assumptions: []
+tasks:
+  - key: T1
+    goal: "sources/notes.md를 읽고 evidence.md를 작성한다. 확인된 사실은 E1부터 번호를 붙이고, 원문으로 답할 수 없는 항목은 U1부터 번호를 붙인다. 각 항목은 한 줄로 쓴다."
+    completion_criteria:
+      - id: TC1
+        text: "evidence 검사가 통과한다."
+        check_names: [evidence]
+    depends_on: []
+    inputs: []
+    read_scope: ["README.md", "sources/**", "benchmark_checks/**"]
+    write_scope: ["evidence.md"]
+    capability_profile: document_write
+    workspace_mode: shared_serial_write
+    check_names: [evidence, diff_check]
+    approval: none
+  - key: T2
+    goal: "evidence.md만 직접 근거로 사용해 report.md를 작성한다. '확인된 사실'과 '미확인' 제목을 두고 각 bullet 끝에 해당 E/U ID를 괄호로 표시한다. sources/notes.md를 다시 해석하거나 새 사실을 추가하지 않는다."
+    completion_criteria:
+      - id: TC2
+        text: "acceptance 검사가 통과한다."
+        check_names: [acceptance]
+    depends_on: [T1]
+    inputs:
+      - path: "evidence.md"
+    read_scope: ["README.md", "evidence.md", "benchmark_checks/**"]
+    write_scope: ["report.md"]
+    capability_profile: document_write
+    workspace_mode: shared_serial_write
+    check_names: [acceptance, diff_check]
+    approval: none

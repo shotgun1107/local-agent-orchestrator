@@ -1169,3 +1169,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 이 결과는 B1의 실패나 범용 우위를 뜻하지 않는다. 현재 제어 세션이 B0 task도 백그라운드로 직접 생성해 단순한 1-turn 과제에서는 기준선의 추가 중계가 이미 0이었고, 2 fixture × 3 repetition의 로컬 방향성 게이트이며 두 surface 차이 때문에 `treatment_control=partial`이다.
 - export는 172개 파일이며 SHA-256은 `b64c262538e069b81fd9cacb2d1f033cef5149083171a4d62ec20cf6494e98b1`이다. `verify-export`로 12개 Measurement와 Evidence를 재검증했고 두 번째 export는 같은 해시로 `idempotent=true`였다.
 - 실제 export 뒤 결과가 `.gitignore`에 걸리고 Git 바이트 보존 속성이 없던 오류를 발견했다. `DEV-20260806-008`로 기록하고 results 무시 규칙 제거, `benchmarks/results/** -text -whitespace`, 추적 가능성·원시 Evidence 공백 허용 회귀시험을 추가했다. 짧은 독립 basetemp에서 Benchmark Runner 139개와 구현 로그 하네스 10개가 통과했고 export 해시는 수정 전후 동일했다.
+
+## F1 순차 오케스트레이션 효용 후속 실험 준비
+
+- 작업일: 2026-08-06.
+- 선행 12-Cell은 단일 Task·단일 turn 과제라 B0와 B1의 시작 이후 사람 중계가 모두 0회였다. 판정식을 사후 변경하지 않고 `INCONCLUSIVE`를 유지하며, B1의 Task 의존성 자동 진행을 직접 시험하는 별도 F1 계획을 `docs/experiments/b1-sequential-value-followup.md`에 정의했다.
+- F1의 B0는 같은 Codex 작업에서 T1 완료 뒤 사용자가 고정 T2 prompt를 전달하는 수동 순차 운영이고, B1은 동일한 `depends_on` 계약을 자동 진행한다. 이 비교는 모든 개발 방식의 우위를 주장하지 않고 Task 단위 순차 workflow 안의 중계 자동화만 측정한다.
+- `sequential-code-change`와 `sequential-document` fixture를 추가했다. 두 fixture 모두 T1 산출물이 T2 입력이 되며 Task별 write scope와 Check가 분리된다.
+- pristine 실패, T1 golden 적용 뒤 1단계 Check 통과·최종 Check 실패, T2 golden 적용 뒤 최종 통과를 자동시험했다. 두 Run Spec은 B1 공개 계약으로 각각 Task 2개가 유효함을 확인했다.
+- Benchmark Runner 전체 회귀는 새 fixture 시험 4개를 포함해 143개가 통과했다. 다음 작업은 fixture source commit/tree 고정, B0 Task별 prompt hash 증거 구현, 새 manifest·artifact·preflight 동결이다. 이 조건을 통과하기 전에는 F1 라이브 Cell이나 B2를 시작하지 않는다.
