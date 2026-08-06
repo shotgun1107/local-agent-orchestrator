@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260806-011",
   "title": "중첩 codex exec가 부모 읽기 전용 권한 프로필 상속",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "benchmark-runner-track-a",
   "category": "integration",
   "discovered_at": "2026-08-06T06:57:47Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-06T07:19:34Z",
   "discovered_by": "codex exec explicit-resume preflight",
   "symptom": "workspace-write를 지정해도 중첩 CLI의 실제 turn_context가 read-only가 되어 쓰기 Task가 exit 0과 함께 미완료됐다",
   "reproduction": [
@@ -45,22 +45,26 @@
     },
     {
       "option": "독립 PowerShell에서 쓰기 fixture를 한 번 실행",
-      "decision": "deferred",
-      "reason": "부모 Codex 권한 프로필을 상속하지 않는 실제 Benchmark Runner 실행 환경에서 workspace-write를 확인해야 한다"
+      "decision": "adopted",
+      "reason": "부모 Codex 권한 프로필을 상속하지 않는 환경에서 중첩 실행 문제와 standalone 문제를 분리할 수 있다"
     }
   ],
-  "resolution": "",
-  "affected_files": [],
+  "resolution": "독립 PowerShell 전용 사전검증 스크립트가 CODEX_PERMISSION_PROFILE 미설정을 확인한 뒤 실행하도록 했다. standalone rollout에서 workspace-write와 정확한 workspace root가 적용돼 부모 프로필 상속 문제의 제거를 확인했다. 이후 발견한 standalone patch 거부는 별도 DEV-20260806-012로 분리했다.",
+  "affected_files": [
+    "benchmarks/.local-r6/codex-exec-standalone-preflight.ps1",
+    "docs/experiments/codex-exec-explicit-resume-preflight.md"
+  ],
   "regression_tests": [
-    "독립 PowerShell에서 codex exec --json --sandbox workspace-write로 파일 생성 후 명시적 SESSION_ID resume을 실행하고 외부 파일 검사로 완료를 판정한다"
+    "독립 PowerShell에서 실행한 codex exec rollout의 sandbox_policy가 workspace-write이고 workspace_roots와 write entry가 fixture 루트와 일치하는지 대조한다"
   ],
   "verification": [
     "ChatGPT 로그인과 API key 환경 변수 미설정을 확인했다",
     "세션 019fd5da-4004-7452-8ac0-33ad268d3faf의 T1과 T2에서 thread.started, turn.started, item.completed, turn.completed 및 usage를 확인했다",
-    "T2가 같은 thread ID를 방출하고 T2_CONTEXT_OK:LAO-PREFLIGHT-6F4A를 정확히 반환했다"
+    "T2가 같은 thread ID를 방출하고 T2_CONTEXT_OK:LAO-PREFLIGHT-6F4A를 정확히 반환했다",
+    "독립 PowerShell 세션 019fd5f1-198d-7011-bb7f-1af7576f2c81의 turn_context에서 workspace-write, 정확한 workspace_roots, 해당 루트 write 권한을 확인했다"
   ],
   "remaining_risks": [
-    "standalone codex exec의 workspace-write 파일 변경은 아직 미확인이다",
+    "standalone codex exec의 모델 도구를 통한 파일 변경은 DEV-20260806-012에서 별도 조사 중이다",
     "프로세스 exit code 0이 Task 완료를 뜻하지 않으므로 외부 Judge와 산출물 검사가 반드시 필요하다",
     "ChatGPT 인증 경로는 확인했지만 계정 UI의 구독 미터 변화는 직접 확인하지 않았다"
   ],
