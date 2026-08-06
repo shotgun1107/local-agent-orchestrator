@@ -1146,3 +1146,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - B0는 총 58.657초, Variant 58.047초, 1 Attempt·1 Session·1 turn, 시작 제외 중계 0회였다. Codex App 표면이 runtime usage를 제공하지 않아 token usage는 0이 아니라 `unknown`으로 봉인됐다.
 - B0 자체 unittest가 만든 `benchmark_checks/__pycache__/test_acceptance.cpython-312.pyc`와 `src/__pycache__/config.cpython-312.pyc`는 새 Judge의 `normalized_transient_paths`에 기록된 뒤 제거됐다. scope 위반·실패 Check는 0건이므로 revision 3의 비대칭이 실제 라이브 경로에서 해소됐음을 확인했다.
 - 이 한 쌍에서는 B1이 B0보다 17.563초 짧았지만 6개 사전 등록 Block 중 1개뿐이므로 B1 채택·기각 결론을 내리지 않는다. B0 App task 생성이 사용자 직접 조작이 아니라 현재 제어 세션을 통해 이뤄졌고 두 surface가 다르므로 `treatment_control=partial` 해석 한계도 유지한다.
+
+## R6 revision 5 고정 프로젝트 build와 실행 전 동결
+
+- 작업일: 2026-08-06.
+- source commit은 `f96e7184d8edede7772aaa8f6eb0ee728d9d0032`다. B0 작업이 Cell마다 별도 프로젝트로 보이던 문제와 App 포커스 이동 문제를 해결한 `DEV-20260806-007`을 포함한다.
+- B0 작업은 Codex App의 `AI 오케스트레이터 실험실` 프로젝트 아래 단일 `active-workspace` 슬롯에서만 실행한다. `background_thread_only` 정책으로 시작하며 `codex app` 실행이나 화면 이동 API를 호출하지 않는다. 별도 백그라운드 task로 확인했을 때 사용자가 다른 작업 중인 App 화면은 이동하지 않았다. `active-workspace`는 B0 준비 중에만 존재하고 봉인 뒤 해당 Cell 보존 경로로 이동한다.
+- Runner wheel SHA-256은 `d2d3e1d207f5e5ffa53e2245d2c28565b07071cb275c4e156b49ad228eeafeed`, B1 wheel은 `005f7c1c884285b5835a69c142b152207d2f07e90160449f098868a29d3b99b5`다.
+- 동결용 비라이브 회귀는 B1 65개, Benchmark Runner 138개, 구현 오류 로그 30건, 로그 하네스 10개를 통과했다. 이 build·회귀·preflight·freeze 과정의 실제 model turn은 0회다.
+- 현재 저장소와 독립 canonical source에서 각각 build했다. 두 build의 source commit, Runner/B1 wheel, 공개 Schema 5개, Experiment ID `exp_20260806_bc754895_5`, Plan fingerprint `bc754895358a5248e74f7df37a45a97ada0833dc6de7450d16920cb3be567ede`가 모두 일치했다.
+- preflight Evidence SHA-256은 `3be2c616655d7b29811645139862bf436ad83b50c802185dad6287f6926908d7`다. 동결 상태는 `PREFLIGHTED`, 12개 Cell 전부 `PLANNED`, sealed 0, stop reason 없음이며 다음 Cell은 `cell_code-change_1_b1`이다.
+- 첫 freeze 시도는 생성 대상인 `execution-plan.json`을 작업자가 미리 artifact에 복사해 둔 순서 오류를 fail-closed로 거부했다. 중복 파일만 제거하고 다시 실행해 정상 동결했으며 Cell 상태와 model turn에는 변화가 없었다.
+- `benchmarks/artifacts/r6-b0-b1-f96e718-r5/`를 revision 5 실행 후보로 동결했다. revision 4의 첫 유효 B1/B0 쌍은 원시 사실로 보존하지만, B0 실행 경계가 바뀌었으므로 후속 Cell을 이어서 실행하거나 revision 5 결과와 한 Experiment처럼 합치지 않는다.
