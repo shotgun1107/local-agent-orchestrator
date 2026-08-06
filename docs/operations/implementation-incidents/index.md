@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 33건
+- 전체: 34건
 - 해결: 33건
-- 조사 중: 0건
+- 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -46,6 +46,7 @@
 | DEV-20260806-008 | resolved | r5 | integration | R5 export 결과가 Git 무시 규칙에 걸려 기준점이 되지 못함 |
 | DEV-20260806-009 | resolved | benchmark-runner-f1 | integration | B0 prompt 준비 전에 측정 deadline 시작 |
 | DEV-20260806-010 | resolved | benchmark-runner-f1 | design | F1 B0 wall-clock에 사용자 주의 지연 혼입 |
+| DEV-20260806-011 | investigating | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -1955,3 +1956,65 @@ revision 3를 4개 SEALED Cell에서 부분 종료하고 PREPARED workspace를 �
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
+
+## DEV-20260806-011 — 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속
+
+- 상태: `investigating`
+- 단계: `benchmark-runner-track-a`
+- 분류: `integration`
+- 발견: 2026-08-06T06:57:47Z / codex exec explicit-resume preflight
+- 해결: 미해결
+
+### 증상
+
+workspace-write를 지정해도 중첩 CLI의 실제 turn_context가 read-only가 되어 쓰기 Task가 exit 0과 함께 미완료됐다
+
+### 재현
+
+- Codex 앱 세션 안에서 codex exec --sandbox workspace-write로 격리 Git fixture에 파일 생성을 요청한다
+
+### 증거
+
+- `direct-observation`: 세션 019fd5da-4004-7452-8ac0-33ad268d3faf의 turn_context는 sandbox_policy=read-only였고 최종 메시지는 쓰기 불가였지만 프로세스 종료 코드는 0이었다
+- `reproducible-test`: %TEMP% fixture와 저장소 내부 gitignore fixture에서 각각 재현됐으며 두 경우 모두 추적 파일 변경은 0건이었다
+- `source-inspection`: 부모 프로세스 환경에는 CODEX_PERMISSION_PROFILE이 있었고 rollout turn_context에는 명령줄 sandbox 요청보다 우선한 managed read-only permission_profile이 기록됐다
+- `direct-observation`: 같은 세션 ID를 명시한 읽기 전용 resume은 동일 ID를 다시 방출하고 이전 turn의 nonce를 정확히 반환했으며 turn.completed.usage도 제공했다
+
+### 근본 원인
+
+Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PERMISSION_PROFILE을 상속했고, 이 프로필의 read-only 정책이 CLI의 --sandbox workspace-write 요청보다 우선했다
+
+### 검토한 해결안
+
+- `rejected` 부모 권한 프로필 환경 변수를 제거하거나 sandbox를 우회 — 현재 세션의 보안 경계를 의도적으로 약화하므로 사전검증 방법으로 부적절하다
+- `adopted` 현재 세션에서는 읽기 전용 JSONL·resume·usage·문맥 검증만 수행 — 보안 경계를 유지하면서 프로그램 인터페이스 계약 대부분을 직접 확인할 수 있다
+- `deferred` 독립 PowerShell에서 쓰기 fixture를 한 번 실행 — 부모 Codex 권한 프로필을 상속하지 않는 실제 Benchmark Runner 실행 환경에서 workspace-write를 확인해야 한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 독립 PowerShell에서 codex exec --json --sandbox workspace-write로 파일 생성 후 명시적 SESSION_ID resume을 실행하고 외부 파일 검사로 완료를 판정한다
+
+### 검증 결과
+
+- ChatGPT 로그인과 API key 환경 변수 미설정을 확인했다
+- 세션 019fd5da-4004-7452-8ac0-33ad268d3faf의 T1과 T2에서 thread.started, turn.started, item.completed, turn.completed 및 usage를 확인했다
+- T2가 같은 thread ID를 방출하고 T2_CONTEXT_OK:LAO-PREFLIGHT-6F4A를 정확히 반환했다
+
+### 남은 위험
+
+- standalone codex exec의 workspace-write 파일 변경은 아직 미확인이다
+- 프로세스 exit code 0이 Task 완료를 뜻하지 않으므로 외부 Judge와 산출물 검사가 반드시 필요하다
+- ChatGPT 인증 경로는 확인했지만 계정 UI의 구독 미터 변화는 직접 확인하지 않았다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: https://learn.chatgpt.com/docs/non-interactive-mode.md
