@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "partial_experiment_termination",
+  "experiment_id": "exp_20260806_bac45bc4_3",
+  "status": "abandoned_partial",
+  "closed_at": "2026-08-06T05:59:10.2975434+00:00",
+  "reason_code": "b0_wall_clock_confounded_by_human_attention",
+  "reason": "B0 variant time included uncontrolled user attention and T1-to-T2 relay delay, so it could not support a fair execution-performance comparison with B1.",
+  "runner_state_at_closure": {
+    "display_state": "RUNNING",
+    "planned_cells": 12,
+    "sealed_cells": 4,
+    "prepared_cells": 1,
+    "remaining_planned_cells": 7,
+    "prepared_cell_id": "cell_sequential-code-change_2_b0",
+    "stop_reason": null
+  },
+  "conclusions": {
+    "functional_validation": "passed_for_one_code_and_one_document_block",
+    "performance_verdict": "not_evaluated",
+    "adoption_verdict": "not_issued"
+  },
+  "plan": {
+    "plan_fingerprint": "bac45bc4c5518818b803f640ba84e748427784b38998a323babb849f2d08453a",
+    "execution_plan_sha256": "8a723898f5b852f97e01307c26ee1c13853b9d2db6addbf4da9d3de499d38e09",
+    "source_commit": "c7953806966effec9e2a42effed9a2fcc3b89fb9",
+    "manifest_sha256": "0dc126ed559497c8c1399893c9b4365eb00868911ff5fe40566dec3ed0db9ddf",
+    "runner_sha256": "3596848e166aa95095d23d7cd9fad81361fba17e73fb6fe509726fad387c33a6",
+    "b0_sha256": "3596848e166aa95095d23d7cd9fad81361fba17e73fb6fe509726fad387c33a6",
+    "b1_sha256": "82193d30ead5f9779881593c4f1e09b21bf135b2fc842a3eca9bdfd31483c8fd"
+  },
+  "evidence_scope": {
+    "committed_measurements": 4,
+    "full_evidence_exported": false,
+    "raw_evidence_location": "local_runtime_only_not_exported"
+  },
+  "measurements": [
+    {
+      "file": "measurements/cell_sequential-code-change_1_b0.json",
+      "cell_id": "cell_sequential-code-change_1_b0",
+      "variant": "b0",
+      "check_success": true,
+      "scope_ok": true,
+      "secret_findings": 0,
+      "variant_seconds": 497.109,
+      "relay_excluding_start": 1,
+      "sha256": "75479c92f50a0b898a91c90c4be963998e762959e9e05bf8062aa4e091a580b6"
+    },
+    {
+      "file": "measurements/cell_sequential-code-change_1_b1.json",
+      "cell_id": "cell_sequential-code-change_1_b1",
+      "variant": "b1",
+      "check_success": true,
+      "scope_ok": true,
+      "secret_findings": 0,
+      "variant_seconds": 89.047,
+      "relay_excluding_start": 0,
+      "sha256": "8b30e5b120845345aad48f52178f3f36e24b788b63f50f714c42dd1c4f60a3ac"
+    },
+    {
+      "file": "measurements/cell_sequential-document_1_b0.json",
+      "cell_id": "cell_sequential-document_1_b0",
+      "variant": "b0",
+      "check_success": true,
+      "scope_ok": true,
+      "secret_findings": 0,
+      "variant_seconds": 166.328,
+      "relay_excluding_start": 1,
+      "sha256": "932df706eeefe0694fb7cedf3d4f7f403945ba30e15c07d7df85eff9ffb97c47"
+    },
+    {
+      "file": "measurements/cell_sequential-document_1_b1.json",
+      "cell_id": "cell_sequential-document_1_b1",
+      "variant": "b1",
+      "check_success": true,
+      "scope_ok": true,
+      "secret_findings": 0,
+      "variant_seconds": 78.172,
+      "relay_excluding_start": 0,
+      "sha256": "8cfd9ec4cc57dcb59acf9156ec0213e5c8e5cdccad072d65d1aae0eb75ded482"
+    }
+  ]
+}

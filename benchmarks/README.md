@@ -14,3 +14,5 @@ revision 5인 `artifacts/r6-b0-b1-f96e718-r5/`로 12개 Cell을 모두 실행했
 후속 F1은 `manifests/b0-b1-sequential-followup.yaml`과 `sequential-*` fixture로 T1→T2 의존 작업을 비교한다. B0는 두 고정 prompt를 사람이 순서대로 전달하고 B1은 같은 의존성을 자동 진행한다. `artifacts/f1-b0-b1-b8ad5bc-r1/`에서 독립 build 일치, 전체 비라이브 회귀, 인증 preflight를 마쳤고 Experiment `exp_20260806_d2099743_1`의 12개 Cell을 전부 `PLANNED` 상태로 동결했다. 이 실험은 선행 결과와 합산하지 않는다.
 
 F1 revision 1은 첫 B1 Cell 뒤 B0 작업 입력이 준비되기 전에 900초 타이머를 시작해 `b0_deadline_exceeded`로 중단됐다. 이 결과는 효율성 비교에 사용하지 않는다. revision 2는 `artifacts/f1-b0-b1-c795380-r2/`에 새로 동결했으며, B0에서는 `b0-prepare` 뒤 사용자의 입력창 `READY`를 확인한 다음에만 `b0-start`를 실행한다.
+
+F1 revision 3는 기존 검증 artifact를 재사용해 코드·문서 fixture의 B0/B1 한 쌍씩 총 4개 Cell을 정상 봉인했다. B1의 T1→T2 자동 진행 기능은 두 fixture에서 확인됐지만, B0 wall-clock에 통제되지 않은 사용자의 주의 전환과 T2 전달 지연이 포함돼 성능 비교를 계속하지 않았다. 12개 중 4개 결과만 `results/partial/exp_20260806_bac45bc4_3/`에 부분 스냅샷으로 보존했으며 `ADOPT_B1`, `REJECT_B1` 또는 속도 우위 판정을 발행하지 않는다.
