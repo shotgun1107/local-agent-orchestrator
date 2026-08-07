@@ -1252,3 +1252,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 함께 발견한 측정 오차도 보강했다. 다음 turn의 실제 dispatch가 성공한 뒤에만 이전 turn을 `downstream_dispatched=true`로 기록하고, terminal·ResultEnvelope 실패가 발생해도 그 turn에서 이미 측정된 duration과 token usage를 버리지 않는다.
 - 공격·봉인 표적 시험은 비인가 Runtime 선행 차단, 순서 위반, 선행 seal 변조, 임의 Runner hash, 비밀정보 redaction·봉인 중단, B1/C2 hash 대조를 포함해 `test_sdk_cells.py` 7개가 통과했다. Python 3.12.10 전체 회귀는 B1 72개와 Benchmark Runner 173개가 통과했고 `git diff --check`도 통과했다.
 - 환경 변수 이름만 검사해 `OPENAI_API_KEY`와 `CODEX_API_KEY`가 모두 없음을 확인했다. 이번 인수·보강에서는 실제 model turn, 실제 Codex SDK runtime, live pilot, 새 실험 artifact를 실행하거나 만들지 않았다. 검증된 변경은 `main`에 fast-forward 방식으로 병합한다.
+
+## SDK 통제 baseline 실제 Runtime Adapter 비라이브 구현
+
+- 작업일: 2026-08-07.
+- 공식 Codex SDK 문서와 로컬에 설치된 `openai-codex==0.144.4` 소스를 함께 대조했다. 동기 `Thread.turn()`·`TurnHandle.run()`에는 timeout 인자가 없고 `TurnHandle.interrupt()`가 제공됨을 확인해, worker thread와 deadline 및 interrupt grace로 timeout 경계를 구현했다.
+- `CodexSdkRuntime`은 정확한 SDK 버전과 ChatGPT 계정 인증만 허용한다. `OPENAI_API_KEY` 또는 `CODEX_API_KEY` 환경 변수 이름이 하나라도 존재하면 값을 읽거나 출력하지 않고 SDK client 생성 전에 중단한다.
+- thread에는 model·sandbox·approval mode·절대 cwd·ephemeral을, turn에는 model·reasoning effort·sandbox·approval mode·절대 cwd·ResultEnvelope Schema를 명시한다. service tier와 summary는 고정 근거가 없어 전달하지 않는다.
+- SDK 경계를 `CodexSdkBindings`로 주입 가능하게 분리해 실제 app-server나 model turn 없이 계약을 시험했다. C0는 1 thread·1 turn, C1은 1 thread·2 turns, C2는 2 threads·2 turns를 만들며, 동일 thread의 누적 token usage와 새 thread의 usage 재시작을 검증했다.
+- timeout 시 interrupt 요청, 인증·버전·계정 fail-closed, preflight의 model turn 0회, 모든 고정 옵션 전달, ResultEnvelope JSON과 duration·usage 수집, context 종료를 포함한 신규 시험 10개가 통과했다. 기존 SDK Cell·봉인 시험과 묶은 표적 회귀는 17개가 통과했다.
+- Python 3.12.10 전체 회귀는 B1 72개, Benchmark Runner 183개가 통과했다. 최초 병렬 전체 회귀에서 `cell-state.json` 원자 교체의 Windows `WinError 5`가 한 번 발생해 Runner가 182 passed·1 failed였으나, 같은 단일 시험과 Runner 전체를 새 basetemp에서 각각 다시 실행해 1 passed 및 183 passed를 확인했다. 원인은 확인되지 않아 `DEV-20260807-001`에 `investigating`으로 기록했고 근거 없는 자동 재시도는 추가하지 않았다.
+- 이번 단계에서는 실제 Codex SDK client나 model turn을 호출하지 않았다. 실제 live Cell driver·artifact·Execution Plan 생성과 4-Cell pilot은 아직 수행하지 않았으며, 구현은 live pilot 직전 경계에서 멈춘다.

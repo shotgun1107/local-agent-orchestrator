@@ -66,7 +66,8 @@ class SdkBaselineAdapter:
             schema = self.config.contract.result_schema()
             if schema.get("title") != "ResultEnvelope":
                 raise ValueError("unexpected worker result schema")
-        except (OSError, ValueError) as exc:
+        except (OSError, RuntimeError, ValueError) as exc:
+            self.config.runtime.close()
             return PreflightResult(False, f"SDK baseline preflight failed: {type(exc).__name__}")
         return PreflightResult(True, f"{self.id()} preflight passed for {context.cell_id}")
 
@@ -102,6 +103,12 @@ class SdkBaselineAdapter:
         )
 
     def run(self, context: CellContext) -> VariantEvidence:
+        try:
+            return self._run(context)
+        finally:
+            self.config.runtime.close()
+
+    def _run(self, context: CellContext) -> VariantEvidence:
         del context
         contract = self.config.contract
         output_schema = contract.result_schema()
@@ -145,6 +152,8 @@ class SdkBaselineAdapter:
                 "duration_seconds": result.duration_seconds,
                 "downstream_dispatched": False,
             }
+            if result.error_kind is not None:
+                turn_payload["error_kind"] = result.error_kind
             turns.append(turn_payload)
             model_active_seconds += result.duration_seconds
 

@@ -12,6 +12,7 @@ authors = [{ name = "local-agent-orchestrator contributors" }]
 dependencies = ["pydantic>=2,<3", "PyYAML>=6,<7", "jsonschema>=4,<5"]
 
 [project.optional-dependencies]
+codex = ["openai-codex==0.144.4"]
 dev = ["pytest>=8,<9"]
 
 [project.scripts]

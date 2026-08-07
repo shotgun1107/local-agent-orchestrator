@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 35건
+- 전체: 36건
 - 해결: 34건
-- 조사 중: 1건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -48,6 +48,7 @@
 | DEV-20260806-010 | resolved | benchmark-runner-f1 | design | F1 B0 wall-clock에 사용자 주의 지연 혼입 |
 | DEV-20260806-011 | resolved | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
 | DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
+| DEV-20260807-001 | investigating | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2087,3 +2088,60 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 - 관련 커밋: 기록 없음
 - 출처: https://learn.chatgpt.com/docs/non-interactive-mode.md
 - 출처: https://learn.chatgpt.com/docs/agent-approvals-security.md
+
+## DEV-20260807-001 — SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부
+
+- 상태: `investigating`
+- 단계: `sdk-controlled-comparison`
+- 분류: `tooling`
+- 발견: 2026-08-07T00:20:30Z / Benchmark Runner 183개 전체 회귀
+- 해결: 미해결
+
+### 증상
+
+cell-state.json 원자적 교체에서 WinError 5가 한 번 발생해 182 passed, 1 failed가 됐다
+
+### 재현
+
+- B1과 Benchmark Runner 전체 회귀를 서로 다른 명시적 basetemp에서 병렬 실행한다
+
+### 증거
+
+- `direct-observation`: cell_f1_false_completion_c2의 ACTIVE에서 JUDGING 전이 저장 중 임시 파일에서 cell-state.json으로 os.replace가 WinError 5를 반환했다
+- `direct-observation`: 같은 단일 시험을 새 basetemp에서 즉시 재실행해 1 passed, Runner 전체를 독립 실행해 183 passed를 확인했다
+
+### 근본 원인
+
+미확인. 동일 코드와 별도 basetemp의 단일 재실행 및 독립 전체 재실행에서는 재현되지 않아 애플리케이션의 결정적 결함으로 확인되지 않았다. Windows 외부 프로세스의 순간 파일 점유 가능성은 있으나 직접 증거는 없다
+
+### 검토한 해결안
+
+- `rejected` atomic_write에 PermissionError 자동 재시도를 즉시 추가 — 단 한 번의 비재현 환경 실패만으로 동시성 또는 권한 결함을 가리면 원인을 숨길 수 있다
+- `adopted` 새 basetemp에서 단일 실패 시험과 전체 Runner 회귀를 독립 재실행 — 코드 결함과 병렬 실행 환경의 일시적 간섭을 구분하면서 원래 실패 기록도 보존한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_sdk_cells.py::test_nine_failure_cells_share_one_plan_and_all_seal
+- tools/benchmark-runner/tests 전체
+
+### 검증 결과
+
+- 새 basetemp에서 최초 실패 시험 1 passed
+- 병렬 B1 실행과 분리한 Benchmark Runner 전체 회귀 183 passed
+
+### 남은 위험
+
+- Windows에서 같은 WinError 5가 반복되면 외부 파일 점유 추적과 제한된 원자 쓰기 재시도 정책을 별도 revision에서 설계해야 한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/codex-revision-log.md
