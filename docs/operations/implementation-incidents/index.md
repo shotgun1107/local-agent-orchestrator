@@ -6,8 +6,8 @@
 ## 요약
 
 - 전체: 37건
-- 해결: 34건
-- 조사 중: 3건
+- 해결: 35건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -49,7 +49,7 @@
 | DEV-20260806-011 | resolved | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
 | DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
 | DEV-20260807-001 | investigating | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부 |
-| DEV-20260807-002 | investigating | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
+| DEV-20260807-002 | resolved | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2149,11 +2149,11 @@ cell-state.json 원자적 교체에서 WinError 5가 한 번 발생해 182 passe
 
 ## DEV-20260807-002 — SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `sdk-controlled-pilot`
 - 분류: `integration`
 - 발견: 2026-08-07T00:53:35Z / 4-Cell pilot revision 1 create
-- 해결: 미해결
+- 해결: 2026-08-07T01:02:26Z
 
 ### 증상
 
@@ -2179,25 +2179,26 @@ Codex가 명령 실행에 적용한 관리형 filesystem sandbox에서는 사용
 
 ### 채택한 해결
 
-미해결
+revision 1을 actual model turn 0회의 실패 artifact로 보존하고, ChatGPT 인증을 읽을 수 있는 승인된 외부 실행 경계에서 revision 2를 새로 생성했다
 
 ### 수정 파일
 
-- 기록 없음
+- benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json
 
 ### 회귀시험
 
-- 기록 없음
+- SDK pilot revision 2 create model-free four-Adapter preflight
 
 ### 검증 결과
 
-- 기록 없음
+- revision 2에서 C0·C1·C2·B1 네 preflight가 account_type=chatgpt, sdk_version=0.144.4, actual_model_turns=0으로 통과했다
+- revision 2의 4-Cell live pilot이 총 7 turns로 모두 Judge 성공 및 SEALED에 도달했다
 
 ### 남은 위험
 
-- revision 2의 model-free preflight가 성공하기 전에는 원인 해소가 완료된 것으로 보지 않는다
+- 관리형 shell sandbox 안에서 같은 SDK를 직접 실행하면 인증이 다시 숨겨질 수 있으므로 live 실행은 승인된 외부 경계가 필요하다
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: b4fa4f0
 - 출처: benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json

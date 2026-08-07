@@ -1263,3 +1263,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - timeout 시 interrupt 요청, 인증·버전·계정 fail-closed, preflight의 model turn 0회, 모든 고정 옵션 전달, ResultEnvelope JSON과 duration·usage 수집, context 종료를 포함한 신규 시험 10개가 통과했다. 기존 SDK Cell·봉인 시험과 묶은 표적 회귀는 17개가 통과했다.
 - Python 3.12.10 전체 회귀는 B1 72개, Benchmark Runner 183개가 통과했다. 최초 병렬 전체 회귀에서 `cell-state.json` 원자 교체의 Windows `WinError 5`가 한 번 발생해 Runner가 182 passed·1 failed였으나, 같은 단일 시험과 Runner 전체를 새 basetemp에서 각각 다시 실행해 1 passed 및 183 passed를 확인했다. 원인은 확인되지 않아 `DEV-20260807-001`에 `investigating`으로 기록했고 근거 없는 자동 재시도는 추가하지 않았다.
 - 이번 단계에서는 실제 Codex SDK client나 model turn을 호출하지 않았다. 실제 live Cell driver·artifact·Execution Plan 생성과 4-Cell pilot은 아직 수행하지 않았으며, 구현은 live pilot 직전 경계에서 멈춘다.
+
+## SDK 통제 4-Cell live pilot
+
+- 작업일: 2026-08-07.
+- `254d991`에서 live Cell 실행기와 pilot manifest를 구현했다. C0·C1·C2는 실제 `CodexSdkRuntime`, B1은 기존 공개 CLI의 `runtime=codex`를 사용한다. B1도 baseline과 동일하게 turn·resume마다 model과 절대 cwd를 다시 명시하도록 통제를 맞췄다.
+- B1 공개 report에 각 terminal Evidence의 `duration_ms` 합으로 계산한 `model_active_seconds`를 선택 필드로 추가하고 Schema를 재생성했다. local SDK thread·session·Run 식별자는 Git export 전에 SHA-256으로 바꾸고, 홈 경로·이메일·인증 파일·비밀 형태는 기존 redaction·export 검사를 통과해야 봉인되도록 했다.
+- 모델 호출 전 표적 계약 시험 43개, B1 전체 73개, Benchmark Runner 전체 186개가 통과했다. 첫 Runner 전체 명령은 긴 basetemp 때문에 Windows `Filename too long` 5건이 발생했으며, 기존에 검증된 짧은 basetemp로 전체를 다시 실행해 186개 통과를 확인했다. 이는 코드 회귀가 아니며 기존 Windows 짧은 임시 경로 운영 규칙을 적용했다.
+- revision 1 `exp_20260807_8b1cd12c_1`은 관리형 shell sandbox가 ChatGPT 인증 저장소를 SDK에 노출하지 않아 C0 preflight에서 종료했다. 동일 번들 CLI의 승인된 외부 실행에서는 `Logged in using ChatGPT`를 확인했다. 모델 호출은 0회였고 실패 artifact를 보존했으며 `DEV-20260807-002`에 기록했다.
+- source commit `b4fa4f0` 기준 revision 2 `exp_20260807_a3046b4b_2`는 승인된 외부 실행 경계에서 C0·C1·C2·B1 네 preflight를 `account_type=chatgpt`, `openai-codex==0.144.4`, API key 환경 이름 0개, actual model turn 0회로 통과했다.
+- 실제 pilot 결과는 C0 1 session·1 turn·90,232 tokens·53.172초, C1 1 session·2 turns·164,586 tokens·57.578초, C2 2 sessions·2 turns·197,566 tokens·99.390초, B1 2 sessions·2 turns·177,746 tokens·89.344초다. 네 Cell 모두 `completed`, 독립 Judge 성공, Measurement `SEALED`였다.
+- 총 실제 model turn은 7회다. export-safe 파일 48개를 `benchmarks/results/sdk-controlled-pilot/exp_20260807_a3046b4b_2`로 내보냈고 집계 SHA-256 `388428fe70777a03a60a1c19d51a8d2cd6e38df189c3bf367aa0230f0b0d689f`를 독립 재검증했다. 판정은 `PILOT_PASS`지만 confirmatory 결과가 아니므로 B1 채택 판정에는 합산하지 않는다.
+- 다음 단계는 이 pilot을 반복하는 것이 아니라 동결 명세의 C2·B1 기본 8-Cell 의사결정 표본이다. 이번 작업은 pilot 결과 보존과 push에서 멈춘다.
