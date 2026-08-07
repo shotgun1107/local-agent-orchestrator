@@ -1324,3 +1324,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 새 단위시험 4개는 strict manifest·Schema 재현, 동결 tree 기반 복잡도 재계산, exact 8-Cell Plan·보정 전용 정책, 첫 C2 code-change Cell의 `fixture 복원 → FakeSdkRuntime → Judge → Measurement → seal` 관통을 검증했다. 두 차례 표적 실행 모두 `4 passed`였고 기존 SDK 9개 실패 Cell 공통 Plan·seal 게이트는 `1 passed`였다.
 - 최종 전체 회귀는 Python 3.12.10에서 B1 `73 passed`, Benchmark Runner `190 passed`다. `git diff --check`와 Schema 재생성은 통과했다. 전체 과정의 실제 model turn은 0회이며 live artifact·live Execution Plan·route 판정은 생성하지 않았다.
 - 현재 완료 범위는 한 Cell을 끝까지 관통한 최소 vertical slice다. 다음 비라이브 단위는 같은 manifest와 Plan으로 8개 Cell 전부를 Fake SDK로 실행하고, suite 수준 완료·봉인·export 계약을 추가하는 것이다.
+
+## SDK 라우팅 S1 8-Cell 비라이브 봉인·export
+
+- 작업일: 2026-08-07. 기준 commit은 `4f8b50240b29f9cc1fce248b3a6a93e7816c3ed1`이다. 동결 설계·fixture·suite manifest의 Cell 구성과 예산은 수정하지 않았다.
+- 같은 Execution Plan에서 남은 Cell을 한 번에 하나씩 실행하는 `run_all_routing_s1_nonlive_cells`, Cell seal을 다시 열어 완료 상태를 계산하는 `routing_s1_nonlive_status`, 독립 export·검증 경로를 추가했다. 각 Cell의 실행·Judge·Measurement·seal은 기존 `run_next_routing_s1_nonlive_cell`과 `run_sdk_nonlive_cell`을 그대로 재사용한다.
+- code-change C2→B1, document-read B1→C2, sequential-code-change B1→C2, sequential-document C2→B1의 정확한 8-Cell 순서를 Fake SDK/B1 fake runtime으로 모두 실행했다. 8개 모두 `SEALED`, Judge 성공, actual model turn 0회였다.
+- export는 Execution Plan, suite·stage manifest, 8개 Measurement와 참조 Evidence, Cell별 `seals.json`, 전체 `export-seal.json`, JSON·Markdown 요약을 보존한다. verifier는 원본 workspace를 신뢰하지 않고 manifest·Plan·Cell 순서·Measurement·Evidence·전체 파일 hash를 다시 계산한다. Measurement 한 바이트를 바꾼 회귀시험은 `Measurement seal differs`로 거부됐다.
+- 비라이브 결과는 `MODEL_FREE_PASS|FAIL|INCOMPLETE`만 사용한다. 요약에는 `calibration_outcome_issued=false`, `route_decision_issued=false`를 고정했으며 Fake 결과로 `CALIBRATION_*`, `ROUTE_*`, B1 채택·성능 주장을 발행하지 않는다.
+- 최초 확장 표적 시험은 `ExecutionPlan.track` 직접 필드를 가정해 4 passed·2 failed였다. 실제 builder는 `track`을 `plan_supplemented`에 기록한다. 공개 Plan Schema를 바꾸지 않고 해당 보충 항목이 정확히 하나인지 검사하도록 고쳐 6 passed를 확인했고, 발견·원인·해결은 `DEV-20260807-004`에 기록했다.
+- 첫 Runner 전체 회귀는 191 passed·1 failed였다. 새 8-Cell 시험의 `cell-state.json` PREPARED 저장 중 Windows `os.replace`가 `WinError 5`를 한 번 반환했다. 새 basetemp에서 같은 시험은 1 passed, 독립 전체 회귀는 192 passed였다. 같은 유형의 두 번째 관측이므로 기존 `DEV-20260807-001`을 갱신해 `investigating`으로 유지했으며 원인 미확인 상태에서 자동 재시도를 추가하지 않았다.
+- 최종 회귀는 B1 `73 passed`, Benchmark Runner `192 passed`다. 전체 작업의 실제 model turn은 0회다. 다음 단계는 변경분 심사와 S1 fixture tree·manifest·Cell 순서·예산의 실행 전 동결이며, 그 전에는 live 12-turn 실행을 시작하지 않는다.

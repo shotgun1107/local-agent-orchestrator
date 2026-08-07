@@ -194,6 +194,12 @@ S1 is a calibration stage only. Its eight-Cell order and twelve-turn live budget
 are fixed by `stages/s1-baseline.yaml`, but the current vertical slice uses only
 `FakeSdkRuntime`; it does not call a model and cannot issue a route decision.
 
+The model-free gate can execute all eight Cells through the existing C2 and B1
+adapters, independently re-open every Cell seal, and export a self-contained bundle
+with the suite manifest, stage manifest, Measurements, Evidence, per-Cell seal index,
+and aggregate export seal. Its only success state is `MODEL_FREE_PASS`; it never
+emits `CALIBRATION_*` or `ROUTE_*`.
+
 Regenerate the public contracts with Python 3.12:
 
 ```powershell

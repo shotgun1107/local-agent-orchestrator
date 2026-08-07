@@ -22,3 +22,7 @@ F1 revision 3는 기존 검증 artifact를 재사용해 코드·문서 fixture�
 `suites/sdk-routing-v1/`에는 strict suite·stage manifest와 생성된 JSON Schema가
 있다. S1은 동결 fixture 4개와 C2/B1 8-Cell 실행 순서를 고정한다. S1은 보정
 단계일 뿐이므로 이 결과로 routing 채택·기각 판정을 내리지 않는다.
+
+비라이브 검증은 Fake SDK로 8개 Cell을 모두 실행해 Cell별 Measurement·Evidence를
+봉인하고, suite·stage manifest와 전체 export hash를 독립 재검증한다. 이 검증은
+실행 장치의 무결성만 확인하며 실제 AI 품질·속도·비용 결과로 사용하지 않는다.
