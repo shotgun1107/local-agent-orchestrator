@@ -151,6 +151,19 @@
           "default": null,
           "title": "Manual Recovery Seconds"
         },
+        "model_active_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Active Seconds"
+        },
         "sessions": {
           "minimum": 0,
           "title": "Sessions",

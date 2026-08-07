@@ -397,7 +397,9 @@ class CodexRuntime:
         raw = session_handle.raw.turn(
             render_worker_prompt(task_envelope),
             approval_mode=self._ApprovalMode.deny_all,
+            cwd=str(self.workspace),
             effort=session_handle.runtime_profile.reasoning_effort,
+            model=session_handle.runtime_profile.model,
             output_schema=ResultEnvelope.model_json_schema(),
             sandbox=self._sandbox(task_envelope),
         )
@@ -407,7 +409,9 @@ class CodexRuntime:
         raw = session_handle.raw.turn(
             render_worker_prompt(session_handle.envelope, feedback_envelope),
             approval_mode=self._ApprovalMode.deny_all,
+            cwd=str(self.workspace),
             effort=session_handle.runtime_profile.reasoning_effort,
+            model=session_handle.runtime_profile.model,
             output_schema=ResultEnvelope.model_json_schema(),
             sandbox=self._sandbox(session_handle.envelope),
         )

@@ -1,0 +1,38 @@
+schema_version: 1
+status: frozen_before_execution
+frozen_at: "2026-08-07"
+fixtures:
+  - id: sequential-code-change
+    path: benchmarks/fixtures/sequential-code-change
+    commit: dd8044b8818a4ca7b6af281fec5f8992bdd4cd43
+    git_tree: 7593579d0094e6254563127ae9f0d3508b8dc748
+    success_check: acceptance
+variants: [c0, c1, c2, b1]
+repetitions: 1
+model:
+  allowed: gpt-5.6-terra
+  auth_method: chatgpt
+  reasoning_effort: low
+  sdk: openai-codex==0.144.4
+  approval_mode: deny_all
+  sandbox: workspace_write
+budgets:
+  max_turns_per_run: 4
+  max_attempts_per_task: 2
+  task_timeout_seconds: 900
+  interrupt_grace_seconds: 15
+  stop_on_unexplained_failure: true
+human_intervention:
+  all_variants: not_applicable_automated_sdk_track
+  count_rule: not_applicable
+metrics:
+  - check_success
+  - model_active_seconds
+  - wall_clock_seconds
+  - session_count
+  - turn_count
+  - attempt_count
+  - token_usage_when_measured
+  - scope_and_evidence_integrity
+unknown_usage_rule: record_unknown_and_do_not_impute_zero
+failure_rule: preserve_all_four_pilot_cells_and_stop_on_infrastructure_or_safety_failure

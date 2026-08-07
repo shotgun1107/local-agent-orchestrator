@@ -84,6 +84,99 @@ def _report(
     }
 
 
+def _live_adapter(tmp_path: Path) -> B1SequentialAdapter:
+    project = tmp_path / "live-project"
+    project.mkdir()
+    spec = project / "benchmark-run.yaml"
+    spec.write_text("schema_version: 1\n", encoding="utf-8")
+    return B1SequentialAdapter(
+        B1AdapterConfig(
+            command_prefix=(sys.executable,),
+            project=project,
+            run_spec=spec,
+            state_root=tmp_path / "live-state",
+            schema_root=B1_SCHEMA_ROOT,
+            runtime="codex",
+        )
+    )
+
+
+def test_live_preflight_requires_healthy_chatgpt_doctor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = _live_adapter(tmp_path)
+    responses = iter(
+        [
+            _capture(0, {"valid": True}),
+            _capture(
+                0,
+                {
+                    "api_key_present": False,
+                    "codex_sdk": {
+                        "installed": True,
+                        "version": "0.144.4",
+                        "pinned": True,
+                    },
+                    "codex_login": {
+                        "checked": True,
+                        "authenticated": True,
+                        "method": "chatgpt",
+                        "email": "must-not-be-copied@example.invalid",
+                    },
+                },
+            ),
+        ]
+    )
+    monkeypatch.setattr(adapter, "_invoke", lambda arguments: next(responses))
+
+    result = adapter.preflight(CONTEXT)
+
+    assert result.ok is True
+    assert adapter.preflight_evidence == {
+        "sdk_version": "0.144.4",
+        "sdk_pinned": True,
+        "account_type": "chatgpt",
+        "api_key_environment_names_present": [],
+        "actual_model_turns": 0,
+    }
+    assert "must-not-be-copied" not in json.dumps(adapter.preflight_evidence)
+
+
+def test_live_preflight_rejects_doctor_control_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = _live_adapter(tmp_path)
+    responses = iter(
+        [
+            _capture(0, {"valid": True}),
+            _capture(
+                7,
+                {
+                    "api_key_present": False,
+                    "codex_sdk": {
+                        "installed": True,
+                        "version": "0.144.4",
+                        "pinned": True,
+                    },
+                    "codex_login": {
+                        "checked": True,
+                        "authenticated": False,
+                        "method": "unknown",
+                    },
+                },
+            ),
+        ]
+    )
+    monkeypatch.setattr(adapter, "_invoke", lambda arguments: next(responses))
+
+    result = adapter.preflight(CONTEXT)
+
+    assert result.ok is False
+    assert adapter.preflight_evidence is None
+
+
 class ScriptedAdapter(B1SequentialAdapter):
     def __init__(
         self,

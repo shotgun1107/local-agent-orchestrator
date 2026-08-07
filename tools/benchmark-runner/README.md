@@ -51,7 +51,20 @@ Runner 자동 retry는 의도적으로 제공하지 않는다. R0의 내부 seal
 
 C0·C1·C2는 공통 TaskEnvelope renderer와 ResultEnvelope Schema를 사용하는 `SdkBaselineAdapter`로 구현돼 있다. `CodexSdkRuntime`은 `openai-codex==0.144.4`의 ChatGPT 인증만 허용하고, thread와 turn에 model·sandbox·approval·cwd를 명시하며 turn에는 reasoning effort와 output schema도 명시한다. API key 환경 변수나 SDK·계정·설정 불일치는 첫 model turn 전에 거부한다.
 
-SDK의 동기 turn API에는 timeout 인자가 없으므로 turn handle을 worker에서 소비하고 deadline 초과 시 `interrupt()`를 요청한다. mocked SDK 계약 시험은 C0 1 thread·1 turn, C1 1 thread·2 turns, C2 2 threads·2 turns, 누적 usage, 옵션 전달, timeout·interrupt, 인증 fail-closed를 실제 모델 호출 없이 검증한다. 실제 live Cell driver·artifact·Execution Plan과 4-Cell pilot은 아직 연결하거나 실행하지 않았다.
+SDK의 동기 turn API에는 timeout 인자가 없으므로 turn handle을 worker에서 소비하고 deadline 초과 시 `interrupt()`를 요청한다. mocked SDK 계약 시험은 C0 1 thread·1 turn, C1 1 thread·2 turns, C2 2 threads·2 turns, 누적 usage, 옵션 전달, timeout·interrupt, 인증 fail-closed를 실제 모델 호출 없이 검증한다.
+
+`scripts/run_sdk_pilot.py`는 `sequential-code-change` 하나를 C0→C1→C2→B1 순서로 실행하는 confirmatory 외부 4-Cell pilot이다. `create`는 깨끗한 Git revision·manifest·Runner/B1 source tree·runtime profile을 Execution Plan에 묶고 네 Adapter의 ChatGPT 인증을 model turn 0회로 확인한다. `run-next --confirm-model-usage`만 실제 turn을 하나의 Cell 단위로 허용하며, 각 Cell은 공통 Judge와 Measurement seal을 거친다. `export`는 local runtime 식별자와 홈 경로가 제거된 Evidence만 `benchmarks/results/sdk-controlled-pilot/`로 내보낸다.
+
+```powershell
+$python = '.\stages\b1-sequential\.venv\Scripts\python.exe'
+$state = '.\benchmarks\.local-r6\sdk-controlled-pilot-r1'
+$artifact = ".\benchmarks\artifacts\sdk-controlled-pilot-$(git rev-parse --short HEAD)-r1"
+$env:PYTHONPATH = ".\tools\benchmark-runner\src;.\stages\b1-sequential\src"
+& $python tools/benchmark-runner/scripts/run_sdk_pilot.py create --state-root $state --artifact-root $artifact
+& $python tools/benchmark-runner/scripts/run_sdk_pilot.py run-next --state-root $state --confirm-model-usage
+& $python tools/benchmark-runner/scripts/run_sdk_pilot.py status --state-root $state
+& $python tools/benchmark-runner/scripts/run_sdk_pilot.py export --state-root $state --results-root .\benchmarks\results
+```
 
 봉인 후 Evidence를 고치면 원래 seal이 무효가 되므로 R5는 위험 문자열을 사후 치환하지 않는다. Adapter와 Collector가 봉인 전에 공개 Evidence를 redaction하고, R5에서 token·email·홈 절대 경로·`auth.json` 등을 발견하면 export를 중단해 새 revision에서 다시 봉인하도록 한다.
 

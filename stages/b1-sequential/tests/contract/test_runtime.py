@@ -99,7 +99,66 @@ def test_codex_adapter_sets_deny_all_on_thread_and_turn(monkeypatch, tmp_path: P
     assert calls["thread_start"]["approval_mode"] == openai_codex.ApprovalMode.deny_all
     assert calls["turn"]["approval_mode"] == openai_codex.ApprovalMode.deny_all
     assert calls["thread_start"]["ephemeral"] is False
+    assert calls["thread_start"]["cwd"] == str(tmp_path.resolve())
+    assert calls["turn"]["cwd"] == str(tmp_path.resolve())
+    assert calls["thread_start"]["model"] == "gpt-test"
+    assert calls["turn"]["model"] == "gpt-test"
     assert calls["turn"]["output_schema"]["title"] == "ResultEnvelope"
+
+
+def test_codex_resume_reasserts_all_turn_controls(monkeypatch, tmp_path: Path) -> None:
+    import openai_codex
+
+    calls: list[dict[str, object]] = []
+
+    class FakeTurn:
+        id = "codex-turn"
+
+    class FakeThread:
+        id = "codex-thread"
+
+        def turn(self, prompt, **kwargs):
+            calls.append(kwargs)
+            return FakeTurn()
+
+    class FakeClient:
+        def account(self, *, refresh_token=False):
+            return SimpleNamespace(account=SimpleNamespace(root=SimpleNamespace(type="chatgpt")))
+
+        def thread_start(self, **kwargs):
+            return FakeThread()
+
+    class FakeContext:
+        def __enter__(self):
+            return FakeClient()
+
+        def __exit__(self, *args):
+            return None
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    monkeypatch.setattr(openai_codex, "Codex", FakeContext)
+    runtime = CodexRuntime(workspace=tmp_path)
+    profile = RuntimeProfile(
+        runtime="codex",
+        model="gpt-test",
+        auth_method="chatgpt",
+        reasoning_effort="low",
+    )
+    session = runtime.start_session(envelope(), profile)
+    runtime.resume_session(session, {"failure": "scripted"})
+
+    assert calls == [
+        {
+            "approval_mode": openai_codex.ApprovalMode.deny_all,
+            "cwd": str(tmp_path.resolve()),
+            "effort": "low",
+            "model": "gpt-test",
+            "output_schema": calls[0]["output_schema"],
+            "sandbox": openai_codex.Sandbox.read_only,
+        }
+    ]
+    assert calls[0]["output_schema"]["title"] == "ResultEnvelope"
 
 
 @pytest.mark.parametrize("variable", ["OPENAI_API_KEY", "CODEX_API_KEY"])
