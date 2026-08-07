@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 37건
-- 해결: 35건
+- 전체: 38건
+- 해결: 36건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -50,6 +50,7 @@
 | DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
 | DEV-20260807-001 | investigating | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부 |
 | DEV-20260807-002 | resolved | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
+| DEV-20260807-003 | resolved | sdk-routing-suite-v1 | test | 라우팅 스위트 초안이 단일 pair 교정을 route 판단으로 확대함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2202,3 +2203,63 @@ revision 1을 actual model turn 0회의 실패 artifact로 보존하고, ChatGPT
 
 - 관련 커밋: b4fa4f0
 - 출처: benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json
+
+## DEV-20260807-003 — 라우팅 스위트 초안이 단일 pair 교정을 route 판단으로 확대함
+
+- 상태: `resolved`
+- 단계: `sdk-routing-suite-v1`
+- 분류: `test`
+- 발견: 2026-08-07T02:26:37Z / 사용자 문제 제기, Sol Ultra 독립 검토, Claude 설계 심사
+- 해결: 2026-08-07T02:27:07Z
+
+### 증상
+
+S1의 profile별 1회 pair와 비교 불가능한 B1 전용 재시도 표본으로 비용·route 결론을 내릴 수 있게 설계됐다
+
+### 재현
+
+- routing suite 판본 1의 S1 profile별 반복 수와 판정 상태, F3 retry recovery의 Variant별 가능한 model turn 수를 대조한다
+
+### 증거
+
+- `review-finding`: Claude 심사 P1-3·P1-4는 한 pair에서 Variant 효과와 순서 효과를 분리할 수 없고 pilot token·wall 비율도 구조 예상과 반대로 약 0.90이라고 확인했다
+
+### 근본 원인
+
+초안이 breadth-first 표본을 늘리는 목적과 profile route를 결정하는 목적을 분리하지 않았고, 확률적 단일 pair와 B1만 두 번째 model turn을 얻는 실패 시나리오의 식별 한계를 판정식에 반영하지 않았다
+
+### 검토한 해결안
+
+- `rejected` S1 한 pair로 profile route 발행 — Variant 효과와 실행 순서 및 모델 변동을 분리할 수 없다
+- `rejected` F3를 C2/B1 비교 점수에 포함 — B1에만 교정된 두 번째 결과를 주어 비교가 비대칭이다
+- `adopted` S1을 calibration으로 제한하고 S2 사후 속성 검사 뒤 route 발행 — 구현 경로 검증과 선택 정책의 증거 수준을 분리한다
+
+### 채택한 해결
+
+S1은 CALIBRATION 상태만 발행하도록 낮추고 token·wall 한도는 네 pair 합계 안전 guard로 한정했다. sequential-code 순서는 pilot과 반대로 배치해 순서 효과를 진단만 하며, F3는 B1 단독 계약 시험으로 옮겼다. S2는 현재 sandbox 계약을 유지하는 공통 사후 속성 검사를 통과한 뒤에만 route를 발행한다
+
+### 수정 파일
+
+- docs/design/sdk-routing-suite-v1-design.md
+
+### 회귀시험
+
+- docs/design/sdk-routing-suite-v1-design.md §8.6은 S1의 ROUTE 발행을 금지한다
+- docs/design/sdk-routing-suite-v1-design.md §12.3은 비용 한도를 S1 네 pair 합계 안전 guard로 한정한다
+- docs/design/sdk-routing-suite-v1-design.md §24는 Claude P1 다섯 건의 반영 결과를 추적한다
+
+### 검증 결과
+
+- Claude 심사 P0 0·P1 5·P2 5·P3 4를 판본 2 반영표와 대조했다
+- S1 최소 실행을 12 turns로 고정하고 pilot 포함 S2 최초까지 누적 상한을 31 turns로 제한했다
+
+### 남은 위험
+
+- profile routing의 실제 타당성은 아직 model turn이 없는 설계 상태이며 S2 결과 전에는 미확인이다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: benchmarks/results/sdk-controlled-pilot/exp_20260807_a3046b4b_2
+- 출처: docs/design/sdk-routing-suite-v1-design.md
+- 출처: docs/reviews/benchmark-runner/claude-review-sdk-routing-suite-v1.md
