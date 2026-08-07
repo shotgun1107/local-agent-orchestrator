@@ -3634,10 +3634,20 @@ def _r6_redact_object(
     findings: set[str],
 ) -> object:
     if isinstance(value, dict):
-        return {
-            str(key): _r6_redact_object(item, replacements, findings)
-            for key, item in value.items()
-        }
+        redacted_mapping: dict[str, object] = {}
+        for key, item in value.items():
+            key_text = str(key)
+            if re.fullmatch(
+                r"(?i)(?:api[_-]?key|access[_-]?token|refresh[_-]?token)",
+                key_text,
+            ) and item is not None and item != "":
+                findings.add("credential field")
+                redacted_mapping[key_text] = "<REDACTED_SECRET>"
+            else:
+                redacted_mapping[key_text] = _r6_redact_object(
+                    item, replacements, findings
+                )
+        return redacted_mapping
     if isinstance(value, list):
         return [_r6_redact_object(item, replacements, findings) for item in value]
     if not isinstance(value, str):

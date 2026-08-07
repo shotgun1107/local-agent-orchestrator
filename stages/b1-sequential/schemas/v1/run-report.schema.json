@@ -45,6 +45,32 @@
           ],
           "title": "Failure Kind"
         },
+        "initial_prompt_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Prompt Sha256"
+        },
+        "output_schema_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Schema Sha256"
+        },
         "resume_count": {
           "minimum": 0,
           "title": "Resume Count",
@@ -52,6 +78,19 @@
         },
         "state": {
           "$ref": "#/$defs/AttemptState"
+        },
+        "task_semantics_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Task Semantics Sha256"
         }
       },
       "required": [

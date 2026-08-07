@@ -76,23 +76,29 @@ class SdkBaselineAdapter:
         failure_kind: str,
         turns: list[dict[str, JsonValue]],
         thread_ids: list[str],
+        total_usage: SdkUsage,
+        usage_status: str,
+        model_active_seconds: float,
     ) -> VariantEvidence:
+        metrics: dict[str, JsonValue] = {
+            "session_count": len(thread_ids),
+            "turn_count": len(turns),
+            "attempt_count": 1,
+            "token_usage_status": usage_status,
+            "model_active_seconds": model_active_seconds,
+        }
+        if usage_status == "measured":
+            metrics["token_usage"] = total_usage.public_payload()
         return VariantEvidence(
             outcome_state="failed",
             failure_kind=failure_kind,
             attempt_count=1,
             raw_payload={
                 "adapter_id": self.id(),
-                "model_turns": 0,
                 "thread_ids": thread_ids,
                 "turns": turns,
             },
-            normalized_metrics={
-                "session_count": len(thread_ids),
-                "turn_count": len(turns),
-                "attempt_count": 1,
-                "token_usage_status": "unknown",
-            },
+            normalized_metrics=metrics,
         )
 
     def run(self, context: CellContext) -> VariantEvidence:
@@ -109,8 +115,6 @@ class SdkBaselineAdapter:
         model_active_seconds = 0.0
 
         for task in self.config.tasks:
-            if turns:
-                turns[-1]["downstream_dispatched"] = True
             if self.id() == "c1":
                 if shared_thread is None:
                     shared_thread = self.config.runtime.start_thread()
@@ -129,6 +133,8 @@ class SdkBaselineAdapter:
                 prompt=prompt,
                 output_schema=output_schema,
             )
+            if turns:
+                turns[-1]["downstream_dispatched"] = True
             turn_payload: dict[str, JsonValue] = {
                 "task_id": str(task.task_id),
                 "thread_id": thread.id,
@@ -141,11 +147,34 @@ class SdkBaselineAdapter:
             }
             turns.append(turn_payload)
             model_active_seconds += result.duration_seconds
+
+            current = result.cumulative_usage
+            if current is None:
+                usage_status = "unknown"
+            else:
+                previous = previous_usage.get(thread.id, SdkUsage(0, 0, 0))
+                try:
+                    delta = current.subtract(previous)
+                except ValueError:
+                    usage_status = "unknown"
+                else:
+                    previous_usage[thread.id] = current
+                    turn_payload["usage_cumulative"] = current.public_payload()
+                    total_usage = SdkUsage(
+                        total_usage.input_tokens + delta.input_tokens,
+                        total_usage.output_tokens + delta.output_tokens,
+                        total_usage.total_tokens + delta.total_tokens,
+                    )
+                    turn_payload["usage_delta"] = delta.public_payload()
+
             if result.terminal_status != "completed":
                 return self._failure(
                     failure_kind="sdk_terminal_failed",
                     turns=turns,
                     thread_ids=thread_ids,
+                    total_usage=total_usage,
+                    usage_status=usage_status,
+                    model_active_seconds=model_active_seconds,
                 )
             try:
                 validated = contract.validate_result(result.raw_result)
@@ -154,6 +183,9 @@ class SdkBaselineAdapter:
                     failure_kind="result_schema_invalid",
                     turns=turns,
                     thread_ids=thread_ids,
+                    total_usage=total_usage,
+                    usage_status=usage_status,
+                    model_active_seconds=model_active_seconds,
                 )
             turn_payload["status_claim"] = str(validated["status_claim"])
             turn_payload["result_envelope"] = validated
@@ -162,26 +194,10 @@ class SdkBaselineAdapter:
                     failure_kind=f"worker_{validated['status_claim']}",
                     turns=turns,
                     thread_ids=thread_ids,
+                    total_usage=total_usage,
+                    usage_status=usage_status,
+                    model_active_seconds=model_active_seconds,
                 )
-
-            current = result.cumulative_usage
-            if current is None:
-                usage_status = "unknown"
-                continue
-            previous = previous_usage.get(thread.id, SdkUsage(0, 0, 0))
-            try:
-                delta = current.subtract(previous)
-            except ValueError:
-                usage_status = "unknown"
-                continue
-            previous_usage[thread.id] = current
-            turn_payload["usage_cumulative"] = current.public_payload()
-            total_usage = SdkUsage(
-                total_usage.input_tokens + delta.input_tokens,
-                total_usage.output_tokens + delta.output_tokens,
-                total_usage.total_tokens + delta.total_tokens,
-            )
-            turn_payload["usage_delta"] = delta.public_payload()
 
         metrics: dict[str, JsonValue] = {
             "session_count": len(thread_ids),
@@ -198,7 +214,6 @@ class SdkBaselineAdapter:
             attempt_count=1,
             raw_payload={
                 "adapter_id": self.id(),
-                "model_turns": 0,
                 "thread_ids": thread_ids,
                 "turns": turns,
             },

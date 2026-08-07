@@ -521,6 +521,9 @@ class RunReportAttempt(StrictModel):
     state: AttemptState
     failure_kind: str | None
     resume_count: int = Field(ge=0)
+    task_semantics_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    initial_prompt_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    output_schema_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class RunReportTask(StrictModel):

@@ -26,7 +26,11 @@ from benchmark_runner.failure_scenarios import (
 from benchmark_runner.plan import build_sdk_controlled_plan
 from benchmark_runner.runner import IntegrityError, verify_sealed_cell
 from benchmark_runner.sdk_baselines import SdkBaselineAdapter, SdkBaselineConfig
-from benchmark_runner.sdk_cells import initialize_sdk_experiment, run_sdk_nonlive_cell
+from benchmark_runner.sdk_cells import (
+    initialize_sdk_experiment,
+    run_sdk_nonlive_cell,
+    runner_source_sha256,
+)
 from benchmark_runner.sdk_common import (
     FakeSdkRuntime,
     FakeTurnScript,
@@ -47,9 +51,6 @@ MANIFEST_PATH = (
 B1_ROOT = REPOSITORY_ROOT / "stages" / "b1-sequential"
 B1_SOURCE_ROOT = B1_ROOT / "src"
 B1_SCHEMA_ROOT = B1_ROOT / "schemas" / "v1"
-RUNNER_COMMIT = "ccb71570f02c9270f02462ef100848f66a000f5f"
-
-
 def _git() -> Path:
     executable = shutil.which("git")
     assert executable is not None
@@ -156,7 +157,12 @@ def _normal_scripts(tasks: tuple[object, ...], variant: str) -> dict[str, FakeTu
     }
 
 
-def _plan(cells: list[PlannedCell], fixture: FrozenFixtureSpec):
+def _plan(
+    cells: list[PlannedCell],
+    fixture: FrozenFixtureSpec,
+    *,
+    runner_sha256: str | None = None,
+):
     manifest_sha256 = hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest()
     return build_sdk_controlled_plan(
         source_manifest_path=MANIFEST_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
@@ -170,8 +176,8 @@ def _plan(cells: list[PlannedCell], fixture: FrozenFixtureSpec):
         ],
         runner=ArtifactIdentity(
             artifact_id="benchmark-runner",
-            version="0.1.0-sdk-seal",
-            sha256="1" * 64,
+            version="sdk-controlled-source-v1",
+            sha256=runner_sha256 or runner_source_sha256(),
         ),
         variants=[
             ArtifactIdentity(
@@ -349,7 +355,6 @@ def test_four_normal_variants_reach_sealed_measurements(
             adapter=adapter,
             benchmark_python=Path(sys.executable),
             git_executable=_git(),
-            runner_commit=RUNNER_COMMIT,
         )
         assert result.cell_state == "SEALED"
         assert result.check_success is True
@@ -391,6 +396,15 @@ def test_four_normal_variants_reach_sealed_measurements(
     assert measurements["c2"].variant_metrics.values["turns"][0][
         "downstream_dispatched"
     ] is True
+    c2_turns = measurements["c2"].variant_metrics.values["turns"]
+    b1_turns = measurements["b1"].variant_metrics.values["turns"]
+    assert [turn["task_semantics_sha256"] for turn in b1_turns] == [
+        turn["task_semantics_sha256"] for turn in c2_turns
+    ]
+    assert [turn["output_schema_sha256"] for turn in b1_turns] == [
+        turn["output_schema_sha256"] for turn in c2_turns
+    ]
+    assert all(len(turn["prompt_sha256"]) == 64 for turn in b1_turns)
 
     tampered = experiment_dir / "cells" / cells[0].cell_id / "judge" / "result.json"
     tampered.write_bytes(tampered.read_bytes() + b"\n")
@@ -443,7 +457,6 @@ def test_nine_failure_cells_share_one_plan_and_all_seal(
             adapter=adapter,
             benchmark_python=Path(sys.executable),
             git_executable=_git(),
-            runner_commit=RUNNER_COMMIT,
             scenario_id=scenario.scenario_id,
         )
         measurement = verify_sealed_cell(
@@ -461,3 +474,199 @@ def test_nine_failure_cells_share_one_plan_and_all_seal(
             assert result.check_success is scenario.baseline_judge_success
             turns = measurement.variant_metrics.values["turns"]
             assert [turn["downstream_dispatched"] for turn in turns] == [True, False]
+
+
+def test_nonlive_rejects_unverified_runtime_before_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture()
+    cell = PlannedCell(
+        cell_id="cell_runtime_attack_c2",
+        block_id="block_runtime_attack",
+        fixture_id=fixture.id,
+        repetition=1,
+        variant_id="c2",
+        execution_ordinal=1,
+    )
+    plan = _plan([cell], fixture)
+    experiment_dir = initialize_sdk_experiment(tmp_path / "runtime-attack", plan)
+    prepared = _restore(experiment_dir, cell)
+    tasks = _tasks(monkeypatch, "c2", prepared.workspace)
+
+    class CountingRuntime:
+        turns = 0
+
+        def preflight(self) -> None:
+            return None
+
+        def start_thread(self):
+            raise AssertionError("dispatch must not be reached")
+
+        def run_turn(self, *args, **kwargs):
+            self.turns += 1
+            raise AssertionError("dispatch must not be reached")
+
+    runtime = CountingRuntime()
+    adapter = SdkBaselineAdapter(
+        SdkBaselineConfig(
+            variant_id="c2",
+            tasks=tasks,
+            contract=_contract(monkeypatch),
+            runtime=runtime,
+        )
+    )
+    with pytest.raises(RuntimeError, match="exact FakeSdkRuntime"):
+        run_sdk_nonlive_cell(
+            experiment_dir=experiment_dir,
+            plan=plan,
+            planned_cell=cell,
+            prepared=prepared,
+            adapter=adapter,
+            benchmark_python=Path(sys.executable),
+            git_executable=_git(),
+        )
+    assert runtime.turns == 0
+
+
+def test_execution_plan_order_is_enforced_before_adapter_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture()
+    cells = [
+        PlannedCell(
+            cell_id=f"cell_order_{index}_c0",
+            block_id="block_order",
+            fixture_id=fixture.id,
+            repetition=index,
+            variant_id="c0",
+            execution_ordinal=index,
+        )
+        for index in (1, 2)
+    ]
+    plan = _plan(cells, fixture)
+    experiment_dir = initialize_sdk_experiment(tmp_path / "order-attack", plan)
+    prepared = _restore(experiment_dir, cells[1])
+    adapter = _sdk_adapter(monkeypatch, prepared, "c0")
+    with pytest.raises(RuntimeError, match="out of order"):
+        run_sdk_nonlive_cell(
+            experiment_dir=experiment_dir,
+            plan=plan,
+            planned_cell=cells[1],
+            prepared=prepared,
+            adapter=adapter,
+            benchmark_python=Path(sys.executable),
+            git_executable=_git(),
+        )
+    first_prepared = _restore(experiment_dir, cells[0])
+    first_adapter = _sdk_adapter(monkeypatch, first_prepared, "c0")
+    run_sdk_nonlive_cell(
+        experiment_dir=experiment_dir,
+        plan=plan,
+        planned_cell=cells[0],
+        prepared=first_prepared,
+        adapter=first_adapter,
+        benchmark_python=Path(sys.executable),
+        git_executable=_git(),
+    )
+    first_judge = experiment_dir / "cells" / cells[0].cell_id / "judge" / "result.json"
+    first_judge.write_bytes(first_judge.read_bytes() + b"\n")
+    with pytest.raises(IntegrityError, match="Evidence hash mismatch"):
+        run_sdk_nonlive_cell(
+            experiment_dir=experiment_dir,
+            plan=plan,
+            planned_cell=cells[1],
+            prepared=prepared,
+            adapter=adapter,
+            benchmark_python=Path(sys.executable),
+            git_executable=_git(),
+        )
+
+
+def test_runner_source_hash_cannot_be_supplied_arbitrarily(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture()
+    cell = PlannedCell(
+        cell_id="cell_runner_hash_c0",
+        block_id="block_runner_hash",
+        fixture_id=fixture.id,
+        repetition=1,
+        variant_id="c0",
+        execution_ordinal=1,
+    )
+    plan = _plan([cell], fixture, runner_sha256="c" * 64)
+    experiment_dir = initialize_sdk_experiment(tmp_path / "runner-hash", plan)
+    prepared = _restore(experiment_dir, cell)
+    adapter = _sdk_adapter(monkeypatch, prepared, "c0")
+    with pytest.raises(ValueError, match="executing source tree"):
+        run_sdk_nonlive_cell(
+            experiment_dir=experiment_dir,
+            plan=plan,
+            planned_cell=cell,
+            prepared=prepared,
+            adapter=adapter,
+            benchmark_python=Path(sys.executable),
+            git_executable=_git(),
+        )
+
+
+def test_secret_like_adapter_evidence_is_redacted_and_never_sealed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _fixture()
+    cell = PlannedCell(
+        cell_id="cell_secret_attack_c0",
+        block_id="block_secret_attack",
+        fixture_id=fixture.id,
+        repetition=1,
+        variant_id="c0",
+        execution_ordinal=1,
+    )
+    plan = _plan([cell], fixture)
+    experiment_dir = initialize_sdk_experiment(tmp_path / "secret-attack", plan)
+    prepared = _restore(experiment_dir, cell)
+    tasks = _tasks(monkeypatch, "c0", prepared.workspace)
+    result = _completed_result("src/normalization.py", "src/config.py")
+    result["summary"] = "do not export sk-ABCDEFGHIJKLMNOP"
+    adapter = _sdk_adapter(
+        monkeypatch,
+        prepared,
+        "c0",
+        {
+            str(tasks[0].task_id): FakeTurnScript(
+                effects=(
+                    ("src/normalization.py", NORMALIZATION_SOURCE),
+                    ("src/config.py", CONFIG_SOURCE),
+                ),
+                result=result,
+            )
+        },
+    )
+    with pytest.raises(RuntimeError, match="secret-like material"):
+        run_sdk_nonlive_cell(
+            experiment_dir=experiment_dir,
+            plan=plan,
+            planned_cell=cell,
+            prepared=prepared,
+            adapter=adapter,
+            benchmark_python=Path(sys.executable),
+            git_executable=_git(),
+        )
+    cell_dir = experiment_dir / "cells" / cell.cell_id
+    raw = (cell_dir / "raw" / "adapter-result.json").read_text(encoding="utf-8")
+    report = json.loads(
+        (cell_dir / "raw" / "redaction-report.json").read_text(encoding="utf-8")
+    )
+    assert "sk-ABCDEFGHIJKLMNOP" not in raw
+    assert "<REDACTED_SECRET>" in raw
+    assert report["secret_categories"] == ["OpenAI-style secret"]
+    assert not (cell_dir / "sealed" / "measurement.json").exists()
+    state = CellStateRecord.model_validate_json(
+        (cell_dir / "cell-state.json").read_bytes()
+    )
+    assert state.state.value == "STOPPED"
+    assert state.stop_reason == "secret_evidence_detected"
