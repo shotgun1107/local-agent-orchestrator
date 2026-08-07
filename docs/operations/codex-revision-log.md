@@ -1304,3 +1304,23 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 보호 파일은 그대로다. 선행 비교 명세는 709줄·`50F4A6E579DFA21443FD64D5303BD1D36157520234F76BCBED1F9B28D81E97BA`, pilot manifest는 38줄·`E6F360E0A7CD94FFF61F15DADFB382C5800A6B5E5AF08730ED7F47A811B6ECCE`, 선행 재심사는 352줄·`D51AF9043E15AE655BF754D131BA66B14878EBAAFA9B61F3F6ADD6C92AA61507`다.
 - 구현 오류 로그 `check`는 38개 entry를 검증했고 하네스 단위시험 10개가 통과했다. 당시 tracked diff의 `git diff --check`는 통과했으나, 전체 파일을 staging한 뒤 Claude 심사 원문 255행에서 후행 공백 1건을 확인했다. 심사 원문 SHA-256을 보존하기 위해 수정하지 않고 알려진 형식 예외로 남겼다. 설계·로그·인덱스만 변경했으므로 B1·Runner 전체 회귀는 실행하지 않았고 실제 model turn은 0회다.
 - 다음 구현 단위는 S0 9-Cell과 B1 retry 단위 계약을 Python 3.12로 재확인한 뒤, manifest 기반 suite runner의 model-free 최소 vertical slice를 만드는 것이다.
+
+## SDK 라우팅 S0 재검증
+
+- 작업일: 2026-08-07. 기준 commit은 `11f76a9e7916776f7aa77b1a933d5b701c2630f1`이며 작업 시작 시 `main`과 `origin/main`이 일치했다.
+- Python 3.12.10과 B1 가상환경을 사용했다. Runner 전용 가상환경은 없었지만 같은 환경에 `pytest 8.4.2`, `pydantic 2.13.4`, PyYAML, jsonschema와 Runner import가 모두 준비돼 있음을 확인했다.
+- Fake Runtime만 사용하는 S0 F1·F2a·F2b 9-Cell 공통 Plan·Measurement·seal 시험이 `1 passed`로 통과했다. B1의 Check 실패 2-Attempt, transient failure 뒤 새 Attempt·고유 artifact, malformed ResultEnvelope 뒤 동일 session resume 계약은 `3 passed`로 통과했다.
+- 첫 표적 실행은 저장소 내부의 존재하지 않는 `.test-tmp` 부모를 `--basetemp`로 지정해 pytest setup 3건이 `FileNotFoundError`로 끝났다. 테스트 본체와 model turn은 시작되지 않았다. 이미 무시되는 `benchmarks/.local-r6/s0-tests/` 부모를 만든 뒤 같은 표적 시험을 재실행해 통과했다.
+- 첫 Runner 전체 회귀는 저장소 내부의 긴 basetemp를 사용해 `176 passed, 10 failed`였다. 4건은 R6가 B0 프로젝트 경로를 source repository 밖으로 강제하는 안전 계약에 의해 의도적으로 거부됐고, 나머지는 중첩된 한글 Windows 경로의 `Filename too long`과 한 번의 `WinError 5` 원자 교체 실패였다. 같은 코드에서 저장소 밖의 짧은 독립 `%TEMP%/lao-s0-*-r2` basetemp로 재실행했다.
+- 최종 전체 회귀는 B1 `73 passed`, Benchmark Runner `186 passed`다. 첫 10건은 코드 회귀가 아니라 이미 문서화된 Windows 짧은 외부 basetemp 운영 규칙을 지키지 않은 시험 호출 오류로 판정했다. 기존 `DEV-20260806-006`, `DEV-20260807-001` 및 앞선 pilot 로그와 중복되므로 새 incident ID는 만들지 않았다.
+- 전체 과정에서 실제 model turn은 0회다. source·fixture·Runner·B1 코드는 수정하지 않았고 S0 판정은 `PASS`다. 다음 작업은 manifest 기반 suite runner의 model-free 최소 vertical slice 구현이다.
+
+## SDK 라우팅 Suite Runner 최소 vertical slice
+
+- 작업일: 2026-08-07. 기준 commit은 `11f76a9e7916776f7aa77b1a933d5b701c2630f1`이다. 이 절은 직전 `SDK 라우팅 S0 재검증`과 같은 미커밋 작업 묶음에 이어서 기록했다.
+- `benchmarks/suites/sdk-routing-v1/`에 strict suite·S1 stage manifest와 생성된 JSON Schema 3개를 추가했다. S1은 동결 fixture 4개, C2/B1 8-Cell 순서, live 실행 시 12 model turn 상한을 고정하지만 상태는 `implementation_candidate`이며 아직 동결·live 실행하지 않았다.
+- `routing_suite.py`는 동결 Git tree에서 task 수, 의존 깊이·edge·fan-in, worker read 파일·byte, write module, Check 수, handoff, scope overlap을 다시 계산해 manifest 선언과 다르면 Plan 생성을 거부한다. Plan은 기존 `build_sdk_controlled_plan`, Experiment는 `initialize_sdk_experiment`, Cell 실행·Judge·Measurement·seal은 `run_sdk_nonlive_cell`을 재사용한다.
+- exact 실행 순서는 code-change C2→B1, document-read B1→C2, sequential-code-change B1→C2, sequential-document C2→B1이다. Plan의 `route_decision_allowed`는 `false`이고 S1 허용 결과는 `CALIBRATION_PASS`, `CALIBRATION_STOP`, `CALIBRATION_INCONCLUSIVE`뿐이다.
+- 새 단위시험 4개는 strict manifest·Schema 재현, 동결 tree 기반 복잡도 재계산, exact 8-Cell Plan·보정 전용 정책, 첫 C2 code-change Cell의 `fixture 복원 → FakeSdkRuntime → Judge → Measurement → seal` 관통을 검증했다. 두 차례 표적 실행 모두 `4 passed`였고 기존 SDK 9개 실패 Cell 공통 Plan·seal 게이트는 `1 passed`였다.
+- 최종 전체 회귀는 Python 3.12.10에서 B1 `73 passed`, Benchmark Runner `190 passed`다. `git diff --check`와 Schema 재생성은 통과했다. 전체 과정의 실제 model turn은 0회이며 live artifact·live Execution Plan·route 판정은 생성하지 않았다.
+- 현재 완료 범위는 한 Cell을 끝까지 관통한 최소 vertical slice다. 다음 비라이브 단위는 같은 manifest와 Plan으로 8개 Cell 전부를 Fake SDK로 실행하고, suite 수준 완료·봉인·export 계약을 추가하는 것이다.

@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "RoutingStageReference": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "stage_id": {
+          "const": "s1-baseline",
+          "title": "Stage Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage_id",
+        "path"
+      ],
+      "title": "RoutingStageReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "api_key_policy": {
+      "const": "forbidden",
+      "title": "Api Key Policy",
+      "type": "string"
+    },
+    "auth_method": {
+      "const": "chatgpt",
+      "title": "Auth Method",
+      "type": "string"
+    },
+    "design_revision": {
+      "const": 2,
+      "title": "Design Revision",
+      "type": "integer"
+    },
+    "live_turn_ceiling_including_pilot": {
+      "const": 31,
+      "title": "Live Turn Ceiling Including Pilot",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "stages": {
+      "items": {
+        "$ref": "#/$defs/RoutingStageReference"
+      },
+      "minItems": 1,
+      "title": "Stages",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "implementation_candidate",
+        "frozen_before_execution"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "suite_id": {
+      "const": "sdk-routing-v1",
+      "title": "Suite Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "suite_id",
+    "design_revision",
+    "status",
+    "stages",
+    "live_turn_ceiling_including_pilot",
+    "auth_method",
+    "api_key_policy"
+  ],
+  "title": "RoutingSuiteManifest",
+  "type": "object"
+}

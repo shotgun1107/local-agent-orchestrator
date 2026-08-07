@@ -182,3 +182,21 @@ R1만 확인하려면 다음 시험을 실행한다.
 ```powershell
 & .\.venv\Scripts\python.exe -m pytest tests\test_workspace.py tests\test_judge.py -q
 ```
+
+## SDK routing suite v1
+
+The routing-suite layer reads strict YAML manifests from
+`benchmarks/suites/sdk-routing-v1/`, recomputes each fixture's complexity from its
+frozen Git tree, and delegates Plan construction and sealed Cell execution to the
+existing SDK-controlled Runner helpers.
+
+S1 is a calibration stage only. Its eight-Cell order and twelve-turn live budget
+are fixed by `stages/s1-baseline.yaml`, but the current vertical slice uses only
+`FakeSdkRuntime`; it does not call a model and cannot issue a route decision.
+
+Regenerate the public contracts with Python 3.12:
+
+```powershell
+& .\stages\b1-sequential\.venv\Scripts\python.exe `
+  .\tools\benchmark-runner\scripts\export_routing_schemas.py
+```
