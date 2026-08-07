@@ -1275,3 +1275,32 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 실제 pilot 결과는 C0 1 session·1 turn·90,232 tokens·53.172초, C1 1 session·2 turns·164,586 tokens·57.578초, C2 2 sessions·2 turns·197,566 tokens·99.390초, B1 2 sessions·2 turns·177,746 tokens·89.344초다. 네 Cell 모두 `completed`, 독립 Judge 성공, Measurement `SEALED`였다.
 - 총 실제 model turn은 7회다. export-safe 파일 48개를 `benchmarks/results/sdk-controlled-pilot/exp_20260807_a3046b4b_2`로 내보냈고 집계 SHA-256 `388428fe70777a03a60a1c19d51a8d2cd6e38df189c3bf367aa0230f0b0d689f`를 독립 재검증했다. 판정은 `PILOT_PASS`지만 confirmatory 결과가 아니므로 B1 채택 판정에는 합산하지 않는다.
 - 다음 단계는 이 pilot을 반복하는 것이 아니라 동결 명세의 C2·B1 기본 8-Cell 의사결정 표본이다. 이번 작업은 pilot 결과 보존과 push에서 멈춘다.
+
+## SDK 라우팅 테스트 스위트 v1 심사 초안
+
+- 작업일: 2026-08-07.
+- 완료된 4-Cell pilot 뒤 기존 `2 fixture × C2/B1 × 2회` 8-Cell을 곧바로 실행하지 않고, 테스트가 단순·중간·복합 작업에 따른 B1의 손익분기점을 찾을 수 있는지 먼저 재검토했다. Sol Ultra 독립 검토는 기존 8-Cell을 같은 예산의 breadth-first calibration으로 교체하고 이후 3-Task·복합·실제 telemetry를 조건부로 여는 방향을 권고했다.
+- 기존 시스템·호출·인증·측정·Judge·Evidence·봉인 계약과 완료된 pilot은 수정하지 않았다. 새 `docs/design/sdk-routing-suite-v1-design.md`가 미실행 표본 선택만 후속 계약으로 정의한다.
+- S1은 기존 1-Task `code-change`, `document-read`와 2-Task `sequential-code-change`, `sequential-document`를 C2/B1 각 1회 실행하는 8 Cell, 정상 경로 12 turns다. S1은 `ADOPT_B1_DEFAULT`를 발행하지 않고 작은 deterministic fixture의 calibration으로만 해석한다.
+- complexity는 Task 수, 의존 깊이·간선·fan-in, Worker read surface, 예상 write surface, 인계 종류, scope 중첩, 검증 종류, 실패 위험, 결과 모호성의 벡터로 기록하며 하나의 점수로 합치지 않는다.
+- S0는 기존 F1·F2a·F2b 9-Cell을 유지한다. F3 recovery, F4 timeout, F5 input fingerprint 변조는 구현 가능성과 B1 특혜 여부를 심사받기 전까지 후보로만 두었다.
+- S2는 3-Task 코드 migration과 3-Task incident analysis 후보를 각각 C2/B1 한 번씩 실행하는 4 Cell을 제안한다. S3는 S2가 routing 정책을 정하지 못하고 추가 결과가 실제 결정을 바꿀 때만 상세화한다. 최소 실용 live 범위는 S1+S2 정상 24 turns이며 반복과 S3를 자동 예약하지 않는다.
+- 현재 Check가 Worker에게 보인다는 한계를 명시했다. S1은 `hidden_checks=false`로 제한하고, S2 전에는 `workspace_write`에서 Judge-only oracle이 실제로 읽히지 않는다는 경계를 증명하거나 `judge_only_unverified`·property 기반 검사로 주장을 낮춰야 한다.
+- 설계 초안은 723줄, SHA-256 `B6BB912C066534A1515C56A935DF41505E1FD21C85A366EB4276344215F6CD07`다. Claude 심사 프롬프트는 149줄, SHA-256 `FC0A68E2F2DB6E926EAE5656E49090A50DBB5D1C2F930D83C70E47544D95FA44`다.
+- 보호 기준 파일을 다시 확인했다. 선행 동결 명세는 709줄·SHA-256 `50F4A6E579DFA21443FD64D5303BD1D36157520234F76BCBED1F9B28D81E97BA`, pilot manifest는 38줄·`E6F360E0A7CD94FFF61F15DADFB382C5800A6B5E5AF08730ED7F47A811B6ECCE`, 선행 Claude 재심사는 352줄·`D51AF9043E15AE655BF754D131BA66B14878EBAAFA9B61F3F6ADD6C92AA61507`로 작업 전 값과 같다.
+- 이번 단계에서는 suite manifest, fixture, Runner 구현, artifact, Execution Plan을 만들지 않았고 실제 model turn도 추가로 호출하지 않았다. 다음 작업은 Claude 심사 보고서를 받은 뒤 P0·P1을 반영해 v1 설계를 동결하는 것이다.
+
+## SDK 라우팅 테스트 스위트 v1 심사 반영·동결
+
+- 작업일: 2026-08-07.
+- Claude 1차 심사는 `경미한 수정 후 동결`, P0 0건·P1 5건·P2 5건·P3 4건으로 판정했다. 심사 보고서는 664줄, SHA-256 `8C959D41DCE42D4733011BEC05F522E0A1D907A34B1CB187570E977B659C4EA9`이며 읽기 전용으로 유지했다. 심사자는 Python 3.10 환경과 프로젝트의 3.11+ 요구가 충돌해 코드 시험을 0개 실행했고 미확인 7건을 따로 남겼다.
+- P1 5건을 모두 반영했다. S1은 profile route를 발행하지 않는 8-Cell calibration으로 제한했다. 선행 pilot과 반대인 `sequential-code-change` B1→C2 순서는 순서 효과 진단에만 쓰며 수치에 합산하지 않는다. token·wall 한도는 S1 네 pair 전체 합의 안전 guard로만 유지한다.
+- F3 retry recovery는 B1만 교정된 두 번째 model 결과를 받는 비대칭 비교가 되므로 B1 단독 재dispatch 계약 시험으로 옮겼다. F4 timeout은 공통 runtime 회귀로 이동했고 F5 input fingerprint는 F2b와의 중복 때문에 S2 이후 조건부 계약으로 연기했다.
+- 공식 Codex 문서와 설치된 `openai-codex==0.144.4` 경계를 다시 대조했다. `workspace_write`는 workspace 밖 읽기를 막지 않으며, permission profile의 read deny와 명시적 기존 sandbox 설정은 합성되지 않는다. native Windows 비상승 sandbox의 read/write carve-out 제한도 있어, 현 SDK 계약을 바꾸지 않는 S2 기본 검증을 Adapter 종료 뒤 공통 property·metamorphic 관계를 검사하는 `post_hoc_property`로 확정했다. permission profile은 새 runtime revision과 전체 회귀를 요구하는 미래 후보로 남겼다.
+- complexity vector에 `check_count`와 1-Task `scope_overlap=not_applicable`를 추가하고, 네 S1 fixture의 Worker read surface가 고정돼 있음을 명시했다. 1-Task는 coordination negative control일 뿐 retry negative control이 아니며 `document-read`의 acceptance는 문자열·기본 구조 검사 수준이라고 제한했다.
+- 최소 실용 live 범위는 `S0 + S1` 정상 12 turns로 낮췄다. 완료된 pilot 7 turns와 조건부 S2 최초 12 turns를 합친 이 판본의 누적 상한은 31 turns이며, 그 이후는 새 Plan·예산·사용자 승인이 필요하다.
+- 시험 방법의 판단 오류와 해결은 `DEV-20260807-003`에 등록했다. 원인은 breadth-first calibration과 profile route 결정을 분리하지 않고 단일 pair의 확률 변동과 비대칭 재시도를 판정식에 사용하려 한 것이다. S1 calibration·S2 이후 route·사후 속성 검사로 역할을 분리해 해결했다.
+- 동결한 `docs/design/sdk-routing-suite-v1-design.md` 판본 2는 804줄, SHA-256 `6A5CF1863515BEACEE51F8DCCD90C5F468BE0D67DEACE429C0AFB5250E1D520F`다. 심사 프롬프트는 149줄·`FC0A68E2F2DB6E926EAE5656E49090A50DBB5D1C2F930D83C70E47544D95FA44`로 수정하지 않았다.
+- 보호 파일은 그대로다. 선행 비교 명세는 709줄·`50F4A6E579DFA21443FD64D5303BD1D36157520234F76BCBED1F9B28D81E97BA`, pilot manifest는 38줄·`E6F360E0A7CD94FFF61F15DADFB382C5800A6B5E5AF08730ED7F47A811B6ECCE`, 선행 재심사는 352줄·`D51AF9043E15AE655BF754D131BA66B14878EBAAFA9B61F3F6ADD6C92AA61507`다.
+- 구현 오류 로그 `check`는 38개 entry를 검증했고 하네스 단위시험 10개가 통과했다. 당시 tracked diff의 `git diff --check`는 통과했으나, 전체 파일을 staging한 뒤 Claude 심사 원문 255행에서 후행 공백 1건을 확인했다. 심사 원문 SHA-256을 보존하기 위해 수정하지 않고 알려진 형식 예외로 남겼다. 설계·로그·인덱스만 변경했으므로 B1·Runner 전체 회귀는 실행하지 않았고 실제 model turn은 0회다.
+- 다음 구현 단위는 S0 9-Cell과 B1 retry 단위 계약을 Python 3.12로 재확인한 뒤, manifest 기반 suite runner의 model-free 최소 vertical slice를 만드는 것이다.
