@@ -3,7 +3,7 @@
 - 갱신일: 2026-08-07
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 브랜치: `main`
-- 기능 기준 commit: `a99aa5846af172070cdb8a44c10ade0233abcba7`
+- 기능 기준 commit: `e7b616354dda0e0a85c4d327228fe8982a764084`
 - 인증 정책: ChatGPT 구독 계정 로그인만 사용한다. API key 입력·저장·호출 경로는 만들지 않는다.
 
 ## 1. 이 문서의 목적
@@ -54,12 +54,12 @@ local-agent-orchestrator
   └─ 범용 코어를 독립적으로 개발·검증
 
 검증 뒤
-  ├─ Project A가 저장소를 fork하여 자기 역할·도메인 규칙 추가
-  ├─ Project B가 저장소를 fork하여 다른 구조로 재구성
+  ├─ Project A가 검증된 버전 코어 + 자기 `.orchestrator/` project pack 사용
+  ├─ Project B가 같은 코어 + 다른 project pack 사용
   └─ 원본은 프로젝트 고유 역할명 없이 범용 코어로 유지
 ```
 
-즉 원본 범용 저장소를 먼저 충분히 검증한 뒤, 실제 프로젝트가 그 시점의 코어를 fork하여 프로젝트 전용 오케스트레이터로 재구성한다. EU4·Brain·P1~P3 같은 특정 프로젝트 역할이나 용어를 범용 코어에 편입하지 않는다.
+즉 원본 범용 저장소를 먼저 충분히 검증한 뒤, 실제 프로젝트는 검증된 버전 코어와 프로젝트별 `.orchestrator/` project pack을 결합한다. 전체 Git fork는 설정과 hook으로 표현할 수 없는 실제 필요가 있을 때만 쓰는 escape hatch다. EU4·Brain·P1~P3 같은 특정 프로젝트 역할이나 용어를 범용 코어에 편입하지 않는다.
 
 범용 코어가 실제 프로젝트의 상위 폴더가 되거나, 모든 프로젝트를 하나의 중앙 오케스트레이터에서 영구 관리하는 구조를 목표로 하지 않는다.
 
@@ -150,13 +150,27 @@ S0와 B1 retry·resume 계약을 Python 3.12.10에서 다시 확인했다. 이�
 - 비라이브 결과를 `MODEL_FREE_PASS|FAIL|INCOMPLETE`로 제한
 - calibration·route·B1 채택 판정 미발행
 
-기능 기준 commit `a99aa58`의 최종 검증은 다음과 같다.
+S1 실행 후보 source commit `e7b6163`의 최종 검증은 다음과 같다.
 
-- B1 전체: `73 passed`
-- Benchmark Runner 전체: `192 passed`
-- 구현 incident 로그: 39개 entry 검증
+- S0 gate: `9 passed`
+- B1 retry 계약: `3 passed`
+- B1 전체: `74 passed`
+- Benchmark Runner 전체: `203 passed`
+- 구현 incident 로그: 41개 entry 검증
 - 로그 하네스: `10 passed`
 - 실제 model turn: 0회
+
+### S1 live 실행 후보 동결
+
+- source: `e7b616354dda0e0a85c4d327228fe8982a764084`
+- Experiment: `exp_20260807_d1e9fdb8_1`
+- Plan fingerprint: `d1e9fdb8b4856fa5bd35cfa75cb05b7eed1be400bc5ec4358cce9f595bbd2a42`
+- raw Plan SHA-256: `83baaf3c57df94de8e4e72205e6feb28cbc85873794002b3a14ce384f88400e1`
+- freeze SHA-256: `2a287039526ebd919b50110c2fd10a0e905fbf3d0638036e3a91738d7ad34171`
+- artifact: `benchmarks/artifacts/sdk-routing-v1-e7b6163-r1/`
+- 상태: 8개 Cell 모두 `PLANNED`, sealed 0, actual model turn 0, calibration·route 미발행
+
+세 내부 하위 에이전트의 계약·runtime·seal 감사를 반영했고 최신 재감사에서 잔여 P0/P1은 0건이었다. freeze 생성은 별도 clean checkout과 별도 process에서 Plan과 Runner/B1/manifest identity를 다시 계산했으며 8개 ChatGPT 구독 preflight만 수행했다.
 
 Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧은 basetemp에서 단일 시험과 전체 회귀는 통과했지만 원인은 미확인이므로 `DEV-20260807-001`을 `investigating`으로 유지한다. 근거 없는 자동 재시도는 추가하지 않았다.
 
@@ -216,34 +230,17 @@ Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧�
 
 ## 10. 다음 단계
 
-### 첫 게이트: 프로젝트 이해 확인
+프로젝트 이해 확인과 S1 live 실행 후보 동결 전 기술 감사는 완료됐다. 현재 후보는 실제 model turn 직전에서 멈춰 있다.
 
-집 Codex의 첫 작업은 구현이나 기술 감사가 아니다. 이 문서와 관련 정본을 읽고 다음을 자기 언어로 설명한다.
+다음 기술 행동은 사용자가 별도로 명시 승인할 때 `cell_s1_code-change_1_c2` 한 Cell만 실행하는 것이다. `run-next`는 호출마다 model 사용 승인을 다시 요구하고 자동으로 다음 Cell을 이어서 실행하지 않는다. 첫 Cell을 봉인한 뒤 status와 Evidence를 검토하고, 다음 Cell 실행 여부를 다시 결정한다.
 
-- 프로젝트가 생긴 이유와 피하려는 실패
-- 범용 코어 우선·검증 후 fork 전략
-- B1의 현재 역할과 최종 목표의 차이
-- 설계·시험 방식을 수정해 온 이유
-- 확인된 사실과 미확정 주장
-- 역할·세션·하위 에이전트 구조
-- 현재 다음 기술 단계와 금지된 선행 작업
-- 헷갈리거나 충돌한다고 느낀 점
+현재 선행하지 않는 작업:
 
-이 보고서를 공홈에서 평가받기 전에는 파일을 수정하거나 시험을 실행하지 않는다.
-
-### 이해 확인 뒤 기술 단계
-
-이해가 확인되면 다음 기술 작업은 **S1 live 실행 후보 동결 전 감사**다.
-
-1. S1 suite·stage manifest와 두 fixture manifest를 확인한다.
-2. 네 fixture Git tree, 정확한 8-Cell 순서, 정상 경로 12-turn 상한을 재계산한다.
-3. 생성 Schema 3개와 model-free export verifier를 다시 검증한다.
-4. Python 3.12의 짧은 외부 basetemp에서 전체 회귀를 실행한다.
-5. 필요하면 내부 하위 에이전트가 manifest·Schema·seal·시험 결과를 나누어 read-only 감사한다.
-6. P0·P1과 미확인이 없을 때만 실행 후보 동결안을 제시한다.
-7. live model turn 직전 다시 멈춰 사용자 승인을 받는다.
-
-S1 live 실행, S2·S3 구현, 새로운 대규모 실험을 선행하지 않는다.
+- 승인 없는 S1 live Cell 실행
+- 8개 Cell 자동 연속 실행
+- S1 결과 전 profile route나 B1 채택 판정
+- S2·S3 구현 또는 예약
+- WinError 5 원인을 해결했다고 간주하는 자동 재시도
 
 ## 11. 집 PC에서 재개하는 방법
 
@@ -278,7 +275,23 @@ Codex 인증은 ChatGPT 구독 계정만 사용한다. `OPENAI_API_KEY` 또는 `
 - 확인하지 않은 것을 통과했다고 보고하지 않는다.
 - 사용자가 다시 요청하기 전에는 새 인수인계 문서를 만들거나 이 문서를 임의 갱신하지 않는다.
 
-## 13. 집 Codex 시작 프롬프트
+## 13. 현재 재개 프롬프트
+
+```text
+local-agent-orchestrator의 S1 실행 후보 동결 이후 작업을 이어간다. 새 clone이나 기초 설치를 반복하지 마라.
+
+먼저 현재 경로, origin, branch, HEAD, git status를 확인한다. 로컬 변경이 있으면 숨기거나 폐기하지 말고 파일 목록을 보고하고 멈춘다. 깨끗하면 codex/s1-execution-freeze 원격 branch를 ff-only로 동기화한다.
+
+정본은 docs/operations/home-codex-handoff.md의 S1 live 실행 후보 동결 절과 benchmarks/artifacts/sdk-routing-v1-e7b6163-r1/이다. source commit, Experiment ID, Plan fingerprint, raw Plan SHA와 freeze SHA를 독립 verifier로 확인하고 status가 8 PLANNED, sealed 0, actual model turn 0, calibration·route 미발행인지 보고한다.
+
+이 확인은 실제 model turn을 허가하지 않는다. run-next를 호출하지 말고 멈춘다. 사용자가 특정 Cell 실행을 별도로 명시 승인한 뒤에만 정확히 한 Cell을 실행하며, 자동으로 다음 Cell을 이어서 실행하지 않는다.
+
+인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 않는다. S2·S3, profile route, B1 채택 판정을 선행하지 않는다.
+```
+
+## 14. 완료된 최초 이해도 심사 프롬프트
+
+아래 프롬프트는 인수 이해도 심사에 사용해 이미 통과한 역사 기록이다. 현재 재개 시 다시 실행하지 않는다.
 
 ```text
 local-agent-orchestrator 작업을 이어서 진행한다. 이 PC에는 이미 저장소 clone과 이전 인수 경험이 있으므로 새 clone이나 기초 설치 설명을 반복하지 마라.
@@ -303,7 +316,7 @@ local-agent-orchestrator 작업을 이어서 진행한다. 이 PC에는 이미 �
 
 - 이 프로젝트가 처음 생긴 이유
 - 기존 프로젝트 특화 멀티 세션 구조에서 사용자가 무엇을 걱정했는지
-- 범용 코어를 먼저 독립 개발·검증한 뒤 프로젝트별로 fork하려는 이유
+- 범용 코어를 먼저 독립 개발·검증한 뒤 버전 코어와 project pack으로 적용하려는 이유
 - 범용 저장소와 실제 프로젝트의 관계
 - B1이 현재 무엇이며 최종 범용 오케스트레이터와 어떻게 다른지
 - 설계와 시험 방법을 여러 번 바꾼 이유

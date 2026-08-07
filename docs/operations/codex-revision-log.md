@@ -1353,3 +1353,16 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 역할을 다시 분리했다. 집 Codex는 기술 구현과 필요시 내부 하위 에이전트 병렬 검증을 담당한다. 공홈 ChatGPT는 S1 기술 동결 판정자가 아니라 집 Codex가 목표·맥락·과정·역할을 이해했는지 평가하는 메타 심사자다. Claude는 외부 기술 심사자이며 Git·코드·시험 artifact가 정본이다.
 - 새 시작 프롬프트는 첫 세션에서 테스트·하위 에이전트·파일 수정·commit·model turn을 금지하고, 집 Codex가 자기 언어로 프로젝트 이해 보고서를 작성한 뒤 멈추도록 한다. 공홈 이해도 평가가 끝난 뒤에만 S1 live 전 감사와 내부 하위 에이전트 기술 검증으로 넘어간다.
 - 이번 변경은 인수인계와 작업 로그 문서뿐이다. 구현·manifest·시험·artifact는 수정하지 않았고 실제 model turn은 0회다.
+
+## SDK 라우팅 S1 live 실행 후보 동결
+
+- 작업일: 2026-08-07. 공홈 이해도 심사는 통과했고, 내부 하위 에이전트 3개가 계약·runtime·seal 경계를 read-only로 나누어 감사했다. 발견된 P1을 수정한 뒤 최신 재감사 판정은 잔여 P0 0건·P1 0건이다.
+- source commit `e7b616354dda0e0a85c4d327228fe8982a764084`에 별도 fail-closed live controller를 추가했다. `create`는 clean source, frozen suite·stage·fixture manifest, 같은 commit의 0-turn 회귀, ChatGPT 구독 runtime profile을 요구한다. `run-next`는 invocation마다 명시적 model 사용 승인을 요구하고 정확히 한 Cell만 dispatch하며 자동 연속 실행은 없다.
+- Python executable, Git executable, Codex SDK와 bundled CLI, Runner/B1 source, controller, runtime profile, suite·stage·fixture manifest를 hash로 고정했다. B1은 frozen Python `-P -m orchestrator`, source `PYTHONPATH`, cwd, Schema root와 남은 전역 예산 이하의 내부 max-turn을 강제한다. artifact에는 사용자 절대경로 대신 path SHA만 기록한다.
+- Plan은 별도 짧은 임시 경로의 clean checkout과 별도 process에서 재구성한다. 독립 process가 Runner/B1 source와 두 fixture manifest hash를 다시 계산하고 원본 Plan과 byte·fingerprint가 다르면 후보 생성을 거부한다. Windows clone 간 바이트 차이를 막기 위해 hash-bound source와 artifact의 EOL 속성을 고정했다.
+- Cell dispatch 전 durable claim을 원자적으로 남겨 상태·stop 기록이 모두 실패해도 implicit retry를 금지한다. status는 봉인된 Measurement의 전체 identity, provenance, environment, resource, token, B1 control metric을 검증한 뒤에만 누적 turn과 calibration 결과를 계산한다. 전역 실제 turn은 12가 절대 상한이고 B1의 반복 가능한 `check_failed` 품질 회귀만 safety STOP으로 분류한다.
+- S1은 `CALIBRATION_PASS|STOP|INCONCLUSIVE`만 발행할 수 있고 `route_decision_issued=false`다. 일반 Task/runtime 실패는 PASS가 아니라 INCONCLUSIVE이며, 안전 실패나 예산 소진은 partial terminal STOP export로 보존한다. export verifier는 freeze bundle, raw Plan SHA, 모든 Measurement/Evidence와 정확한 파일 집합을 독립 재검증한다.
+- 최종 비라이브 회귀 record는 같은 source commit에서 S0 gate `9 passed`, B1 retry 계약 `3 passed`, B1 전체 `74 passed`, Benchmark Runner 전체 `203 passed`, 구현 incident 41개와 로그 하네스 10개 통과를 기록했다. 실제 model turn은 0회다.
+- 8개 ChatGPT 구독 preflight 뒤 `benchmarks/artifacts/sdk-routing-v1-e7b6163-r1/`을 실행 후보로 동결했다. Experiment는 `exp_20260807_d1e9fdb8_1`, Plan fingerprint는 `d1e9fdb8b4856fa5bd35cfa75cb05b7eed1be400bc5ec4358cce9f595bbd2a42`, raw Plan SHA-256은 `83baaf3c57df94de8e4e72205e6feb28cbc85873794002b3a14ce384f88400e1`, freeze SHA-256은 `2a287039526ebd919b50110c2fd10a0e905fbf3d0638036e3a91738d7ad34171`이다.
+- 별도 verifier와 status에서 8개 Cell 전부 `PLANNED`, sealed 0, actual model turn 0, calibration outcome 없음, route 미발행, stop 없음이 확인됐다. 다음 행동은 자동 실행이 아니라 사용자 별도 승인 뒤 첫 `cell_s1_code-change_1_c2` 한 Cell만 실행하는 것이다. S2·S3와 route 정책은 선행하지 않는다.
+- 과거 문서의 프로젝트별 `fork` 표현은 현재 동결 설계의 기본 적용 방식이 아니다. 기본은 검증된 버전 코어와 프로젝트별 `.orchestrator/` project pack이며 전체 Git fork는 설정·hook으로 표현할 수 없는 필요가 생겼을 때의 escape hatch다.
