@@ -1335,3 +1335,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최초 확장 표적 시험은 `ExecutionPlan.track` 직접 필드를 가정해 4 passed·2 failed였다. 실제 builder는 `track`을 `plan_supplemented`에 기록한다. 공개 Plan Schema를 바꾸지 않고 해당 보충 항목이 정확히 하나인지 검사하도록 고쳐 6 passed를 확인했고, 발견·원인·해결은 `DEV-20260807-004`에 기록했다.
 - 첫 Runner 전체 회귀는 191 passed·1 failed였다. 새 8-Cell 시험의 `cell-state.json` PREPARED 저장 중 Windows `os.replace`가 `WinError 5`를 한 번 반환했다. 새 basetemp에서 같은 시험은 1 passed, 독립 전체 회귀는 192 passed였다. 같은 유형의 두 번째 관측이므로 기존 `DEV-20260807-001`을 갱신해 `investigating`으로 유지했으며 원인 미확인 상태에서 자동 재시도를 추가하지 않았다.
 - 최종 회귀는 B1 `73 passed`, Benchmark Runner `192 passed`다. 전체 작업의 실제 model turn은 0회다. 다음 단계는 변경분 심사와 S1 fixture tree·manifest·Cell 순서·예산의 실행 전 동결이며, 그 전에는 live 12-turn 실행을 시작하지 않는다.
+
+## 집 PC 인수인계 최신화와 공홈 심사 프로젝트 준비
+
+- 작업일: 2026-08-07. 기능 기준 commit은 `a99aa5846af172070cdb8a44c10ade0233abcba7`이다.
+- 기존 `home-codex-handoff.md`가 SDK vertical slice 구현 전 상태와 B1 69개·Runner 155개 회귀를 가리키고 있어, S0 재검증·Suite Runner·S1 8-Cell 비라이브 봉인·export 완료 상태로 전면 최신화했다.
+- 인수인계 문서에 현재 확인된 범위와 미확정 주장, 다음 게이트인 live 전 감사·실행 후보 동결, Python 3.12 짧은 외부 basetemp 규칙, ChatGPT 구독 인증 전용 정책을 기록했다. 사용자는 집 PC clone과 이전 인수 경험이 있으므로 시작 프롬프트는 새 clone 설명을 생략하고 dirty worktree fail-closed·ff-only 동기화부터 시작한다.
+- 공홈 ChatGPT에 `Local Agent Orchestrator 심사실` 프로젝트를 만들고 Plus 한도인 소스 25개를 업로드했다. 역할 지침은 작업 PC Codex·집 Codex·사용자 소유 Codex 작업·내부 하위 에이전트·Claude를 구분하며, 분리된 `개인 AI 개발 전통 체계`의 혼입을 금지한다.
+- 공홈 준비 점검은 25개 파일을 읽고 S1 설계·manifest·주요 코드의 정적 심사가 가능하다고 봤다. 다만 전체 fixture tree·Git object·원본 실행 artifact가 없어 독립 재현 심사는 제한된다고 판정했으므로, 공홈은 정적 심사 보조 채널이고 Git·코드·독립 시험 artifact가 정본이다.
+- 이번 최신화는 문서 작업뿐이며 B1·Runner 코드와 manifest를 수정하지 않았다. 실제 model turn, S1 live 실행, 새 artifact 생성은 수행하지 않았다.
