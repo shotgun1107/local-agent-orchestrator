@@ -31,6 +31,7 @@ from .contract import (
     SandboxMode,
     SessionState,
     TaskSpec,
+    TaskEnvelope,
     TaskState,
     TerminalStatus,
     UsageStatus,
@@ -44,7 +45,12 @@ from .contract import (
 from .ledger import IntegrityViolation, Ledger, LedgerError, StateConflict
 from .recover import ControllerLock, reconcile
 from .runtime import CodexRuntime, DispatchUncertain, FakeRuntime, RuntimePort
-from .worker import build_task_envelope
+from .worker import (
+    build_task_envelope,
+    render_worker_prompt,
+    result_schema,
+    task_semantics_sha256,
+)
 from .verify import (
     ArtifactStore,
     GitWorkspace,
@@ -860,6 +866,23 @@ class Orchestrator:
                 ).total_seconds(),
                 3,
             )
+        output_schema_sha256 = sha256_bytes(
+            canonical_json(result_schema()).encode("utf-8")
+        )
+
+        def report_attempt(attempt: dict[str, Any]) -> dict[str, Any]:
+            envelope = TaskEnvelope.model_validate_json(attempt["task_contract_json"])
+            return {
+                "attempt_no": attempt["attempt_no"],
+                "state": attempt["state"],
+                "failure_kind": attempt["failure_kind"],
+                "resume_count": attempt["resume_count"],
+                "task_semantics_sha256": task_semantics_sha256(envelope),
+                "initial_prompt_sha256": sha256_bytes(
+                    render_worker_prompt(envelope).encode("utf-8")
+                ),
+                "output_schema_sha256": output_schema_sha256,
+            }
         report = RunReportEnvelope(
             schema_version=1,
             run_id=run_id,
@@ -884,15 +907,7 @@ class Orchestrator:
                 {
                     "key": task["external_key"],
                     "state": task["state"],
-                    "attempts": [
-                        {
-                            "attempt_no": attempt["attempt_no"],
-                            "state": attempt["state"],
-                            "failure_kind": attempt["failure_kind"],
-                            "resume_count": attempt["resume_count"],
-                        }
-                        for attempt in task["attempts"]
-                    ],
+                    "attempts": [report_attempt(attempt) for attempt in task["attempts"]],
                 }
                 for task in snapshot["tasks"]
             ],

@@ -34,6 +34,9 @@ from benchmark_runner.plan import assert_plan_integrity
 from benchmark_runner.runner import (
     _evidence_ref,
     _metric,
+    _r6_redact_bytes,
+    _r6_redact_object,
+    _source_tree_sha256,
     _transition,
     _write_model,
     atomic_write,
@@ -42,6 +45,20 @@ from benchmark_runner.runner import (
     verify_sealed_cell,
 )
 from benchmark_runner.workspace import PreparedFixture
+
+
+RUNNER_FINGERPRINT_INPUTS = (
+    "pyproject.toml",
+    "src/benchmark_runner",
+    "schemas",
+)
+
+
+def runner_source_sha256() -> str:
+    """Fingerprint the exact Benchmark Runner sources that execute SDK Cells."""
+
+    runner_root = Path(__file__).resolve().parents[2]
+    return _source_tree_sha256(runner_root, RUNNER_FINGERPRINT_INPUTS)
 
 
 class SdkSealedCellResult(BaseModel):
@@ -83,6 +100,9 @@ def _assert_plan_and_fixture(
     )
     if persisted != plan:
         raise ValueError("Persisted Execution Plan does not match the supplied Plan")
+    runner_sha256 = runner_source_sha256()
+    if plan.runner.sha256 != runner_sha256:
+        raise ValueError("Execution Plan Runner hash does not match the executing source tree")
     declared_cell = next(
         (cell for cell in plan.cells if cell.cell_id == planned_cell.cell_id),
         None,
@@ -112,14 +132,112 @@ def _assert_plan_and_fixture(
     return variant.version, variant.sha256
 
 
+def _assert_next_planned_cell(
+    experiment_dir: Path,
+    plan: ExecutionPlan,
+    planned_cell: PlannedCell,
+) -> None:
+    """Require the immutable ordinal order and re-verify every predecessor seal."""
+
+    for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal):
+        state_path = experiment_dir / "cells" / cell.cell_id / "cell-state.json"
+        if not state_path.is_file():
+            if cell.cell_id != planned_cell.cell_id:
+                raise RuntimeError(
+                    f"Cell {planned_cell.cell_id} is out of order; next Cell is {cell.cell_id}"
+                )
+            return
+        state = CellStateRecord.model_validate_json(state_path.read_bytes())
+        if state.state is not CellLifecycleState.SEALED:
+            raise RuntimeError(f"Earlier Cell {cell.cell_id} is not SEALED")
+        verify_sealed_cell(state_path.parent)
+        if cell.cell_id == planned_cell.cell_id:
+            raise RuntimeError(f"Cell {planned_cell.cell_id} is already SEALED")
+    raise RuntimeError("Execution Plan has no remaining Cell")
+
+
+def _assert_fake_runtime_boundary(adapter: VariantAdapter) -> None:
+    """Prove the no-model boundary from concrete runtime configuration, not Evidence."""
+
+    from benchmark_runner.adapter import B1SequentialAdapter
+    from benchmark_runner.sdk_baselines import SdkBaselineAdapter
+    from benchmark_runner.sdk_common import FakeSdkRuntime
+
+    if type(adapter) is SdkBaselineAdapter:
+        if type(adapter.config.runtime) is not FakeSdkRuntime:
+            raise RuntimeError("non-live SDK baseline requires the exact FakeSdkRuntime")
+        return
+    if type(adapter) is B1SequentialAdapter:
+        if adapter.config.runtime != "fake":
+            raise RuntimeError("non-live B1 Cell requires runtime=fake")
+        return
+    raise RuntimeError("non-live Cell rejects unverified Adapter implementations")
+
+
+def _write_redacted_capture(
+    *,
+    cell_dir: Path,
+    prepared: PreparedFixture,
+    payload: dict[str, object],
+    findings: set[str],
+) -> bool:
+    replacements = {
+        str(prepared.workspace.resolve()): "<WORKSPACE>",
+        str(cell_dir.resolve()): "<CELL_DIR>",
+        str(Path.home().resolve()): "<HOME>",
+    }
+    redacted = _r6_redact_object(payload, replacements, findings)
+    atomic_write(cell_dir / "raw" / "adapter-result.json", canonical_json_bytes(redacted))
+    atomic_write(
+        cell_dir / "raw" / "redaction-report.json",
+        canonical_json_bytes(
+            {
+                "schema_version": 1,
+                "secret_categories": sorted(findings),
+                "source_bytes_changed": redacted != payload,
+            }
+        ),
+    )
+    return redacted != payload
+
+
+def _redact_judge_evidence(
+    *,
+    cell_dir: Path,
+    prepared: PreparedFixture,
+    findings: set[str],
+    source_bytes_changed: bool,
+) -> None:
+    replacements = {
+        str(prepared.workspace.resolve()): "<WORKSPACE>",
+        str(cell_dir.resolve()): "<CELL_DIR>",
+        str(Path.home().resolve()): "<HOME>",
+    }
+    judge_dir = cell_dir / "judge"
+    judge_bytes_changed = False
+    for path in sorted(item for item in judge_dir.rglob("*") if item.is_file()):
+        data = path.read_bytes()
+        redacted = _r6_redact_bytes(data, replacements, findings)
+        if redacted != data:
+            atomic_write(path, redacted)
+            judge_bytes_changed = True
+    report_path = cell_dir / "raw" / "redaction-report.json"
+    report = {
+        "schema_version": 1,
+        "secret_categories": sorted(findings),
+        "source_bytes_changed": source_bytes_changed or judge_bytes_changed,
+    }
+    atomic_write(report_path, canonical_json_bytes(report))
+
+
 def _assert_nonlive_evidence(evidence: VariantEvidence) -> None:
     turn_fields = [
         evidence.raw_payload[key]
         for key in ("model_turns", "actual_model_turns")
         if key in evidence.raw_payload
     ]
-    if not turn_fields or any(value != 0 for value in turn_fields):
-        raise RuntimeError("non-live Cell did not prove actual_model_turns=0")
+    if any(value != 0 for value in turn_fields):
+        raise RuntimeError("non-live Evidence contradicts the verified fake-runtime boundary")
 
 
 def _token_metric(evidence: VariantEvidence):
@@ -151,7 +269,7 @@ def _measurement(
     variant_seconds: float,
     judge_seconds: float,
     total_seconds: float,
-    runner_commit: str,
+    runner_version: str,
     variant_version: str,
     variant_sha256: str,
     scenario_id: str | None,
@@ -197,7 +315,7 @@ def _measurement(
             fixture_source_commit=prepared.fixture.commit,
             fixture_tree_before=prepared.fixture.git_tree,
             fixture_tree_after=judge.final_tree,
-            runner_commit=runner_commit,
+            runner_commit=runner_version,
             variant_version=variant_version,
             variant_artifact_sha256=variant_sha256,
         ),
@@ -307,12 +425,12 @@ def run_sdk_nonlive_cell(
     adapter: VariantAdapter,
     benchmark_python: Path,
     git_executable: Path,
-    runner_commit: str,
     scenario_id: str | None = None,
 ) -> SdkSealedCellResult:
     """Run one fake-runtime Cell through the real Judge, Measurement, and seal."""
 
     experiment_dir = experiment_dir.resolve()
+    _assert_fake_runtime_boundary(adapter)
     variant_version, variant_sha256 = _assert_plan_and_fixture(
         experiment_dir,
         plan,
@@ -320,6 +438,7 @@ def run_sdk_nonlive_cell(
         prepared,
         adapter,
     )
+    _assert_next_planned_cell(experiment_dir, plan, planned_cell)
     cell_dir = experiment_dir / "cells" / planned_cell.cell_id
     raw_dir = cell_dir / "raw"
     judge_dir = cell_dir / "judge"
@@ -348,18 +467,28 @@ def run_sdk_nonlive_cell(
     evidence = adapter.run(context)
     variant_seconds = time.monotonic() - variant_started
     _assert_nonlive_evidence(evidence)
-    atomic_write(
-        raw_dir / "adapter-result.json",
-        canonical_json_bytes(
-            {
-                "outcome_state": evidence.outcome_state,
-                "failure_kind": evidence.failure_kind,
-                "attempt_count": evidence.attempt_count,
-                "raw_payload": evidence.raw_payload,
-                "normalized_metrics": evidence.normalized_metrics,
-            }
-        ),
+    findings: set[str] = set()
+    source_bytes_changed = _write_redacted_capture(
+        cell_dir=cell_dir,
+        prepared=prepared,
+        payload={
+            "outcome_state": evidence.outcome_state,
+            "failure_kind": evidence.failure_kind,
+            "attempt_count": evidence.attempt_count,
+            "raw_payload": evidence.raw_payload,
+            "normalized_metrics": evidence.normalized_metrics,
+        },
+        findings=findings,
     )
+    if findings:
+        record = _transition(
+            record,
+            CellLifecycleState.STOPPED,
+            outcome_state="infrastructure_error",
+            stop_reason="secret_evidence_detected",
+        )
+        _write_model(state_path, record)
+        raise RuntimeError("secret-like material found in Adapter Evidence; Cell not sealed")
     record = _transition(
         record,
         CellLifecycleState.CAPTURED,
@@ -372,6 +501,21 @@ def run_sdk_nonlive_cell(
     judge_started = time.monotonic()
     judge = FixtureJudge(benchmark_python, git_executable).evaluate(prepared, judge_dir)
     judge_seconds = time.monotonic() - judge_started
+    _redact_judge_evidence(
+        cell_dir=cell_dir,
+        prepared=prepared,
+        findings=findings,
+        source_bytes_changed=source_bytes_changed,
+    )
+    if findings:
+        record = _transition(
+            record,
+            CellLifecycleState.STOPPED,
+            outcome_state="infrastructure_error",
+            stop_reason="secret_evidence_detected",
+        )
+        _write_model(state_path, record)
+        raise RuntimeError("secret-like material found in Judge Evidence; Cell not sealed")
     total_seconds = time.monotonic() - total_started
     measurement = _measurement(
         plan=plan,
@@ -383,7 +527,7 @@ def run_sdk_nonlive_cell(
         variant_seconds=variant_seconds,
         judge_seconds=judge_seconds,
         total_seconds=total_seconds,
-        runner_commit=runner_commit,
+        runner_version=plan.runner.version,
         variant_version=variant_version,
         variant_sha256=variant_sha256,
         scenario_id=scenario_id,

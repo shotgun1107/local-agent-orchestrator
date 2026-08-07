@@ -872,6 +872,28 @@ class B1SequentialAdapter:
             "b1_report_usage_status": usage_status,
             "b1_session_usage_statuses": status["session_usage_statuses"],
         }
+        worker_turns: list[dict[str, JsonValue]] = []
+        for task in report["tasks"]:
+            for attempt in task["attempts"]:
+                hashes = {
+                    "task_semantics_sha256": attempt["task_semantics_sha256"],
+                    "prompt_sha256": attempt["initial_prompt_sha256"],
+                    "output_schema_sha256": attempt["output_schema_sha256"],
+                }
+                if any(
+                    not isinstance(value, str) or len(value) != 64
+                    for value in hashes.values()
+                ):
+                    raise AdapterInfrastructureError(
+                        "B1 report omitted worker-input hash Evidence"
+                    )
+                worker_turns.append(
+                    {
+                        "task_key": task["key"],
+                        "attempt_no": attempt["attempt_no"],
+                        **hashes,
+                    }
+                )
         return VariantEvidence(
             outcome_state=outcome,
             failure_kind=failure_kind,
@@ -887,6 +909,7 @@ class B1SequentialAdapter:
                 "status": status,
                 "report": report,
                 "integrity": integrity,
+                "turns": worker_turns,
                 "commands": {
                     key: value.public_payload() for key, value in captures.items()
                 },

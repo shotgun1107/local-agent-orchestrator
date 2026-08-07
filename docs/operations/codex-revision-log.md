@@ -1240,3 +1240,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 정상 4개 Cell과 실패주입 9개 Cell이 모두 `SEALED`됐다. Evidence 변조 검출을 포함한 표적 시험 3개, B1 전체 72개, Benchmark Runner 전체 169개, `git diff --check`가 통과했다.
 - 모델 호출 없는 SDK account preflight에서 `openai-codex==0.144.4`, API key 환경 변수 없음, account type `chatgpt`, actual model turns 0을 확인했다. live 고정값은 `gpt-5.6-terra`, low effort, thread·turn `workspace_write`, thread·turn `deny_all`, absolute Cell cwd, `ephemeral=False`, ResultEnvelope Schema로 fail-closed 검증한다.
 - 실제 C0·C1·C2 Codex SDK runtime, live용 artifact·manifest·Plan, 4-Cell pilot은 아직 만들거나 실행하지 않았다. 원저장소 작업자는 `docs/operations/sdk-controlled-implementation-report.md`와 세 적층 브랜치의 diff를 검토하고 전체 회귀를 재검증해 채택 여부를 결정한다. 승인 뒤에도 실제 runtime adapter는 mocked SDK 시험으로 먼저 구현하고 live pilot 직전에서 다시 멈춘다.
+
+## SDK 통제 비교 원저장소 인수·신뢰성 보강
+
+- 작업일: 2026-08-07.
+- 원저장소 `main`의 기준 commit `5e6284cafef5e8c14dc4be932940bb1e3a2cd3c2`에서 집 PC의 세 브랜치가 `740c15c → ccb7157 → d45db7f` 순서로 적층됐음을 확인했다. 원격 구현을 먼저 별도 `codex/sdk-measurement-hardening` 브랜치에서 검토·수정했으며 기존 로컬 변경은 없었다.
+- 비라이브 경계의 모델 호출 0회가 Adapter의 자기 신고에 의존하던 문제를 제거했다. SDK baseline은 정확한 `FakeSdkRuntime` 형식만, B1은 `runtime=fake`만 실행 전에 허용하며 임의 Adapter와 Runtime은 dispatch 전에 거부한다.
+- Execution Plan의 Cell 순서를 강제하고 모든 선행 Cell의 Measurement와 Evidence seal을 다음 Cell 전에 다시 검증한다. Runner provenance는 호출자가 문자열로 넣지 못하게 하고 실행 중인 Benchmark Runner의 `pyproject.toml`, `src/benchmark_runner`, `schemas` source tree SHA-256이 Plan과 일치할 때만 진행한다.
+- Adapter·Judge Evidence는 봉인 전에 경로와 비밀정보를 redaction한다. OpenAI형 secret, bearer token, credential field가 발견되면 원문을 저장하지 않고 redaction 보고서와 `STOPPED` 상태를 남기며 Measurement를 만들거나 봉인하지 않는다.
+- B1 공개 보고서에 각 Attempt의 Task 의미 hash, 최초 prompt hash, ResultEnvelope Schema hash를 추가했다. Benchmark Runner가 이를 공개 CLI 출력에서 읽어 Measurement의 turn Evidence로 보존하며 C2와 B1의 Task 의미·Schema hash 일치를 시험한다. 기존 schema v1 소비자를 깨지 않도록 새 필드는 선택형이지만, SDK 통제 비교 Adapter는 세 hash가 없으면 fail-closed한다.
+- 함께 발견한 측정 오차도 보강했다. 다음 turn의 실제 dispatch가 성공한 뒤에만 이전 turn을 `downstream_dispatched=true`로 기록하고, terminal·ResultEnvelope 실패가 발생해도 그 turn에서 이미 측정된 duration과 token usage를 버리지 않는다.
+- 공격·봉인 표적 시험은 비인가 Runtime 선행 차단, 순서 위반, 선행 seal 변조, 임의 Runner hash, 비밀정보 redaction·봉인 중단, B1/C2 hash 대조를 포함해 `test_sdk_cells.py` 7개가 통과했다. Python 3.12.10 전체 회귀는 B1 72개와 Benchmark Runner 173개가 통과했고 `git diff --check`도 통과했다.
+- 환경 변수 이름만 검사해 `OPENAI_API_KEY`와 `CODEX_API_KEY`가 모두 없음을 확인했다. 이번 인수·보강에서는 실제 model turn, 실제 Codex SDK runtime, live pilot, 새 실험 artifact를 실행하거나 만들지 않았다. 검증된 변경은 `main`에 fast-forward 방식으로 병합한다.
