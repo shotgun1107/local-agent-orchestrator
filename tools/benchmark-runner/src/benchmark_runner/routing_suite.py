@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import Field, field_validator, model_validator
@@ -15,8 +16,11 @@ from pydantic import Field, field_validator, model_validator
 from benchmark_runner.adapter import VariantAdapter
 from benchmark_runner.contract import (
     ArtifactIdentity,
+    CellLifecycleState,
+    CellStateRecord,
     ExecutionPlan,
     FixtureIdentity,
+    Measurement,
     PlannedCell,
     StrictModel,
     validate_relative_path,
@@ -26,6 +30,12 @@ from benchmark_runner.sdk_cells import (
     SdkSealedCellResult,
     initialize_sdk_experiment,
     run_sdk_nonlive_cell,
+)
+from benchmark_runner.runner import (
+    _r5_assert_export_safe,
+    atomic_write,
+    canonical_json_bytes,
+    verify_sealed_cell,
 )
 from benchmark_runner.workspace import (
     BenchmarkRun,
@@ -598,3 +608,500 @@ def run_next_routing_s1_nonlive_cell(
         benchmark_python=benchmark_python,
         git_executable=git_executable,
     )
+
+
+def _load_routing_plan(experiment_dir: Path) -> ExecutionPlan:
+    try:
+        plan = ExecutionPlan.model_validate_json(
+            (experiment_dir / "execution-plan.json").read_bytes()
+        )
+    except (OSError, ValueError) as exc:
+        raise RoutingSuiteError("routing Execution Plan is missing or invalid") from exc
+    if experiment_dir.resolve().name != plan.experiment_id:
+        raise RoutingSuiteError("routing Experiment directory differs from its Plan")
+    track_values = [
+        item.value for item in plan.plan_supplemented if item.field == "track"
+    ]
+    if (
+        track_values != ["sdk_routing_s1_model_free_validation"]
+        or plan.decision_policy.get("route_decision_allowed") is not False
+    ):
+        raise RoutingSuiteError("routing Plan is not the S1 model-free validation track")
+    return plan
+
+
+def run_all_routing_s1_nonlive_cells(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    experiment_dir: Path,
+    adapter_factory: AdapterFactory,
+    benchmark_python: Path,
+    git_executable: Path,
+) -> list[SdkSealedCellResult]:
+    """Run every remaining S1 Cell through the existing one-Cell boundary."""
+
+    plan = _load_routing_plan(experiment_dir)
+    results: list[SdkSealedCellResult] = []
+    for _ in range(len(plan.cells)):
+        status = routing_s1_nonlive_status(experiment_dir)
+        if status["complete"] is True:
+            break
+        results.append(
+            run_next_routing_s1_nonlive_cell(
+                repository_root=repository_root,
+                suite_path=suite_path,
+                stage_path=stage_path,
+                experiment_dir=experiment_dir,
+                adapter_factory=adapter_factory,
+                benchmark_python=benchmark_python,
+                git_executable=git_executable,
+            )
+        )
+    final = routing_s1_nonlive_status(experiment_dir)
+    if final["complete"] is not True:
+        raise RoutingSuiteError("routing S1 model-free run did not seal every Cell")
+    return results
+
+
+def routing_s1_nonlive_status(experiment_dir: Path) -> dict[str, Any]:
+    """Derive S1 completion from independently verified Cell seals."""
+
+    experiment_dir = experiment_dir.resolve()
+    plan = _load_routing_plan(experiment_dir)
+    cells: list[dict[str, Any]] = []
+    sealed_count = 0
+    all_checks_passed = True
+    actual_model_turns = 0
+    for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal):
+        cell_dir = experiment_dir / "cells" / cell.cell_id
+        state_path = cell_dir / "cell-state.json"
+        if not state_path.is_file():
+            cells.append(
+                {
+                    "cell_id": cell.cell_id,
+                    "fixture_id": cell.fixture_id,
+                    "variant_id": cell.variant_id,
+                    "state": "PLANNED",
+                    "outcome_state": None,
+                    "check_success": None,
+                    "actual_model_turns": None,
+                }
+            )
+            all_checks_passed = False
+            continue
+        try:
+            state = CellStateRecord.model_validate_json(state_path.read_bytes())
+        except (OSError, ValueError) as exc:
+            raise RoutingSuiteError(f"invalid Cell state: {cell.cell_id}") from exc
+        check_success: bool | None = None
+        cell_turns: int | None = None
+        if state.state is CellLifecycleState.SEALED:
+            measurement = verify_sealed_cell(cell_dir)
+            check_success = measurement.outcome.check_success
+            value = measurement.variant_metrics.values.get("actual_model_turns")
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise RoutingSuiteError(
+                    f"invalid actual_model_turns in Cell {cell.cell_id}"
+                )
+            cell_turns = value
+            actual_model_turns += value
+            sealed_count += 1
+            all_checks_passed = all_checks_passed and check_success
+        else:
+            all_checks_passed = False
+        cells.append(
+            {
+                "cell_id": cell.cell_id,
+                "fixture_id": cell.fixture_id,
+                "variant_id": cell.variant_id,
+                "state": state.state.value,
+                "outcome_state": state.outcome_state,
+                "check_success": check_success,
+                "actual_model_turns": cell_turns,
+            }
+        )
+    complete = sealed_count == len(plan.cells)
+    if not complete:
+        validation_status = "MODEL_FREE_INCOMPLETE"
+    elif all_checks_passed and actual_model_turns == 0:
+        validation_status = "MODEL_FREE_PASS"
+    else:
+        validation_status = "MODEL_FREE_FAIL"
+    return {
+        "schema_version": 1,
+        "kind": "sdk_routing_s1_model_free_status",
+        "experiment_id": plan.experiment_id,
+        "stage_id": plan.decision_policy.get("stage_id"),
+        "planned_cells": len(plan.cells),
+        "sealed_cells": sealed_count,
+        "complete": complete,
+        "all_checks_passed": all_checks_passed,
+        "actual_model_turns": actual_model_turns,
+        "validation_status": validation_status,
+        "calibration_outcome_issued": False,
+        "route_decision_issued": False,
+        "cells": cells,
+    }
+
+
+def _routing_s1_nonlive_summary(
+    plan: ExecutionPlan,
+    status: dict[str, Any],
+    measurements: list[Measurement],
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for measurement in sorted(
+        measurements, key=lambda item: item.identity.execution_ordinal
+    ):
+        rows.append(
+            {
+                "cell_id": measurement.identity.cell_id,
+                "fixture_id": measurement.identity.fixture_id,
+                "variant_id": measurement.identity.variant_id,
+                "outcome_state": measurement.outcome.state,
+                "check_success": measurement.outcome.check_success,
+                "session_count": measurement.resource.session_count.value,
+                "turn_count": measurement.resource.turn_count.value,
+                "attempt_count": measurement.resource.attempt_count.value,
+                "token_usage_status": measurement.resource.token_usage.status.value,
+                "token_usage": measurement.resource.token_usage.value,
+                "model_active_seconds": measurement.variant_metrics.values.get(
+                    "model_active_seconds"
+                ),
+                "total_wall_clock_seconds": (
+                    measurement.effort.total_wall_clock_seconds.value
+                ),
+                "actual_model_turns": measurement.variant_metrics.values[
+                    "actual_model_turns"
+                ],
+            }
+        )
+    return {
+        "schema_version": 1,
+        "kind": "sdk_routing_s1_model_free_summary",
+        "experiment_id": plan.experiment_id,
+        "stage_id": status["stage_id"],
+        "validation_status": status["validation_status"],
+        "complete": status["complete"],
+        "actual_model_turns": status["actual_model_turns"],
+        "calibration_outcome_issued": False,
+        "route_decision_issued": False,
+        "limitations": [
+            "model-free contract validation only",
+            "does not measure C2 or B1 model quality or resource usage",
+            "does not authorize a routing decision",
+        ],
+        "cells": rows,
+    }
+
+
+def _routing_s1_nonlive_summary_markdown(summary: dict[str, Any]) -> bytes:
+    lines = [
+        "# SDK routing S1 model-free validation",
+        "",
+        f"- Experiment: `{summary['experiment_id']}`",
+        f"- Validation: `{summary['validation_status']}`",
+        f"- Actual model turns: `{summary['actual_model_turns']}`",
+        "- Calibration outcome issued: `false`",
+        "- Route decision issued: `false`",
+        "",
+        "| Cell | Fixture | Variant | Outcome | Judge | Sessions | Turns |",
+        "|---|---|---|---|---:|---:|---:|",
+    ]
+    for row in summary["cells"]:
+        lines.append(
+            f"| {row['cell_id']} | {row['fixture_id']} | {row['variant_id']} | "
+            f"{row['outcome_state']} | {str(row['check_success']).lower()} | "
+            f"{row['session_count']} | {row['turn_count']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "이 결과는 실행·봉인·export 계약의 비라이브 검증이다.",
+            "`CALIBRATION_*` 또는 profile별 `ROUTE_*` 판정을 발행하지 않는다.",
+            "",
+        ]
+    )
+    return "\n".join(lines).encode("utf-8")
+
+
+def _aggregate_export_sha256(files: dict[str, bytes]) -> str:
+    digest = hashlib.sha256()
+    for relative in sorted(files):
+        data = files[relative]
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(hashlib.sha256(data).digest())
+    return digest.hexdigest()
+
+
+def export_routing_s1_nonlive(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    experiment_dir: Path,
+    results_root: Path,
+) -> dict[str, Any]:
+    """Export eight sealed model-free Cells without issuing a live verdict."""
+
+    repository_root = repository_root.resolve()
+    suite_path = suite_path.resolve()
+    stage_path = stage_path.resolve()
+    experiment_dir = experiment_dir.resolve()
+    suite, stage = _resolve_stage(repository_root, suite_path, stage_path)
+    plan = _load_routing_plan(experiment_dir)
+    if (
+        plan.source_manifest.path != stage_path.relative_to(repository_root).as_posix()
+        or plan.source_manifest.sha256 != sha256_file(stage_path)
+        or plan.decision_policy.get("suite_sha256") != sha256_file(suite_path)
+        or plan.decision_policy.get("stage_id") != stage.stage_id
+    ):
+        raise RoutingSuiteError("routing export inputs differ from the sealed Plan")
+    status = routing_s1_nonlive_status(experiment_dir)
+    if status["complete"] is not True:
+        raise RoutingSuiteError("routing export requires every planned Cell to be sealed")
+    measurements = [
+        verify_sealed_cell(experiment_dir / "cells" / cell.cell_id)
+        for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal)
+    ]
+    summary = _routing_s1_nonlive_summary(plan, status, measurements)
+    export_root = (
+        results_root.resolve() / "sdk-routing-s1-model-free" / plan.experiment_id
+    )
+    if export_root.exists():
+        raise RoutingSuiteError("routing export destination already exists")
+    files: dict[str, bytes] = {
+        "execution-plan.json": canonical_json_bytes(plan),
+        "manifests/suite.yaml": suite_path.read_bytes(),
+        "manifests/stage.yaml": stage_path.read_bytes(),
+        "summary.json": canonical_json_bytes(summary),
+        "summary.md": _routing_s1_nonlive_summary_markdown(summary),
+    }
+    seals: list[dict[str, Any]] = []
+    for cell, measurement in zip(
+        sorted(plan.cells, key=lambda item: item.execution_ordinal),
+        measurements,
+        strict=True,
+    ):
+        cell_dir = experiment_dir / "cells" / cell.cell_id
+        state = CellStateRecord.model_validate_json(
+            (cell_dir / "cell-state.json").read_bytes()
+        )
+        if state.sealed_measurement_sha256 is None:
+            raise RoutingSuiteError(f"sealed Cell omitted its hash: {cell.cell_id}")
+        prefix = f"cells/{cell.cell_id}"
+        measurement_relative = f"{prefix}/sealed/measurement.json"
+        files[measurement_relative] = (
+            cell_dir / "sealed" / "measurement.json"
+        ).read_bytes()
+        for evidence in measurement.evidence:
+            files[f"{prefix}/{evidence.path}"] = (cell_dir / evidence.path).read_bytes()
+        seals.append(
+            {
+                "cell_id": cell.cell_id,
+                "fixture_id": cell.fixture_id,
+                "variant_id": cell.variant_id,
+                "measurement_path": measurement_relative,
+                "sealed_measurement_sha256": state.sealed_measurement_sha256,
+            }
+        )
+    files["seals.json"] = canonical_json_bytes(
+        {
+            "schema_version": 1,
+            "kind": "sdk_routing_s1_model_free_seals",
+            "suite_id": suite.suite_id,
+            "stage_id": stage.stage_id,
+            "experiment_id": plan.experiment_id,
+            "plan_fingerprint": plan.plan_fingerprint,
+            "suite_sha256": sha256_file(suite_path),
+            "stage_sha256": sha256_file(stage_path),
+            "entries": seals,
+        }
+    )
+    for relative, data in files.items():
+        _r5_assert_export_safe(relative, data)
+        atomic_write(export_root / relative, data)
+    export_sha256 = _aggregate_export_sha256(files)
+    atomic_write(
+        export_root / "export-seal.json",
+        canonical_json_bytes(
+            {
+                "schema_version": 1,
+                "kind": "sdk_routing_s1_model_free_export_seal",
+                "experiment_id": plan.experiment_id,
+                "file_count": len(files),
+                "export_sha256": export_sha256,
+            }
+        ),
+    )
+    verified = verify_routing_s1_nonlive_export(export_root)
+    if verified["export_sha256"] != export_sha256:
+        raise RoutingSuiteError("independent routing export verification disagreed")
+    return {
+        "experiment_id": plan.experiment_id,
+        "validation_status": summary["validation_status"],
+        "results_root": str(export_root),
+        "file_count": len(files),
+        "export_sha256": export_sha256,
+    }
+
+
+def verify_routing_s1_nonlive_export(export_root: Path) -> dict[str, Any]:
+    """Verify only exported bytes; no source workspace is trusted."""
+
+    export_root = export_root.resolve()
+    try:
+        plan = ExecutionPlan.model_validate_json(
+            (export_root / "execution-plan.json").read_bytes()
+        )
+        suite_bytes = (export_root / "manifests" / "suite.yaml").read_bytes()
+        stage_bytes = (export_root / "manifests" / "stage.yaml").read_bytes()
+        suite = RoutingSuiteManifest.model_validate(yaml.safe_load(suite_bytes))
+        stage = RoutingStageManifest.model_validate(yaml.safe_load(stage_bytes))
+        summary = json.loads((export_root / "summary.json").read_text(encoding="utf-8"))
+        seals = json.loads((export_root / "seals.json").read_text(encoding="utf-8"))
+        export_seal = json.loads(
+            (export_root / "export-seal.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError, json.JSONDecodeError, yaml.YAMLError) as exc:
+        raise RoutingSuiteError("routing export metadata is missing or invalid") from exc
+    if (
+        [item.value for item in plan.plan_supplemented if item.field == "track"]
+        != ["sdk_routing_s1_model_free_validation"]
+        or [
+            item.value
+            for item in plan.plan_supplemented
+            if item.field == "actual_model_turns"
+        ]
+        != [0]
+        or plan.decision_policy.get("route_decision_allowed") is not False
+        or plan.experiment_id != seals.get("experiment_id")
+        or plan.experiment_id != export_seal.get("experiment_id")
+        or plan.experiment_id != summary.get("experiment_id")
+        or plan.plan_fingerprint != seals.get("plan_fingerprint")
+        or suite.suite_id != seals.get("suite_id")
+        or stage.stage_id != seals.get("stage_id")
+        or hashlib.sha256(suite_bytes).hexdigest() != seals.get("suite_sha256")
+        or hashlib.sha256(stage_bytes).hexdigest() != seals.get("stage_sha256")
+        or plan.source_manifest.sha256 != seals.get("stage_sha256")
+        or plan.decision_policy.get("suite_sha256") != seals.get("suite_sha256")
+        or plan.decision_policy.get("stage_id") != stage.stage_id
+    ):
+        raise RoutingSuiteError("routing export identities differ")
+    reference = next(
+        (item for item in suite.stages if item.stage_id == stage.stage_id),
+        None,
+    )
+    planned_order = [
+        (cell.fixture_id, cell.repetition, cell.variant_id)
+        for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal)
+    ]
+    declared_order = [
+        (cell.fixture_id, cell.repetition, cell.variant_id) for cell in stage.cells
+    ]
+    if reference is None or planned_order != declared_order:
+        raise RoutingSuiteError("routing export stage order differs from the Plan")
+    summary_cells = summary.get("cells")
+    if (
+        summary.get("validation_status")
+        not in {"MODEL_FREE_PASS", "MODEL_FREE_FAIL"}
+        or summary.get("complete") is not True
+        or not isinstance(summary.get("actual_model_turns"), int)
+        or isinstance(summary.get("actual_model_turns"), bool)
+        or summary.get("actual_model_turns") < 0
+        or summary.get("calibration_outcome_issued") is not False
+        or summary.get("route_decision_issued") is not False
+        or not isinstance(summary_cells, list)
+        or [row.get("cell_id") for row in summary_cells if isinstance(row, dict)]
+        != [cell.cell_id for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal)]
+    ):
+        raise RoutingSuiteError("routing export summary exceeds model-free scope")
+    summary_by_cell = {
+        row["cell_id"]: row for row in summary_cells if isinstance(row, dict)
+    }
+    expected_cells = {cell.cell_id: cell for cell in plan.cells}
+    entries = seals.get("entries")
+    if (
+        not isinstance(entries, list)
+        or len(entries) != len(expected_cells)
+        or {entry.get("cell_id") for entry in entries if isinstance(entry, dict)}
+        != set(expected_cells)
+    ):
+        raise RoutingSuiteError("routing export seal index differs from the Plan")
+    measured_turns = 0
+    all_checks_passed = True
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise RoutingSuiteError("routing export seal entry is invalid")
+        cell = expected_cells[entry["cell_id"]]
+        if (
+            entry.get("fixture_id") != cell.fixture_id
+            or entry.get("variant_id") != cell.variant_id
+        ):
+            raise RoutingSuiteError("routing export Cell identity differs")
+        relative = entry.get("measurement_path")
+        if not isinstance(relative, str):
+            raise RoutingSuiteError("routing export Measurement path is invalid")
+        measurement_path = (export_root / relative).resolve()
+        if not measurement_path.is_relative_to(export_root) or not measurement_path.is_file():
+            raise RoutingSuiteError("routing export Measurement is missing or unsafe")
+        data = measurement_path.read_bytes()
+        if hashlib.sha256(data).hexdigest() != entry.get("sealed_measurement_sha256"):
+            raise RoutingSuiteError("routing export Measurement seal differs")
+        measurement = Measurement.model_validate_json(data)
+        if measurement.identity.cell_id != cell.cell_id:
+            raise RoutingSuiteError("routing export Measurement identity differs")
+        model_turns = measurement.variant_metrics.values.get("actual_model_turns")
+        if not isinstance(model_turns, int) or isinstance(model_turns, bool) or model_turns < 0:
+            raise RoutingSuiteError("routing export model turn count is invalid")
+        measured_turns += model_turns
+        all_checks_passed = all_checks_passed and measurement.outcome.check_success
+        row = summary_by_cell[cell.cell_id]
+        if (
+            row.get("fixture_id") != cell.fixture_id
+            or row.get("variant_id") != cell.variant_id
+            or row.get("outcome_state") != measurement.outcome.state
+            or row.get("check_success") != measurement.outcome.check_success
+            or row.get("actual_model_turns") != model_turns
+        ):
+            raise RoutingSuiteError("routing export summary Cell differs from Measurement")
+        cell_root = measurement_path.parents[1]
+        for evidence in measurement.evidence:
+            path = (cell_root / evidence.path).resolve()
+            if not path.is_relative_to(cell_root) or not path.is_file():
+                raise RoutingSuiteError("routing export Evidence is missing or unsafe")
+            evidence_data = path.read_bytes()
+            if (
+                len(evidence_data) != evidence.size
+                or hashlib.sha256(evidence_data).hexdigest() != evidence.sha256
+            ):
+                raise RoutingSuiteError("routing export Evidence hash differs")
+    expected_validation = (
+        "MODEL_FREE_PASS" if all_checks_passed and measured_turns == 0 else "MODEL_FREE_FAIL"
+    )
+    if (
+        summary.get("actual_model_turns") != measured_turns
+        or summary.get("validation_status") != expected_validation
+    ):
+        raise RoutingSuiteError("routing export summary aggregate differs from Measurements")
+    files = {
+        path.relative_to(export_root).as_posix(): path.read_bytes()
+        for path in export_root.rglob("*")
+        if path.is_file() and path.name != "export-seal.json"
+    }
+    for relative, data in files.items():
+        _r5_assert_export_safe(relative, data)
+    value = _aggregate_export_sha256(files)
+    if value != export_seal.get("export_sha256") or len(files) != export_seal.get(
+        "file_count"
+    ):
+        raise RoutingSuiteError("routing export aggregate seal differs")
+    return {
+        "experiment_id": plan.experiment_id,
+        "file_count": len(files),
+        "export_sha256": value,
+    }

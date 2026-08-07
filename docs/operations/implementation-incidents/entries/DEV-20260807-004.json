@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260807-004",
+  "title": "S1 status loader가 ExecutionPlan track 직접 필드를 가정함",
+  "status": "resolved",
+  "stage": "sdk-routing-suite-v1",
+  "category": "implementation",
+  "discovered_at": "2026-08-07T03:43:51Z",
+  "resolved_at": "2026-08-07T03:44:01Z",
+  "discovered_by": "S1 8-Cell 표적 pytest",
+  "symptom": "routing_s1_nonlive_status 호출 두 건이 ExecutionPlan.track AttributeError로 실패했다",
+  "reproduction": [
+    "빈 S1 Experiment를 만든 뒤 routing_s1_nonlive_status를 호출한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "test_model_free_status_and_export_reject_an_incomplete_suite와 test_all_eight_model_free_cells_seal_export_and_detect_tampering이 같은 AttributeError를 반환했다"
+    }
+  ],
+  "root_cause": "build_sdk_controlled_plan의 track 인자는 ExecutionPlan 직접 필드가 아니라 plan_supplemented의 field=track 항목으로 직렬화되는데 새 loader가 호출 인자 이름을 저장 모델 필드로 오인했다",
+  "considered_options": [
+    {
+      "option": "ExecutionPlan에 새 track 필드 추가",
+      "decision": "rejected",
+      "reason": "기존 공개 Schema와 동결 Plan 형식을 불필요하게 변경한다"
+    },
+    {
+      "option": "plan_supplemented에서 track 항목을 정확히 한 개 검증",
+      "decision": "adopted",
+      "reason": "기존 동결 계약을 그대로 읽는다"
+    }
+  ],
+  "resolution": "직접 속성 접근을 제거하고 plan_supplemented의 track 값이 sdk_routing_s1_model_free_validation 하나인지 fail-closed로 검증했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_suite.py::test_model_free_status_and_export_reject_an_incomplete_suite",
+    "tools/benchmark-runner/tests/test_routing_suite.py::test_all_eight_model_free_cells_seal_export_and_detect_tampering"
+  ],
+  "verification": [
+    "S1 routing 표적 시험 6 passed",
+    "Benchmark Runner 전체 192 passed"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/src/benchmark_runner/plan.py"
+  ]
+}
