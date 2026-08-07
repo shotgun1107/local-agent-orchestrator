@@ -4,14 +4,70 @@
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 브랜치: `main`
 - 기능 기준 commit: `a99aa5846af172070cdb8a44c10ade0233abcba7`
-- 현재 목표: 범용 로컬 Codex 세션 오케스트레이터 B1의 가치를 C2 기준선과 통제된 S1 calibration으로 검증한다.
 - 인증 정책: ChatGPT 구독 계정 로그인만 사용한다. API key 입력·저장·호출 경로는 만들지 않는다.
 
-## 1. 이번 인수 시점의 핵심 상태
+## 1. 이 문서의 목적
 
-### B1과 SDK 비교 경로
+이 문서는 다음 명령만 전달하는 작업 체크리스트가 아니다. 집 Codex가 다음을 복원하도록 만드는 **프로젝트 정신모델 인수인계**다.
 
-B1은 다음 기능을 구현한 상태다.
+- 왜 이 프로젝트를 시작했는가
+- 어떤 잘못된 방향을 피하려는가
+- 왜 범용 코어를 먼저 만들고 검증하려는가
+- 현재 B1과 시험 스위트가 전체 목표에서 어디에 있는가
+- 지금까지 무엇을 실제로 확인했고 무엇은 아직 주장할 수 없는가
+- 사용자 소유 작업, 내부 하위 에이전트, Claude, 공홈 ChatGPT의 역할이 어떻게 다른가
+- 다음 기술 작업 전에 어떤 이해가 확인돼야 하는가
+
+저장소에는 설계·구현·시험·심사·오류 해결·결과·운영 규칙이 모두 들어 있다. 따라서 세션 대화 원문을 전부 재현하는 대신 Git과 문서에서 사고 과정을 복원한다.
+
+첫 재개 세션은 곧바로 구현하지 않는다. 집 Codex가 자기 말로 프로젝트 이해 보고서를 작성하고, 공홈 ChatGPT가 그 이해도를 평가한 뒤에 기술 작업으로 넘어간다.
+
+## 2. 이 프로젝트를 시작한 이유
+
+출발점은 사용자가 집 PC에서 진행하던 실제 프로젝트의 멀티 세션 오케스트레이션이었다. 그 구현을 진행하면서 다음 의문이 생겼다.
+
+- 현재 구조가 정말 좋은 오케스트레이션인가
+- 특정 프로젝트의 역할명·작업 방식·사용자 아이디어에 너무 일찍 고정된 것은 아닌가
+- 멀티 세션을 많이 만드는 것 자체를 오케스트레이션으로 착각한 것은 아닌가
+- 한 프로젝트에 맞춘 구조를 범용 구조라고 부르고 있는 것은 아닌가
+
+그래서 특정 프로젝트를 계속 확장하기 전에 별도의 저장소에서 범용 오케스트레이터를 먼저 설계·구현·검증하기로 했다. 자료조사도 AI agent 분야에만 한정하지 않고 분산 시스템, 인간 자동화, 운영 복구, workflow, 검증·평가 방법론까지 넓혔다.
+
+목표는 단순한 세션 실행 스크립트가 아니다. 여러 AI 세션을 사용하더라도 다음을 일반 코드가 통제하는 범용 코어를 만드는 것이다.
+
+- 요청과 Task 계약
+- 실행 순서와 의존성
+- 상태 원장
+- 권한과 읽기·쓰기 범위
+- 결과와 Evidence
+- 독립 검증
+- 제한된 재시도·중단·복구
+- 비용·시간·품질 측정
+- 실패 시 안전한 종료
+
+## 3. 범용 코어와 실제 프로젝트의 관계
+
+의도한 구조는 `범용 오케스트레이터/프로젝트들`이 아니다.
+
+```text
+local-agent-orchestrator
+  └─ 범용 코어를 독립적으로 개발·검증
+
+검증 뒤
+  ├─ Project A가 저장소를 fork하여 자기 역할·도메인 규칙 추가
+  ├─ Project B가 저장소를 fork하여 다른 구조로 재구성
+  └─ 원본은 프로젝트 고유 역할명 없이 범용 코어로 유지
+```
+
+즉 원본 범용 저장소를 먼저 충분히 검증한 뒤, 실제 프로젝트가 그 시점의 코어를 fork하여 프로젝트 전용 오케스트레이터로 재구성한다. EU4·Brain·P1~P3 같은 특정 프로젝트 역할이나 용어를 범용 코어에 편입하지 않는다.
+
+범용 코어가 실제 프로젝트의 상위 폴더가 되거나, 모든 프로젝트를 하나의 중앙 오케스트레이터에서 영구 관리하는 구조를 목표로 하지 않는다.
+
+## 4. B1의 현재 위치
+
+B1은 최종 범용 멀티 에이전트 오케스트레이터가 아니다. 전체 목표를 한 번에 만들지 않고 가장 작은 실용 단위부터 검증하기 위한 **순차 세션 오케스트레이터 기준선**이다.
+
+B1은 다음 기능을 구현했다.
 
 - Run → Task → Attempt → Session 순차 실행
 - SQLite 원장과 상태 전이
@@ -20,59 +76,79 @@ B1은 다음 기능을 구현한 상태다.
 - Artifact hash와 구조화된 결과
 - `openai-codex==0.144.4`와 ChatGPT 구독 인증을 사용하는 실제 Runtime
 
-비교 Variant의 의미는 다음과 같다.
+비교 Variant는 다음 의미를 가진다.
 
 - C0: 전체 요청을 한 번에 실행하는 one-shot 탐색 기준선
 - C1: 같은 thread에서 Task를 순차 실행하는 기준선
 - C2: Task마다 새 thread를 만들고 결과만 단순 인계하는 주 기준선
-- B1: 원장·검증·재시도·복구를 추가한 현재 오케스트레이터
+- B1: C2형 실행에 원장·검증·재시도·복구를 추가한 현재 오케스트레이터
 
 주 판단은 C2와 B1을 비교한다. C0·C1은 실행 경계와 비용 구조를 이해하기 위한 보조 Variant다.
 
-### 완료된 실제 연결 시험
+세션 수가 많다고 좋은 오케스트레이션은 아니다. B1도 원장·검증·복구가 실제 비용보다 가치가 있는지를 확인해야 다음 구조로 확장할 수 있다.
+
+## 5. 왜 설계와 시험 방법을 여러 번 고쳤는가
+
+프로젝트는 처음부터 정답을 알고 구현한 것이 아니다. 실제 구현·시험·외부 심사에서 잘못된 가정을 발견하고 설계와 측정 방법을 바꿨다.
+
+대표적인 과정은 다음과 같다.
+
+- 초기 프로젝트 특화 구조에서 범용 코어 우선 전략으로 방향을 수정했다.
+- B1 명세에서 실제 SDK에 없는 `observe()`와 timeout 경계를 발견해 Runtime 계약을 다시 설계했다.
+- 수동 B0 비교에는 사용자가 다른 일을 하며 Task를 전달한 지연이 섞여 순수 성능 비교로 사용할 수 없음을 확인했다.
+- 기존 12-Cell의 사람 중계 지표가 비교 차이를 만들지 못해 `INCONCLUSIVE`를 유지했다.
+- 단순 반복만으로 B1의 가치를 증명하려던 시험을 C2/B1 통제 비교와 단계형 S0·S1·S2로 재설계했다.
+- 같은 조건에서 비교한다고 생각했지만 session 수·prompt·관측 표면이 달라지는 문제를 찾아 통제 계약을 강화했다.
+- Fake 결과로 live 성능이나 B1 채택을 주장하지 않도록 결과 어휘를 분리했다.
+
+이 과정의 핵심 규칙은 다음과 같다.
+
+> 부분 확인은 실패가 아니다. 확인하지 않은 것을 확인했다고 보고하는 것이 실패다.
+
+검증 깊이는 모든 작업에 똑같이 적용하지 않는다. 인증·권한·상태 전이·scope·복구·봉인처럼 실패 비용이 큰 경계는 깊게 검사한다. 단순 문서 수정이나 낮은 위험 변경은 같은 규모의 실험을 반복하지 않는다.
+
+시험을 위한 시험을 무한히 쌓는 것이 목표가 아니다. 다음 결과가 실제 설계 결정을 바꿀 수 있을 때만 더 큰 시험 단계로 확장한다.
+
+## 6. 현재까지 확인된 기술 상태
+
+### 실제 SDK 연결 pilot
 
 SDK 통제 4-Cell pilot은 완료됐다.
 
-- C0·C1·C2·B1 모두 terminal, 독립 Judge 성공, Measurement `SEALED`
+- C0·C1·C2·B1 모두 terminal
+- 독립 Judge 성공
+- Measurement `SEALED`
 - 실제 model turn 7회
 - 판정 `PILOT_PASS`
 - export SHA-256: `388428fe70777a03a60a1c19d51a8d2cd6e38df189c3bf367aa0230f0b0d689f`
 
-이 pilot은 연결 사전시험일 뿐 B1 채택 결과가 아니다.
+이 pilot은 네 실행 경로가 실제 ChatGPT 구독 인증과 SDK에서 작동한다는 연결 사전시험이다. B1 채택 결과가 아니다.
 
-### 라우팅 테스트 스위트 v1
+### 라우팅 테스트 스위트
 
 [SDK 라우팅 테스트 스위트 v1 설계](../design/sdk-routing-suite-v1-design.md)는 Claude 심사를 반영해 동결했다.
 
-- S0: 기존 F1·F2a·F2b 9-Cell 비라이브 안전 게이트
+- S0: F1·F2a·F2b 9-Cell 비라이브 안전 게이트
 - S1: 1-Task 2개와 2-Task 2개를 C2/B1 각 1회 실행하는 8-Cell calibration
 - S2: S1 결과가 실제 routing 필요성을 보일 때만 여는 3-Task 후보
 - S3: 추가 결과가 결정을 바꿀 때만 새 Plan으로 설계
 
 S1은 B1 기본 채택이나 profile별 route를 발행하지 않는다. 작은 deterministic fixture에서 품질·비용·오버헤드를 관측하는 calibration이다.
 
-### 현재까지 완료된 S0·S1 비라이브 구현
+### S0·S1 비라이브 구현
 
-S0를 Python 3.12.10에서 다시 검증했다.
-
-- S0 F1·F2a·F2b 9-Cell 공통 Plan·Measurement·seal: 통과
-- B1 retry·transient failure·malformed ResultEnvelope resume 계약: 통과
-- B1 전체: `73 passed`
-- 당시 Benchmark Runner 전체: `186 passed`
-- 실제 model turn: 0회
-
-이후 manifest 기반 S1 Suite Runner를 구현했다.
+S0와 B1 retry·resume 계약을 Python 3.12.10에서 다시 확인했다. 이후 manifest 기반 S1 Suite Runner를 구현했다.
 
 - strict suite·stage manifest와 JSON Schema 생성
 - 동결 Git tree에서 fixture complexity 재계산
 - 정확한 8-Cell 순서와 `route_decision_allowed=false` 고정
 - 기존 Plan·Judge·Measurement·seal 경로 재사용
-- 같은 Plan의 8개 Cell을 Fake SDK/B1 runtime으로 모두 실행
+- 같은 Plan의 8개 Cell을 Fake SDK/B1 Runtime으로 모두 실행
 - 8개 모두 `SEALED`, Judge 성공
 - 독립 export와 전체 seal 검증
 - Measurement 한 바이트 변조 거부 회귀시험
-- 비라이브 결과는 `MODEL_FREE_PASS|FAIL|INCOMPLETE`만 사용
-- calibration·route·B1 채택 판정은 발행하지 않음
+- 비라이브 결과를 `MODEL_FREE_PASS|FAIL|INCOMPLETE`로 제한
+- calibration·route·B1 채택 판정 미발행
 
 기능 기준 commit `a99aa58`의 최종 검증은 다음과 같다.
 
@@ -82,9 +158,9 @@ S0를 Python 3.12.10에서 다시 검증했다.
 - 로그 하네스: `10 passed`
 - 실제 model turn: 0회
 
-Windows `os.replace`의 간헐적 `WinError 5`는 같은 유형의 두 번째 관측이다. 새 짧은 basetemp에서 단일 시험과 전체 회귀는 통과했지만 원인은 미확인이므로 `DEV-20260807-001`을 `investigating`으로 유지한다. 근거 없는 자동 재시도는 추가하지 않았다.
+Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧은 basetemp에서 단일 시험과 전체 회귀는 통과했지만 원인은 미확인이므로 `DEV-20260807-001`을 `investigating`으로 유지한다. 근거 없는 자동 재시도는 추가하지 않았다.
 
-## 2. 현재 결론과 아직 말할 수 없는 것
+## 7. 현재 결론과 아직 말할 수 없는 것
 
 확인된 것:
 
@@ -98,42 +174,80 @@ Windows `os.replace`의 간헐적 `WinError 5`는 같은 유형의 두 번째 �
 - B1 기본 채택 또는 폐기
 - 작업 profile별 route
 - S1 live calibration 결과
+- 최종 범용 멀티 세션·팀 구조
 
-수동 B0 실험에는 사람 지연이 섞였으므로 자동 Variant의 성능 비교에 합치지 않는다.
+수동 B0 실험에는 사람 지연이 섞였으므로 자동 Variant 성능 비교에 합치지 않는다. Fake 결과는 live 품질이나 비용 증거로 확대하지 않는다.
 
-## 3. 다음 작업
+## 8. 역할과 세션 구조
 
-다음 작업은 S1 live 실행이 아니라 **실행 후보 동결 전 감사**다.
+- 사용자: 프로젝트 목표·비용·위험·최종 결정을 소유한다.
+- 작업 PC Codex와 집 PC Codex: 같은 Git 저장소의 서로 다른 clone에서 commit으로 작업을 인계하는 구현자다.
+- Codex 프로젝트의 사용자 소유 작업: 기획·구현·시험·심사처럼 사용자가 계속 이어가는 장기 작업이다.
+- 내부 하위 에이전트: 한 사용자 작업 안에서 경계가 분명한 조사·검토·독립 계산을 병렬 처리하고 결과를 main 작업으로 돌려주는 임시 실행자다.
+- Claude: 설계와 구현의 외부 동료 심사자다.
+- 공홈 ChatGPT 프로젝트: 집 Codex가 프로젝트의 목표·맥락·과정·역할을 제대로 이해했는지 평가하는 메타 심사자다.
+- Git·코드·시험 artifact: 완료 주장보다 우선하는 정본이다.
 
-1. 기능 기준 commit `a99aa58`과 현재 `main`의 차이가 인수인계 문서뿐인지 확인한다.
-2. S1 suite·stage manifest, 두 fixture manifest, 네 fixture tree, 8-Cell 순서와 정상 경로 12-turn 상한을 재계산한다.
-3. 생성 Schema 3개가 Pydantic 계약과 byte-identical인지 확인한다.
-4. 8-Cell 비라이브 export verifier와 전체 회귀를 Python 3.12의 짧은 외부 basetemp에서 다시 실행한다.
-5. 변경분 정적 심사에서 P0·P1이 없고 위 검증이 모두 통과할 때만 suite 상태와 실행 후보 동결 방식을 결정한다.
-6. live model turn 직전 다시 멈춰 사용자 승인을 받는다.
+내부 하위 에이전트는 사용자 소유 Codex 작업이나 별도 프로젝트가 아니다. 기술 감사가 복잡하면 집 Codex가 read-only 또는 경계가 분명한 하위 작업을 병렬로 호출하고, main 작업이 결과를 종합한다.
 
-실행 후보를 동결하기 전에는 S1의 12 live turns를 시작하지 않는다. S2·S3 구현도 시작하지 않는다.
+공홈 ChatGPT는 S1 기술 동결이나 구현의 최종 판정자가 아니다. 집 Codex가 작성한 이해 보고서를 저장소 문서와 비교하여 오해·누락·암기식 이해를 찾는다. 기술 지적은 집 Codex와 하위 에이전트가 실제 저장소에서 다시 검증한다.
 
-## 4. 공홈 독립 심사 프로젝트
+`개인 AI 개발 전통 체계`는 완전히 분리된 저장소·프로젝트다. 그 로그·가치 판단·역할명·경로를 이 저장소의 설계 근거나 문서에 넣지 않는다.
+
+## 9. 공홈 이해도 심사 프로젝트
 
 공홈 ChatGPT에 `Local Agent Orchestrator 심사실` 프로젝트를 만들었다.
 
 - 프로젝트: `https://chatgpt.com/g/g-p-6a755712306481918f8d4ac7ca27ca4a/project`
 - Plus 한도 25개 소스 업로드
-- 범용 설계, S1 설계·Claude 심사, 인수인계, 구현·시험 코드, manifest·Schema·incident를 제공
-- 작업 PC Codex·집 Codex·사용자 소유 Codex 작업·내부 하위 에이전트·Claude의 역할을 구분하도록 프로젝트 지침 설정
-- 분리된 `개인 AI 개발 전통 체계`를 이 프로젝트 근거에 섞지 않도록 명시
+- 범용 설계, S1 설계·Claude 심사, 인수인계, 구현·시험 코드, manifest·Schema·incident 제공
+- 역할과 분리 경계를 프로젝트 지침으로 설정
 
-공홈의 준비 판정은 `제한적 준비`다.
+첫 준비 점검에서 공홈은 프로젝트 목표, B1의 현재 위치, 역할 구분, `개인 AI 개발 전통 체계` 분리를 복원했다. 앞으로 공홈에 맡길 것은 집 Codex의 **프로젝트 이해도 평가**다.
 
-- S1 설계·manifest·주요 코드의 정적 심사: 가능
-- 전체 fixture tree, Git object, 실행 artifact까지 포함한 독립 재현 심사: 현재 업로드만으로는 제한됨
+절차는 다음과 같다.
 
-따라서 공홈 판정을 저장소 시험 결과처럼 취급하지 않는다. 정적 심사 보조 채널로만 사용하고, Git·코드·독립 시험 artifact를 정본으로 둔다.
+1. 집 Codex가 저장소를 읽고 자기 말로 이해 보고서를 작성한다.
+2. 사용자가 그 보고서를 공홈 프로젝트의 새 채팅에 붙인다.
+3. 공홈은 업로드된 정본과 비교해 `충분히 이해함 / 부분적으로 이해함 / 재인수인계 필요`로 평가한다.
+4. 공홈은 오해·누락과 실제 이해를 확인할 후속 질문 3개를 만든다.
+5. 사용자가 질문을 집 Codex에 전달하고 답을 다시 공홈에 준다.
+6. 이해가 확인된 뒤에만 집 Codex가 기술 작업을 시작한다.
 
-## 5. 집 PC에서 재개하는 방법
+## 10. 다음 단계
 
-이미 clone과 인수인계를 경험했으므로 새 clone을 만들지 않는다. 기존 저장소에서 시작한다.
+### 첫 게이트: 프로젝트 이해 확인
+
+집 Codex의 첫 작업은 구현이나 기술 감사가 아니다. 이 문서와 관련 정본을 읽고 다음을 자기 언어로 설명한다.
+
+- 프로젝트가 생긴 이유와 피하려는 실패
+- 범용 코어 우선·검증 후 fork 전략
+- B1의 현재 역할과 최종 목표의 차이
+- 설계·시험 방식을 수정해 온 이유
+- 확인된 사실과 미확정 주장
+- 역할·세션·하위 에이전트 구조
+- 현재 다음 기술 단계와 금지된 선행 작업
+- 헷갈리거나 충돌한다고 느낀 점
+
+이 보고서를 공홈에서 평가받기 전에는 파일을 수정하거나 시험을 실행하지 않는다.
+
+### 이해 확인 뒤 기술 단계
+
+이해가 확인되면 다음 기술 작업은 **S1 live 실행 후보 동결 전 감사**다.
+
+1. S1 suite·stage manifest와 두 fixture manifest를 확인한다.
+2. 네 fixture Git tree, 정확한 8-Cell 순서, 정상 경로 12-turn 상한을 재계산한다.
+3. 생성 Schema 3개와 model-free export verifier를 다시 검증한다.
+4. Python 3.12의 짧은 외부 basetemp에서 전체 회귀를 실행한다.
+5. 필요하면 내부 하위 에이전트가 manifest·Schema·seal·시험 결과를 나누어 read-only 감사한다.
+6. P0·P1과 미확인이 없을 때만 실행 후보 동결안을 제시한다.
+7. live model turn 직전 다시 멈춰 사용자 승인을 받는다.
+
+S1 live 실행, S2·S3 구현, 새로운 대규모 실험을 선행하지 않는다.
+
+## 11. 집 PC에서 재개하는 방법
+
+이미 clone과 인수인계를 경험했으므로 새 clone을 만들지 않는다.
 
 ```powershell
 cd "<집 PC의 local-agent-orchestrator 경로>"
@@ -150,50 +264,66 @@ Python은 3.12를 사용한다. Windows 전체 회귀는 저장소 내부의 긴
 
 Codex 인증은 ChatGPT 구독 계정만 사용한다. `OPENAI_API_KEY` 또는 `CODEX_API_KEY`는 값을 읽거나 출력하지 말고 이름의 존재만 검사한다. 하나라도 있으면 model 관련 작업을 중단한다.
 
-## 6. 역할·세션 구조
+## 12. 금지·주의사항
 
-- 작업 PC Codex와 집 PC Codex: 같은 Git 저장소의 서로 다른 clone에서 commit으로 인계하는 구현자
-- Codex 프로젝트의 사용자 소유 작업: 기획·구현·시험·심사처럼 사용자가 계속 이어가는 장기 작업
-- 내부 하위 에이전트: 한 작업 안에서 경계가 분명한 읽기·검토를 병렬 처리하고 결과를 main 작업으로 돌려주는 임시 실행자
-- Claude: 외부 동료 심사자
-- 공홈 ChatGPT 프로젝트: 저장소 밖 독립 정적 심사 보조 채널
-
-내부 하위 에이전트는 사용자 소유 Codex 작업을 대신 만들거나 별도 프로젝트를 소유하지 않는다. 병렬 검토가 필요할 때만 bounded read-only subtask로 사용한다.
-
-## 7. 금지·주의사항
-
+- 첫 이해도 심사가 끝나기 전에 구현·시험·파일 수정을 시작하지 않는다.
 - API key를 생성·요구·입력·저장·호출하지 않는다.
 - 실제 model turn은 사용자의 명시적 승인 전 실행하지 않는다.
 - 수동 B0 시간과 자동 Variant 시간을 성능 비교로 합치지 않는다.
 - F1 부분 결과를 S1 결과와 합치지 않는다.
-- 동결된 기존 artifact와 runtime을 수정하지 않는다.
+- Fake 결과로 live 성능·품질·채택 판정을 발행하지 않는다.
+- 동결된 기존 artifact와 Runtime을 수정하지 않는다.
 - `docs/research/ai-orchestration-practical-cases-and-methods.md`는 동결 상태를 유지한다.
 - 분리된 `개인 AI 개발 전통 체계`의 자료·가치 판단·경로를 이 저장소에 넣지 않는다.
 - 확인하지 않은 것을 통과했다고 보고하지 않는다.
 - 사용자가 다시 요청하기 전에는 새 인수인계 문서를 만들거나 이 문서를 임의 갱신하지 않는다.
 
-## 8. 집 Codex 시작 프롬프트
+## 13. 집 Codex 시작 프롬프트
 
 ```text
-이 저장소의 범용 로컬 Codex 세션 오케스트레이터 작업을 이어서 진행한다. 집 PC에는 이미 저장소 clone과 이전 인수 경험이 있으므로 새 clone이나 기초 설치 설명부터 반복하지 마라.
+local-agent-orchestrator 작업을 이어서 진행한다. 이 PC에는 이미 저장소 clone과 이전 인수 경험이 있으므로 새 clone이나 기초 설치 설명을 반복하지 마라.
 
 먼저 현재 경로, origin, branch, HEAD, git status를 확인하라. 로컬 변경이 하나라도 있으면 reset·clean·checkout·stash로 숨기거나 폐기하지 말고 파일 목록과 충돌 가능성을 보고한 뒤 멈춰라. 깨끗하면 origin/main을 fetch하고 ff-only로 동기화하라.
 
 다음 문서를 순서대로 읽어라.
+
 1. docs/operations/home-codex-handoff.md
-2. docs/design/sdk-routing-suite-v1-design.md
-3. docs/reviews/benchmark-runner/claude-review-sdk-routing-suite-v1.md
-4. docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md
-5. docs/operations/codex-revision-log.md의 마지막 네 절
-6. tools/benchmark-runner/README.md의 SDK routing suite 절
+2. docs/design/general-local-session-orchestrator-design.md
+3. docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md
+4. docs/design/sdk-routing-suite-v1-design.md
+5. docs/reviews/benchmark-runner/claude-review-sdk-routing-suite-v1.md
+6. docs/operations/codex-revision-log.md의 마지막 다섯 절
+7. tools/benchmark-runner/README.md의 SDK 비교·routing suite 절
 
-현재 확인된 상태는 S0 비라이브 안전 게이트 통과, S1 manifest 기반 Runner 구현, S1 8-Cell Fake SDK/B1 실행·Judge·Measurement·seal·독립 export 검증 완료다. 기능 기준 commit은 a99aa5846af172070cdb8a44c10ade0233abcba7이며 최종 회귀는 B1 73 passed, Benchmark Runner 192 passed, 실제 model turn 0회다. 이것을 문서 주장으로만 믿지 말고 Git diff와 관련 코드·시험으로 재확인하라.
+이번 첫 작업의 목적은 구현이나 기술 검증이 아니라 네가 프로젝트의 생각과 과정을 제대로 인수했는지 확인하는 것이다.
 
-이번 첫 작업은 S1 live 실행 전 감사와 동결 준비까지만이다. suite·stage manifest, fixture manifest·Git tree, 정확한 8-Cell 순서, 12-turn 상한, 생성 Schema 3개, model-free export verifier를 재검증하라. Python 3.12와 짧은 외부 basetemp를 사용하라. 변경분 정적 심사에서 P0·P1이 없고 전체 회귀가 통과해야만 실행 후보 동결안을 제시하라.
+아직 테스트 실행, 하위 에이전트 호출, 파일 수정, commit, push, 실제 model turn을 하지 마라.
 
-실제 model turn, S1 live 12-turn 실행, S2·S3 구현, 기존 artifact 수정, commit·push는 아직 하지 마라. 감사 결과에서 확인된 사실·미확인·차단 항목·다음 최소 변경을 나눠 보고하고 사용자 승인을 기다려라.
+읽은 내용을 바탕으로 “프로젝트 이해 보고서”를 네 말로 작성하라. 문서 문장을 나열하거나 시작 프롬프트의 표현을 그대로 반복하지 말고, 다음을 하나의 인과관계로 설명하라.
 
-인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 마라. OPENAI_API_KEY 또는 CODEX_API_KEY는 값을 읽거나 출력하지 말고 이름의 존재만 확인하며, 하나라도 있으면 model 관련 작업을 중단하라. 분리된 개인 AI 개발 전통 프로젝트의 내용이나 경로를 이번 작업에 포함하지 마라.
+- 이 프로젝트가 처음 생긴 이유
+- 기존 프로젝트 특화 멀티 세션 구조에서 사용자가 무엇을 걱정했는지
+- 범용 코어를 먼저 독립 개발·검증한 뒤 프로젝트별로 fork하려는 이유
+- 범용 저장소와 실제 프로젝트의 관계
+- B1이 현재 무엇이며 최종 범용 오케스트레이터와 어떻게 다른지
+- 설계와 시험 방법을 여러 번 바꾼 이유
+- 현재까지 실제로 확인된 것과 아직 주장할 수 없는 것
+- C2/B1, S0/S1/S2가 각각 어떤 질문에 답하는지
+- 작업 PC Codex, 집 Codex, 사용자 소유 Codex 작업, 내부 하위 에이전트, Claude, 공홈 ChatGPT의 역할 차이
+- 개인 AI 개발 전통 체계가 왜 이 저장소와 분리돼야 하는지
+- 현재 다음 기술 단계와 지금 선행하면 안 되는 작업
+- 이해가 승인된 뒤 기술 감사에서 내부 하위 에이전트를 어떻게 사용할 것인지
 
-병렬 검토가 실제로 유용하면 내부 하위 에이전트를 bounded read-only subtask로만 사용하고, 사용자 소유 Codex 작업이나 새 프로젝트로 취급하지 마라. Claude와 공홈 ChatGPT는 외부 심사자이며 Git·코드·독립 시험이 정본이다.
+마지막에는 다음을 분리해 적어라.
+
+1. 확실히 이해한 것
+2. 아직 헷갈리거나 근거가 부족한 것
+3. 문서 사이에 충돌한다고 느낀 것
+4. 사용자에게 확인할 질문
+
+이 보고서는 공홈 ChatGPT 프로젝트에서 이해도 평가를 받는다. 공홈은 기술 구현의 최종 판정자가 아니라 네가 프로젝트 목표·맥락·과정·역할을 이해했는지 평가하는 메타 심사자다.
+
+보고서를 제출한 뒤 멈추고 사용자 지시를 기다려라. 기술 검증은 이해 확인 뒤 별도 작업에서 필요하면 내부 하위 에이전트를 bounded subtask로 호출해 수행한다.
+
+인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 마라. 분리된 개인 AI 개발 전통 프로젝트의 내용이나 경로를 이번 작업에 포함하지 마라.
 ```
