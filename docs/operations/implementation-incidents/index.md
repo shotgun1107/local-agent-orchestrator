@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 39건
-- 해결: 37건
+- 전체: 41건
+- 해결: 39건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -52,6 +52,8 @@
 | DEV-20260807-002 | resolved | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
 | DEV-20260807-003 | resolved | sdk-routing-suite-v1 | test | 라우팅 스위트 초안이 단일 pair 교정을 route 판단으로 확대함 |
 | DEV-20260807-004 | resolved | sdk-routing-suite-v1 | implementation | S1 status loader가 ExecutionPlan track 직접 필드를 가정함 |
+| DEV-20260807-005 | resolved | sdk-routing-suite-v1 | implementation | S1 동결 상태를 집행할 live 실행 경로가 없음 |
+| DEV-20260807-006 | resolved | sdk-routing-suite-v1 | implementation | S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2328,3 +2330,139 @@ build_sdk_controlled_plan의 track 인자는 ExecutionPlan 직접 필드가 아�
 - 관련 커밋: 기록 없음
 - 출처: tools/benchmark-runner/src/benchmark_runner/contract.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/plan.py
+
+## DEV-20260807-005 — S1 동결 상태를 집행할 live 실행 경로가 없음
+
+- 상태: `resolved`
+- 단계: `sdk-routing-suite-v1`
+- 분류: `implementation`
+- 발견: 2026-08-07T11:20:21Z / 집 Codex와 내부 하위 에이전트의 실행 전 동결 감사
+- 해결: 2026-08-07T12:29:48Z
+
+### 증상
+
+suite와 stage Schema는 frozen_before_execution을 허용하지만 Runner에는 model-free Plan과 Fake 실행 경로만 있어 live 후보를 안전하게 동결할 수 없다
+
+### 재현
+
+- routing_suite.py의 Plan track과 공개 함수를 설계 17절 및 21.2절과 대조한다
+
+### 증거
+
+- `review-finding`: live create run-next status export preflight 경로가 없고 manifest status와 12-turn 계약도 live dispatch에서 집행되지 않는다
+
+### 근본 원인
+
+S1 model-free runner를 먼저 검증한 뒤 live 경로를 별도 단계로 미뤘지만 frozen manifest를 실제 SDK dispatch와 결합하는 전용 controller, 비용 상한, durable dispatch claim 및 partial stop export 계약이 아직 구현되지 않았다
+
+### 검토한 해결안
+
+- `rejected` 기존 model-free 명령에 live 반복 실행을 추가 — 검증용 Fake 경로와 유료 SDK 호출 경계를 섞고 명시적 Cell별 승인을 보장하기 어렵다
+- `adopted` 독립 S1 live controller와 0-turn freeze bundle을 추가 — 동결과 실제 Cell 실행을 분리하고 매 호출 승인, 정확한 한 Cell 실행, stop/export 계약을 fail-closed로 집행할 수 있다
+
+### 채택한 해결
+
+별도 clean checkout과 별도 프로세스에서 Plan을 재빌드하는 create, 매번 명시적 승인을 요구해 정확히 한 Cell만 실행하는 run-next, 전체 Measurement 계약을 확인하는 status, terminal partial stop을 보존하는 export와 독립 verifier를 구현했다. Python, Git, SDK runtime, B1 source와 command, manifest, controller, runtime profile 및 12-turn 절대 상한을 봉인하고 API key 환경은 거부한다
+
+### 수정 파일
+
+- .gitattributes
+- benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml
+- benchmarks/suites/sdk-routing-v1/suite.yaml
+- stages/b1-sequential/src/orchestrator/cli.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py
+- tools/benchmark-runner/scripts/run_r6_nonlive_regression.py
+- tools/benchmark-runner/scripts/run_sdk_routing_s1.py
+- tools/benchmark-runner/src/benchmark_runner/adapter.py
+- tools/benchmark-runner/src/benchmark_runner/routing_live.py
+- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+- tools/benchmark-runner/src/benchmark_runner/sdk_cells.py
+- tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_routing_live.py
+- tools/benchmark-runner/tests/test_routing_suite.py
+- tools/benchmark-runner/tests/test_b1_adapter.py
+- stages/b1-sequential/tests/integration/test_orchestrator.py::test_run_level_max_turn_override_blocks_before_extra_dispatch
+
+### 검증 결과
+
+- S1 표적 시험 39 passed
+- B1 전체 74 passed
+- Benchmark Runner 전체 203 passed
+- 검증 과정 actual model turn 0회
+
+### 남은 위험
+
+- 실제 S1 live Cell 결과와 WinError 5 재발 여부는 실행 후보 동결 뒤 별도 사용자 승인 실행에서만 확인한다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/sdk-routing-suite-v1-design.md
+- 출처: tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+
+## DEV-20260807-006 — S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음
+
+- 상태: `resolved`
+- 단계: `sdk-routing-suite-v1`
+- 분류: `implementation`
+- 발견: 2026-08-07T11:20:21Z / 집 Codex와 내부 하위 에이전트의 봉인 경로 감사
+- 해결: 2026-08-07T12:29:48Z
+
+### 증상
+
+독립 verifier가 Execution Plan fingerprint를 재계산하지 않고 Measurement 전체 identity와 provenance를 Plan에 대조하지 않는다
+
+### 재현
+
+- export된 execution-plan.json의 created_at 또는 Measurement provenance를 바꾼 뒤 내부 seal을 갱신해 verifier 경계를 검토한다
+
+### 증거
+
+- `review-finding`: 기존 verifier는 Measurement cell_id와 manifest hash 일부만 확인하고 canonical Plan integrity와 fixture variant provenance 전체를 확인하지 않는다
+
+### 근본 원인
+
+초기 S1 verifier가 aggregate file seal과 일부 식별자만 확인하고 canonical Plan fingerprint, 전체 Measurement identity, fixture와 variant provenance 및 environment/resource 계약을 서로 독립된 불변식으로 재구성하지 않았다
+
+### 검토한 해결안
+
+- `rejected` 기존 aggregate seal 일치만 신뢰 — 공격자나 구현 오류가 payload와 내부 seal을 함께 바꾸면 의미 계약의 변조를 찾지 못한다
+- `adopted` Plan과 Measurement 의미 계약을 verifier가 독립 재구성 — 파일 무결성과 실행 의미를 별도로 검증하고 둘 중 하나의 변조도 거부한다
+
+### 채택한 해결
+
+model-free와 live verifier가 assert_plan_integrity를 호출하고 각 Cell의 전체 MeasurementIdentity와 manifest, fixture commit/tree, Runner version, Variant version/SHA provenance를 Plan에서 재구성해 대조하도록 강화했다. live status도 예산이나 calibration 결과를 계산하기 전에 같은 environment, resource, token, B1 control metric 계약을 검증하며 freeze/export의 정확한 파일 집합과 raw Plan SHA를 교차 봉인한다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/routing_live.py
+- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+- tools/benchmark-runner/tests/test_routing_live.py
+- tools/benchmark-runner/tests/test_routing_suite.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_routing_live.py::test_freeze_bundle_is_self_contained_and_plan_tampering_is_rejected
+- tools/benchmark-runner/tests/test_routing_live.py::test_live_measurement_contract_rejects_surface_and_turn_tampering
+- tools/benchmark-runner/tests/test_routing_suite.py::test_model_free_export_verifier_rejects_plan_and_measurement_identity_tampering
+
+### 검증 결과
+
+- S1 표적 시험 39 passed
+- Benchmark Runner 전체 203 passed
+- 검증 과정 actual model turn 0회
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: tools/benchmark-runner/src/benchmark_runner/contract.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/plan.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/routing_suite.py

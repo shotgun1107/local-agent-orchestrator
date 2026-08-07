@@ -21,11 +21,12 @@ from benchmark_runner.contract import (
     ExecutionPlan,
     FixtureIdentity,
     Measurement,
+    MeasurementIdentity,
     PlannedCell,
     StrictModel,
     validate_relative_path,
 )
-from benchmark_runner.plan import build_sdk_controlled_plan
+from benchmark_runner.plan import assert_plan_integrity, build_sdk_controlled_plan
 from benchmark_runner.sdk_cells import (
     SdkSealedCellResult,
     initialize_sdk_experiment,
@@ -49,6 +50,24 @@ from benchmark_runner.workspace import (
 
 class RoutingSuiteError(RuntimeError):
     pass
+
+
+S1_EXPECTED_CELL_ORDER = [
+    ("code-change", "c2"),
+    ("code-change", "b1"),
+    ("document-read", "b1"),
+    ("document-read", "c2"),
+    ("sequential-code-change", "b1"),
+    ("sequential-code-change", "c2"),
+    ("sequential-document", "c2"),
+    ("sequential-document", "b1"),
+]
+S1_ALLOWED_OUTCOMES = [
+    "CALIBRATION_PASS",
+    "CALIBRATION_STOP",
+    "CALIBRATION_INCONCLUSIVE",
+]
+S1_PLANNED_LIVE_MODEL_TURNS = 12
 
 
 class ExpectedWriteFiles(StrictModel):
@@ -168,6 +187,15 @@ class RoutingStageManifest(StrictModel):
             raise ValueError("S1 must declare one C2 and one B1 Cell per fixture")
         if len(self.allowed_outcomes) != len(set(self.allowed_outcomes)):
             raise ValueError("S1 allowed outcomes must be unique")
+        if cell_pairs != S1_EXPECTED_CELL_ORDER:
+            raise ValueError("S1 Cell order differs from the frozen design")
+        if self.planned_live_model_turns != S1_PLANNED_LIVE_MODEL_TURNS:
+            raise ValueError("S1 planned live model turns must be exactly 12")
+        if self.allowed_outcomes != S1_ALLOWED_OUTCOMES:
+            raise ValueError("S1 allowed outcomes differ from the frozen design")
+        task_counts = {profile.fixture_id: profile.complexity.task_count for profile in self.profiles}
+        if sum(task_counts[cell.fixture_id] for cell in self.cells) != self.planned_live_model_turns:
+            raise ValueError("S1 live turn budget differs from the fixture Task counts")
         return self
 
 
@@ -193,6 +221,8 @@ class RoutingSuiteManifest(StrictModel):
         stage_ids = [stage.stage_id for stage in self.stages]
         if len(stage_ids) != len(set(stage_ids)):
             raise ValueError("routing suite stage IDs must be unique")
+        if stage_ids != ["s1-baseline"]:
+            raise ValueError("routing suite v1 must declare only the S1 baseline stage")
         return self
 
 
@@ -435,6 +465,8 @@ def _resolve_stage(
     expected_path = (repository_root / reference.path).resolve()
     if expected_path != stage_path:
         raise RoutingSuiteError("routing stage path differs from the suite reference")
+    if suite.status != stage.status:
+        raise RoutingSuiteError("routing suite and stage freeze states differ")
     return suite, stage
 
 
@@ -479,7 +511,7 @@ def _verified_profiles(
     return verified
 
 
-def build_routing_s1_plan(
+def _build_routing_s1_plan(
     *,
     repository_root: Path,
     suite_path: Path,
@@ -489,11 +521,19 @@ def build_routing_s1_plan(
     environment_fingerprint: dict[str, str],
     created_at: datetime | None = None,
     revision: int = 1,
+    track: str,
+    planned_actual_model_turns: int | None,
+    require_frozen: bool,
 ) -> ExecutionPlan:
     repository_root = repository_root.resolve()
     suite_path = suite_path.resolve()
     stage_path = stage_path.resolve()
     suite, stage = _resolve_stage(repository_root, suite_path, stage_path)
+    if require_frozen and (
+        suite.status != "frozen_before_execution"
+        or stage.status != "frozen_before_execution"
+    ):
+        raise RoutingSuiteError("S1 live Plan requires frozen suite and stage manifests")
     fixtures = _fixture_specs(repository_root, stage)
     profiles = _verified_profiles(repository_root, stage, fixtures)
     cells = [
@@ -540,8 +580,64 @@ def build_routing_s1_plan(
         created_at=created_at,
         revision=revision,
         seed=0,
+        track=track,
+        planned_actual_model_turns=planned_actual_model_turns,
+    )
+
+
+def build_routing_s1_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build the zero-turn S1 contract-validation Plan."""
+
+    return _build_routing_s1_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
         track="sdk_routing_s1_model_free_validation",
         planned_actual_model_turns=0,
+        require_frozen=False,
+    )
+
+
+def build_routing_s1_live_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build the immutable S1 live Plan only from frozen manifests."""
+
+    return _build_routing_s1_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
+        track="sdk_routing_s1_live_calibration",
+        planned_actual_model_turns=None,
+        require_frozen=True,
     )
 
 
@@ -958,6 +1054,7 @@ def verify_routing_s1_nonlive_export(export_root: Path) -> dict[str, Any]:
         plan = ExecutionPlan.model_validate_json(
             (export_root / "execution-plan.json").read_bytes()
         )
+        assert_plan_integrity(plan)
         suite_bytes = (export_root / "manifests" / "suite.yaml").read_bytes()
         stage_bytes = (export_root / "manifests" / "stage.yaml").read_bytes()
         suite = RoutingSuiteManifest.model_validate(yaml.safe_load(suite_bytes))
@@ -1053,8 +1150,32 @@ def verify_routing_s1_nonlive_export(export_root: Path) -> dict[str, Any]:
         if hashlib.sha256(data).hexdigest() != entry.get("sealed_measurement_sha256"):
             raise RoutingSuiteError("routing export Measurement seal differs")
         measurement = Measurement.model_validate_json(data)
-        if measurement.identity.cell_id != cell.cell_id:
+        expected_identity = MeasurementIdentity(
+            experiment_id=plan.experiment_id,
+            block_id=cell.block_id,
+            cell_id=cell.cell_id,
+            fixture_id=cell.fixture_id,
+            repetition=cell.repetition,
+            variant_id=cell.variant_id,
+            execution_ordinal=cell.execution_ordinal,
+        )
+        fixture = next(
+            item for item in plan.fixtures if item.fixture_id == cell.fixture_id
+        )
+        variant = next(
+            item for item in plan.variants if item.artifact_id == cell.variant_id
+        )
+        if measurement.identity != expected_identity:
             raise RoutingSuiteError("routing export Measurement identity differs")
+        if (
+            measurement.provenance.manifest_sha256 != plan.source_manifest.sha256
+            or measurement.provenance.fixture_source_commit != fixture.source_commit
+            or measurement.provenance.fixture_tree_before != fixture.git_tree
+            or measurement.provenance.runner_commit != plan.runner.version
+            or measurement.provenance.variant_version != variant.version
+            or measurement.provenance.variant_artifact_sha256 != variant.sha256
+        ):
+            raise RoutingSuiteError("routing export Measurement provenance differs")
         model_turns = measurement.variant_metrics.values.get("actual_model_turns")
         if not isinstance(model_turns, int) or isinstance(model_turns, bool) or model_turns < 0:
             raise RoutingSuiteError("routing export model turn count is invalid")

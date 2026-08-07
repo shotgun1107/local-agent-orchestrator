@@ -191,7 +191,7 @@ frozen Git tree, and delegates Plan construction and sealed Cell execution to th
 existing SDK-controlled Runner helpers.
 
 S1 is a calibration stage only. Its eight-Cell order and twelve-turn live budget
-are fixed by `stages/s1-baseline.yaml`, but the current vertical slice uses only
+are fixed by `stages/s1-baseline.yaml`. The model-free validation path uses only
 `FakeSdkRuntime`; it does not call a model and cannot issue a route decision.
 
 The model-free gate can execute all eight Cells through the existing C2 and B1
@@ -206,3 +206,52 @@ Regenerate the public contracts with Python 3.12:
 & .\stages\b1-sequential\.venv\Scripts\python.exe `
   .\tools\benchmark-runner\scripts\export_routing_schemas.py
 ```
+
+### S1 live execution freeze
+
+`scripts/run_sdk_routing_s1.py` is the separate fail-closed live controller. Its
+`create` command requires a clean committed source tree, the frozen suite and stage
+manifests, a passing zero-turn regression record for the same source commit, the
+pinned SDK and ChatGPT subscription authentication. It rebuilds the Plan in a
+separate clean checkout and process, independently recalculates the Runner, B1,
+suite, stage, and fixture-manifest identities, preflights all eight C2/B1 Cells
+without a model turn, verifies Task semantics parity, and writes a self-contained
+pre-execution freeze artifact.
+
+`run-next` executes exactly one Cell and requires `--confirm-model-usage` on every
+invocation. It reopens the freeze seal, source hashes, manifests, runtime profile,
+B1 command/Schema boundary and every predecessor Cell seal before dispatch. It
+never loops over live Cells. A durable dispatch claim prevents implicit retry even
+if both Cell-state and stop-record writes fail. The controller and B1 subprocess
+use safe-path mode, exact source roots, and a hash-bound Python, Git, SDK,
+runtime-profile, and controller environment. Absolute executable paths stay in
+external state; only their path hashes enter the Git artifact.
+
+```powershell
+$python = '.\stages\b1-sequential\.venv\Scripts\python.exe'
+$state = '<external-short-state-root>'
+$artifact = '.\benchmarks\artifacts\sdk-routing-v1-<source-commit>-r1'
+$regression = '<zero-turn-regression-record.json>'
+Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py create `
+  --state-root $state `
+  --artifact-root $artifact `
+  --regression-record $regression `
+  --revision 1
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py verify-freeze `
+  --artifact-root $artifact
+
+# A later, separately approved step runs at most one Cell:
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py run-next `
+  --state-root $state `
+  --confirm-model-usage
+```
+
+After all eight Cells are sealed—or immediately after a terminal safety stop—
+`status` deterministically emits one of
+`CALIBRATION_PASS`, `CALIBRATION_STOP`, or `CALIBRATION_INCONCLUSIVE`. Live export
+preserves partial stop Evidence when needed, reopens the complete freeze bundle and
+every sealed Measurement and Evidence hash, and always records
+`route_decision_issued=false`; S1 cannot emit profile `ROUTE_*` or B1 adoption.

@@ -175,12 +175,19 @@ class Orchestrator:
         fake_scenario: str = "complete",
         fake_fixture: dict[str, Any] | None = None,
         runtime_profiles_path: Path | None = None,
+        max_turns_override: int | None = None,
     ) -> None:
         self.loaded = loaded
         self.state_root = Path(state_root or state_root_for(loaded.pack.project.project_id)).resolve()
         self.store = ArtifactStore(self.state_root)
         self.workspace = GitWorkspace(loaded.project_root)
         self.policy: Policy = loaded.pack.policies.policies[loaded.pack.project.default_policy]
+        if max_turns_override is not None:
+            if max_turns_override < 1 or max_turns_override > self.policy.max_turns_per_run:
+                raise ConfigurationError("max turns override must be within the project policy")
+            self.policy = self.policy.model_copy(
+                update={"max_turns_per_run": max_turns_override}
+            )
         self.runtime_kind = runtime_kind
         self.runtime_profiles_path = runtime_profiles_path
         if runtime_kind == "fake":
@@ -336,6 +343,16 @@ class Orchestrator:
                     run = ledger.get("run", run_id)
                     target = RunState.FAILED if any(row["state"] == TaskState.FAILED for row in tasks) else RunState.BLOCKED
                     ledger.transition("run", run_id, run["version"], target, "run_no_runnable_task", {})
+                return
+            if run["turns_used"] >= run["max_turns"]:
+                ledger.transition(
+                    "run",
+                    run_id,
+                    run["version"],
+                    RunState.BLOCKED,
+                    "run_turn_budget_exhausted",
+                    {"max_turns": run["max_turns"]},
+                )
                 return
             task_spec = specs[task["external_key"]]
             try:
@@ -536,7 +553,8 @@ class Orchestrator:
                     exc.retryable
                     and self.runtime.capabilities().supports_resume
                     and current_attempt["resume_count"] < self.policy.max_resume_per_attempt
-                    and ledger.get("run", run_id)["turns_used"] < self.policy.max_turns_per_run
+                    and ledger.get("run", run_id)["turns_used"]
+                    < ledger.get("run", run_id)["max_turns"]
                 ):
                     ledger.increment_resume(attempt["attempt_id"], self.policy.max_resume_per_attempt)
                     turn = self.runtime.resume_session(

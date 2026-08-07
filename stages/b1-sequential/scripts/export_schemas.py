@@ -33,6 +33,7 @@ def main() -> None:
         destination.write_text(
             json.dumps(schema, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
 
 

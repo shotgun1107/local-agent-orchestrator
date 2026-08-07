@@ -389,7 +389,18 @@ def _measurement(
         "terminal_claim_outcome": evidence.outcome_state,
         "downstream_turn_count": int(metrics.get("turn_count", 0)),
         "model_active_seconds": metrics.get("model_active_seconds"),
+        "protected_files_ok": "runner_judge:check_integrity"
+        not in judge.failed_check_ids,
     }
+    for name in (
+        "b1_retry_count",
+        "b1_resume_count",
+        "b1_intermediate_check_changed_result",
+        "b1_intermediate_check_changed_dispatch",
+        "b1_repeatable_quality_regression",
+    ):
+        if name in metrics:
+            values[name] = metrics[name]
     if scenario_id is not None:
         values["scenario_id"] = scenario_id
     if "turns" in evidence.raw_payload:
