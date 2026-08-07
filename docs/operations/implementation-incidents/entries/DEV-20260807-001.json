@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260807-001",
+  "title": "SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부",
+  "status": "investigating",
+  "stage": "sdk-controlled-comparison",
+  "category": "tooling",
+  "discovered_at": "2026-08-07T00:20:30Z",
+  "resolved_at": null,
+  "discovered_by": "Benchmark Runner 183개 전체 회귀",
+  "symptom": "cell-state.json 원자적 교체에서 WinError 5가 한 번 발생해 182 passed, 1 failed가 됐다",
+  "reproduction": [
+    "B1과 Benchmark Runner 전체 회귀를 서로 다른 명시적 basetemp에서 병렬 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "cell_f1_false_completion_c2의 ACTIVE에서 JUDGING 전이 저장 중 임시 파일에서 cell-state.json으로 os.replace가 WinError 5를 반환했다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "같은 단일 시험을 새 basetemp에서 즉시 재실행해 1 passed, Runner 전체를 독립 실행해 183 passed를 확인했다"
+    }
+  ],
+  "root_cause": "미확인. 동일 코드와 별도 basetemp의 단일 재실행 및 독립 전체 재실행에서는 재현되지 않아 애플리케이션의 결정적 결함으로 확인되지 않았다. Windows 외부 프로세스의 순간 파일 점유 가능성은 있으나 직접 증거는 없다",
+  "considered_options": [
+    {
+      "option": "atomic_write에 PermissionError 자동 재시도를 즉시 추가",
+      "decision": "rejected",
+      "reason": "단 한 번의 비재현 환경 실패만으로 동시성 또는 권한 결함을 가리면 원인을 숨길 수 있다"
+    },
+    {
+      "option": "새 basetemp에서 단일 실패 시험과 전체 Runner 회귀를 독립 재실행",
+      "decision": "adopted",
+      "reason": "코드 결함과 병렬 실행 환경의 일시적 간섭을 구분하면서 원래 실패 기록도 보존한다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_sdk_cells.py::test_nine_failure_cells_share_one_plan_and_all_seal",
+    "tools/benchmark-runner/tests 전체"
+  ],
+  "verification": [
+    "새 basetemp에서 최초 실패 시험 1 passed",
+    "병렬 B1 실행과 분리한 Benchmark Runner 전체 회귀 183 passed"
+  ],
+  "remaining_risks": [
+    "Windows에서 같은 WinError 5가 반복되면 외부 파일 점유 추적과 제한된 원자 쓰기 재시도 정책을 별도 revision에서 설계해야 한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/operations/codex-revision-log.md"
+  ]
+}

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import sys
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol
@@ -126,6 +130,7 @@ class SdkTurnResult:
     raw_result: Any
     cumulative_usage: SdkUsage | None
     duration_seconds: float
+    error_kind: str | None = None
 
 
 class SdkRuntime(Protocol):
@@ -141,6 +146,289 @@ class SdkRuntime(Protocol):
         prompt: str,
         output_schema: dict[str, Any],
     ) -> SdkTurnResult: ...
+
+    def close(self) -> None: ...
+
+
+@dataclass(frozen=True)
+class CodexSdkBindings:
+    """Small injectable surface around openai-codex for no-model contract tests."""
+
+    sdk_version: str
+    codex_factory: Callable[[], Any]
+    approval_deny_all: Any
+    sandbox_workspace_write: Any
+
+
+def default_codex_sdk_bindings() -> CodexSdkBindings:
+    try:
+        import openai_codex
+        from openai_codex import ApprovalMode, Codex, Sandbox
+    except ImportError as exc:
+        raise RuntimeError(
+            "install the Benchmark Runner 'codex' extra to use CodexSdkRuntime"
+        ) from exc
+    return CodexSdkBindings(
+        sdk_version=str(getattr(openai_codex, "__version__", "unknown")),
+        codex_factory=Codex,
+        approval_deny_all=ApprovalMode.deny_all,
+        sandbox_workspace_write=Sandbox.workspace_write,
+    )
+
+
+class CodexSdkRuntime:
+    """Pinned ChatGPT-auth Codex SDK runtime for C0, C1, and C2.
+
+    Construction and preflight do not start a model turn. The SDK boundary is
+    injectable so its exact thread/turn options can be tested without opening
+    the app-server or consuming usage.
+    """
+
+    def __init__(
+        self,
+        workspace: Path,
+        *,
+        bindings: CodexSdkBindings | None = None,
+        environ: Mapping[str, str] | None = None,
+        timeout_seconds: float = 900.0,
+        interrupt_grace_seconds: float = 15.0,
+    ) -> None:
+        if timeout_seconds <= 0 or interrupt_grace_seconds < 0:
+            raise ValueError(
+                "SDK timeout must be positive and interrupt grace must be non-negative"
+            )
+        self.workspace = Path(workspace).resolve()
+        self._bindings = bindings
+        self._environ = environ
+        self.timeout_seconds = timeout_seconds
+        self.interrupt_grace_seconds = interrupt_grace_seconds
+        self._context: Any | None = None
+        self._client: Any | None = None
+        self._threads: dict[str, Any] = {}
+        self._actual_model_turns = 0
+        self._preflight_evidence: dict[str, JsonValue] | None = None
+
+    @property
+    def actual_model_turns(self) -> int:
+        return self._actual_model_turns
+
+    @property
+    def preflight_evidence(self) -> dict[str, JsonValue] | None:
+        return dict(self._preflight_evidence) if self._preflight_evidence else None
+
+    def _assert_chatgpt_environment(self) -> None:
+        present_keys = present_api_key_environment_names(self._environ)
+        if present_keys:
+            raise RuntimeError(
+                f"API key environment is present ({', '.join(present_keys)}); "
+                "ChatGPT-auth mode fails closed"
+            )
+
+    def _load_bindings(self) -> CodexSdkBindings:
+        if self._bindings is None:
+            self._bindings = default_codex_sdk_bindings()
+        if self._bindings.sdk_version != PINNED_SDK_VERSION:
+            raise RuntimeError(
+                f"CodexSdkRuntime requires openai-codex=={PINNED_SDK_VERSION}"
+            )
+        return self._bindings
+
+    @staticmethod
+    def _account_type(response: Any) -> str:
+        account = getattr(response, "account", None)
+        root = getattr(account, "root", None)
+        value = getattr(root, "type", None)
+        return str(getattr(value, "value", value) or "none")
+
+    def preflight(self) -> None:
+        self._assert_chatgpt_environment()
+        if not self.workspace.is_absolute() or not self.workspace.is_dir():
+            raise RuntimeError("SDK workspace must be an existing absolute directory")
+        bindings = self._load_bindings()
+        if self._client is not None:
+            return
+        context = bindings.codex_factory()
+        try:
+            client = context.__enter__()
+            account_type = self._account_type(client.account(refresh_token=False))
+            if account_type != "chatgpt":
+                raise RuntimeError(
+                    f"CodexSdkRuntime requires ChatGPT authentication; got {account_type}"
+                )
+            self._preflight_evidence = validate_sdk_live_controls(
+                SdkLiveControlSettings(
+                    sdk_version=bindings.sdk_version,
+                    account_type=account_type,
+                    model=PINNED_MODEL,
+                    reasoning_effort=PINNED_REASONING_EFFORT,
+                    thread_sandbox=PINNED_SANDBOX,
+                    turn_sandbox=PINNED_SANDBOX,
+                    thread_approval_mode=PINNED_APPROVAL_MODE,
+                    turn_approval_mode=PINNED_APPROVAL_MODE,
+                    cwd=self.workspace,
+                    ephemeral=False,
+                    output_schema_title="ResultEnvelope",
+                    validated_without_model_turn=True,
+                    actual_model_turns=0,
+                ),
+                environ=self._environ,
+            )
+        except Exception:
+            context.__exit__(*sys.exc_info())
+            raise
+        self._context = context
+        self._client = client
+
+    def start_thread(self) -> SdkThread:
+        self._assert_chatgpt_environment()
+        if self._client is None:
+            raise RuntimeError("CodexSdkRuntime preflight must succeed before dispatch")
+        bindings = self._load_bindings()
+        thread = self._client.thread_start(
+            approval_mode=bindings.approval_deny_all,
+            cwd=str(self.workspace),
+            ephemeral=False,
+            model=PINNED_MODEL,
+            sandbox=bindings.sandbox_workspace_write,
+        )
+        thread_id = str(getattr(thread, "id", ""))
+        if not thread_id or thread_id in self._threads:
+            raise RuntimeError("Codex SDK returned an empty or duplicate thread ID")
+        self._threads[thread_id] = thread
+        return SdkThread(thread_id)
+
+    @staticmethod
+    def _usage(result: Any) -> SdkUsage | None:
+        usage = getattr(result, "usage", None)
+        total = getattr(usage, "total", None)
+        if total is None:
+            return None
+        try:
+            return SdkUsage(
+                input_tokens=int(total.input_tokens),
+                output_tokens=int(total.output_tokens),
+                total_tokens=int(total.total_tokens),
+            )
+        except (AttributeError, TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _terminal_status(result: Any) -> str:
+        status = getattr(result, "status", "unknown")
+        return str(getattr(status, "value", status))
+
+    @staticmethod
+    def _raw_result(result: Any) -> Any:
+        response = getattr(result, "final_response", None)
+        if not isinstance(response, str):
+            return response
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            return response
+
+    def run_turn(
+        self,
+        thread: SdkThread,
+        *,
+        task_id: str,
+        prompt: str,
+        output_schema: dict[str, Any],
+    ) -> SdkTurnResult:
+        del task_id
+        self._assert_chatgpt_environment()
+        if self._client is None:
+            raise RuntimeError("CodexSdkRuntime preflight must succeed before dispatch")
+        raw_thread = self._threads.get(thread.id)
+        if raw_thread is None:
+            raise ValueError("unknown Codex SDK thread")
+        if output_schema.get("title") != "ResultEnvelope":
+            raise ValueError("Codex SDK turn requires the ResultEnvelope schema")
+        bindings = self._load_bindings()
+        result_box: list[Any] = []
+        error_box: list[BaseException] = []
+        handle_box: list[Any] = []
+        finished = threading.Event()
+        cancel_requested = threading.Event()
+        started = time.monotonic()
+
+        def consume() -> None:
+            try:
+                handle = raw_thread.turn(
+                    prompt,
+                    approval_mode=bindings.approval_deny_all,
+                    cwd=str(self.workspace),
+                    effort=PINNED_REASONING_EFFORT,
+                    model=PINNED_MODEL,
+                    output_schema=output_schema,
+                    sandbox=bindings.sandbox_workspace_write,
+                )
+                handle_box.append(handle)
+                self._actual_model_turns += 1
+                if cancel_requested.is_set():
+                    handle.interrupt()
+                result_box.append(handle.run())
+            except Exception as exc:
+                error_box.append(exc)
+            finally:
+                finished.set()
+
+        threading.Thread(
+            target=consume,
+            name=f"codex-sdk-{thread.id}",
+            daemon=True,
+        ).start()
+        if not finished.wait(self.timeout_seconds):
+            cancel_requested.set()
+            if handle_box:
+                try:
+                    handle_box[0].interrupt()
+                except Exception:
+                    pass
+            if not finished.wait(self.interrupt_grace_seconds):
+                return SdkTurnResult(
+                    terminal_status="unknown",
+                    raw_result=None,
+                    cumulative_usage=None,
+                    duration_seconds=time.monotonic() - started,
+                    error_kind="SdkTurnTimeout",
+                )
+        if error_box:
+            return SdkTurnResult(
+                terminal_status="unknown",
+                raw_result={"error_kind": type(error_box[0]).__name__},
+                cumulative_usage=None,
+                duration_seconds=time.monotonic() - started,
+                error_kind=type(error_box[0]).__name__,
+            )
+        if not result_box:
+            return SdkTurnResult(
+                terminal_status="unknown",
+                raw_result=None,
+                cumulative_usage=None,
+                duration_seconds=time.monotonic() - started,
+                error_kind="SdkTurnResultMissing",
+            )
+        result = result_box[0]
+        duration_ms = getattr(result, "duration_ms", None)
+        return SdkTurnResult(
+            terminal_status=self._terminal_status(result),
+            raw_result=self._raw_result(result),
+            cumulative_usage=self._usage(result),
+            duration_seconds=(
+                float(duration_ms) / 1000.0
+                if isinstance(duration_ms, (int, float)) and duration_ms >= 0
+                else time.monotonic() - started
+            ),
+        )
+
+    def close(self) -> None:
+        context = self._context
+        self._context = None
+        self._client = None
+        self._threads.clear()
+        if context is not None:
+            context.__exit__(None, None, None)
 
 
 @dataclass(frozen=True)
@@ -211,3 +499,6 @@ class FakeSdkRuntime:
             cumulative_usage=cumulative,
             duration_seconds=0.001,
         )
+
+    def close(self) -> None:
+        return None
