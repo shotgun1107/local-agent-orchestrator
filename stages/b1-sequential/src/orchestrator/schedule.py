@@ -866,6 +866,37 @@ class Orchestrator:
                 ).total_seconds(),
                 3,
             )
+        terminal_durations_ms: list[float] = []
+        terminal_duration_complete = True
+        terminal_artifacts = [
+            artifact
+            for artifact in snapshot["artifacts"]
+            if artifact["kind"] == "terminal_evidence"
+        ]
+        for artifact in terminal_artifacts:
+            try:
+                terminal = json.loads(
+                    self.store.resolve(artifact["relative_path"]).read_text(
+                        encoding="utf-8"
+                    )
+                )
+                duration_ms = terminal.get("duration_ms")
+                if (
+                    not isinstance(duration_ms, (int, float))
+                    or isinstance(duration_ms, bool)
+                    or duration_ms < 0
+                ):
+                    terminal_duration_complete = False
+                    continue
+                terminal_durations_ms.append(float(duration_ms))
+            except (OSError, json.JSONDecodeError, TypeError):
+                terminal_duration_complete = False
+        model_active_seconds = (
+            round(sum(terminal_durations_ms) / 1000.0, 3)
+            if terminal_duration_complete
+            and len(terminal_artifacts) == run["turns_used"]
+            else None
+        )
         output_schema_sha256 = sha256_bytes(
             canonical_json(result_schema()).encode("utf-8")
         )
@@ -897,6 +928,7 @@ class Orchestrator:
                 "checks_passed": sum(1 for check in snapshot["checks"] if check["state"] == "PASSED"),
                 "checks_failed": sum(1 for check in snapshot["checks"] if check["state"] in {"FAILED", "ERROR"}),
                 "wall_clock_seconds": wall_clock_seconds,
+                "model_active_seconds": model_active_seconds,
                 "usage_status": "partial_or_unknown" if unknown_usage else "measured",
                 "token_usage": token_totals,
                 "decisions": len(snapshot["decisions"]),

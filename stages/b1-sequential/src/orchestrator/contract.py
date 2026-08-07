@@ -540,6 +540,7 @@ class RunReportMetrics(StrictModel):
     checks_passed: int = Field(ge=0)
     checks_failed: int = Field(ge=0)
     wall_clock_seconds: float | None = Field(default=None, ge=0)
+    model_active_seconds: float | None = Field(default=None, ge=0)
     usage_status: ReportUsageStatus
     token_usage: TokenCounts = Field(
         description=(

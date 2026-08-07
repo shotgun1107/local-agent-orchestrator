@@ -579,6 +579,11 @@ class B1SequentialAdapter:
             "status": self._load_validator(config.schema_root / "run-status.schema.json"),
             "report": self._load_validator(config.schema_root / "run-report.schema.json"),
         }
+        self._preflight_evidence: dict[str, JsonValue] | None = None
+
+    @property
+    def preflight_evidence(self) -> dict[str, JsonValue] | None:
+        return dict(self._preflight_evidence) if self._preflight_evidence else None
 
     @staticmethod
     def _load_validator(path: Path) -> Draft202012Validator:
@@ -714,18 +719,61 @@ class B1SequentialAdapter:
         state_root = self.config.state_root
         if state_root.exists() and any(state_root.iterdir()):
             return PreflightResult(False, "Cell B1 state root is not empty")
-        validation = self._invoke(
-            [
-                "run",
-                "validate",
-                "--project",
-                str(self.config.project.resolve()),
-                "--spec",
-                str(self.config.run_spec.resolve()),
-            ]
-        )
+        try:
+            validation = self._invoke(
+                [
+                    "run",
+                    "validate",
+                    "--project",
+                    str(self.config.project.resolve()),
+                    "--spec",
+                    str(self.config.run_spec.resolve()),
+                ]
+            )
+        except AdapterInfrastructureError:
+            return PreflightResult(False, "B1 run validate invocation failed")
         if validation.exit_code != 0:
             return PreflightResult(False, "B1 run validate failed")
+        if self.config.runtime == "codex":
+            try:
+                doctor = self._invoke(
+                    [
+                        "doctor",
+                        "--project",
+                        str(self.config.project.resolve()),
+                        "--json",
+                    ]
+                )
+                if doctor.exit_code != 0 or doctor.stdout_truncated:
+                    raise AdapterInfrastructureError("B1 doctor failed")
+                payload = json.loads(doctor.stdout)
+                sdk = payload["codex_sdk"]
+                login = payload["codex_login"]
+                if (
+                    payload["api_key_present"] is not False
+                    or sdk["installed"] is not True
+                    or sdk["pinned"] is not True
+                    or sdk["version"] != "0.144.4"
+                    or login["checked"] is not True
+                    or login["authenticated"] is not True
+                    or login["method"] != "chatgpt"
+                ):
+                    raise AdapterInfrastructureError("B1 doctor controls differ")
+                self._preflight_evidence = {
+                    "sdk_version": "0.144.4",
+                    "sdk_pinned": True,
+                    "account_type": "chatgpt",
+                    "api_key_environment_names_present": [],
+                    "actual_model_turns": 0,
+                }
+            except (
+                AdapterInfrastructureError,
+                json.JSONDecodeError,
+                KeyError,
+                TypeError,
+            ):
+                self._preflight_evidence = None
+                return PreflightResult(False, "B1 live doctor preflight failed")
         return PreflightResult(True, f"B1 public CLI preflight passed for {context.cell_id}")
 
     def _terminal_failure(
@@ -872,6 +920,11 @@ class B1SequentialAdapter:
             "b1_report_usage_status": usage_status,
             "b1_session_usage_statuses": status["session_usage_statuses"],
         }
+        model_active_seconds = metrics.get("model_active_seconds")
+        if isinstance(model_active_seconds, (int, float)) and not isinstance(
+            model_active_seconds, bool
+        ):
+            normalized_metrics["model_active_seconds"] = float(model_active_seconds)
         worker_turns: list[dict[str, JsonValue]] = []
         for task in report["tasks"]:
             for attempt in task["attempts"]:

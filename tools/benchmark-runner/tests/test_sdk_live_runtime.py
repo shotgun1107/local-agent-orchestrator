@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import inspect
+import hashlib
 import json
+import shutil
+import sys
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +14,10 @@ from typing import Any
 import pytest
 
 from benchmark_runner.adapter import CellContext
+from benchmark_runner.contract import ArtifactIdentity, FixtureIdentity, PlannedCell
+from benchmark_runner.failure_scenarios import CONFIG_SOURCE, NORMALIZATION_SOURCE
+from benchmark_runner.plan import build_sdk_controlled_plan
+from benchmark_runner.runner import verify_sealed_cell
 from benchmark_runner.sdk_baselines import SdkBaselineAdapter, SdkBaselineConfig
 from benchmark_runner.sdk_common import (
     PINNED_MODEL,
@@ -19,6 +26,12 @@ from benchmark_runner.sdk_common import (
     CodexSdkRuntime,
     WorkerContract,
 )
+from benchmark_runner.sdk_cells import (
+    initialize_sdk_experiment,
+    run_sdk_live_cell,
+    runner_source_sha256,
+)
+from benchmark_runner.workspace import FixtureRestorer, load_frozen_manifest
 
 
 COMPLETED_RESULT = {
@@ -33,6 +46,17 @@ COMPLETED_RESULT = {
     "requested_followup": None,
 }
 RESULT_SCHEMA = {"title": "ResultEnvelope", "type": "object"}
+REPOSITORY_ROOT = Path(__file__).parents[3]
+MANIFEST_PATH = (
+    REPOSITORY_ROOT / "benchmarks" / "manifests" / "sdk-controlled-pilot-v1.yaml"
+)
+B1_SOURCE_ROOT = REPOSITORY_ROOT / "stages" / "b1-sequential" / "src"
+
+
+def _git() -> Path:
+    executable = shutil.which("git")
+    assert executable is not None
+    return Path(executable)
 
 
 @dataclass
@@ -414,3 +438,198 @@ def test_installed_0144_sdk_exposes_the_mocked_contract_surface() -> None:
         "sandbox",
     } <= thread_run.keys()
     assert thread_run.keys() == thread_turn.keys()
+
+
+def test_mocked_live_cell_reaches_judge_measurement_and_seal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest = load_frozen_manifest(MANIFEST_PATH)
+    fixture = manifest.fixtures[0]
+    cell = PlannedCell(
+        cell_id="cell_pilot_c0",
+        block_id="block_pilot",
+        fixture_id=fixture.id,
+        repetition=1,
+        variant_id="c0",
+        execution_ordinal=1,
+    )
+    plan = build_sdk_controlled_plan(
+        source_manifest_path=MANIFEST_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
+        source_manifest_sha256=hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest(),
+        fixtures=[
+            FixtureIdentity(
+                fixture_id=fixture.id,
+                source_commit=fixture.commit,
+                git_tree=fixture.git_tree,
+            )
+        ],
+        runner=ArtifactIdentity(
+            artifact_id="benchmark-runner",
+            version="mock-live",
+            sha256=runner_source_sha256(),
+        ),
+        variants=[
+            ArtifactIdentity(
+                artifact_id="c0",
+                version="mock-live",
+                sha256="2" * 64,
+            )
+        ],
+        cells=[cell],
+        baseline_variant="c0",
+        candidate_variants=[],
+        decision_policy={"track": "mock_live"},
+        environment_fingerprint={"runtime": "mocked_codex"},
+        track="sdk_controlled_live_pilot",
+        planned_actual_model_turns=None,
+    )
+    experiment_dir = initialize_sdk_experiment(tmp_path / "state", plan)
+    prepared = FixtureRestorer(REPOSITORY_ROOT, str(_git())).restore(
+        fixture,
+        experiment_dir / "cells" / cell.cell_id / "workspace",
+    )
+    monkeypatch.syspath_prepend(str(B1_SOURCE_ROOT))
+    from orchestrator.contract import RunSpec
+    from orchestrator.worker import (
+        build_oneshot_envelope,
+        render_worker_prompt,
+        result_schema,
+        task_semantics_sha256,
+        validate_result,
+    )
+    import yaml
+
+    spec = RunSpec.model_validate(
+        yaml.safe_load(
+            (prepared.workspace / "benchmark-run.yaml").read_text(encoding="utf-8")
+        )
+    )
+    task = build_oneshot_envelope(
+        spec,
+        run_id="mock-live-run",
+        task_id="mock-live-task",
+        attempt_id="mock-live-attempt",
+        requirements_version=1,
+        timeout_seconds=900,
+        remaining_attempts=1,
+    )
+
+    class WritingHandle(MockTurnHandle):
+        def run(self) -> MockTurnResult:
+            (prepared.workspace / "src" / "normalization.py").write_text(
+                NORMALIZATION_SOURCE,
+                encoding="utf-8",
+            )
+            (prepared.workspace / "src" / "config.py").write_text(
+                CONFIG_SOURCE,
+                encoding="utf-8",
+            )
+            return super().run()
+
+    class WritingThread(MockThread):
+        def turn(self, prompt: str, **kwargs: Any) -> WritingHandle:
+            self.turn_calls.append((prompt, kwargs))
+            usage = SimpleNamespace(
+                total=SimpleNamespace(
+                    input_tokens=20,
+                    output_tokens=10,
+                    total_tokens=30,
+                )
+            )
+            handle = WritingHandle(
+                MockTurnResult(
+                    status=SimpleNamespace(value="completed"),
+                    final_response=json.dumps(
+                        {
+                            **COMPLETED_RESULT,
+                            "artifacts": [
+                                {
+                                    "path": "src/normalization.py",
+                                    "kind": "file",
+                                    "description": "mocked live result",
+                                },
+                                {
+                                    "path": "src/config.py",
+                                    "kind": "file",
+                                    "description": "mocked live result",
+                                },
+                            ],
+                            "changed_paths": [
+                                "src/normalization.py",
+                                "src/config.py",
+                            ],
+                        }
+                    ),
+                    usage=usage,
+                )
+            )
+            self.handles.append(handle)
+            return handle
+
+    client = MockClient()
+
+    def start_thread(**kwargs: Any) -> WritingThread:
+        client.thread_start_calls.append(kwargs)
+        thread = WritingThread("private-live-thread-id")
+        client.threads.append(thread)
+        return thread
+
+    client.thread_start = start_thread  # type: ignore[method-assign]
+    runtime = CodexSdkRuntime(
+        prepared.workspace,
+        bindings=_bindings(MockCodexContext(client)),
+        environ={},
+    )
+    adapter = SdkBaselineAdapter(
+        SdkBaselineConfig(
+            variant_id="c0",
+            tasks=(task,),
+            contract=WorkerContract(
+                render_prompt=render_worker_prompt,
+                result_schema=result_schema,
+                validate_result=lambda value: validate_result(value).model_dump(
+                    mode="json"
+                ),
+                semantics_sha256=task_semantics_sha256,
+            ),
+            runtime=runtime,
+        )
+    )
+
+    result = run_sdk_live_cell(
+        experiment_dir=experiment_dir,
+        plan=plan,
+        planned_cell=cell,
+        prepared=prepared,
+        adapter=adapter,
+        benchmark_python=Path(sys.executable),
+        git_executable=_git(),
+    )
+
+    assert result.cell_state == "SEALED"
+    assert result.actual_model_turns == 1
+    assert result.check_success is True
+    measurement = verify_sealed_cell(experiment_dir / "cells" / cell.cell_id)
+    assert measurement.environment.model == PINNED_MODEL
+    assert measurement.environment.auth_method == "chatgpt"
+    assert measurement.variant_metrics.schema_id == "sdk-controlled-live-pilot/v1"
+    assert measurement.variant_metrics.values["actual_model_turns"] == 1
+    adapter_result = json.loads(
+        (
+            experiment_dir
+            / "cells"
+            / cell.cell_id
+            / "raw"
+            / "adapter-result.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert adapter_result["raw_payload"]["thread_ids"] == [
+        "sha256:"
+        + hashlib.sha256(b"private-live-thread-id").hexdigest()
+    ]
+    preflight = (
+        experiment_dir / "cells" / cell.cell_id / "raw" / "preflight.json"
+    ).read_text(encoding="utf-8")
+    assert "private-live-thread-id" not in preflight
+    assert str(prepared.workspace) not in preflight

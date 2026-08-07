@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import platform
 import time
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from benchmark_runner.adapter import CellContext, VariantAdapter, VariantEvidence
 from benchmark_runner.contract import (
@@ -70,7 +71,7 @@ class SdkSealedCellResult(BaseModel):
     cell_state: Literal["SEALED"]
     outcome_state: str
     check_success: bool
-    actual_model_turns: Literal[0] = 0
+    actual_model_turns: int = Field(ge=0)
     measurement_path: str
     sealed_measurement_sha256: str
 
@@ -174,6 +175,97 @@ def _assert_fake_runtime_boundary(adapter: VariantAdapter) -> None:
     raise RuntimeError("non-live Cell rejects unverified Adapter implementations")
 
 
+def _assert_live_runtime_boundary(adapter: VariantAdapter) -> None:
+    """Allow only the two reviewed ChatGPT-auth live runtime paths."""
+
+    from benchmark_runner.adapter import B1SequentialAdapter
+    from benchmark_runner.sdk_baselines import SdkBaselineAdapter
+    from benchmark_runner.sdk_common import CodexSdkRuntime
+
+    if type(adapter) is SdkBaselineAdapter:
+        if type(adapter.config.runtime) is not CodexSdkRuntime:
+            raise RuntimeError("live SDK baseline requires the exact CodexSdkRuntime")
+        return
+    if type(adapter) is B1SequentialAdapter:
+        if adapter.config.runtime != "codex":
+            raise RuntimeError("live B1 Cell requires runtime=codex")
+        return
+    raise RuntimeError("live Cell rejects unverified Adapter implementations")
+
+
+_LOCAL_RUNTIME_IDENTIFIER_KEYS = {
+    "run_id",
+    "runtime_session_id",
+    "runtime_turn_id",
+    "session_id",
+    "thread_id",
+}
+
+
+def _hashed_identifier(value: str) -> str:
+    return f"sha256:{hashlib.sha256(value.encode('utf-8')).hexdigest()}"
+
+
+def _redact_local_runtime_identifiers(value: object) -> object:
+    """Hash local SDK/B1 identifiers before Evidence can be exported to Git."""
+
+    if isinstance(value, dict):
+        output: dict[str, object] = {}
+        for key, item in value.items():
+            key_text = str(key)
+            if key_text in _LOCAL_RUNTIME_IDENTIFIER_KEYS and isinstance(item, str):
+                output[key_text] = _hashed_identifier(item)
+            elif key_text == "thread_ids" and isinstance(item, list):
+                output[key_text] = [
+                    _hashed_identifier(entry) if isinstance(entry, str) else entry
+                    for entry in item
+                ]
+            else:
+                output[key_text] = _redact_local_runtime_identifiers(item)
+        return output
+    if isinstance(value, list):
+        return [_redact_local_runtime_identifiers(item) for item in value]
+    return value
+
+
+def _public_variant_evidence(evidence: VariantEvidence) -> VariantEvidence:
+    raw_payload = _redact_local_runtime_identifiers(evidence.raw_payload)
+    normalized_metrics = _redact_local_runtime_identifiers(
+        evidence.normalized_metrics
+    )
+    assert isinstance(raw_payload, dict)
+    assert isinstance(normalized_metrics, dict)
+    return VariantEvidence(
+        outcome_state=evidence.outcome_state,
+        failure_kind=evidence.failure_kind,
+        attempt_count=evidence.attempt_count,
+        raw_payload=raw_payload,  # type: ignore[arg-type]
+        normalized_metrics=normalized_metrics,  # type: ignore[arg-type]
+    )
+
+
+def _actual_model_turns(adapter: VariantAdapter, evidence: VariantEvidence) -> int:
+    from benchmark_runner.adapter import B1SequentialAdapter
+    from benchmark_runner.sdk_baselines import SdkBaselineAdapter
+
+    if type(adapter) is SdkBaselineAdapter:
+        return int(getattr(adapter.config.runtime, "actual_model_turns", 0))
+    if type(adapter) is B1SequentialAdapter and adapter.config.runtime == "codex":
+        return int(evidence.normalized_metrics.get("turn_count", 0))
+    return 0
+
+
+def _adapter_preflight_evidence(adapter: VariantAdapter) -> dict[str, JsonValue]:
+    if hasattr(adapter, "config") and hasattr(adapter.config, "runtime"):
+        runtime_evidence = getattr(adapter.config.runtime, "preflight_evidence", None)
+        if runtime_evidence:
+            return dict(runtime_evidence)
+    adapter_evidence = getattr(adapter, "preflight_evidence", None)
+    if adapter_evidence:
+        return dict(adapter_evidence)
+    return {}
+
+
 def _write_redacted_capture(
     *,
     cell_dir: Path,
@@ -273,6 +365,8 @@ def _measurement(
     variant_version: str,
     variant_sha256: str,
     scenario_id: str | None,
+    live: bool,
+    actual_model_turns: int,
 ) -> Measurement:
     if judge.final_tree is None:
         raise RuntimeError("SDK comparison Judge did not produce a final tree")
@@ -291,9 +385,10 @@ def _measurement(
     not_applicable_seconds = _metric(MetricStatus.NOT_APPLICABLE, "seconds")
     values: dict[str, JsonValue] = {
         "adapter_id": planned_cell.variant_id,
-        "actual_model_turns": 0,
+        "actual_model_turns": actual_model_turns,
         "terminal_claim_outcome": evidence.outcome_state,
         "downstream_turn_count": int(metrics.get("turn_count", 0)),
+        "model_active_seconds": metrics.get("model_active_seconds"),
     }
     if scenario_id is not None:
         values["scenario_id"] = scenario_id
@@ -322,18 +417,22 @@ def _measurement(
         environment=MeasurementEnvironment(
             os=platform.system().lower(),
             python_version=platform.python_version(),
-            model="fake",
-            auth_method="not_applicable_nonlive",
-            reasoning_effort="not_applicable_nonlive",
+            model="gpt-5.6-terra" if live else "fake",
+            auth_method="chatgpt" if live else "not_applicable_nonlive",
+            reasoning_effort="low" if live else "not_applicable_nonlive",
             surface_kind=(
-                "b1_cli_fake_runtime"
+                "b1_cli_codex_runtime"
+                if live and planned_cell.variant_id == "b1"
+                else "sdk_controlled_codex_runtime"
+                if live
+                else "b1_cli_fake_runtime"
                 if planned_cell.variant_id == "b1"
                 else "sdk_controlled_fake_runtime"
             ),
-            approval_mode="not_applicable_nonlive",
-            model_control="not_applicable_nonlive",
-            reasoning_control="not_applicable_nonlive",
-            treatment_control="not_applicable",
+            approval_mode="deny_all" if live else "not_applicable_nonlive",
+            model_control="explicit_thread_and_turn" if live else "not_applicable_nonlive",
+            reasoning_control="explicit_each_turn" if live else "not_applicable_nonlive",
+            treatment_control="full" if live else "not_applicable",
         ),
         outcome=MeasurementOutcome(
             state=evidence.outcome_state,
@@ -410,13 +509,17 @@ def _measurement(
         ),
         evidence=refs,
         variant_metrics=VariantMetrics(
-            schema_id="sdk-controlled-nonlive/v1",
+            schema_id=(
+                "sdk-controlled-live-pilot/v1"
+                if live
+                else "sdk-controlled-nonlive/v1"
+            ),
             values=values,
         ),
     )
 
 
-def run_sdk_nonlive_cell(
+def _run_sdk_cell(
     *,
     experiment_dir: Path,
     plan: ExecutionPlan,
@@ -426,11 +529,15 @@ def run_sdk_nonlive_cell(
     benchmark_python: Path,
     git_executable: Path,
     scenario_id: str | None = None,
+    live: bool,
 ) -> SdkSealedCellResult:
-    """Run one fake-runtime Cell through the real Judge, Measurement, and seal."""
+    """Run one reviewed SDK Cell through the real Judge, Measurement, and seal."""
 
     experiment_dir = experiment_dir.resolve()
-    _assert_fake_runtime_boundary(adapter)
+    if live:
+        _assert_live_runtime_boundary(adapter)
+    else:
+        _assert_fake_runtime_boundary(adapter)
     variant_version, variant_sha256 = _assert_plan_and_fixture(
         experiment_dir,
         plan,
@@ -457,6 +564,31 @@ def run_sdk_nonlive_cell(
     preflight = adapter.preflight(context)
     if not preflight.ok:
         raise RuntimeError(f"{adapter.id()} preflight failed: {preflight.detail}")
+    preflight_evidence = _adapter_preflight_evidence(adapter)
+    if live and not preflight_evidence:
+        runtime = getattr(getattr(adapter, "config", None), "runtime", None)
+        close = getattr(runtime, "close", None)
+        if callable(close):
+            close()
+        raise RuntimeError("live Adapter omitted model-free preflight Evidence")
+    if live:
+        preflight_findings: set[str] = set()
+        replacements = {
+            str(prepared.workspace.resolve()): "<WORKSPACE>",
+            str(cell_dir.resolve()): "<CELL_DIR>",
+            str(Path.home().resolve()): "<HOME>",
+        }
+        public_preflight = _r6_redact_object(
+            preflight_evidence,
+            replacements,
+            preflight_findings,
+        )
+        if preflight_findings:
+            raise RuntimeError("secret-like material found in live preflight Evidence")
+        atomic_write(
+            raw_dir / "preflight.json",
+            canonical_json_bytes(public_preflight),
+        )
     record = _transition(record, CellLifecycleState.PREPARED)
     _write_model(state_path, record)
     record = _transition(record, CellLifecycleState.ACTIVE)
@@ -466,7 +598,13 @@ def run_sdk_nonlive_cell(
     variant_started = time.monotonic()
     evidence = adapter.run(context)
     variant_seconds = time.monotonic() - variant_started
-    _assert_nonlive_evidence(evidence)
+    actual_model_turns = _actual_model_turns(adapter, evidence)
+    if live:
+        if actual_model_turns < 1:
+            raise RuntimeError("live Adapter returned no proven model turn")
+        evidence = _public_variant_evidence(evidence)
+    else:
+        _assert_nonlive_evidence(evidence)
     findings: set[str] = set()
     source_bytes_changed = _write_redacted_capture(
         cell_dir=cell_dir,
@@ -531,6 +669,8 @@ def run_sdk_nonlive_cell(
         variant_version=variant_version,
         variant_sha256=variant_sha256,
         scenario_id=scenario_id,
+        live=live,
+        actual_model_turns=actual_model_turns,
     )
     measurement_path = sealed_dir / "measurement.json"
     measurement_bytes = canonical_json_bytes(measurement)
@@ -551,6 +691,57 @@ def run_sdk_nonlive_cell(
         cell_state="SEALED",
         outcome_state=evidence.outcome_state,
         check_success=judge.check_success,
+        actual_model_turns=actual_model_turns,
         measurement_path=str(measurement_path),
         sealed_measurement_sha256=sealed_hash,
+    )
+
+
+def run_sdk_nonlive_cell(
+    *,
+    experiment_dir: Path,
+    plan: ExecutionPlan,
+    planned_cell: PlannedCell,
+    prepared: PreparedFixture,
+    adapter: VariantAdapter,
+    benchmark_python: Path,
+    git_executable: Path,
+    scenario_id: str | None = None,
+) -> SdkSealedCellResult:
+    """Run one fake-runtime Cell through the real Judge, Measurement, and seal."""
+
+    return _run_sdk_cell(
+        experiment_dir=experiment_dir,
+        plan=plan,
+        planned_cell=planned_cell,
+        prepared=prepared,
+        adapter=adapter,
+        benchmark_python=benchmark_python,
+        git_executable=git_executable,
+        scenario_id=scenario_id,
+        live=False,
+    )
+
+
+def run_sdk_live_cell(
+    *,
+    experiment_dir: Path,
+    plan: ExecutionPlan,
+    planned_cell: PlannedCell,
+    prepared: PreparedFixture,
+    adapter: VariantAdapter,
+    benchmark_python: Path,
+    git_executable: Path,
+) -> SdkSealedCellResult:
+    """Run one ChatGPT-auth pilot Cell and preserve export-safe sealed Evidence."""
+
+    return _run_sdk_cell(
+        experiment_dir=experiment_dir,
+        plan=plan,
+        planned_cell=planned_cell,
+        prepared=prepared,
+        adapter=adapter,
+        benchmark_python=benchmark_python,
+        git_executable=git_executable,
+        live=True,
     )
