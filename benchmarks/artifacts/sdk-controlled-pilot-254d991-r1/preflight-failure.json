@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "sdk_controlled_live_pilot_preflight_failure",
+  "experiment_id": "exp_20260807_8b1cd12c_1",
+  "failed_cell_id": "cell_pilot_c0",
+  "failure_kind": "chatgpt_authentication_not_visible_in_managed_shell_sandbox",
+  "sandboxed_account_type": "none",
+  "outside_sandbox_login_status": "chatgpt",
+  "actual_model_turns": 0,
+  "decision": "terminate_revision_and_create_revision_2"
+}
