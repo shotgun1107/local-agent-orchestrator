@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 36건
+- 전체: 37건
 - 해결: 34건
-- 조사 중: 2건
+- 조사 중: 3건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -49,6 +49,7 @@
 | DEV-20260806-011 | resolved | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
 | DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
 | DEV-20260807-001 | investigating | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 일회성 접근 거부 |
+| DEV-20260807-002 | investigating | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2145,3 +2146,58 @@ cell-state.json 원자적 교체에서 WinError 5가 한 번 발생해 182 passe
 
 - 관련 커밋: 기록 없음
 - 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260807-002 — SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김
+
+- 상태: `investigating`
+- 단계: `sdk-controlled-pilot`
+- 분류: `integration`
+- 발견: 2026-08-07T00:53:35Z / 4-Cell pilot revision 1 create
+- 해결: 미해결
+
+### 증상
+
+sandbox 내부 SDK account가 none을 반환했지만 동일 번들 CLI의 외부 login status는 ChatGPT 로그인을 확인했다
+
+### 재현
+
+- 관리형 shell에서 SDK account preflight를 실행한 뒤 같은 codex login status를 승인된 외부 실행으로 비교한다
+
+### 증거
+
+- `direct-observation`: revision 1은 cell_pilot_c0 preflight에서 중단됐고 actual model turns는 0이다
+
+### 근본 원인
+
+Codex가 명령 실행에 적용한 관리형 filesystem sandbox에서는 사용자 Codex 인증 저장소가 SDK 자식 프로세스에 노출되지 않았다. 동일한 번들 codex.exe를 승인된 외부 실행 경계에서 검사하면 ChatGPT 로그인 상태가 확인됐다
+
+### 검토한 해결안
+
+- `rejected` API key로 우회 — 이 프로젝트는 ChatGPT 구독 인증만 허용하며 사용자는 API key 사용을 원하지 않는다
+- `rejected` revision 1을 이어서 실행 — 사전 통제 실패 뒤 같은 revision을 재사용하지 않는 정지 규칙을 지킨다
+- `adopted` revision 1을 model turn 0회 실패로 보존하고 승인된 외부 실행에서 revision 2를 생성 — ChatGPT 인증을 읽을 수 있는 최소 실행 경계만 바꾸고 source와 모델 통제는 그대로 유지한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- revision 2의 model-free preflight가 성공하기 전에는 원인 해소가 완료된 것으로 보지 않는다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json
