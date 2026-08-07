@@ -1,0 +1,47 @@
+diff --git a/src/config.py b/src/config.py
+index 4c5efef..9fbf38a 100644
+--- a/src/config.py
++++ b/src/config.py
+@@ -3,8 +3,21 @@ from __future__ import annotations
+ from collections.abc import Mapping
+ from typing import Any
+ 
++from src.normalization import normalize_key
++
++
++_ALLOWED_KEYS = {"timeout_seconds", "max_retries"}
++
+ 
+ def parse_config(raw: Mapping[str, Any]) -> dict[str, Any]:
+-    """Return a detached config mapping; validation is added by the benchmark task."""
++    """Normalize and validate configuration keys without mutating ``raw``."""
++    parsed: dict[str, Any] = {}
++    for key, value in raw.items():
++        normalized_key = normalize_key(key)
++        if normalized_key not in _ALLOWED_KEYS:
++            raise ValueError(f"unknown configuration key: {normalized_key}")
++        if normalized_key in parsed:
++            raise ValueError(f"duplicate configuration key: {normalized_key}")
++        parsed[normalized_key] = value
+ 
+-    return dict(raw)
++    return parsed
+diff --git a/src/normalization.py b/src/normalization.py
+new file mode 100644
+index 0000000..b4c78b4
+--- /dev/null
++++ b/src/normalization.py
+@@ -0,0 +1,13 @@
++"""Utilities for normalizing configuration keys."""
++
++
++def normalize_key(value: object) -> str:
++    """Return the canonical spelling for a non-empty configuration key."""
++    if not isinstance(value, str):
++        raise ValueError("configuration keys must be strings")
++
++    normalized = value.strip().lower().replace("-", "_")
++    if not normalized:
++        raise ValueError("configuration keys must not be empty")
++
++    return normalized

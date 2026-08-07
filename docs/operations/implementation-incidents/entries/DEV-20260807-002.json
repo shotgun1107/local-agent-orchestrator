@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260807-002",
   "title": "SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "sdk-controlled-pilot",
   "category": "integration",
   "discovered_at": "2026-08-07T00:53:35Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-07T01:02:26Z",
   "discovered_by": "4-Cell pilot revision 1 create",
   "symptom": "sandbox 내부 SDK account가 none을 반환했지만 동일 번들 CLI의 외부 login status는 ChatGPT 로그인을 확인했다",
   "reproduction": [
@@ -37,14 +37,23 @@
       "reason": "ChatGPT 인증을 읽을 수 있는 최소 실행 경계만 바꾸고 source와 모델 통제는 그대로 유지한다"
     }
   ],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [
-    "revision 2의 model-free preflight가 성공하기 전에는 원인 해소가 완료된 것으로 보지 않는다"
+  "resolution": "revision 1을 actual model turn 0회의 실패 artifact로 보존하고, ChatGPT 인증을 읽을 수 있는 승인된 외부 실행 경계에서 revision 2를 새로 생성했다",
+  "affected_files": [
+    "benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json"
   ],
-  "related_commits": [],
+  "regression_tests": [
+    "SDK pilot revision 2 create model-free four-Adapter preflight"
+  ],
+  "verification": [
+    "revision 2에서 C0·C1·C2·B1 네 preflight가 account_type=chatgpt, sdk_version=0.144.4, actual_model_turns=0으로 통과했다",
+    "revision 2의 4-Cell live pilot이 총 7 turns로 모두 Judge 성공 및 SEALED에 도달했다"
+  ],
+  "remaining_risks": [
+    "관리형 shell sandbox 안에서 같은 SDK를 직접 실행하면 인증이 다시 숨겨질 수 있으므로 live 실행은 승인된 외부 경계가 필요하다"
+  ],
+  "related_commits": [
+    "b4fa4f0"
+  ],
   "source_references": [
     "benchmarks/artifacts/sdk-controlled-pilot-254d991-r1/preflight-failure.json"
   ]

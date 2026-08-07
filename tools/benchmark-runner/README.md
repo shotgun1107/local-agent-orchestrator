@@ -66,6 +66,8 @@ $env:PYTHONPATH = ".\tools\benchmark-runner\src;.\stages\b1-sequential\src"
 & $python tools/benchmark-runner/scripts/run_sdk_pilot.py export --state-root $state --results-root .\benchmarks\results
 ```
 
+2026-08-07의 revision 2 `exp_20260807_a3046b4b_2`에서 실제 pilot을 실행했다. C0·C1·C2·B1 네 Cell이 총 7 model turns로 모두 `completed`, 독립 Judge 성공, `SEALED`에 도달해 `PILOT_PASS`가 됐다. export 48개 파일의 집계 SHA-256은 `388428fe70777a03a60a1c19d51a8d2cd6e38df189c3bf367aa0230f0b0d689f`다. 이 pilot은 실제 연결 사전시험이며 C2→B1 채택 판정에는 합산하지 않는다.
+
 봉인 후 Evidence를 고치면 원래 seal이 무효가 되므로 R5는 위험 문자열을 사후 치환하지 않는다. Adapter와 Collector가 봉인 전에 공개 Evidence를 redaction하고, R5에서 token·email·홈 절대 경로·`auth.json` 등을 발견하면 export를 중단해 새 revision에서 다시 봉인하도록 한다.
 
 R2는 B1 공개 CLI/FakeRuntime, R3는 B0 측정 sidecar, R4는 12-Cell 제어·복구, R5는 비교·판정·export, R6는 실제 driver·artifact·환경·Plan 동결을 담당한다. revision 1~4에서 발견한 실행 경계 오류는 각각 별도 봉인 상태로 보존하고 효율성 판정에 섞지 않았다.
