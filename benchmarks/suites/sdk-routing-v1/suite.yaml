@@ -1,7 +1,7 @@
 schema_version: 1
 suite_id: sdk-routing-v1
 design_revision: 2
-status: implementation_candidate
+status: frozen_before_execution
 stages:
   - stage_id: s1-baseline
     path: benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml

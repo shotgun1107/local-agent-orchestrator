@@ -1,3 +1,7 @@
-benchmarks/artifacts/**/*.json -text
+benchmarks/artifacts/** -text -whitespace
 benchmarks/artifacts/**/*.whl binary
 benchmarks/results/** -text -whitespace
+benchmarks/suites/sdk-routing-v1/**/*.yaml text eol=lf
+benchmarks/manifests/*.yaml text eol=lf
+tools/benchmark-runner/** text eol=lf
+stages/b1-sequential/** text eol=lf

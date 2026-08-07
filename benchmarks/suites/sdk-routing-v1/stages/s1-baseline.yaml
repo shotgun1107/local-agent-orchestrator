@@ -1,6 +1,6 @@
 schema_version: 1
 stage_id: s1-baseline
-status: implementation_candidate
+status: frozen_before_execution
 purpose: calibration_only
 fixture_manifests:
   - path: benchmarks/manifests/b0-b1-frozen.yaml

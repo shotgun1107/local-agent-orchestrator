@@ -37,7 +37,27 @@ def main() -> int:
         text=True,
         encoding="utf-8",
     ).stdout.strip()
+    dirty = subprocess.run(
+        [str(git), "status", "--porcelain"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    if dirty:
+        raise RuntimeError("non-live regression requires a clean Git worktree")
+    python_version = subprocess.run(
+        [str(python), "--version"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    if python_version != "Python 3.12.10":
+        raise RuntimeError("non-live regression requires Python 3.12.10")
     environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTHONUTF8"] = "1"
     environment["PYTHONIOENCODING"] = "utf-8"
@@ -46,9 +66,42 @@ def main() -> int:
     pytest_options = ["-q", "-p", "no:cacheprovider"]
     cases = [
         (
+            "s0_gate",
+            [
+                str(python),
+                "-P",
+                "-m",
+                "pytest",
+                *pytest_options,
+                "--basetemp",
+                str(pytest_root / "s0"),
+                "tools/benchmark-runner/tests/test_failure_scenarios.py::test_failure_injection_gate_matches_frozen_expectations",
+            ],
+            repository,
+            str(repository / "tools" / "benchmark-runner" / "src"),
+        ),
+        (
+            "b1_retry_contracts",
+            [
+                str(python),
+                "-P",
+                "-m",
+                "pytest",
+                *pytest_options,
+                "--basetemp",
+                str(pytest_root / "b1-contracts"),
+                "tests/integration/test_orchestrator.py::test_worker_completed_claim_cannot_override_failed_check",
+                "tests/integration/test_orchestrator.py::test_transient_failure_creates_new_attempt_with_unique_artifacts",
+                "tests/integration/test_orchestrator.py::test_malformed_result_resumes_same_session_once",
+            ],
+            repository / "stages" / "b1-sequential",
+            str(repository / "stages" / "b1-sequential" / "src"),
+        ),
+        (
             "b1_full",
             [
                 str(python),
+                "-P",
                 "-m",
                 "pytest",
                 *pytest_options,
@@ -56,12 +109,13 @@ def main() -> int:
                 str(pytest_root / "b"),
             ],
             repository / "stages" / "b1-sequential",
-            None,
+            str(repository / "stages" / "b1-sequential" / "src"),
         ),
         (
             "runner_full",
             [
                 str(python),
+                "-P",
                 "-m",
                 "pytest",
                 *pytest_options,
@@ -74,13 +128,21 @@ def main() -> int:
         ),
         (
             "implementation_log_check",
-            [str(python), "tools/implementation-log/implementation_log.py", "check"],
+            [str(python), "-P", "tools/implementation-log/implementation_log.py", "check"],
             repository,
             None,
         ),
         (
             "implementation_log_tests",
-            [str(python), "-m", "unittest", "discover", "tools/implementation-log/tests", "-v"],
+            [
+                str(python),
+                "-P",
+                "-m",
+                "unittest",
+                "discover",
+                "tools/implementation-log/tests",
+                "-v",
+            ],
             repository,
             None,
         ),
@@ -120,6 +182,7 @@ def main() -> int:
         "status": "failed" if failed else "passed",
         "completed_at": datetime.now(timezone.utc).isoformat(),
         "source_commit": source_commit,
+        "python_version": python_version,
         "actual_model_turns": 0,
         "cases": results,
     }

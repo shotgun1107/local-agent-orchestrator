@@ -77,6 +77,7 @@ def _parser() -> argparse.ArgumentParser:
     start.add_argument("--project", type=Path, required=True)
     start.add_argument("--spec", type=Path, required=True)
     start.add_argument("--runtime", choices=["fake", "codex"], required=True)
+    start.add_argument("--max-turns", type=int)
     start.add_argument("--fake-scenario", default="complete")
     start.add_argument("--fake-fixture", type=Path)
     resume = run_sub.add_parser("resume")
@@ -372,6 +373,7 @@ def dispatch(args: argparse.Namespace) -> int:
             runtime_kind=args.runtime,
             fake_scenario=args.fake_scenario,
             fake_fixture=fixture,
+            max_turns_override=args.max_turns,
         )
         try:
             run_id = orchestrator.start(spec, original_spec=original)
