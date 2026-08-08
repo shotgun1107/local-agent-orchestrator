@@ -1,0 +1,165 @@
+diff --git a/analysis/evidence-ledger.json b/analysis/evidence-ledger.json
+index bcfc79a..92f6698 100644
+--- a/analysis/evidence-ledger.json
++++ b/analysis/evidence-ledger.json
+@@ -1 +1,13 @@
+-{"evidence":[]}
++{
++  "evidence": [
++    {"evidence_id":"ev-approval-owner-c-2","source_id":"source-c","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Approval owner for release 42 is unknown.","topic_id":"approval-owner","observation_status":"reported","canonical_claim_text":"The approval owner for release 42 is unknown."},
++    {"evidence_id":"ev-cache-endpoint-a-3","source_id":"source-a","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-a.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"The cache endpoint was cache-a."},
++    {"evidence_id":"ev-cache-endpoint-c-3","source_id":"source-c","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-b.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"The cache endpoint was cache-b."},
++    {"evidence_id":"ev-deployment-a-1","source_id":"source-a","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:00Z deployment release 42 began.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 began at 2026-08-01T09:00Z."},
++    {"evidence_id":"ev-deployment-b-1","source_id":"source-b","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:02Z deployment release 42 completed.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 completed at 2026-08-01T09:02Z."},
++    {"evidence_id":"ev-error-rate-a-2","source_id":"source-a","locator":{"line_start":2,"line_end":2},"exact_excerpt":"2026-08-01T09:08Z error rate crossed 8 percent.","topic_id":"error-rate","observation_status":"observed","canonical_claim_text":"The error rate crossed 8 percent at 2026-08-01T09:08Z."},
++    {"evidence_id":"ev-error-rate-b-2","source_id":"source-b","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Dashboard note: error rate stayed below 2 percent.","topic_id":"error-rate","observation_status":"reported","canonical_claim_text":"The error rate stayed below 2 percent."},
++    {"evidence_id":"ev-recovery-c-1","source_id":"source-c","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:35Z service recovery was confirmed.","topic_id":"recovery","observation_status":"observed","canonical_claim_text":"Service recovery was confirmed at 2026-08-01T09:35Z."},
++    {"evidence_id":"ev-rollback-b-3","source_id":"source-b","locator":{"line_start":3,"line_end":3},"exact_excerpt":"2026-08-01T09:20Z rollback release 42 began.","topic_id":"rollback","observation_status":"observed","canonical_claim_text":"Rollback of release 42 began at 2026-08-01T09:20Z."}
++  ]
++}
+diff --git a/analysis/uncertainties.json b/analysis/uncertainties.json
+index 146c963..61f0ffe 100644
+--- a/analysis/uncertainties.json
++++ b/analysis/uncertainties.json
+@@ -1 +1,7 @@
+-{"uncertainties":[]}
++{
++  "uncertainties": [
++    {"uncertainty_id":"unc-approval-owner","evidence_ids":["ev-approval-owner-c-2"],"source_ids":["source-c"],"next_action":"Identify the approval owner for release 42 from deployment approval records."},
++    {"uncertainty_id":"unc-cache-endpoint","evidence_ids":["ev-cache-endpoint-a-3","ev-cache-endpoint-c-3"],"source_ids":["source-a","source-c"],"next_action":"Verify the cache endpoint used during the incident from configuration and connection logs."},
++    {"uncertainty_id":"unc-error-rate","evidence_ids":["ev-error-rate-a-2","ev-error-rate-b-2"],"source_ids":["source-a","source-b"],"next_action":"Reconcile error-rate telemetry and dashboard data for the incident window."}
++  ]
++}
+diff --git a/report/action-plan.json b/report/action-plan.json
+index c93787a..79ad2c7 100644
+--- a/report/action-plan.json
++++ b/report/action-plan.json
+@@ -1 +1,7 @@
+-{"actions":[]}
++{
++  "actions": [
++    {"action_id":"action-verify-approval-owner","action_type":"verify","reference_ids":["unc-approval-owner"]},
++    {"action_id":"action-verify-cache-endpoint","action_type":"verify","reference_ids":["unc-cache-endpoint"]},
++    {"action_id":"action-verify-error-rate","action_type":"verify","reference_ids":["unc-error-rate"]}
++  ]
++}
+diff --git a/report/claims.json b/report/claims.json
+index 8e5209f..80835a5 100644
+--- a/report/claims.json
++++ b/report/claims.json
+@@ -1 +1,13 @@
+-{"claims":[]}
++{
++  "claims": [
++    {"claim_id":"claim-approval-owner-unknown","evidence_id":"ev-approval-owner-c-2","status":"confirmed","canonical_claim_text":"The approval owner for release 42 is unknown."},
++    {"claim_id":"claim-cache-endpoint-a","evidence_id":"ev-cache-endpoint-a-3","status":"conflicting","canonical_claim_text":"The cache endpoint was cache-a."},
++    {"claim_id":"claim-cache-endpoint-c","evidence_id":"ev-cache-endpoint-c-3","status":"conflicting","canonical_claim_text":"The cache endpoint was cache-b."},
++    {"claim_id":"claim-deployment-began","evidence_id":"ev-deployment-a-1","status":"confirmed","canonical_claim_text":"Deployment of release 42 began at 2026-08-01T09:00Z."},
++    {"claim_id":"claim-deployment-completed","evidence_id":"ev-deployment-b-1","status":"confirmed","canonical_claim_text":"Deployment of release 42 completed at 2026-08-01T09:02Z."},
++    {"claim_id":"claim-error-rate-crossed-8-percent","evidence_id":"ev-error-rate-a-2","status":"conflicting","canonical_claim_text":"The error rate crossed 8 percent at 2026-08-01T09:08Z."},
++    {"claim_id":"claim-error-rate-below-2-percent","evidence_id":"ev-error-rate-b-2","status":"conflicting","canonical_claim_text":"The error rate stayed below 2 percent."},
++    {"claim_id":"claim-recovery-confirmed","evidence_id":"ev-recovery-c-1","status":"confirmed","canonical_claim_text":"Service recovery was confirmed at 2026-08-01T09:35Z."},
++    {"claim_id":"claim-rollback-began","evidence_id":"ev-rollback-b-3","status":"confirmed","canonical_claim_text":"Rollback of release 42 began at 2026-08-01T09:20Z."}
++  ]
++}
+diff --git a/report/final-report.md b/report/final-report.md
+index af796f7..a1b7886 100644
+--- a/report/final-report.md
++++ b/report/final-report.md
+@@ -1,7 +1,22 @@
+ ## 확인된 사실
++- [claim-approval-owner-unknown] The approval owner for release 42 is unknown.
++- [claim-deployment-began] Deployment of release 42 began at 2026-08-01T09:00Z.
++- [claim-deployment-completed] Deployment of release 42 completed at 2026-08-01T09:02Z.
++- [claim-recovery-confirmed] Service recovery was confirmed at 2026-08-01T09:35Z.
++- [claim-rollback-began] Rollback of release 42 began at 2026-08-01T09:20Z.
+ 
+ ## 상충
++- [claim-cache-endpoint-a] The cache endpoint was cache-a.
++- [claim-cache-endpoint-c] The cache endpoint was cache-b.
++- [claim-error-rate-crossed-8-percent] The error rate crossed 8 percent at 2026-08-01T09:08Z.
++- [claim-error-rate-below-2-percent] The error rate stayed below 2 percent.
+ 
+ ## 미확인
++- [unc-approval-owner] Identify the approval owner for release 42 from deployment approval records.
++- [unc-cache-endpoint] Verify the cache endpoint used during the incident from configuration and connection logs.
++- [unc-error-rate] Reconcile error-rate telemetry and dashboard data for the incident window.
+ 
+ ## 권고
++- [action-verify-approval-owner] verify: unc-approval-owner
++- [action-verify-cache-endpoint] verify: unc-cache-endpoint
++- [action-verify-error-rate] verify: unc-error-rate
+diff --git a/timeline/events.json b/timeline/events.json
+index babeeca..0c10751 100644
+--- a/timeline/events.json
++++ b/timeline/events.json
+@@ -1 +1,34 @@
+-{"events":[]}
++{
++  "events": [
++    {
++      "event_id": "event-deployment-began",
++      "status": "confirmed",
++      "evidence_ids": ["ev-deployment-a-1"],
++      "uncertainty_ids": []
++    },
++    {
++      "event_id": "event-deployment-completed",
++      "status": "confirmed",
++      "evidence_ids": ["ev-deployment-b-1"],
++      "uncertainty_ids": []
++    },
++    {
++      "event_id": "event-error-rate-observations",
++      "status": "conflicting",
++      "evidence_ids": ["ev-error-rate-a-2", "ev-error-rate-b-2"],
++      "uncertainty_ids": ["unc-error-rate"]
++    },
++    {
++      "event_id": "event-rollback-began",
++      "status": "confirmed",
++      "evidence_ids": ["ev-rollback-b-3"],
++      "uncertainty_ids": []
++    },
++    {
++      "event_id": "event-service-recovery-confirmed",
++      "status": "confirmed",
++      "evidence_ids": ["ev-recovery-c-1"],
++      "uncertainty_ids": []
++    }
++  ]
++}
+diff --git a/timeline/hypotheses.json b/timeline/hypotheses.json
+index b3ca461..fe7267d 100644
+--- a/timeline/hypotheses.json
++++ b/timeline/hypotheses.json
+@@ -1 +1,28 @@
+-{"hypotheses":[]}
++{
++  "hypotheses": [
++    {
++      "hypothesis_id": "hypothesis-deployment-associated-with-error-rate",
++      "status": "candidate",
++      "evidence_ids": ["ev-deployment-a-1", "ev-deployment-b-1", "ev-error-rate-a-2", "ev-error-rate-b-2"],
++      "uncertainty_ids": ["unc-error-rate"]
++    },
++    {
++      "hypothesis_id": "hypothesis-cache-endpoint-contributed-to-incident",
++      "status": "candidate",
++      "evidence_ids": ["ev-cache-endpoint-a-3", "ev-cache-endpoint-c-3"],
++      "uncertainty_ids": ["unc-cache-endpoint"]
++    },
++    {
++      "hypothesis_id": "hypothesis-rollback-preceded-recovery",
++      "status": "candidate",
++      "evidence_ids": ["ev-recovery-c-1", "ev-rollback-b-3"],
++      "uncertainty_ids": []
++    },
++    {
++      "hypothesis_id": "hypothesis-approval-owner-needs-verification",
++      "status": "candidate",
++      "evidence_ids": ["ev-approval-owner-c-2"],
++      "uncertainty_ids": ["unc-approval-owner"]
++    }
++  ]
++}

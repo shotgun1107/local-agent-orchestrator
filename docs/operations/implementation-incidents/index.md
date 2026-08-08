@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 42건
-- 해결: 40건
+- 전체: 43건
+- 해결: 41건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -55,6 +55,7 @@
 | DEV-20260807-005 | resolved | sdk-routing-suite-v1 | implementation | S1 동결 상태를 집행할 live 실행 경로가 없음 |
 | DEV-20260807-006 | resolved | sdk-routing-suite-v1 | implementation | S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음 |
 | DEV-20260808-001 | resolved | sdk-routing-suite-v1 | implementation | S2 frozen manifest model controls exceeded verifier contract |
+| DEV-20260808-002 | resolved | sdk-routing-suite-v1 | implementation | S2 reverse Plan retained unselected fixture identity |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2523,3 +2524,60 @@ Removed reasoning_effort, SDK, approval_mode, and sandbox from the S2 fixture mo
 - 관련 커밋: 기록 없음
 - 출처: benchmarks/manifests/sdk-routing-s2-intermediate.yaml
 - 출처: tools/benchmark-runner/src/benchmark_runner/routing_live.py
+
+## DEV-20260808-002 — S2 reverse Plan retained unselected fixture identity
+
+- 상태: `resolved`
+- 단계: `sdk-routing-suite-v1`
+- 분류: `implementation`
+- 발견: 2026-08-08T09:13:00Z / first S2 reverse zero-turn freeze create
+- 해결: 2026-08-08T09:20:00Z
+
+### 증상
+
+create built a two-Cell reverse candidate but fail-closed preflight verification rejected its fixture semantics set
+
+### 재현
+
+- freeze the incident-only reverse Plan from source commit 88b199f and verify the generated bundle
+
+### 증거
+
+- `reproducible-test`: verify_routing_s1_live_freeze raised S1 live freeze preflight evidence differs before any model turn
+
+### 근본 원인
+
+The reverse builder replaced the Cell list but retained both initial Plan fixture identities, while preflight correctly emitted task semantics only for the selected incident profile.
+
+### 검토한 해결안
+
+- `rejected` weaken preflight set equality — would allow unrelated or omitted fixture semantics
+- `adopted` restrict reverse Plan fixtures to the approved expansion profile — makes Plan scope match its two Cells
+
+### 채택한 해결
+
+Filtered reverse Plan fixture identities to the selected profile and made freeze identity verification accept that strict stage-manifest subset.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+- tools/benchmark-runner/src/benchmark_runner/routing_live.py
+- tools/benchmark-runner/tests/test_routing_s2.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_routing_s2.py::test_s2_reverse_live_plan_is_one_bound_c2_then_b1_pair
+
+### 검증 결과
+
+- S2 targeted regression 17 passed; final reverse create verified with 2 PLANNED Cells and 0 model turns
+
+### 남은 위험
+
+- The rejected partial artifact and external state were removed after exact-path verification; they were never execution candidates.
+
+### 추적 정보
+
+- 관련 커밋: faecb246ec442b79d375ad4ebd51a230dca11c1e
+- 출처: benchmarks/artifacts/sdk-routing-s2-reverse-faecb24-r3
+- 출처: tools/benchmark-runner/src/benchmark_runner/routing_suite.py
