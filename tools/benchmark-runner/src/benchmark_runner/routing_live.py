@@ -1926,7 +1926,7 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
                     measurements,
                     fixture_id=fixture_id,
                 )
-                for fixture_id in plan.decision_policy.get("profiles", {})
+                for fixture_id in sorted({item.fixture_id for item in plan.fixtures})
             }
         return {
             "schema_version": 1,
@@ -2120,7 +2120,7 @@ def run_next_routing_s1_live_cell(
             not isinstance(posthoc_checks.get(fixture_id), dict)
             or posthoc_checks[fixture_id].get("checker_sha256")
             != current_checker_sha256(fixture_id)
-            for fixture_id in plan.decision_policy.get("profiles", {})
+            for fixture_id in sorted({item.fixture_id for item in plan.fixtures})
         ):
             raise RoutingSuiteError("routing live checker source changed after freeze")
     next_cell = next(
@@ -3308,7 +3308,7 @@ def _verify_routing_profile_live_export(
                     measurements,
                     fixture_id=fixture_id,
                 )
-                for fixture_id in plan.decision_policy.get("profiles", {})
+                for fixture_id in sorted({item.fixture_id for item in plan.fixtures})
             }
         ),
         "route_decision_issued": any(

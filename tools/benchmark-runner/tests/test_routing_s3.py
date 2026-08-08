@@ -663,3 +663,211 @@ def test_s3_fake_four_cell_plan_judge_property_seal_export(
         "C2_SUFFICIENT_OBSERVED_SINGLE_PAIR"
     }
     assert policy["global_b1_default_issued"] is False
+
+    by_cell = {item.identity.cell_id: item for item in live_measurements}
+
+    def with_property_failure(measurement, property_id: str):
+        values = dict(measurement.variant_metrics.values)
+        values["property_status"] = "fail"
+        return measurement.model_copy(
+            update={
+                "variant_metrics": measurement.variant_metrics.model_copy(
+                    update={"values": values}
+                )
+            }
+        )
+
+    def with_b1_control(measurement, task_key: str):
+        values = dict(measurement.variant_metrics.values)
+        values.update(
+            {
+                "actual_model_turns": 5,
+                "b1_intermediate_check_changed_result": True,
+                "b1_intermediate_check_changed_dispatch": True,
+                "b1_retry_count": 1,
+                "b1_resume_count": 0,
+                "dual_outcome_status": "reported",
+                "first_attempt_outcome": [
+                    {
+                        "task_key": task_key,
+                        "state": "failed",
+                        "failure_kind": "check_failed",
+                    }
+                ],
+                "full_orchestrated_outcome": {
+                    "state": measurement.outcome.state,
+                    "failure_kind": measurement.outcome.failure_kind,
+                    "check_success": measurement.outcome.check_success,
+                    "turn_count": 5,
+                    "token_usage_status": measurement.resource.token_usage.status.value,
+                    "token_usage": measurement.resource.token_usage.value,
+                },
+                "attempt_level_cost": "not_available",
+            }
+        )
+        return measurement.model_copy(
+            update={
+                "resource": measurement.resource.model_copy(
+                    update={
+                        "turn_count": measurement.resource.turn_count.model_copy(
+                            update={"value": 5}
+                        )
+                    }
+                ),
+                "variant_metrics": measurement.variant_metrics.model_copy(
+                    update={"values": values}
+                ),
+            }
+        )
+
+    def failed_posthoc(result: dict[str, object], property_id: str) -> dict[str, object]:
+        value = json.loads(json.dumps(result))
+        value["property_status"] = "fail"
+        for item in value["properties"]:
+            if item["property_id"] == property_id:
+                item["status"] = "fail"
+                break
+        else:
+            raise AssertionError(f"unknown S3 property: {property_id}")
+        return value
+
+    def policy_for(
+        replacements: dict[str, object],
+        posthoc_replacements: dict[str, tuple[str, str | None]],
+        *,
+        reverse_plan=None,
+        reverse_measurements=(),
+    ):
+        measurements = [
+            replacements.get(item.identity.cell_id, item)
+            for item in live_measurements
+        ] + list(reverse_measurements)
+        posthoc = {key: json.loads(json.dumps(value)) for key, value in posthoc_results.items()}
+        for cell_id, (source_cell_id, property_id) in posthoc_replacements.items():
+            posthoc[cell_id] = (
+                json.loads(json.dumps(posthoc_results[source_cell_id]))
+                if property_id is None
+                else failed_posthoc(posthoc_results[source_cell_id], property_id)
+            )
+        return derive_s3_routing_policy(
+            plan=plan,
+            additional_plans=() if reverse_plan is None else (reverse_plan,),
+            measurements=measurements,
+            sealed_cell_ids={item.identity.cell_id for item in measurements},
+            posthoc_results=posthoc,
+        )
+
+    compat_c2 = "cell_s3_a_1_c2"
+    compat_b1 = "cell_s3_a_1_b1"
+    controlled_b1 = with_b1_control(by_cell[compat_b1], "A1")
+    positive = policy_for(
+        {
+            compat_c2: with_property_failure(by_cell[compat_c2], "HCR-P1"),
+            compat_b1: controlled_b1,
+        },
+        {compat_c2: (compat_c2, "HCR-P1")},
+    )
+    assert positive["stage_state"] == "S3_REPLICATION_REQUIRED"
+    assert positive["profiles"][COMPATIBILITY_FIXTURE_ID]["attributable_control_effect"]["initial"] is True
+
+    negative = policy_for(
+        {
+            compat_c2: with_property_failure(by_cell[compat_c2], "HCR-P4"),
+            compat_b1: controlled_b1,
+        },
+        {compat_c2: (compat_c2, "HCR-P4")},
+    )
+    assert negative["stage_state"] == "S3_INCONCLUSIVE"
+    assert negative["profiles"][COMPATIBILITY_FIXTURE_ID]["attributable_control_effect"]["initial"] is False
+
+    initial_cells = {item.variant_id: item for item in plan.cells if item.fixture_id == COMPATIBILITY_FIXTURE_ID}
+    reverse_cells = [
+        initial_cells["b1"].model_copy(
+            update={
+                "cell_id": "cell_s3_a_2_b1",
+                "block_id": "block_s3_a_2",
+                "execution_ordinal": 1,
+            }
+        ),
+        initial_cells["c2"].model_copy(
+            update={
+                "cell_id": "cell_s3_a_2_c2",
+                "block_id": "block_s3_a_2",
+                "execution_ordinal": 2,
+            }
+        ),
+    ]
+    reverse_plan = plan.model_copy(
+        update={
+            "experiment_id": "exp_20260808_22222222_1",
+            "plan_fingerprint": "7" * 64,
+            "cells": reverse_cells,
+            "fixtures": [
+                item for item in plan.fixtures
+                if item.fixture_id == COMPATIBILITY_FIXTURE_ID
+            ],
+        }
+    )
+
+    def rebound(measurement, cell):
+        return measurement.model_copy(
+            update={
+                "identity": measurement.identity.model_copy(
+                    update={
+                        "experiment_id": reverse_plan.experiment_id,
+                        "block_id": cell.block_id,
+                        "cell_id": cell.cell_id,
+                        "execution_ordinal": cell.execution_ordinal,
+                    }
+                )
+            }
+        )
+
+    reverse_by_variant = {item.variant_id: item for item in reverse_cells}
+    reverse_c2 = rebound(by_cell[compat_c2], reverse_by_variant["c2"])
+    reverse_b1 = rebound(controlled_b1, reverse_by_variant["b1"])
+    retain = policy_for(
+        {
+            compat_c2: with_property_failure(by_cell[compat_c2], "HCR-P1"),
+            compat_b1: controlled_b1,
+        },
+        {
+            compat_c2: (compat_c2, "HCR-P1"),
+            reverse_c2.identity.cell_id: (compat_c2, "HCR-P1"),
+            reverse_b1.identity.cell_id: (compat_b1, None),
+        },
+        reverse_plan=reverse_plan,
+        reverse_measurements=(
+            with_property_failure(reverse_c2, "HCR-P1"),
+            reverse_b1,
+        ),
+    )
+    assert {
+        key: value["invalid_reason"]
+        for key, value in retain["profiles"][COMPATIBILITY_FIXTURE_ID]["cells"].items()
+    } == {
+        "initial_c2": None,
+        "initial_b1": None,
+        "reverse_c2": None,
+        "reverse_b1": None,
+    }
+    assert retain["stage_state"] == "S3_POLICY_READY"
+    assert retain["profiles"][COMPATIBILITY_FIXTURE_ID]["state"] == "RETAIN_B1_HIGH_RISK"
+
+    failed_initial_b1 = with_property_failure(controlled_b1, "HCR-P1")
+    failed_reverse_b1 = with_property_failure(reverse_b1, "HCR-P1")
+    reject = policy_for(
+        {compat_b1: failed_initial_b1},
+        {
+            reverse_c2.identity.cell_id: (compat_c2, None),
+            compat_b1: (compat_b1, "HCR-P1"),
+            failed_reverse_b1.identity.cell_id: (compat_b1, "HCR-P1"),
+        },
+        reverse_plan=reverse_plan,
+        reverse_measurements=(reverse_c2, failed_reverse_b1),
+    )
+    assert reject["stage_state"] == "S3_POLICY_READY"
+    assert reject["profiles"][COMPATIBILITY_FIXTURE_ID]["state"] == "REJECT_B1_PROFILE"
+    assert reject["profiles"][COMPATIBILITY_FIXTURE_ID]["repeatable_quality_signatures"] == [
+        "schema_contract:HCR-P1"
+    ]
