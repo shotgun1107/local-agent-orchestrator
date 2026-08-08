@@ -1,0 +1,91 @@
+schema_version: 1
+stage_id: s1-baseline
+status: frozen_before_execution
+purpose: calibration_only
+fixture_manifests:
+  - path: benchmarks/manifests/b0-b1-frozen.yaml
+    fixture_ids: [code-change, document-read]
+  - path: benchmarks/manifests/b0-b1-sequential-followup.yaml
+    fixture_ids: [sequential-code-change, sequential-document]
+variants: [c2, b1]
+baseline_variant: c2
+candidate_variants: [b1]
+profiles:
+  - fixture_id: code-change
+    complexity:
+      task_count: 1
+      dependency_depth: 1
+      dependency_edges: 0
+      max_fan_in: 0
+      worker_read_files: 2
+      worker_read_bytes: 330
+      expected_write_files: {minimum: 1, maximum: 1}
+      write_modules: 1
+      check_count: 2
+      handoff_kind: none
+      scope_overlap: not_applicable
+      verification_kind: public_to_worker
+      failure_profile: omission_risk
+      solution_ambiguity: low
+  - fixture_id: document-read
+    complexity:
+      task_count: 1
+      dependency_depth: 1
+      dependency_edges: 0
+      max_fan_in: 0
+      worker_read_files: 2
+      worker_read_bytes: 351
+      expected_write_files: {minimum: 1, maximum: 1}
+      write_modules: 1
+      check_count: 2
+      handoff_kind: none
+      scope_overlap: not_applicable
+      verification_kind: public_to_worker
+      failure_profile: omission_risk
+      solution_ambiguity: medium
+  - fixture_id: sequential-code-change
+    complexity:
+      task_count: 2
+      dependency_depth: 2
+      dependency_edges: 1
+      max_fan_in: 1
+      worker_read_files: 2
+      worker_read_bytes: 512
+      expected_write_files: {minimum: 2, maximum: 2}
+      write_modules: 1
+      check_count: 4
+      handoff_kind: filesystem_implicit
+      scope_overlap: disjoint
+      verification_kind: public_to_worker
+      failure_profile: compatibility_risk
+      solution_ambiguity: low
+  - fixture_id: sequential-document
+    complexity:
+      task_count: 2
+      dependency_depth: 2
+      dependency_edges: 1
+      max_fan_in: 1
+      worker_read_files: 2
+      worker_read_bytes: 775
+      expected_write_files: {minimum: 2, maximum: 2}
+      write_modules: 2
+      check_count: 4
+      handoff_kind: declared_single
+      scope_overlap: disjoint
+      verification_kind: public_to_worker
+      failure_profile: omission_risk
+      solution_ambiguity: medium
+cells:
+  - {fixture_id: code-change, variant_id: c2}
+  - {fixture_id: code-change, variant_id: b1}
+  - {fixture_id: document-read, variant_id: b1}
+  - {fixture_id: document-read, variant_id: c2}
+  - {fixture_id: sequential-code-change, variant_id: b1}
+  - {fixture_id: sequential-code-change, variant_id: c2}
+  - {fixture_id: sequential-document, variant_id: c2}
+  - {fixture_id: sequential-document, variant_id: b1}
+planned_live_model_turns: 12
+allowed_outcomes:
+  - CALIBRATION_PASS
+  - CALIBRATION_STOP
+  - CALIBRATION_INCONCLUSIVE

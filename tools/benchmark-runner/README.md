@@ -255,3 +255,11 @@ After all eight Cells are sealedâ€”or immediately after a terminal safety stopâ€
 preserves partial stop Evidence when needed, reopens the complete freeze bundle and
 every sealed Measurement and Evidence hash, and always records
 `route_decision_issued=false`; S1 cannot emit profile `ROUTE_*` or B1 adoption.
+
+The frozen candidate was executed on 2026-08-08 as
+`exp_20260807_d1e9fdb8_1`. All eight Cells completed, passed the Judge, and were
+sealed in the planned order using twelve actual model turns. The terminal state is
+`CALIBRATION_PASS` with `route_decision_issued=false`. The 108-file export is at
+`benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`; its aggregate SHA-256
+is `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`.
+See `docs/experiments/sdk-routing-s1-live-result.md` for the bounded comparison.

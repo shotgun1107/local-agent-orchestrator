@@ -1367,3 +1367,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 별도 verifier와 status에서 8개 Cell 전부 `PLANNED`, sealed 0, actual model turn 0, calibration outcome 없음, route 미발행, stop 없음이 확인됐다. 다음 행동은 자동 실행이 아니라 사용자 별도 승인 뒤 첫 `cell_s1_code-change_1_c2` 한 Cell만 실행하는 것이다. S2·S3와 route 정책은 선행하지 않는다.
 - artifact commit `df7cbddba3c40966c4b14ec459b38de29ce3cc86`을 `core.autocrlf=true`와 `false`인 두 별도 clean clone에서 각각 검증했다. 두 verifier 모두 같은 Experiment, Plan fingerprint, raw Plan SHA와 freeze SHA를 반환해 Windows EOL 설정 사이에서 bundle bytes가 보존됨을 확인했다. 두 임시 clone은 검증 뒤 삭제했다.
 - 과거 문서의 프로젝트별 `fork` 표현은 현재 동결 설계의 기본 적용 방식이 아니다. 기본은 검증된 버전 코어와 프로젝트별 `.orchestrator/` project pack이며 전체 Git fork는 설정·hook으로 표현할 수 없는 필요가 생겼을 때의 escape hatch다.
+
+## SDK 라우팅 S1 live 8-Cell 완료와 정식 export
+
+- 작업일: 2026-08-08. 동결 후보 `exp_20260807_d1e9fdb8_1`을 변경하거나 `create`를 다시 실행하지 않고, 사용자 승인 범위에서 `run-next`를 Cell마다 순차 호출했다.
+- code-change C2→B1, document-read B1→C2, sequential-code-change B1→C2, sequential-document C2→B1의 8개 Cell이 모두 `completed`·`SEALED`에 도달했다. Judge·scope·protected file·Evidence 무결성은 모두 성공했고 stop은 없었다. 실제 model turn은 계획된 정상 예산과 같은 12회다.
+- 최종 status는 `CALIBRATION_PASS`, `route_decision_issued=false`다. B1 네 Cell의 retry·resume는 모두 0회였다.
+- C2 4개 합계는 6 turns, 662,143 tokens, 273.125초이고 B1 4개 합계는 6 turns, 541,145 tokens, 259.032초다. B1 합계는 token 18.3%, wall-clock 5.2% 작았지만 차이 대부분은 `sequential-document` 한 pair에서 발생했다. profile당 pair 하나인 S1 결과로 범용 우위·profile route·B1 채택을 발행하지 않는다.
+- live export는 108개 파일을 `benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`에 보존했다. export SHA-256은 `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`이며 생성 시 freeze bundle, 8개 Measurement와 Evidence, 정확한 파일 집합을 다시 열어 검증했다.
+- 사람이 읽는 해석은 `docs/experiments/sdk-routing-s1-live-result.md`에 기록했다. 추가 회귀·하위 에이전트·새 하네스·추가 model turn은 실행하지 않았다. 다음 기술 후보는 S2 intermediate v1 최소 구현이며 S3는 선행하지 않는다.
