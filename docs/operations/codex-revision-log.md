@@ -1438,3 +1438,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 별도 clean checkout·별도 process의 Plan build가 동일했고 4개 Cell 경로 preflight의 최대 생성 경로 길이는 모두 105자였다. verifier는 source commit·Python/Git path hash·7개 sealed source file을 다시 확인했다.
 - status에서 `cell_s2_a_1_c2`, `cell_s2_a_1_b1`, `cell_s2_b_1_b1`, `cell_s2_b_1_c2`는 모두 `PLANNED`다. sealed 0, actual model turn 0, 남은 B1 retry/resume reserve 3, route 미발행, `S2_INCOMPLETE`, stop 없음이다.
 - 다음 행동은 반복 검증이나 새 하네스가 아니다. 사용자가 최초 4-Cell Plan과 절대 상한 15 turns를 별도로 승인할 때만 같은 동결 state에서 순차 실행한다. 승인 전에는 `create`, 회귀, freeze 재검증, live Cell, 역순 확대, S3를 실행하지 않는다.
+
+## SDK 라우팅 S2 최초 live 4-Cell 완료와 정식 export
+
+- 작업일: 2026-08-08. 사용자가 최초 S2 4-Cell Plan과 최대 15 model turns를 승인해 동결된 `exp_20260808_5f4f41a7_2`를 config C2→B1, incident B1→C2 순서로 실행했다. 4개 모두 `completed`·`SEALED`, Judge 성공에 도달했다.
+- 각 Cell은 정확히 3 turns를 사용해 전체 actual model turn은 12회다. B1 두 Cell의 retry·resume와 intermediate control effect는 모두 0이며 전용 reserve 3 turns는 사용하지 않았다.
+- Config migration은 C2/B1 모두 사후 속성까지 통과했다. B1은 token 7.6% 감소, wall-clock 6.9% 증가였고 단일 pair에 품질 차이나 control effect가 없어 `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR`, route 미발행으로 남았다.
+- Incident analysis는 C2가 사후 속성까지 통과했지만 B1은 공개 Judge 성공 뒤 `INC-P1`, `INC-P3`에 실패했다. evidence source locator가 원 source line과 어긋났고 action이 허용된 evidence/uncertainty ID 대신 hypothesis ID를 참조했다. B1은 C2보다 token 20.2%, wall-clock 6.6% 많았다.
+- 최초 incident 순서가 B1→C2인 단일 pair이므로 B1 제외 route를 즉시 발행하지 않았다. terminal state는 `S2_EXPANSION_REQUIRED`, route와 global B1 default는 모두 미발행이다.
+- 정식 export 63개 파일을 `benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_5f4f41a7_2/`에 보존했다. export SHA-256은 `5577d8bf54352a9b9930331e3c99d1af761d85211b197ebb9c959cee6de83d55`이며 정확한 경로에서 verifier가 freeze·Measurement·post-hoc·policy·전체 파일을 다시 열어 통과했다.
+- 사람용 해석은 `docs/experiments/sdk-routing-s2-live-result.md`에 기록했다. 다음 후보는 incident profile의 반대 순서 C2→B1 pair이며 별도 새 Plan과 최대 9 model turns 사용자 승인이 필요하다. Config 확대와 S3는 시작하지 않는다.
