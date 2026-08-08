@@ -48,6 +48,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--regression-record", type=Path)
     parser.add_argument("--results-root", type=Path)
     parser.add_argument("--export-root", type=Path)
+    parser.add_argument("--initial-export-root", type=Path)
+    parser.add_argument("--expansion-profile")
     parser.add_argument("--revision", type=int, default=1)
     parser.add_argument("--confirm-model-usage", action="store_true")
     parser.add_argument(
@@ -79,6 +81,8 @@ def main() -> int:
             ),
             benchmark_python=Path(sys.executable),
             revision=args.revision,
+            initial_export_root=args.initial_export_root,
+            expansion_profile=args.expansion_profile,
         )
     elif args.command == "verify-freeze":
         result = verify_routing_live_freeze(

@@ -16,6 +16,7 @@ from benchmark_runner.routing_suite import (
     _resolve_stage,
     build_routing_s1_live_plan,
     build_routing_s2_live_plan,
+    build_routing_s2_reverse_live_plan,
 )
 from benchmark_runner.runner import _source_tree_sha256, canonical_json_bytes
 from benchmark_runner.sdk_cells import runner_source_sha256
@@ -65,12 +66,7 @@ def main() -> int:
                 }
             )
         )
-    builder = (
-        build_routing_s1_live_plan
-        if args.stage == "s1-baseline"
-        else build_routing_s2_live_plan
-    )
-    plan = builder(
+    common = dict(
         repository_root=repository,
         suite_path=suite_path,
         stage_path=stage_path,
@@ -80,6 +76,24 @@ def main() -> int:
         created_at=datetime.fromisoformat(value["created_at"]),
         revision=value["revision"],
     )
+    decision_policy = value.get("decision_policy")
+    if (
+        args.stage == "s2-intermediate"
+        and isinstance(decision_policy, dict)
+        and decision_policy.get("execution_phase") == "reverse"
+    ):
+        plan = build_routing_s2_reverse_live_plan(
+            **common,
+            expansion_profile=decision_policy["expansion_profile"],
+            initial_export_identity=decision_policy["initial_export_identity"],
+        )
+    else:
+        builder = (
+            build_routing_s1_live_plan
+            if args.stage == "s1-baseline"
+            else build_routing_s2_live_plan
+        )
+        plan = builder(**common)
     sys.stdout.buffer.write(canonical_json_bytes(plan))
     return 0
 

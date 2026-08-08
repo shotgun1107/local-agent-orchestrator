@@ -16,6 +16,7 @@ from benchmark_runner.routing_suite import (
     RoutingS2StageManifest,
     RoutingStageManifest,
     build_routing_s2_plan,
+    build_routing_s2_reverse_live_plan,
     compute_fixture_complexity,
     export_routing_s2_nonlive,
     initialize_routing_s2_experiment,
@@ -47,6 +48,44 @@ GOLDEN_ROOT = (
 )
 B1_SOURCE_ROOT = REPOSITORY_ROOT / "stages" / "b1-sequential" / "src"
 B1_SCHEMA_ROOT = REPOSITORY_ROOT / "stages" / "b1-sequential" / "schemas" / "v1"
+
+
+def test_s2_reverse_live_plan_is_one_bound_c2_then_b1_pair() -> None:
+    suite_path = (
+        REPOSITORY_ROOT / "benchmarks" / "suites" / "sdk-routing-v1" / "suite.yaml"
+    )
+    plan = build_routing_s2_reverse_live_plan(
+        repository_root=REPOSITORY_ROOT,
+        suite_path=suite_path,
+        stage_path=suite_path.parent / "stages" / "s2-intermediate.yaml",
+        runner=ArtifactIdentity(
+            artifact_id="benchmark-runner", version="reverse-test", sha256="1" * 64
+        ),
+        variants=[
+            ArtifactIdentity(artifact_id="c2", version="reverse-test", sha256="2" * 64),
+            ArtifactIdentity(artifact_id="b1", version="reverse-test", sha256="3" * 64),
+        ],
+        environment_fingerprint={"runtime": "fake"},
+        expansion_profile=INCIDENT_FIXTURE_ID,
+        initial_export_identity={
+            "experiment_id": "exp_20260808_11111111_1",
+            "plan_fingerprint": "1" * 64,
+            "export_sha256": "2" * 64,
+            "stage_state": "S2_EXPANSION_REQUIRED",
+            "source_commit": "3" * 40,
+        },
+        created_at=datetime(2026, 8, 8, tzinfo=timezone.utc),
+    )
+
+    assert [cell.cell_id for cell in plan.cells] == [
+        "cell_s2_b_2_c2",
+        "cell_s2_b_2_b1",
+    ]
+    assert [cell.execution_ordinal for cell in plan.cells] == [1, 2]
+    assert plan.decision_policy["execution_phase"] == "reverse"
+    assert plan.decision_policy["expansion_profile"] == INCIDENT_FIXTURE_ID
+    assert plan.decision_policy["base_live_model_turns"] == 6
+    assert plan.decision_policy["max_actual_live_model_turns"] == 9
 
 
 def _copy_fixture(tmp_path: Path, fixture_id: str, *, golden: bool) -> Path:
