@@ -1,0 +1,62 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Implement the frozen four-stage compatibility refactor contract."
+completion_criteria:
+  - id: RC1
+    text: "All public compatibility checks pass without changing protected files."
+    satisfied_by_tasks: [A1, A2, A3, A4]
+constraints:
+  - "Modify only the ten declared implementation files."
+  - "Preserve the declared A2-to-A3 and A3-to-A4 overlap contracts."
+  - "Do not modify protected contracts or benchmark checks."
+assumptions: []
+tasks:
+  - key: A1
+    goal: "Implement the public schema fields, aliases, validation, and error codes."
+    completion_criteria:
+      - {id: AC1, text: "The schema contract passes.", check_names: [schema_contract]}
+    depends_on: []
+    inputs: [{path: "contract/public-api.json"}, {path: "contract/deprecation-policy.json"}]
+    read_scope: ["README.md", "spec/compatibility-contract.md", "contract/public-api.json", "contract/deprecation-policy.json", "benchmark_checks/test_schema_contract.py", "schema/model.py", "schema/errors.py"]
+    write_scope: ["schema/model.py", "schema/errors.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [schema_contract, diff_check]
+    approval: none
+  - key: A2
+    goal: "Implement old-payload upgrade and legacy normalization as an idempotent migration."
+    completion_criteria:
+      - {id: AC2, text: "The migration contract passes.", check_names: [migration_contract]}
+    depends_on: [A1]
+    inputs: [{path: "contract/compatibility-cases.json"}, {path: "schema/model.py"}, {path: "schema/errors.py"}]
+    read_scope: ["README.md", "spec/compatibility-contract.md", "contract/compatibility-cases.json", "benchmark_checks/test_migration_contract.py", "schema/model.py", "schema/errors.py", "migration/upgrade.py", "migration/legacy.py"]
+    write_scope: ["migration/upgrade.py", "migration/legacy.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [migration_contract, diff_check]
+    approval: none
+  - key: A3
+    goal: "Implement parser, serializer, and integration normalization while preserving migration behavior."
+    completion_criteria:
+      - {id: AC3, text: "The integration contract passes.", check_names: [integration_contract]}
+    depends_on: [A1, A2]
+    inputs: [{path: "contract/compatibility-cases.json"}, {path: "migration/upgrade.py"}]
+    read_scope: ["README.md", "spec/compatibility-contract.md", "contract/compatibility-cases.json", "benchmark_checks/test_integration_contract.py", "schema/model.py", "schema/errors.py", "migration/upgrade.py", "migration/legacy.py", "runtime/parser.py", "runtime/serializer.py", "integration/adapter.py"]
+    write_scope: ["migration/legacy.py", "runtime/parser.py", "runtime/serializer.py", "integration/adapter.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [integration_contract, diff_check]
+    approval: none
+  - key: A4
+    goal: "Preserve the legacy API, roundtrip, adapter, and CLI success and failure meanings."
+    completion_criteria:
+      - {id: AC4, text: "The backward compatibility contract passes.", check_names: [backward_compatibility]}
+    depends_on: [A1, A2, A3]
+    inputs: [{path: "contract/compatibility-cases.json"}, {path: "integration/adapter.py"}]
+    read_scope: ["README.md", "spec/compatibility-contract.md", "contract/compatibility-cases.json", "benchmark_checks/test_backward_compatibility.py", "schema/errors.py", "migration/upgrade.py", "runtime/parser.py", "runtime/serializer.py", "integration/adapter.py", "compat/legacy_api.py", "compat/roundtrip.py", "cli/config_cli.py"]
+    write_scope: ["integration/adapter.py", "compat/legacy_api.py", "compat/roundtrip.py", "cli/config_cli.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [backward_compatibility, diff_check]
+    approval: none

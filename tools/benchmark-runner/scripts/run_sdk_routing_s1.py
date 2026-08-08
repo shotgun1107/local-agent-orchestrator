@@ -1,4 +1,4 @@
-"""CLI for frozen SDK routing S1/S2 live stages."""
+"""CLI for frozen SDK routing S1/S2/S3 live stages."""
 
 from __future__ import annotations
 
@@ -26,11 +26,13 @@ from benchmark_runner.routing_live import (  # noqa: E402
     create_routing_live_candidate,
     export_routing_s1_live,
     export_routing_s2_live,
+    export_routing_s3_live,
     routing_live_status,
     run_next_routing_live_cell,
     verify_routing_s1_live_export,
     verify_routing_live_freeze,
     verify_routing_s2_live_export,
+    verify_routing_s3_live_export,
 )
 
 
@@ -54,7 +56,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--confirm-model-usage", action="store_true")
     parser.add_argument(
         "--stage",
-        choices=["s1-baseline", "s2-intermediate"],
+        choices=["s1-baseline", "s2-intermediate", "s3-complex-high-risk"],
         default="s1-baseline",
     )
     return parser
@@ -99,21 +101,21 @@ def main() -> int:
             _require(args.state_root, "status requires --state-root")
         )
     elif args.command == "export":
-        exporter = (
-            export_routing_s2_live
-            if args.stage == "s2-intermediate"
-            else export_routing_s1_live
-        )
+        exporter = {
+            "s1-baseline": export_routing_s1_live,
+            "s2-intermediate": export_routing_s2_live,
+            "s3-complex-high-risk": export_routing_s3_live,
+        }[args.stage]
         result = exporter(
             state_root=_require(args.state_root, "export requires --state-root"),
             results_root=_require(args.results_root, "export requires --results-root"),
         )
     else:
-        verifier = (
-            verify_routing_s2_live_export
-            if args.stage == "s2-intermediate"
-            else verify_routing_s1_live_export
-        )
+        verifier = {
+            "s1-baseline": verify_routing_s1_live_export,
+            "s2-intermediate": verify_routing_s2_live_export,
+            "s3-complex-high-risk": verify_routing_s3_live_export,
+        }[args.stage]
         result = verifier(_require(args.export_root, "verify-export requires --export-root"))
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0

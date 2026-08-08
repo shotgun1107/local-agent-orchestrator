@@ -1,0 +1,13 @@
+{
+  "allowed_write_paths": [
+    "schema/model.py", "schema/errors.py", "migration/upgrade.py", "migration/legacy.py",
+    "runtime/parser.py", "runtime/serializer.py", "integration/adapter.py",
+    "compat/legacy_api.py", "compat/roundtrip.py", "cli/config_cli.py"
+  ],
+  "protected_paths": [
+    "benchmark-run.yaml", "contract/public-api.json", "contract/compatibility-cases.json",
+    "contract/deprecation-policy.json", "contract/protected-files.json",
+    "spec/compatibility-contract.md"
+  ],
+  "allowed_overlap_edges": ["A2->A3:migration/legacy.py", "A3->A4:integration/adapter.py"]
+}

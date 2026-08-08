@@ -1,0 +1,1 @@
+{"events":[{"event_id":"EV1","status":"confirmed","evidence_ids":["E1","E2"]},{"event_id":"EV2","status":"conflicting","evidence_ids":["E3","E4","E5"]},{"event_id":"EV3","status":"uncertain","evidence_ids":["E6","E7"]},{"event_id":"EV4","status":"confirmed","evidence_ids":["E8","E9"]}]}

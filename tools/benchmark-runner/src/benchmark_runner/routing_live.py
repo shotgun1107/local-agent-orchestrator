@@ -41,6 +41,8 @@ from benchmark_runner.routing_suite import (
     build_routing_s1_live_plan,
     build_routing_s2_live_plan,
     build_routing_s2_reverse_live_plan,
+    build_routing_s3_live_plan,
+    build_routing_s3_reverse_live_plan,
 )
 from benchmark_runner.runner import (
     _r5_assert_export_safe,
@@ -76,15 +78,27 @@ from benchmark_runner.workspace import FixtureRestorer, load_frozen_manifest, sh
 from benchmark_runner.s2_policy import (
     b1_dual_outcome_contract_valid,
     derive_s2_routing_policy,
+    derive_s3_routing_policy,
     remaining_b1_retry_resume_reserve,
+    remaining_s3_b1_retry_resume_reserve,
     s2_b1_turn_cap,
+    s3_b1_turn_cap,
 )
-from benchmark_runner.s2_posthoc import checker_sha256, run_posthoc_subprocess
+from benchmark_runner.s2_posthoc import (
+    checker_sha256 as s2_checker_sha256,
+    run_posthoc_subprocess as run_s2_posthoc_subprocess,
+)
+from benchmark_runner.s3_posthoc import (
+    checker_sha256 as s3_checker_sha256,
+    run_posthoc_subprocess as run_s3_posthoc_subprocess,
+)
 
 
 LIVE_TRACK = "sdk_routing_s1_live_calibration"
 S2_LIVE_TRACK = "sdk_routing_s2_live_initial"
 S2_REVERSE_LIVE_TRACK = "sdk_routing_s2_live_reverse"
+S3_LIVE_TRACK = "sdk_routing_s3_live_initial"
+S3_REVERSE_LIVE_TRACK = "sdk_routing_s3_live_reverse"
 STATE_FILENAME = "routing-s1-state.json"
 STOP_FILENAME = "stop-record.json"
 DISPATCH_MARKER_FILENAME = "live-dispatch-claimed.json"
@@ -102,6 +116,13 @@ S2_REQUIRED_REGRESSION_CASES = (
     "b1_full",
     "runner_full",
     "s2_posthoc_property_contracts",
+)
+S3_REQUIRED_REGRESSION_CASES = (
+    "s0_gate",
+    "b1_retry_contracts",
+    "b1_full",
+    "runner_full",
+    "s3_posthoc_property_contracts",
 )
 
 
@@ -131,6 +152,7 @@ def _plan_stage_contract(plan: ExecutionPlan) -> dict[str, Any]:
                 "base_turns": 6,
                 "max_turns": 9,
                 "state_root_limit": 40,
+                "reverse_gate_state": "S2_EXPANSION_REQUIRED",
             }
         return {
             "stage_id": stage_id,
@@ -142,6 +164,33 @@ def _plan_stage_contract(plan: ExecutionPlan) -> dict[str, Any]:
             "base_turns": 12,
             "max_turns": 15,
             "state_root_limit": 40,
+            "reverse_gate_state": "S2_EXPANSION_REQUIRED",
+        }
+    if stage_id == "s3-complex-high-risk":
+        if plan.decision_policy.get("execution_phase") == "reverse":
+            return {
+                "stage_id": stage_id,
+                "label": "S3 reverse",
+                "track": S3_REVERSE_LIVE_TRACK,
+                "route_decision_allowed": True,
+                "stage_relative": "benchmarks/suites/sdk-routing-v1/stages/s3-complex-high-risk.yaml",
+                "planned_cells": 2,
+                "base_turns": 8,
+                "max_turns": 10,
+                "state_root_limit": 40,
+                "reverse_gate_state": "S3_REPLICATION_REQUIRED",
+            }
+        return {
+            "stage_id": stage_id,
+            "label": "S3",
+            "track": S3_LIVE_TRACK,
+            "route_decision_allowed": True,
+            "stage_relative": "benchmarks/suites/sdk-routing-v1/stages/s3-complex-high-risk.yaml",
+            "planned_cells": 4,
+            "base_turns": 16,
+            "max_turns": 20,
+            "state_root_limit": 40,
+            "reverse_gate_state": "S3_REPLICATION_REQUIRED",
         }
     raise RoutingSuiteError("unsupported routing live stage")
 
@@ -353,14 +402,14 @@ def _path_sha256(path: Path) -> str:
     return hashlib.sha256(str(path.resolve()).encode("utf-8")).hexdigest()
 
 
-def _s2_path_length_preflight(
+def _routing_path_length_preflight(
     *,
     repository_root: Path,
     state_root: Path,
     plan: ExecutionPlan,
     git_executable: Path,
 ) -> dict[str, Any]:
-    """Create and remove each S2 Cell's longest representative paths."""
+    """Create and remove each short-root stage Cell's longest representative paths."""
 
     preflight_root = state_root / "_path-preflight"
     records: list[dict[str, object]] = []
@@ -376,8 +425,7 @@ def _s2_path_length_preflight(
                     _resolve_stage(
                         repository_root,
                         repository_root / "benchmarks/suites/sdk-routing-v1/suite.yaml",
-                        repository_root
-                        / "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+                        repository_root / _plan_stage_contract(plan)["stage_relative"],
                     )[1],
                 )
                 if item.id == fixture.fixture_id
@@ -397,7 +445,7 @@ def _s2_path_length_preflight(
                 Path(name[len(prefix) :]) for name in names if name.startswith(prefix)
             ]
             if not relative_files:
-                raise RoutingSuiteError("S2 fixture tree has no files for path preflight")
+                raise RoutingSuiteError("routing fixture tree has no files for path preflight")
             longest = max(relative_files, key=lambda item: len(str(item)))
             workspace_probe = preflight_root / cell.cell_id / "workspace" / longest
             git_probe = (
@@ -411,7 +459,7 @@ def _s2_path_length_preflight(
             )
             for path in (workspace_probe, git_probe):
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(b"s2-path-preflight")
+                path.write_bytes(b"routing-path-preflight")
                 path.unlink()
             records.append(
                 {
@@ -424,7 +472,7 @@ def _s2_path_length_preflight(
                 }
             )
     except OSError as exc:
-        raise RoutingSuiteError("S2 live path-length preflight failed") from exc
+        raise RoutingSuiteError("routing live path-length preflight failed") from exc
     finally:
         if preflight_root.exists():
             shutil.rmtree(preflight_root)
@@ -731,18 +779,22 @@ def create_routing_s1_live_candidate(
     if benchmark_python != Path(sys.executable).resolve():
         raise RoutingSuiteError("S1 live benchmark Python must be the controller interpreter")
     suite, stage = _resolve_stage(repository_root, suite_path, stage_path)
-    is_s2 = stage.stage_id == "s2-intermediate"
+    stage_id = stage.stage_id
+    is_s2 = stage_id == "s2-intermediate"
+    is_s3 = stage_id == "s3-complex-high-risk"
+    has_posthoc = is_s2 or is_s3
+    stage_label = {"s1-baseline": "s1", "s2-intermediate": "s2", "s3-complex-high-risk": "s3"}[stage_id]
     is_reverse = initial_export_root is not None or expansion_profile is not None
     if is_reverse and (
-        not is_s2 or initial_export_root is None or expansion_profile is None
+        not has_posthoc or initial_export_root is None or expansion_profile is None
     ):
         raise RoutingSuiteError(
-            "S2 reverse freeze requires both initial export and expansion profile"
+            "routing reverse freeze requires both initial export and expansion profile"
         )
     _assert_external_short_state_root(
         repository_root,
         state_root,
-        maximum_length=40 if is_s2 else 120,
+        maximum_length=40 if has_posthoc else 120,
     )
     if platform.python_version() != "3.12.10":
         raise RoutingSuiteError("S1 live freeze requires Python 3.12.10")
@@ -816,37 +868,53 @@ def create_routing_s1_live_candidate(
         assert initial_export_root is not None and expansion_profile is not None
         initial_export_root = initial_export_root.resolve()
         if not initial_export_root.is_relative_to(repository_root):
-            raise RoutingSuiteError("S2 reverse initial export must be inside the repository")
+            raise RoutingSuiteError("routing reverse initial export must be inside the repository")
         initial_relative = initial_export_root.relative_to(repository_root).as_posix()
         _git_at(git_executable, repository_root, "ls-files", "--error-unmatch", initial_relative)
-        verified_initial = verify_routing_s2_live_export(initial_export_root)
+        verified_initial = (
+            verify_routing_s2_live_export(initial_export_root)
+            if is_s2
+            else verify_routing_s3_live_export(initial_export_root)
+        )
         initial_plan = ExecutionPlan.model_validate_json(
             (initial_export_root / "execution-plan.json").read_bytes()
         )
         initial_summary = json.loads(
             (initial_export_root / "summary.json").read_text(encoding="utf-8")
         )
+        required_gate = (
+            "S2_EXPANSION_REQUIRED" if is_s2 else "S3_REPLICATION_REQUIRED"
+        )
         if (
-            initial_summary.get("stage_state") != "S2_EXPANSION_REQUIRED"
-            or verified_initial.get("stage_state") != "S2_EXPANSION_REQUIRED"
+            initial_summary.get("stage_state") != required_gate
+            or verified_initial.get("stage_state") != required_gate
         ):
-            raise RoutingSuiteError("S2 reverse requires an expansion-required initial export")
+            raise RoutingSuiteError("routing reverse requires a gate-qualified initial export")
         initial_export_identity = {
             "experiment_id": initial_plan.experiment_id,
             "plan_fingerprint": initial_plan.plan_fingerprint,
             "export_sha256": str(verified_initial["export_sha256"]),
-            "stage_state": "S2_EXPANSION_REQUIRED",
+            "stage_state": required_gate,
             "source_commit": str(
                 initial_plan.environment_fingerprint.get("source_commit", "")
             ),
         }
-        plan = build_routing_s2_reverse_live_plan(
+        reverse_builder = (
+            build_routing_s2_reverse_live_plan
+            if is_s2
+            else build_routing_s3_reverse_live_plan
+        )
+        plan = reverse_builder(
             **common,
             expansion_profile=expansion_profile,
             initial_export_identity=initial_export_identity,
         )
     else:
-        builder = build_routing_s2_live_plan if is_s2 else build_routing_s1_live_plan
+        builder = {
+            "s1-baseline": build_routing_s1_live_plan,
+            "s2-intermediate": build_routing_s2_live_plan,
+            "s3-complex-high-risk": build_routing_s3_live_plan,
+        }[stage_id]
         plan = builder(**common)
     independent = _independent_live_plan_build(
         repository_root=repository_root,
@@ -865,20 +933,24 @@ def create_routing_s1_live_candidate(
         regression,
         source_commit,
         required_cases=(
-            S2_REQUIRED_REGRESSION_CASES if is_s2 else REQUIRED_REGRESSION_CASES
+            S2_REQUIRED_REGRESSION_CASES
+            if is_s2
+            else S3_REQUIRED_REGRESSION_CASES
+            if is_s3
+            else REQUIRED_REGRESSION_CASES
         ),
     )
     if state_root.exists() or artifact_root.exists():
         raise RoutingSuiteError("S1 live freeze state or artifact root already exists")
     state_root.mkdir(parents=True)
     path_preflight = (
-        _s2_path_length_preflight(
+        _routing_path_length_preflight(
             repository_root=repository_root,
             state_root=state_root,
             plan=plan,
             git_executable=git_executable,
         )
-        if is_s2
+        if has_posthoc
         else None
     )
     experiment_dir = initialize_sdk_experiment(state_root, plan)
@@ -894,7 +966,7 @@ def create_routing_s1_live_candidate(
         atomic_write(artifact_root / _copied_manifest_path(relative), path.read_bytes())
     build_record = {
         "schema_version": 1,
-        "kind": f"sdk_routing_{'s2' if is_s2 else 's1'}_live_source_freeze",
+        "kind": f"sdk_routing_{stage_label}_live_source_freeze",
         "source_commit": source_commit,
         "suite_sha256": sha256_file(suite_path),
         "stage_sha256": sha256_file(stage_path),
@@ -916,6 +988,8 @@ def create_routing_s1_live_candidate(
         "b1_turn_cap_contract": (
             "task_count_3_plus_min(project_policy_8,remaining_b1_reserve_3)"
             if is_s2
+            else "task_count_4_plus_min(project_policy_6,remaining_profile_b1_reserve_2)"
+            if is_s3
             else "min(project_policy_8,remaining_global_12)"
         ),
         "codex_sdk_module_origin": codex_sdk_module_origin,
@@ -934,7 +1008,7 @@ def create_routing_s1_live_candidate(
         "actual_model_turns": 0,
         "path_length_preflight": path_preflight,
         "posthoc_checks": (
-            plan.decision_policy.get("posthoc_checks") if is_s2 else None
+            plan.decision_policy.get("posthoc_checks") if has_posthoc else None
         ),
         "initial_export_identity": initial_export_identity,
     }
@@ -958,12 +1032,12 @@ def create_routing_s1_live_candidate(
                 cell=cell,
                 workspace=prepared.workspace,
                 benchmark_python=benchmark_python,
-                b1_timeout_seconds=3_300 if is_s2 else 2_000,
+                b1_timeout_seconds=5_400 if is_s3 else 3_300 if is_s2 else 2_000,
             )
         )
     preflight = {
         "schema_version": 1,
-        "kind": f"sdk_routing_{'s2' if is_s2 else 's1'}_live_preflight",
+        "kind": f"sdk_routing_{stage_label}_live_preflight",
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
         "api_key_environment_names_present": [],
@@ -1003,14 +1077,14 @@ def create_routing_s1_live_candidate(
     files = _artifact_files_without_seal(artifact_root)
     freeze_record = {
         "schema_version": 1,
-        "kind": f"sdk_routing_{'s2' if is_s2 else 's1'}_live_freeze_seal",
+        "kind": f"sdk_routing_{stage_label}_live_freeze_seal",
         "status": "frozen_before_first_cell",
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
         "planned_cells": len(plan.cells),
         "planned_live_model_turns": (
             plan.decision_policy.get("max_actual_live_model_turns")
-            if is_s2
+            if has_posthoc
             else S1_PLANNED_LIVE_MODEL_TURNS
         ),
         "actual_model_turns": 0,
@@ -1028,7 +1102,7 @@ def create_routing_s1_live_candidate(
         "planned_cells": len(plan.cells),
         "planned_live_model_turns": (
             plan.decision_policy.get("max_actual_live_model_turns")
-            if is_s2
+            if has_posthoc
             else S1_PLANNED_LIVE_MODEL_TURNS
         ),
         "preflight_cells": len(preflights),
@@ -1176,12 +1250,14 @@ def verify_routing_s1_live_freeze(
         != (
             "task_count_3_plus_min(project_policy_8,remaining_b1_reserve_3)"
             if contract["stage_id"] == "s2-intermediate"
+            else "task_count_4_plus_min(project_policy_6,remaining_profile_b1_reserve_2)"
+            if contract["stage_id"] == "s3-complex-high-risk"
             else "min(project_policy_8,remaining_global_12)"
         )
         or build.get("b1_schema_root") != "stages/b1-sequential/schemas/v1"
         or build.get("actual_model_turns") != 0
         or (
-            contract["stage_id"] == "s2-intermediate"
+            contract["stage_id"] != "s1-baseline"
             and build.get("posthoc_checks")
             != plan.decision_policy.get("posthoc_checks")
         )
@@ -1195,7 +1271,7 @@ def verify_routing_s1_live_freeze(
             and build.get("initial_export_identity") is not None
         )
         or (
-            contract["stage_id"] == "s2-intermediate"
+            contract["stage_id"] != "s1-baseline"
             and (
                 not isinstance(path_preflight, dict)
                 or path_preflight.get("actual_model_turns") != 0
@@ -1217,6 +1293,8 @@ def verify_routing_s1_live_freeze(
         required_cases=(
             S2_REQUIRED_REGRESSION_CASES
             if contract["stage_id"] == "s2-intermediate"
+            else S3_REQUIRED_REGRESSION_CASES
+            if contract["stage_id"] == "s3-complex-high-risk"
             else REQUIRED_REGRESSION_CASES
         ),
     )
@@ -1495,15 +1573,22 @@ def _assert_live_measurement_contract(
         or values.get("protected_files_ok") not in {True, False}
     ):
         raise RoutingSuiteError("S1 live export Measurement resource contract differs")
-    if stage_id == "s2-intermediate":
+    if stage_id in {"s2-intermediate", "s3-complex-high-risk"}:
         model_active = values.get("model_active_seconds")
         wall = _wall_seconds(measurement)
         checker_sha256 = values.get("checker_sha256")
-        maximum_turns = 3 if cell.variant_id == "c2" else 6
+        task_count = 3 if stage_id == "s2-intermediate" else 4
+        maximum_turns = task_count if cell.variant_id == "c2" else 6
+        c2_active_limit = 2_700 if stage_id == "s2-intermediate" else 3_600
+        b1_active_ceiling = 3_300 if stage_id == "s2-intermediate" else 5_400
+        wall_limit = 3_300 if stage_id == "s2-intermediate" else 5_700
         maximum_model_active = (
-            2_700
+            c2_active_limit
             if cell.variant_id == "c2"
-            else min(2_700 + 900 * max(0, actual_turns - 3), 3_300)
+            else min(
+                c2_active_limit + 900 * max(0, actual_turns - task_count),
+                b1_active_ceiling,
+            )
         )
         if (
             actual_turns > maximum_turns
@@ -1511,12 +1596,12 @@ def _assert_live_measurement_contract(
             or isinstance(model_active, bool)
             or not 0 <= float(model_active) <= maximum_model_active
             or wall is None
-            or not 0 <= wall <= 3_300
+            or not 0 <= wall <= wall_limit
             or values.get("property_status") not in {"pass", "fail", "checker_error"}
             or not isinstance(checker_sha256, str)
             or len(checker_sha256) != 64
         ):
-            raise RoutingSuiteError("S2 live Measurement property or limit contract differs")
+            raise RoutingSuiteError("routing live Measurement property or limit contract differs")
     if cell.variant_id == "b1":
         for name in ("b1_retry_count", "b1_resume_count"):
             value = values.get(name)
@@ -1530,15 +1615,17 @@ def _assert_live_measurement_contract(
             if values.get(name) not in {True, False}:
                 raise RoutingSuiteError("S1 live export B1 control metrics differ")
         if (
-            stage_id == "s2-intermediate"
+            stage_id in {"s2-intermediate", "s3-complex-high-risk"}
             and actual_turns
-            > 3 + values["b1_retry_count"] + values["b1_resume_count"]
+            > (3 if stage_id == "s2-intermediate" else 4)
+            + values["b1_retry_count"]
+            + values["b1_resume_count"]
         ):
-            raise RoutingSuiteError("S2 live B1 turns exceed retry/resume attribution")
-        if stage_id == "s2-intermediate" and not b1_dual_outcome_contract_valid(
+            raise RoutingSuiteError("routing live B1 turns exceed retry/resume attribution")
+        if stage_id in {"s2-intermediate", "s3-complex-high-risk"} and not b1_dual_outcome_contract_valid(
             measurement
         ):
-            raise RoutingSuiteError("S2 live B1 dual outcome contract differs")
+            raise RoutingSuiteError("routing live B1 dual outcome contract differs")
     token = measurement.resource.token_usage
     token_status = getattr(token.status, "value", token.status)
     if token_status == "measured":
@@ -1698,7 +1785,9 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
     ):
         raise RoutingSuiteError("S1 live Measurement model turn count is invalid")
     actual_turns = sum(turn_values)
-    if contract["stage_id"] == "s2-intermediate":
+    if contract["stage_id"] in {"s2-intermediate", "s3-complex-high-risk"}:
+        stage_id = contract["stage_id"]
+        stage_label = "s2" if stage_id == "s2-intermediate" else "s3"
         posthoc_results: dict[str, dict[str, object]] = {}
         for measurement in measurements:
             path = (
@@ -1712,20 +1801,18 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
             try:
                 value = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
-                raise RoutingSuiteError("S2 live post-hoc Evidence is invalid") from exc
+                raise RoutingSuiteError("routing live post-hoc Evidence is invalid") from exc
             if not isinstance(value, dict):
-                raise RoutingSuiteError("S2 live post-hoc Evidence is not an object")
+                raise RoutingSuiteError("routing live post-hoc Evidence is not an object")
             posthoc_results[measurement.identity.cell_id] = value
         checker_contracts = plan.decision_policy.get("posthoc_checks")
-        infrastructure_stop = (
+        global_infrastructure_stop = (
             stop is not None
             or actual_turns > contract["max_turns"]
             or not isinstance(checker_contracts, dict)
             or any(
-                not item.integrity.scope_ok
-                or not item.integrity.evidence_hashes_ok
+                not item.integrity.evidence_hashes_ok
                 or bool(item.integrity.secret_findings)
-                or item.variant_metrics.values.get("protected_files_ok") is not True
                 or item.variant_metrics.values.get("property_status") == "checker_error"
                 or item.outcome.state == "infrastructure_error"
                 or item.outcome.failure_kind
@@ -1745,6 +1832,43 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
                 for item in measurements
             )
         )
+        local_safety_failures = [
+            item
+            for item in measurements
+            if not item.integrity.scope_ok
+            or item.variant_metrics.values.get("protected_files_ok") is not True
+            or any(
+                isinstance(property_item, dict)
+                and property_item.get("property_id") == "HCR-P6"
+                and property_item.get("status") == "fail"
+                for property_item in posthoc_results.get(
+                    item.identity.cell_id, {}
+                ).get("properties", [])
+            )
+        ]
+        if stage_id == "s2-intermediate":
+            local_safety_stop = bool(local_safety_failures)
+        else:
+            local_safety_stop = False
+            ordered_cells = sorted(plan.cells, key=lambda item: item.execution_ordinal)
+            sealed_ids = {item.identity.cell_id for item in measurements}
+            for failed_measurement in local_safety_failures:
+                pair_ids = {
+                    cell.cell_id
+                    for cell in ordered_cells
+                    if cell.fixture_id == failed_measurement.identity.fixture_id
+                }
+                unsealed_order = [
+                    cell.cell_id for cell in ordered_cells if cell.cell_id not in sealed_ids
+                ]
+                unsealed_pair = pair_ids - sealed_ids
+                if not (
+                    len(unsealed_pair) == 1
+                    and unsealed_order
+                    and unsealed_order[0] in unsealed_pair
+                ):
+                    local_safety_stop = True
+        infrastructure_stop = global_infrastructure_stop or local_safety_stop
         policy_plan = plan
         policy_measurements = measurements
         policy_posthoc = posthoc_results
@@ -1757,7 +1881,11 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
                 initial_measurements,
                 initial_posthoc,
                 _,
-            ) = _verified_s2_initial_export(plan=plan, state=state)
+            ) = (
+                _verified_s2_initial_export(plan=plan, state=state)
+                if stage_id == "s2-intermediate"
+                else _verified_s3_initial_export(plan=plan, state=state)
+            )
             policy_plan = initial_plan
             additional_plans = (plan,)
             policy_measurements = [*initial_measurements, *measurements]
@@ -1767,23 +1895,42 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
                 item.variant_metrics.values["actual_model_turns"]
                 for item in initial_measurements
             )
-        policy = derive_s2_routing_policy(
+        policy_deriver = (
+            derive_s2_routing_policy
+            if stage_id == "s2-intermediate"
+            else derive_s3_routing_policy
+        )
+        policy = policy_deriver(
             plan=policy_plan,
             additional_plans=additional_plans,
             measurements=policy_measurements,
             sealed_cell_ids={item.identity.cell_id for item in policy_measurements},
             posthoc_results=policy_posthoc,
         )
+        stop_state = "S2_STOP" if stage_id == "s2-intermediate" else "S3_STOP"
+        incomplete_state = (
+            "S2_INCOMPLETE" if stage_id == "s2-intermediate" else "S3_INCOMPLETE"
+        )
         stage_state = (
-            "S2_STOP"
+            stop_state
             if infrastructure_stop
             else policy["stage_state"]
             if complete
-            else "S2_INCOMPLETE"
+            else incomplete_state
         )
+        if stage_id == "s2-intermediate":
+            remaining_reserve: object = remaining_b1_retry_resume_reserve(measurements)
+        else:
+            remaining_reserve = {
+                fixture_id: remaining_s3_b1_retry_resume_reserve(
+                    measurements,
+                    fixture_id=fixture_id,
+                )
+                for fixture_id in plan.decision_policy.get("profiles", {})
+            }
         return {
             "schema_version": 1,
-            "kind": "sdk_routing_s2_live_status",
+            "kind": f"sdk_routing_{stage_label}_live_status",
             "experiment_id": plan.experiment_id,
             "initial_experiment_id": initial_experiment_id,
             "planned_cells": len(plan.cells),
@@ -1791,9 +1938,7 @@ def routing_s1_live_status(state_root: Path) -> dict[str, Any]:
             "complete": complete,
             "actual_model_turns": actual_turns,
             "combined_actual_model_turns": combined_actual_turns,
-            "remaining_b1_retry_resume_reserve": remaining_b1_retry_resume_reserve(
-                measurements
-            ),
+            "remaining_b1_retry_resume_reserve": remaining_reserve,
             "stage_state": stage_state,
             "routing_policy": policy if complete else None,
             "route_decision_issued": any(
@@ -1875,6 +2020,8 @@ def run_next_routing_s1_live_cell(
     experiment_dir, plan, state = _load_live_plan(state_root)
     contract = _plan_stage_contract(plan)
     is_s2 = contract["stage_id"] == "s2-intermediate"
+    is_s3 = contract["stage_id"] == "s3-complex-high-risk"
+    has_posthoc = is_s2 or is_s3
     status = routing_s1_live_status(state_root)
     if status["complete"] or status["stop_before_next_cell"]:
         raise RoutingSuiteError("S1 live status forbids another Cell")
@@ -1966,15 +2113,16 @@ def run_next_routing_s1_live_cell(
         or sha256_file(suite_path) != plan.decision_policy.get("suite_sha256")
     ):
         raise RoutingSuiteError("S1 live manifest bytes changed after freeze")
-    if is_s2:
+    if has_posthoc:
+        current_checker_sha256 = s2_checker_sha256 if is_s2 else s3_checker_sha256
         posthoc_checks = plan.decision_policy.get("posthoc_checks")
         if not isinstance(posthoc_checks, dict) or any(
             not isinstance(posthoc_checks.get(fixture_id), dict)
             or posthoc_checks[fixture_id].get("checker_sha256")
-            != checker_sha256(fixture_id)
+            != current_checker_sha256(fixture_id)
             for fixture_id in plan.decision_policy.get("profiles", {})
         ):
-            raise RoutingSuiteError("S2 live checker source changed after freeze")
+            raise RoutingSuiteError("routing live checker source changed after freeze")
     next_cell = next(
         cell
         for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal)
@@ -2002,6 +2150,11 @@ def run_next_routing_s1_live_cell(
     b1_turn_cap = (
         s2_b1_turn_cap(sealed_measurements)
         if is_s2 and next_cell.variant_id == "b1"
+        else s3_b1_turn_cap(
+            sealed_measurements,
+            fixture_id=next_cell.fixture_id,
+        )
+        if is_s3 and next_cell.variant_id == "b1"
         else min(8, contract["max_turns"] - status["actual_model_turns"])
         if next_cell.variant_id == "b1"
         else None
@@ -2013,7 +2166,7 @@ def run_next_routing_s1_live_cell(
         workspace=prepared.workspace,
         benchmark_python=benchmark_python.resolve(),
         max_model_turns=b1_turn_cap,
-        b1_timeout_seconds=3_300 if is_s2 else 2_000,
+        b1_timeout_seconds=5_400 if is_s3 else 3_300 if is_s2 else 2_000,
     )
     _assert_live_source_boundary(
         repository_root=repository_root,
@@ -2023,7 +2176,7 @@ def run_next_routing_s1_live_cell(
         benchmark_python=benchmark_python,
         remaining_model_turns=contract["max_turns"] - status["actual_model_turns"],
         expected_b1_turn_cap=b1_turn_cap,
-        expected_b1_timeout_seconds=3_300 if is_s2 else 2_000,
+        expected_b1_timeout_seconds=5_400 if is_s3 else 3_300 if is_s2 else 2_000,
     )
     _claim_cell_dispatch(experiment_dir, next_cell.cell_id)
     try:
@@ -2036,14 +2189,16 @@ def run_next_routing_s1_live_cell(
             benchmark_python=benchmark_python.resolve(),
             git_executable=current_git,
             post_judge_hook=(
-                lambda current: run_posthoc_subprocess(
+                lambda current: (
+                    run_s2_posthoc_subprocess if is_s2 else run_s3_posthoc_subprocess
+                )(
                     repository_root=repository_root,
                     benchmark_python=benchmark_python.resolve(),
                     fixture_id=current.fixture.id,
                     workspace=current.workspace,
                 )
             )
-            if is_s2
+            if has_posthoc
             else None,
         )
     except Exception as exc:
@@ -2636,6 +2791,72 @@ def _verified_s2_initial_export(
     return initial_plan, measurements, posthoc, verified
 
 
+def _load_verified_s3_export(
+    export_root: Path,
+) -> tuple[
+    ExecutionPlan,
+    list[Measurement],
+    dict[str, dict[str, object]],
+    dict[str, Any],
+]:
+    """Load an S3 export only after its complete aggregate seal verifies."""
+
+    export_root = export_root.resolve()
+    verified = verify_routing_s3_live_export(export_root)
+    plan = ExecutionPlan.model_validate_json(
+        (export_root / "execution-plan.json").read_bytes()
+    )
+    seals = json.loads((export_root / "seals.json").read_text(encoding="utf-8"))
+    entries = seals.get("entries")
+    if not isinstance(entries, list):
+        raise RoutingSuiteError("S3 initial export seal index is invalid")
+    measurements = [
+        Measurement.model_validate_json(
+            (export_root / str(entry["measurement_path"])).read_bytes()
+        )
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("measurement_path"), str)
+    ]
+    if len(measurements) != len(entries):
+        raise RoutingSuiteError("S3 initial export Measurement index is invalid")
+    return plan, measurements, _s2_posthoc_results(export_root, measurements), verified
+
+
+def _verified_s3_initial_export(
+    *, plan: ExecutionPlan, state: dict[str, Any]
+) -> tuple[
+    ExecutionPlan,
+    list[Measurement],
+    dict[str, dict[str, object]],
+    dict[str, Any],
+]:
+    """Reopen and bind the committed initial S3 export used by a reverse Plan."""
+
+    root_value = state.get("initial_export_root")
+    expected = plan.decision_policy.get("initial_export_identity")
+    if not isinstance(root_value, str) or not isinstance(expected, dict):
+        raise RoutingSuiteError("S3 reverse initial export binding is missing")
+    initial_plan, measurements, posthoc, verified = _load_verified_s3_export(
+        Path(root_value)
+    )
+    actual = {
+        "experiment_id": initial_plan.experiment_id,
+        "plan_fingerprint": initial_plan.plan_fingerprint,
+        "export_sha256": str(verified["export_sha256"]),
+        "stage_state": str(verified["stage_state"]),
+        "source_commit": str(
+            initial_plan.environment_fingerprint.get("source_commit", "")
+        ),
+    }
+    if (
+        actual != expected
+        or initial_plan.decision_policy.get("execution_phase") == "reverse"
+        or verified.get("stage_state") != "S3_REPLICATION_REQUIRED"
+    ):
+        raise RoutingSuiteError("S3 reverse initial export identity differs")
+    return initial_plan, measurements, posthoc, verified
+
+
 def _s2_summary_rows(measurements: list[Measurement]) -> list[dict[str, Any]]:
     return [
         {
@@ -2686,15 +2907,23 @@ def _s2_summary_rows(measurements: list[Measurement]) -> list[dict[str, Any]]:
     ]
 
 
-def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str, Any]:
-    """Export a completed S2 Plan and its deterministic profile policy."""
+def _export_routing_profile_live(
+    *,
+    state_root: Path,
+    results_root: Path,
+    expected_stage_id: str,
+) -> dict[str, Any]:
+    """Export a completed S2/S3 Plan and its deterministic profile policy."""
 
     experiment_dir, plan, state = _load_live_plan(state_root)
-    if _plan_stage_contract(plan)["stage_id"] != "s2-intermediate":
-        raise RoutingSuiteError("S2 live export requires an S2 Plan")
+    if expected_stage_id not in {"s2-intermediate", "s3-complex-high-risk"}:
+        raise RoutingSuiteError("profile live export stage is unsupported")
+    if _plan_stage_contract(plan)["stage_id"] != expected_stage_id:
+        raise RoutingSuiteError("profile live export requires the expected stage Plan")
+    stage_label = "s2" if expected_stage_id == "s2-intermediate" else "s3"
     status = routing_s1_live_status(state_root)
     if status.get("complete") is not True:
-        raise RoutingSuiteError("S2 live export requires every planned Cell sealed")
+        raise RoutingSuiteError("profile live export requires every planned Cell sealed")
     measurements = [
         verify_sealed_cell(experiment_dir / "cells" / cell.cell_id)
         for cell in sorted(plan.cells, key=lambda value: value.execution_ordinal)
@@ -2713,13 +2942,22 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
             initial_measurements,
             initial_posthoc,
             _,
-        ) = _verified_s2_initial_export(plan=plan, state=state)
+        ) = (
+            _verified_s2_initial_export(plan=plan, state=state)
+            if expected_stage_id == "s2-intermediate"
+            else _verified_s3_initial_export(plan=plan, state=state)
+        )
         initial_export_root = Path(state["initial_export_root"]).resolve()
         policy_plan = initial_plan
         additional_plans = (plan,)
         policy_measurements = [*initial_measurements, *measurements]
         policy_posthoc = {**initial_posthoc, **posthoc_results}
-    policy = derive_s2_routing_policy(
+    policy_deriver = (
+        derive_s2_routing_policy
+        if expected_stage_id == "s2-intermediate"
+        else derive_s3_routing_policy
+    )
+    policy = policy_deriver(
         plan=policy_plan,
         additional_plans=additional_plans,
         measurements=policy_measurements,
@@ -2727,19 +2965,28 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
         posthoc_results=policy_posthoc,
     )
     if policy != status.get("routing_policy"):
-        raise RoutingSuiteError("S2 status and routing policy derivation differ")
+        raise RoutingSuiteError("profile status and routing policy derivation differ")
+    remaining_reserve: object = (
+        remaining_b1_retry_resume_reserve(measurements)
+        if expected_stage_id == "s2-intermediate"
+        else {
+            fixture_id: remaining_s3_b1_retry_resume_reserve(
+                measurements,
+                fixture_id=fixture_id,
+            )
+            for fixture_id in plan.decision_policy.get("profiles", {})
+        }
+    )
     summary = {
         "schema_version": 1,
-        "kind": "sdk_routing_s2_live_summary",
+        "kind": f"sdk_routing_{stage_label}_live_summary",
         "experiment_id": plan.experiment_id,
         "stage_state": policy["stage_state"],
         "planned_cells": len(plan.cells),
         "sealed_cells": len(measurements),
         "complete": True,
         "actual_model_turns": status["actual_model_turns"],
-        "remaining_b1_retry_resume_reserve": status[
-            "remaining_b1_retry_resume_reserve"
-        ],
+        "remaining_b1_retry_resume_reserve": remaining_reserve,
         "route_decision_issued": status["route_decision_issued"],
         "global_b1_default_issued": False,
         "cells": _s2_summary_rows(measurements),
@@ -2753,9 +3000,11 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
                 "combined_actual_model_turns": status["combined_actual_model_turns"],
             }
         )
-    export_root = results_root.resolve() / "sdk-routing-s2-v1" / plan.experiment_id
+    export_root = (
+        results_root.resolve() / f"sdk-routing-{stage_label}-v1" / plan.experiment_id
+    )
     if export_root.exists():
-        raise RoutingSuiteError("S2 live export destination already exists")
+        raise RoutingSuiteError("profile live export destination already exists")
     artifact_root = Path(state["artifact_root"]).resolve()
     files: dict[str, bytes] = {
         "execution-plan.json": (artifact_root / "execution-plan.json").read_bytes(),
@@ -2789,7 +3038,7 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
             (cell_dir / "cell-state.json").read_bytes()
         )
         if record.sealed_measurement_sha256 is None:
-            raise RoutingSuiteError("sealed S2 Cell omitted its Measurement hash")
+            raise RoutingSuiteError("sealed profile Cell omitted its Measurement hash")
         prefix = f"cells/{cell.cell_id}"
         measurement_path = f"{prefix}/sealed/measurement.json"
         files[measurement_path] = (
@@ -2812,7 +3061,7 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
     files["seals.json"] = canonical_json_bytes(
         {
             "schema_version": 1,
-            "kind": "sdk_routing_s2_live_seals",
+            "kind": f"sdk_routing_{stage_label}_live_seals",
             "experiment_id": plan.experiment_id,
             "plan_fingerprint": plan.plan_fingerprint,
             "entries": seals,
@@ -2827,14 +3076,18 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
         canonical_json_bytes(
             {
                 "schema_version": 1,
-                "kind": "sdk_routing_s2_live_export_seal",
+                "kind": f"sdk_routing_{stage_label}_live_export_seal",
                 "experiment_id": plan.experiment_id,
                 "file_count": len(files),
                 "export_sha256": export_sha256,
             }
         ),
     )
-    verified = verify_routing_s2_live_export(export_root)
+    verified = (
+        verify_routing_s2_live_export(export_root)
+        if expected_stage_id == "s2-intermediate"
+        else verify_routing_s3_live_export(export_root)
+    )
     return {
         "experiment_id": plan.experiment_id,
         "stage_state": policy["stage_state"],
@@ -2844,8 +3097,28 @@ def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str,
     }
 
 
-def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
-    """Verify an S2 live export using only its sealed bytes."""
+def export_routing_s2_live(*, state_root: Path, results_root: Path) -> dict[str, Any]:
+    return _export_routing_profile_live(
+        state_root=state_root,
+        results_root=results_root,
+        expected_stage_id="s2-intermediate",
+    )
+
+
+def export_routing_s3_live(*, state_root: Path, results_root: Path) -> dict[str, Any]:
+    return _export_routing_profile_live(
+        state_root=state_root,
+        results_root=results_root,
+        expected_stage_id="s3-complex-high-risk",
+    )
+
+
+def _verify_routing_profile_live_export(
+    export_root: Path,
+    *,
+    expected_stage_id: str,
+) -> dict[str, Any]:
+    """Verify an S2/S3 live export using only its sealed bytes."""
 
     export_root = export_root.resolve()
     freeze = verify_routing_s1_live_freeze(export_root, require_exact_files=False)
@@ -2869,14 +3142,17 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
                 (
                     export_root
                     / _copied_manifest_path(
-                        "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+                        _plan_stage_contract(plan)["stage_relative"]
                     )
                 ).read_bytes()
             )
         )
     except (OSError, ValueError, json.JSONDecodeError, yaml.YAMLError) as exc:
-        raise RoutingSuiteError("S2 live export metadata is missing or invalid") from exc
+        raise RoutingSuiteError("profile live export metadata is missing or invalid") from exc
     contract = _plan_stage_contract(plan)
+    if expected_stage_id not in {"s2-intermediate", "s3-complex-high-risk"}:
+        raise RoutingSuiteError("profile live export stage is unsupported")
+    stage_label = "s2" if expected_stage_id == "s2-intermediate" else "s3"
     is_reverse = plan.decision_policy.get("execution_phase") == "reverse"
     expected_policy_experiment_id = (
         plan.decision_policy.get("initial_export_identity", {}).get("experiment_id")
@@ -2884,7 +3160,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
         else plan.experiment_id
     )
     if (
-        contract["stage_id"] != "s2-intermediate"
+        contract["stage_id"] != expected_stage_id
         or freeze["experiment_id"] != plan.experiment_id
         or summary.get("experiment_id") != plan.experiment_id
         or policy.get("experiment_id") != expected_policy_experiment_id
@@ -2892,7 +3168,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
         or seals.get("plan_fingerprint") != plan.plan_fingerprint
         or export_seal.get("experiment_id") != plan.experiment_id
     ):
-        raise RoutingSuiteError("S2 live export identities differ")
+        raise RoutingSuiteError("profile live export identities differ")
     entries = seals.get("entries")
     ordered = sorted(plan.cells, key=lambda value: value.execution_ordinal)
     if (
@@ -2900,31 +3176,31 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
         or [item.get("cell_id") for item in entries if isinstance(item, dict)]
         != [cell.cell_id for cell in ordered]
     ):
-        raise RoutingSuiteError("S2 live export seal index differs")
+        raise RoutingSuiteError("profile live export seal index differs")
     measurements: list[Measurement] = []
     expected_cell_paths: set[str] = set()
     for cell, entry in zip(ordered, entries, strict=True):
         if not isinstance(entry, dict):
-            raise RoutingSuiteError("S2 live export seal entry is invalid")
+            raise RoutingSuiteError("profile live export seal entry is invalid")
         relative = entry.get("measurement_path")
         if not isinstance(relative, str):
-            raise RoutingSuiteError("S2 live export Measurement path is invalid")
+            raise RoutingSuiteError("profile live export Measurement path is invalid")
         path = (export_root / relative).resolve()
         if (
             not path.is_relative_to(export_root)
             or path.is_symlink()
             or not path.is_file()
         ):
-            raise RoutingSuiteError("S2 live export Measurement path is unsafe")
+            raise RoutingSuiteError("profile live export Measurement path is unsafe")
         data = path.read_bytes()
         if hashlib.sha256(data).hexdigest() != entry.get("sealed_measurement_sha256"):
-            raise RoutingSuiteError("S2 live export Measurement seal differs")
+            raise RoutingSuiteError("profile live export Measurement seal differs")
         measurement = Measurement.model_validate_json(data)
         _assert_live_measurement_plan_binding(plan, cell, measurement)
         _assert_live_measurement_contract(
             cell,
             measurement,
-            stage_id="s2-intermediate",
+            stage_id=expected_stage_id,
         )
         expected_cell_paths.add(relative)
         cell_root = path.parents[1]
@@ -2935,13 +3211,13 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
                 or evidence_path.is_symlink()
                 or not evidence_path.is_file()
             ):
-                raise RoutingSuiteError("S2 live export Evidence path is unsafe")
+                raise RoutingSuiteError("profile live export Evidence path is unsafe")
             evidence_data = evidence_path.read_bytes()
             if (
                 len(evidence_data) != evidence.size
                 or hashlib.sha256(evidence_data).hexdigest() != evidence.sha256
             ):
-                raise RoutingSuiteError("S2 live export Evidence hash differs")
+                raise RoutingSuiteError("profile live export Evidence hash differs")
             expected_cell_paths.add(f"cells/{cell.cell_id}/{evidence.path}")
         measurements.append(measurement)
     posthoc_results = _s2_posthoc_results(export_root, measurements)
@@ -2958,7 +3234,11 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
             initial_measurements,
             initial_posthoc,
             initial_verified,
-        ) = _load_verified_s2_export(initial_root)
+        ) = (
+            _load_verified_s2_export(initial_root)
+            if expected_stage_id == "s2-intermediate"
+            else _load_verified_s3_export(initial_root)
+        )
         try:
             binding = json.loads(
                 (export_root / "initial-export-binding.json").read_text(
@@ -2966,7 +3246,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
                 )
             )
         except (OSError, json.JSONDecodeError) as exc:
-            raise RoutingSuiteError("S2 reverse export binding is invalid") from exc
+            raise RoutingSuiteError("profile reverse export binding is invalid") from exc
         actual_binding = {
             "experiment_id": initial_plan.experiment_id,
             "plan_fingerprint": initial_plan.plan_fingerprint,
@@ -2979,9 +3259,14 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
         if (
             binding != actual_binding
             or binding != plan.decision_policy.get("initial_export_identity")
-            or initial_verified.get("stage_state") != "S2_EXPANSION_REQUIRED"
+            or initial_verified.get("stage_state")
+            != (
+                "S2_EXPANSION_REQUIRED"
+                if expected_stage_id == "s2-intermediate"
+                else "S3_REPLICATION_REQUIRED"
+            )
         ):
-            raise RoutingSuiteError("S2 reverse export binding differs")
+            raise RoutingSuiteError("profile reverse export binding differs")
         policy_plan = initial_plan
         additional_plans = (plan,)
         policy_measurements = [*initial_measurements, *measurements]
@@ -2991,7 +3276,12 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
             for path in initial_root.rglob("*")
             if path.is_file()
         }
-    derived = derive_s2_routing_policy(
+    policy_deriver = (
+        derive_s2_routing_policy
+        if expected_stage_id == "s2-intermediate"
+        else derive_s3_routing_policy
+    )
+    derived = policy_deriver(
         plan=policy_plan,
         additional_plans=additional_plans,
         measurements=policy_measurements,
@@ -3000,7 +3290,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
     )
     expected_summary = {
         "schema_version": 1,
-        "kind": "sdk_routing_s2_live_summary",
+        "kind": f"sdk_routing_{stage_label}_live_summary",
         "experiment_id": plan.experiment_id,
         "stage_state": derived["stage_state"],
         "planned_cells": len(plan.cells),
@@ -3010,8 +3300,16 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
             item.variant_metrics.values["actual_model_turns"]
             for item in measurements
         ),
-        "remaining_b1_retry_resume_reserve": remaining_b1_retry_resume_reserve(
-            measurements
+        "remaining_b1_retry_resume_reserve": (
+            remaining_b1_retry_resume_reserve(measurements)
+            if expected_stage_id == "s2-intermediate"
+            else {
+                fixture_id: remaining_s3_b1_retry_resume_reserve(
+                    measurements,
+                    fixture_id=fixture_id,
+                )
+                for fixture_id in plan.decision_policy.get("profiles", {})
+            }
         ),
         "route_decision_issued": any(
             item.get("route_issued") is True
@@ -3033,7 +3331,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
             }
         )
     if policy != derived or summary != expected_summary:
-        raise RoutingSuiteError("S2 live export policy or summary differs")
+        raise RoutingSuiteError("profile live export policy or summary differs")
     files = {
         path.relative_to(export_root).as_posix(): path.read_bytes()
         for path in export_root.rglob("*")
@@ -3053,7 +3351,7 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
         "seals.json",
         _copied_manifest_path("benchmarks/suites/sdk-routing-v1/suite.yaml"),
         _copied_manifest_path(
-            "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+            contract["stage_relative"]
         ),
         *(_copied_manifest_path(item.path) for item in stage.fixture_manifests),
         *expected_cell_paths,
@@ -3066,19 +3364,33 @@ def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
     if is_reverse:
         expected_paths.add("initial-export-binding.json")
     if set(files) != expected_paths:
-        raise RoutingSuiteError("S2 live export file set differs")
+        raise RoutingSuiteError("profile live export file set differs")
     value = _aggregate_export_sha256(files)
     if (
         value != export_seal.get("export_sha256")
         or len(files) != export_seal.get("file_count")
     ):
-        raise RoutingSuiteError("S2 live export aggregate seal differs")
+        raise RoutingSuiteError("profile live export aggregate seal differs")
     return {
         "experiment_id": plan.experiment_id,
         "stage_state": derived["stage_state"],
         "file_count": len(files),
         "export_sha256": value,
     }
+
+
+def verify_routing_s2_live_export(export_root: Path) -> dict[str, Any]:
+    return _verify_routing_profile_live_export(
+        export_root,
+        expected_stage_id="s2-intermediate",
+    )
+
+
+def verify_routing_s3_live_export(export_root: Path) -> dict[str, Any]:
+    return _verify_routing_profile_live_export(
+        export_root,
+        expected_stage_id="s3-complex-high-risk",
+    )
 
 
 # Stage-generic public names. The S1 names remain stable for frozen callers.
