@@ -28,7 +28,7 @@ from benchmark_runner.contract import ArtifactIdentity
 from benchmark_runner.sdk_baselines import SdkBaselineAdapter, SdkBaselineConfig
 from benchmark_runner.sdk_cells import runner_source_sha256
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript, WorkerContract
-from benchmark_runner.workspace import FrozenFixtureSpec
+from benchmark_runner.workspace import FrozenFixtureSpec, load_frozen_manifest
 from benchmark_runner.s2_posthoc import (
     CONFIG_FIXTURE_ID,
     INCIDENT_FIXTURE_ID,
@@ -153,6 +153,17 @@ def test_s2_stage_discriminator_rejects_cross_branch_bytes() -> None:
     assert isinstance(s2, RoutingS2StageManifest)
     with pytest.raises(ValidationError):
         RoutingS1StageManifest.model_validate(s2_value)
+
+
+def test_s2_frozen_fixture_manifest_matches_live_model_controls() -> None:
+    manifest = load_frozen_manifest(
+        REPOSITORY_ROOT / "benchmarks" / "manifests" / "sdk-routing-s2-intermediate.yaml"
+    )
+    assert manifest.status == "frozen_before_execution"
+    assert manifest.model == {
+        "allowed": "gpt-5.6-terra",
+        "auth_method": "chatgpt",
+    }
 
 
 @pytest.mark.parametrize("fixture_id", [CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID])

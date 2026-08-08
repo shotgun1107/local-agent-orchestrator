@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260808-001",
+  "title": "S2 frozen manifest model controls exceeded verifier contract",
+  "status": "resolved",
+  "stage": "sdk-routing-suite-v1",
+  "category": "implementation",
+  "discovered_at": "2026-08-08T08:15:51Z",
+  "resolved_at": "2026-08-08T08:15:51Z",
+  "discovered_by": "first S2 zero-turn freeze create",
+  "symptom": "create built the candidate but fail-closed verification rejected the S2 fixture model controls",
+  "reproduction": [
+    "create an S2 candidate from source commit 9108d0c and verify the generated freeze bundle"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "verify_routing_s1_live_freeze raised S1 live freeze fixture model controls differ before any model turn"
+    }
+  ],
+  "root_cause": "The new S2 fixture manifest duplicated runtime controls under model, while the inherited frozen fixture contract allows exactly allowed and auth_method; the live environment fingerprint already seals the other controls.",
+  "considered_options": [
+    {
+      "option": "relax verifier to accept arbitrary model keys",
+      "decision": "rejected",
+      "reason": "weakens the unchanged S1 frozen-manifest trust boundary"
+    },
+    {
+      "option": "keep runtime controls in the Plan environment and restore the exact two-key fixture model contract",
+      "decision": "adopted",
+      "reason": "preserves S1 compatibility and removes duplication"
+    }
+  ],
+  "resolution": "Removed reasoning_effort, SDK, approval_mode, and sandbox from the S2 fixture model block and added a frozen-manifest contract regression.",
+  "affected_files": [
+    "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
+    "tools/benchmark-runner/tests/test_routing_s2.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_frozen_fixture_manifest_matches_live_model_controls"
+  ],
+  "verification": [
+    "targeted frozen-manifest contract test 1 passed"
+  ],
+  "remaining_risks": [
+    "The failed zero-turn revision 1 artifact and state are preserved outside the repository and are not execution candidates."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
+    "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+  ]
+}

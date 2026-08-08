@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 41건
-- 해결: 39건
+- 전체: 42건
+- 해결: 40건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -54,6 +54,7 @@
 | DEV-20260807-004 | resolved | sdk-routing-suite-v1 | implementation | S1 status loader가 ExecutionPlan track 직접 필드를 가정함 |
 | DEV-20260807-005 | resolved | sdk-routing-suite-v1 | implementation | S1 동결 상태를 집행할 live 실행 경로가 없음 |
 | DEV-20260807-006 | resolved | sdk-routing-suite-v1 | implementation | S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음 |
+| DEV-20260808-001 | resolved | sdk-routing-suite-v1 | implementation | S2 frozen manifest model controls exceeded verifier contract |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2466,3 +2467,59 @@ model-free와 live verifier가 assert_plan_integrity를 호출하고 각 Cell의
 - 출처: tools/benchmark-runner/src/benchmark_runner/contract.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/plan.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+
+## DEV-20260808-001 — S2 frozen manifest model controls exceeded verifier contract
+
+- 상태: `resolved`
+- 단계: `sdk-routing-suite-v1`
+- 분류: `implementation`
+- 발견: 2026-08-08T08:15:51Z / first S2 zero-turn freeze create
+- 해결: 2026-08-08T08:15:51Z
+
+### 증상
+
+create built the candidate but fail-closed verification rejected the S2 fixture model controls
+
+### 재현
+
+- create an S2 candidate from source commit 9108d0c and verify the generated freeze bundle
+
+### 증거
+
+- `reproducible-test`: verify_routing_s1_live_freeze raised S1 live freeze fixture model controls differ before any model turn
+
+### 근본 원인
+
+The new S2 fixture manifest duplicated runtime controls under model, while the inherited frozen fixture contract allows exactly allowed and auth_method; the live environment fingerprint already seals the other controls.
+
+### 검토한 해결안
+
+- `rejected` relax verifier to accept arbitrary model keys — weakens the unchanged S1 frozen-manifest trust boundary
+- `adopted` keep runtime controls in the Plan environment and restore the exact two-key fixture model contract — preserves S1 compatibility and removes duplication
+
+### 채택한 해결
+
+Removed reasoning_effort, SDK, approval_mode, and sandbox from the S2 fixture model block and added a frozen-manifest contract regression.
+
+### 수정 파일
+
+- benchmarks/manifests/sdk-routing-s2-intermediate.yaml
+- tools/benchmark-runner/tests/test_routing_s2.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_routing_s2.py::test_s2_frozen_fixture_manifest_matches_live_model_controls
+
+### 검증 결과
+
+- targeted frozen-manifest contract test 1 passed
+
+### 남은 위험
+
+- The failed zero-turn revision 1 artifact and state are preserved outside the repository and are not execution candidates.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: benchmarks/manifests/sdk-routing-s2-intermediate.yaml
+- 출처: tools/benchmark-runner/src/benchmark_runner/routing_live.py
