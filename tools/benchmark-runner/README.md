@@ -337,3 +337,35 @@ is `ROUTING_INCONCLUSIVE`, and no route or global B1 default was issued. The ver
 with aggregate SHA-256
 `df682d5a13945bc8cc9ef0b3a468800112c720fada89eca2f10bd6b46ae72bc8`.
 See `docs/experiments/sdk-routing-s2-reverse-live-result.md`.
+
+### S3 complex/high-risk execution freeze
+
+S3 reuses the same stage-generic Plan, fixture restoration, SDK runtime, C2/B1
+Adapters, Judge, Measurement, seal, status, and export path. It adds two frozen
+four-Task profiles and public post-hoc property checks; it does not add another
+controller or state machine.
+
+The initial Plan contains four Cells in the frozen order compatibility C2→B1,
+incident B1→C2. Four base turns per Cell protect sixteen turns. Each profile owns
+an independent two-turn B1 retry/resume reserve, so the absolute initial ceiling is
+twenty model turns. A profile can request one separately approved opposite-order
+pair only after `S3_REPLICATION_REQUIRED`; that reverse Plan has its own eight-turn
+base and ten-turn absolute ceiling. No reserve is borrowed across profiles or Plans.
+
+The source-bound execution candidate is frozen at
+`benchmarks/artifacts/sdk-routing-s3-v1-03eb4a7-r1/`. It binds source commit
+`03eb4a772893130cd3d1000b12fe8a20e0e3643a`, Experiment
+`exp_20260808_66099ac3_1`, Plan fingerprint
+`66099ac3aa51e8184a8e0bec4ff86db722f891f0765bf2d74f602aaf761117e2`,
+and freeze SHA-256
+`d574323a86002dd93d18313e33afd3fee121a3a8ffe025c232cde44d20c3559d`.
+At freeze time all four Cells were `PLANNED`, with zero sealed Cells and zero
+actual model turns. The candidate must not be recreated or executed until the user
+separately approves the exact four-Cell order and twenty-turn ceiling.
+
+The source-bound model-free record contains S0 9 passed, B1 retry contracts 3
+passed, B1 full 74 passed, Runner full 239 passed, and S3 post-hoc/policy 19
+passed. Create also recorded an identical Plan build from a separate clean checkout
+and process, a sixteen-character resolved state root, maximum 114-character actual
+path probes, ChatGPT authentication, no API-key environment names, and zero model
+turns. See `docs/experiments/sdk-routing-s3-implementation-freeze.md`.
