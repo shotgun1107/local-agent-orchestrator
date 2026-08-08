@@ -1,0 +1,32 @@
+schema_version: 1
+checks:
+  schema_contract:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  migration_parse:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_migration_parse"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  integration_smoke:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_integration"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  s2_config_acceptance:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract", "benchmark_checks.test_migration_parse", "benchmark_checks.test_integration"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  diff_check:
+    kind: command
+    argv: ["git", "diff", "--check"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]

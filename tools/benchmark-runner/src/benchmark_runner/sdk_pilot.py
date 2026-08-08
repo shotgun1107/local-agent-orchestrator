@@ -174,6 +174,7 @@ def _adapter(
     workspace: Path,
     benchmark_python: Path,
     max_model_turns: int | None = None,
+    b1_timeout_seconds: float = 2_000,
 ):
     if cell.variant_id in {"c0", "c1", "c2"}:
         return SdkBaselineAdapter(
@@ -196,7 +197,7 @@ def _adapter(
                 invocation_cwd=repository_root / "stages" / "b1-sequential" / "src",
                 max_model_turns=max_model_turns,
                 runtime="codex",
-                timeout_seconds=2_000,
+                timeout_seconds=b1_timeout_seconds,
             )
         )
     raise RuntimeError(f"unsupported pilot variant: {cell.variant_id}")

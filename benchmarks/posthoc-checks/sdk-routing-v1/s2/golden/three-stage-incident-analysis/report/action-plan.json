@@ -1,0 +1,8 @@
+{
+  "actions": [
+    {"action_id":"action-approval","action_type":"verify","reference_ids":["e-c2","u-approval"]},
+    {"action_id":"action-cache","action_type":"verify","reference_ids":["e-a3","e-c3"]},
+    {"action_id":"action-error","action_type":"verify","reference_ids":["e-a2","e-b2"]},
+    {"action_id":"action-recovery","action_type":"mitigate","reference_ids":["e-b3","e-c1"]}
+  ]
+}

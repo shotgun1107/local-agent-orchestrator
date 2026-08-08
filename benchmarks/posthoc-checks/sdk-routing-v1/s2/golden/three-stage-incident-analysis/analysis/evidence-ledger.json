@@ -1,0 +1,13 @@
+{
+  "evidence": [
+    {"evidence_id":"e-a1","source_id":"source-a","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:00Z deployment release 42 began.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 began at 09:00Z."},
+    {"evidence_id":"e-a2","source_id":"source-a","locator":{"line_start":2,"line_end":2},"exact_excerpt":"2026-08-01T09:08Z error rate crossed 8 percent.","topic_id":"error-rate","observation_status":"observed","canonical_claim_text":"Source A records an error rate above 8 percent at 09:08Z."},
+    {"evidence_id":"e-a3","source_id":"source-a","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-a.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"Source A reports cache-a as the cache endpoint."},
+    {"evidence_id":"e-b1","source_id":"source-b","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:02Z deployment release 42 completed.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 completed at 09:02Z."},
+    {"evidence_id":"e-b2","source_id":"source-b","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Dashboard note: error rate stayed below 2 percent.","topic_id":"error-rate","observation_status":"reported","canonical_claim_text":"Source B reports an error rate below 2 percent."},
+    {"evidence_id":"e-b3","source_id":"source-b","locator":{"line_start":3,"line_end":3},"exact_excerpt":"2026-08-01T09:20Z rollback release 42 began.","topic_id":"rollback","observation_status":"observed","canonical_claim_text":"Rollback of release 42 began at 09:20Z."},
+    {"evidence_id":"e-c1","source_id":"source-c","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2026-08-01T09:35Z service recovery was confirmed.","topic_id":"recovery","observation_status":"observed","canonical_claim_text":"Service recovery was confirmed at 09:35Z."},
+    {"evidence_id":"e-c2","source_id":"source-c","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Approval owner for release 42 is unknown.","topic_id":"approval-owner","observation_status":"reported","canonical_claim_text":"The approval owner for release 42 remains unknown."},
+    {"evidence_id":"e-c3","source_id":"source-c","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-b.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"Source C reports cache-b as the cache endpoint."}
+  ]
+}

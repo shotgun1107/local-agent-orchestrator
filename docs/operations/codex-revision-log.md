@@ -1376,3 +1376,54 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - C2 4개 합계는 6 turns, 662,143 tokens, 273.125초이고 B1 4개 합계는 6 turns, 541,145 tokens, 259.032초다. B1 합계는 token 18.3%, wall-clock 5.2% 작았지만 차이 대부분은 `sequential-document` 한 pair에서 발생했다. profile당 pair 하나인 S1 결과로 범용 우위·profile route·B1 채택을 발행하지 않는다.
 - live export는 108개 파일을 `benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`에 보존했다. export SHA-256은 `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`이며 생성 시 freeze bundle, 8개 Measurement와 Evidence, 정확한 파일 집합을 다시 열어 검증했다.
 - 사람이 읽는 해석은 `docs/experiments/sdk-routing-s1-live-result.md`에 기록했다. 추가 회귀·하위 에이전트·새 하네스·추가 model turn은 실행하지 않았다. 다음 기술 후보는 S2 intermediate v1 최소 구현이며 S3는 선행하지 않는다.
+
+## SDK 라우팅 S2 intermediate 명세 review candidate
+
+- 작업일: 2026-08-08. S1 `CALIBRATION_PASS` 뒤 구현을 시작하지 않고 `docs/design/sdk-routing-s2-intermediate-spec.md`에 S2 전용 구현·시험 계약을 작성했다.
+- 3단계 config migration과 incident analysis의 Task graph·dependency·inputs·read/write scope·산출물 6/7개, 공개 Task Check와 각각 5개 사후 property를 구현 가능한 수준으로 고정했다. 사후 검사는 Worker turn 뒤 C2/B1에 동일하게 적용하며 hidden oracle이라고 주장하지 않는다.
+- 최초 순서는 config C2→B1, incident B1→C2이고 정상 4 Cell·12 turns다. 사용자가 Plan 전체를 승인하면 Cell은 순차 실행하되 Cell마다 사용자에게 재승인을 묻지 않는다. 역순은 사전 등록된 조건이 있을 때 새 Plan·예산·승인으로만 연다.
+- profile별 route 결정식, `routing-policy-v1` 최소 필드, S2 stage 상태와 정지 규칙을 명시했다. S1 수치와 단일 S2 pair의 속도만으로 B1 route를 발행하지 않으며 미측정 저위험 fallback은 C2다.
+- 새 S2 전용 대형 Controller·상태 기계·Judge·seal 복제를 금지하고 기존 `routing_live.py`의 stage-generic 최소 확장만 허용했다. 검증은 새 계약 표적 시험, Fake 4-Cell 관통, 안정화 뒤 최종 회귀로 제한하고 하위 에이전트 P1-zero 감사를 gate에서 제외했다.
+- `docs/reviews/benchmark-runner/claude-review-prompt-sdk-routing-s2-intermediate-spec.md`에 read-only Claude 심사 프롬프트를 작성했다. 현재 상태는 `review_candidate`이며 Claude 심사와 사용자 동결 전에는 구현·시험·model turn을 시작하지 않는다.
+
+## SDK 라우팅 S2 revision 3 Claude 심사와 revision 4 candidate
+
+- 작업일: 2026-08-08. Claude의 read-only 심사는 revision 3을 `재설계 필요`로 판정했다. 지적 수는 P0 6건·P1 10건·P2 8건·P3 4건이며, 하네스-for-하네스나 관성적 재검증 문제는 없고 manifest 하위 호환·turn 예산·incident omission·route 증거 수준이 핵심 차단점이라고 봤다.
+- 심사 원문에서 실행 가능한 지적과 근거를 `docs/reviews/benchmark-runner/claude-review-sdk-routing-s2-intermediate-spec.md`에 정규화해 보존했다. Claude는 파일 수정·테스트·model turn·하위 에이전트를 사용하지 않았다.
+- `docs/design/sdk-routing-s2-intermediate-spec.md`를 revision 4 candidate로 다시 작성했다. 과거 S1 manifest 분기를 보존하는 additive schema, 기존 S1 export 재검증 1회, stage별 `route_decision_allowed` exact 결합을 명시했다.
+- 최초 예산은 네 Cell의 최초 Task 12 turns를 먼저 보전하고 B1 retry/resume 전용 reserve 3을 분리하는 최대 15-turn 안으로 제안했다. 역순 profile pair는 base 6 + reserve 3의 최대 9 turns이며 각각 새 사용자 승인을 요구한다. 이 문서 선택은 live model 사용 승인이 아니다.
+- 최초 단일 pair에서는 route를 발행하지 않고 `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR`만 기록한다. 역순은 정확히 한 Variant만 성공하거나 봉인된 B1 control effect가 있을 때만 열며, 1.50/2.00 비율과 사람의 모델 변동 판단은 확대·route에서 삭제했다.
+- config fixture는 exact import·signature·오류 class·CLI 계약을, incident fixture는 Worker 공개 topic catalog·`canonical_claim_text`·exact JSON key·report/action render를 갖도록 수정했다. property 결과는 `judge/posthoc`에 별도 봉인하고 profile 성공은 Judge AND property로 유도한다.
+- 짧은 S2 Cell ID, 40자 state root, freeze path preflight, fixture tree 밖 golden, `s2_posthoc_property_contracts` regression record, B1 3,300초 adapter timeout과 retry first/full outcome 이중 보고를 명시했다.
+- `docs/reviews/benchmark-runner/claude-rereview-prompt-sdk-routing-s2-intermediate-spec.md`에 이전 P0/P1 closure만 확인하는 집중 재심사 프롬프트를 작성했다. 현재 다음 관문은 이 재심사와 사용자 동결이며 구현·시험·model turn은 아직 0건이다.
+
+## SDK 라우팅 S2 revision 4 집중 재심사와 revision 5 동결 후보
+
+- 작업일: 2026-08-08. Claude 집중 재심사는 `경미한 수정 후 동결`로 판정했다. 이전 P0 6건은 모두 closed, 이전 P1은 9건 closed·P1-7 partially closed였고 새 P1 2건이 발견됐다. 구조 재설계나 재실행은 요구하지 않았다.
+- 재심사는 B1 공개 report에 per-attempt turn·token·Judge 값이 없다는 사실, C2가 Task 실패 시 조기 반환할 수 있다는 사실, incident status 값 도메인이 report section 검증에 필요하다는 사실을 코드와 대조했다. 파일 수정·테스트·model turn·하위 에이전트는 0건이었다.
+- `docs/reviews/benchmark-runner/claude-rereview-sdk-routing-s2-intermediate-spec.md`에 closure 표, 새 P1 세부와 확인 사실을 정규화해 보존했다.
+- `docs/design/sdk-routing-s2-intermediate-spec.md`를 revision 5 사용자 동결 후보로 갱신했다. B1 reserve는 봉인된 `b1_retry_count + b1_resume_count`로 직접 차감하며 C2/B1의 미소비 최초 turn은 다른 Cell reserve로 재배정하지 않는다. 이는 Claude가 제안한 `actual_turns - task_count` 식이 B1 조기 종료에서 실제 retry를 가릴 수 있는 경계까지 닫는다.
+- incident contract는 evidence `observed|reported|derived`, event `confirmed|conflicting|uncertain`, claim `confirmed|conflicting` 값 집합과 claim status의 report section mapping을 고정했다. 공개 catalog의 conflicting topic claim은 confirmed가 될 수 없다.
+- retry 이중 보고는 현재 B1 공개 report에서 관측 가능한 first-attempt Task state·failure kind와 full-run state·Judge·turn·usage로 축소했다. per-attempt 비용은 `not_available`로 기록하고 추정하거나 B1 report schema를 확장하지 않는다.
+- stage discriminator가 반대 stage bytes를 받아들이는 완화형 회귀를 막기 위해 S1/S2 분기 상호 거부 음성 계약 시험 1건을 기존 표적 model-free 시험 예산에 포함했다. 새 하네스·추가 전체 회귀·교차 clone은 추가하지 않았다.
+- 현재 남은 관문은 revision 5의 사용자 동결이다. 구현·시험·model turn은 아직 시작하지 않았고 live 사용 승인은 별도다.
+
+## SDK 라우팅 S2 revision 5 사용자 동결
+
+- 작업일: 2026-08-08. 사용자가 `docs/design/sdk-routing-s2-intermediate-spec.md` revision 5를 구현·시험 정본으로 승인했다. 문서 상태를 `frozen_before_implementation`으로 바꾸고 사용자 동결일을 기록했다.
+- 동결 문서는 526줄·36,948 bytes이며 SHA-256은 `1b5046b667bb6b3cc7c882bb3124dec4d8b9fe7ff4363471586aa24d94db1dc5`다.
+- 동결 범위는 manifest 하위 호환, 두 3-Task fixture, post-hoc property, 최초 base 12 + B1 reserve 3의 최대 15-turn 예산, 역순 확대와 결정론적 route, 구현·검증 예산이다.
+- 이 승인은 명세 동결이며 S2 live model 사용 승인이 아니다. 다음 기술 단계는 기존 Runner의 stage-generic 최소 확장과 fixture/property 구현이다. 최초 live 4 Cell은 구현·시험·실행 후보 동결 뒤 최대 15 turns를 적은 별도 사용자 승인을 받아야 한다.
+- 사용자 승인 시점까지 구현·테스트·model turn·하위 에이전트·commit·push는 실행하지 않았다.
+
+## SDK 라우팅 S2 revision 5 구현 후보
+
+- 작업일: 2026-08-08. 사용자 승인 뒤 기존 Benchmark Runner를 stage-generic하게 확장했다. S1/S2 stage는 discriminator가 분리된 strict 계약으로 읽고, 기존 S1 manifest·Plan·비라이브·live 경로는 호환 wrapper로 유지했다. S2를 위한 두 번째 Controller나 별도 상태 기계는 만들지 않았다.
+- `three-stage-config-migration`과 `three-stage-incident-analysis` 3-Task fixture, fixture 밖 golden, 각 5개 사후 property checker를 구현했다. 사후 검사는 공통 Judge 뒤, Measurement·seal 전에 C2/B1에 동일하게 실행되며 checker 오류와 workspace 변경을 fail-closed로 처리한다.
+- 최초 S2 Plan은 4 Cell·base 12 turns와 B1 retry/resume 전용 reserve 3, 최대 15 turns를 고정한다. 남은 reserve는 앞서 봉인된 B1 Measurement의 retry+resume만 차감하고, 미소비 최초 turn은 재배정하지 않는다. B1 추가 turn이 있으면 first-attempt Task 결과와 전체 오케스트레이션 결과를 함께 봉인하고 Attempt별 비용은 `not_available`로 둔다.
+- `routing-policy-v1`은 봉인된 Cell·Measurement·Judge·property·resource·B1 control field만으로 단일-pair 관측, 역순 확대 필요, 잠정 B1 route, B1 제외 또는 inconclusive를 유도한다. source·Runner·Variant·checker identity와 Measurement/seal 참조를 함께 보존하고 전역 B1 기본값은 발행하지 않는다.
+- S2 표적 model-free 시험은 `15 passed`다. pristine 실패, golden 통과, 10개 property 개별 mutation 거부, C2/B1 label parity, stage 상호 거부, 독립 reserve, Fake 4-Cell Plan→Judge→property→seal→export, 확대 조건과 역순 잠정 route를 포함한다. 실제 model turn은 0회다.
+- 최종 기존 계약은 S0 `9 passed`, B1 retry `3 passed`를 통과했다. B1 전체는 대체 Python 경로에서 SDK 패키지를 처음 찾지 못해 `68 passed, 6 failed`였고 같은 여섯 환경 표적을 기존 venv package 경로로 바로잡아 `6 passed`로 확인했다. B1 코드 실패는 남지 않았다.
+- Runner 전체의 첫 실행은 `206 passed, 12 failed`였다. 9건은 저장소 내부의 긴 basetemp가 R6 외부 격리·Windows 경로 계약을 위반한 시험 환경 오류였고 짧은 외부 basetemp에서 통과했다. 2건은 대체 Python의 `sys.prefix` 밖에 있던 기존 SDK·PyYAML을 임시 venv에 연결해 통과했다. 마지막 1건을 조사하면서 Python 3.12.10과 두 프로젝트 venv가 실제로는 정상이며 Codex 파일 샌드박스가 사용자 프로그램 폴더 실행을 거부해 없어진 것처럼 보였음을 확인했다. 기존 B1 venv를 승인된 실행 경계에서 사용해 exact `3.12.10` live-freeze runtime 관문도 `1 passed`로 통과했다. 따라서 실패 표적을 포함한 Runner 218개 계약 경로를 모두 확인했으며, Docker나 Python 재설치는 하지 않았다.
+- 기존 S1 export는 현재 verifier로 정확히 한 번 재검증했다. Experiment `exp_20260807_d1e9fdb8_1`, `CALIBRATION_PASS`, 108 files, export SHA-256 `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`이 그대로다.
+- 현재 결과는 구현 후보이지 live 실행 후보 동결이 아니다. fixture를 포함한 source commit/tree identity, revision 3 suite manifest, frozen S2 stage·fixture manifest, clean source의 regression record와 freeze artifact는 아직 만들지 않았다. 기존 Python 3.12.10 venv를 사용해 source commit 뒤 clean regression record와 freeze 전용 경로 preflight를 통과해야 한다. commit·push와 실제 model turn은 0회다.

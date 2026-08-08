@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {"source_id": "source-a", "path": "sources/source-a.md"},
+    {"source_id": "source-b", "path": "sources/source-b.md"},
+    {"source_id": "source-c", "path": "sources/source-c.md"}
+  ],
+  "topics": [
+    {"topic_id": "approval-owner", "expected_distinct_source_count": 1, "conflicting": false},
+    {"topic_id": "cache-endpoint", "expected_distinct_source_count": 2, "conflicting": true},
+    {"topic_id": "deployment", "expected_distinct_source_count": 2, "conflicting": false},
+    {"topic_id": "error-rate", "expected_distinct_source_count": 2, "conflicting": true},
+    {"topic_id": "recovery", "expected_distinct_source_count": 1, "conflicting": false},
+    {"topic_id": "rollback", "expected_distinct_source_count": 1, "conflicting": false}
+  ]
+}
