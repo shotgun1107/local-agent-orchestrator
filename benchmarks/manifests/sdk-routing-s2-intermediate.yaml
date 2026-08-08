@@ -17,10 +17,6 @@ repetitions: 1
 model:
   allowed: gpt-5.6-terra
   auth_method: chatgpt
-  reasoning_effort: low
-  sdk: openai-codex==0.144.4
-  approval_mode: deny_all
-  sandbox: workspace_write
 budgets:
   base_live_model_turns: 12
   b1_retry_resume_reserve_turns: 3
