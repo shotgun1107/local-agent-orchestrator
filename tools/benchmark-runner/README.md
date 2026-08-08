@@ -302,3 +302,28 @@ incident-analysis C2 Cell passed, while B1 failed post-hoc properties `INC-P1` a
 with aggregate SHA-256
 `5577d8bf54352a9b9930331e3c99d1af761d85211b197ebb9c959cee6de83d55`.
 See `docs/experiments/sdk-routing-s2-live-result.md` for the bounded interpretation.
+
+When that verified initial export reports `S2_EXPANSION_REQUIRED`, the same controller
+can freeze one separately approved opposite-order profile pair. The reverse Plan is
+cryptographically bound to the tracked initial export, contains only that pair, and
+has its own six-turn base plus three-turn B1 retry/resume reserve. It does not recreate
+or mutate the initial Plan.
+
+```powershell
+$initial = '.\benchmarks\results\sdk-routing-v1\sdk-routing-s2-v1\exp_20260808_5f4f41a7_2'
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py create `
+  --stage s2-intermediate `
+  --state-root '<new-external-short-state-root>' `
+  --artifact-root '.\benchmarks\artifacts\sdk-routing-s2-reverse-<source-commit>-r3' `
+  --regression-record '<source-bound-zero-turn-regression-record.json>' `
+  --initial-export-root $initial `
+  --expansion-profile three-stage-incident-analysis `
+  --revision 3
+```
+
+After the reverse candidate is committed and its model-use ceiling is approved,
+`run-next` is invoked once per Cell exactly as for the initial Plan. Status and export
+combine the sealed initial and reverse observations for policy derivation while
+counting the reverse Plan's nine-turn ceiling independently. A reverse export embeds
+the complete verified initial export so it remains independently verifiable.

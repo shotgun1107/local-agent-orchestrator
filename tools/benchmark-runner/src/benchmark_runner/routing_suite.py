@@ -864,6 +864,104 @@ def build_routing_s2_live_plan(
     return plan
 
 
+def build_routing_s2_reverse_live_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    expansion_profile: str,
+    initial_export_identity: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build one separately approved S2 reverse pair from the frozen initial stage."""
+
+    initial = build_routing_s2_live_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
+    )
+    aliases = initial.decision_policy.get("profile_aliases")
+    if not isinstance(aliases, dict) or expansion_profile not in aliases.values():
+        raise RoutingSuiteError("S2 reverse Plan expansion profile is not frozen")
+    alias = next(key for key, value in aliases.items() if value == expansion_profile)
+    by_variant = {
+        cell.variant_id: cell
+        for cell in initial.cells
+        if cell.fixture_id == expansion_profile
+    }
+    if set(by_variant) != {"c2", "b1"}:
+        raise RoutingSuiteError("S2 reverse Plan requires one frozen C2/B1 pair")
+    expected_identity_keys = {
+        "experiment_id",
+        "plan_fingerprint",
+        "export_sha256",
+        "stage_state",
+        "source_commit",
+    }
+    if (
+        set(initial_export_identity) != expected_identity_keys
+        or initial_export_identity.get("stage_state") != "S2_EXPANSION_REQUIRED"
+        or any(
+            not isinstance(value, str) or not value
+            for value in initial_export_identity.values()
+        )
+    ):
+        raise RoutingSuiteError("S2 reverse Plan initial export identity is invalid")
+    initial_order = [
+        cell.variant_id
+        for cell in sorted(initial.cells, key=lambda item: item.execution_ordinal)
+        if cell.fixture_id == expansion_profile
+    ]
+    reverse_order = tuple(reversed(initial_order))
+    if set(reverse_order) != {"c2", "b1"} or len(reverse_order) != 2:
+        raise RoutingSuiteError("S2 reverse Plan cannot derive the frozen opposite order")
+    cells = [
+        by_variant[variant_id].model_copy(
+            update={
+                "cell_id": f"cell_s2_{alias}_2_{variant_id}",
+                "block_id": f"block_s2_{alias}_2",
+                "execution_ordinal": ordinal,
+            }
+        )
+        for ordinal, variant_id in enumerate(reverse_order, start=1)
+    ]
+    policy = {
+        **initial.decision_policy,
+        "execution_phase": "reverse",
+        "expansion_profile": expansion_profile,
+        "initial_export_identity": dict(initial_export_identity),
+        "base_live_model_turns": 6,
+        "b1_retry_resume_reserve_turns": 3,
+        "max_actual_live_model_turns": 9,
+    }
+    return build_sdk_controlled_plan(
+        source_manifest_path=initial.source_manifest.path,
+        source_manifest_sha256=initial.source_manifest.sha256,
+        fixtures=list(initial.fixtures),
+        runner=runner,
+        variants=variants,
+        cells=cells,
+        baseline_variant=initial.baseline_variant,
+        candidate_variants=list(initial.candidate_variants),
+        decision_policy=policy,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
+        seed=0,
+        track="sdk_routing_s2_live_reverse",
+        planned_actual_model_turns=None,
+    )
+
+
 def initialize_routing_s1_experiment(
     state_root: Path,
     plan: ExecutionPlan,
