@@ -168,11 +168,21 @@ S1 실행 후보 source commit `e7b6163`의 최종 검증은 다음과 같다.
 - raw Plan SHA-256: `83baaf3c57df94de8e4e72205e6feb28cbc85873794002b3a14ce384f88400e1`
 - freeze SHA-256: `2a287039526ebd919b50110c2fd10a0e905fbf3d0638036e3a91738d7ad34171`
 - artifact: `benchmarks/artifacts/sdk-routing-v1-e7b6163-r1/`
-- 상태: 8개 Cell 모두 `PLANNED`, sealed 0, actual model turn 0, calibration·route 미발행
+- 실행 전 상태: 8개 Cell 모두 `PLANNED`, sealed 0, actual model turn 0, calibration·route 미발행
 
 세 내부 하위 에이전트의 계약·runtime·seal 감사를 반영했고 최신 재감사에서 잔여 P0/P1은 0건이었다. freeze 생성은 별도 clean checkout과 별도 process에서 Plan과 Runner/B1/manifest identity를 다시 계산했으며 8개 ChatGPT 구독 preflight만 수행했다.
 
 Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧은 basetemp에서 단일 시험과 전체 회귀는 통과했지만 원인은 미확인이므로 `DEV-20260807-001`을 `investigating`으로 유지한다. 근거 없는 자동 재시도는 추가하지 않았다.
+
+### S1 live 실행·export 완료
+
+- Experiment `exp_20260807_d1e9fdb8_1`의 8개 Cell을 동결 순서대로 모두 실행했다.
+- 8개 모두 `completed`·`SEALED`, Judge 성공이며 actual model turn은 정상 예산과 같은 12회다.
+- 최종 상태는 `CALIBRATION_PASS`, `route_decision_issued=false`, stop 없음이다.
+- C2 합계는 662,143 tokens·273.125초, B1 합계는 541,145 tokens·259.032초다.
+- B1 합계는 C2보다 token 18.3%, wall-clock 5.2% 작았지만 차이 대부분이 `sequential-document` 한 pair에서 발생했으므로 범용 우위나 profile route로 확대하지 않는다.
+- 정식 108-file export는 `benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`, SHA-256은 `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`이다.
+- 사람이 읽는 결과 해석은 `docs/experiments/sdk-routing-s1-live-result.md`에 보존했다.
 
 ## 7. 현재 결론과 아직 말할 수 없는 것
 
@@ -181,13 +191,13 @@ Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧�
 - B1은 2-Task 의존 작업을 사람 중계 없이 순차 실행할 수 있다.
 - C0·C1·C2·B1 실제 SDK 연결과 봉인 경로가 동작한다.
 - S0 안전 게이트와 S1 8-Cell 비라이브 실행·봉인·export 경로가 동작한다.
+- S1 live 8-Cell 실행·Judge·봉인·export가 동작했고 calibration은 `PASS`다.
 
 아직 확정하지 않은 것:
 
 - B1이 C2보다 일반적으로 빠르거나 저렴하다는 주장
 - B1 기본 채택 또는 폐기
 - 작업 profile별 route
-- S1 live calibration 결과
 - 최종 범용 멀티 세션·팀 구조
 
 수동 B0 실험에는 사람 지연이 섞였으므로 자동 Variant 성능 비교에 합치지 않는다. Fake 결과는 live 품질이나 비용 증거로 확대하지 않는다.
@@ -230,16 +240,15 @@ Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧�
 
 ## 10. 다음 단계
 
-프로젝트 이해 확인과 S1 live 실행 후보 동결 전 기술 감사는 완료됐다. 현재 후보는 실제 model turn 직전에서 멈춰 있다.
+S1 live 8-Cell 실행과 정식 export까지 완료됐다. `CALIBRATION_PASS`는 S2 진입 자격이며 B1 채택이나 profile route가 아니다.
 
-다음 기술 행동은 사용자가 별도로 명시 승인할 때 `cell_s1_code-change_1_c2` 한 Cell만 실행하는 것이다. `run-next`는 호출마다 model 사용 승인을 다시 요구하고 자동으로 다음 Cell을 이어서 실행하지 않는다. 첫 Cell을 봉인한 뒤 status와 Evidence를 검토하고, 다음 Cell 실행 여부를 다시 결정한다.
+다음 기술 후보는 S2 intermediate v1의 최소 구현이다. 사후 속성 검사 계약의 model-free 준비와 3-Task fixture 두 개를 기존 Runner에 연결하고, 구현·동결이 끝난 뒤 별도 사용자 승인으로 최초 live 4 Cell을 실행한다.
 
 현재 선행하지 않는 작업:
 
-- 승인 없는 S1 live Cell 실행
-- 8개 Cell 자동 연속 실행
-- S1 결과 전 profile route나 B1 채택 판정
-- S2·S3 구현 또는 예약
+- S1 단일 pair를 근거로 한 profile route나 B1 채택 판정
+- S2 구현·동결 전 live Cell 실행
+- S3 구현 또는 예약
 - WinError 5 원인을 해결했다고 간주하는 자동 재시도
 
 ## 11. 집 PC에서 재개하는 방법
@@ -250,7 +259,7 @@ Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧�
 cd "<집 PC의 local-agent-orchestrator 경로>"
 git status --short
 git fetch origin
-git pull --ff-only origin main
+git pull --ff-only origin codex/s1-execution-freeze
 git status -sb
 git log -3 --oneline --decorate
 ```
@@ -278,15 +287,15 @@ Codex 인증은 ChatGPT 구독 계정만 사용한다. `OPENAI_API_KEY` 또는 `
 ## 13. 현재 재개 프롬프트
 
 ```text
-local-agent-orchestrator의 S1 실행 후보 동결 이후 작업을 이어간다. 새 clone이나 기초 설치를 반복하지 마라.
+local-agent-orchestrator의 S1 live 완료 이후 작업을 이어간다. 새 clone이나 기초 설치를 반복하지 마라.
 
 먼저 현재 경로, origin, branch, HEAD, git status를 확인한다. 로컬 변경이 있으면 숨기거나 폐기하지 말고 파일 목록을 보고하고 멈춘다. 깨끗하면 codex/s1-execution-freeze 원격 branch를 ff-only로 동기화한다.
 
-정본은 docs/operations/home-codex-handoff.md의 S1 live 실행 후보 동결 절과 benchmarks/artifacts/sdk-routing-v1-e7b6163-r1/이다. source commit, Experiment ID, Plan fingerprint, raw Plan SHA와 freeze SHA를 독립 verifier로 확인하고 status가 8 PLANNED, sealed 0, actual model turn 0, calibration·route 미발행인지 보고한다.
+정본은 docs/experiments/sdk-routing-s1-live-result.md와 benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/이다. S1은 8/8 Cell completed·SEALED, 12 actual model turns, CALIBRATION_PASS, route 미발행으로 완료됐다. 이 사실을 다시 실행·재현·교차 검증하지 마라.
 
-이 확인은 실제 model turn을 허가하지 않는다. run-next를 호출하지 말고 멈춘다. 사용자가 특정 Cell 실행을 별도로 명시 승인한 뒤에만 정확히 한 Cell을 실행하며, 자동으로 다음 Cell을 이어서 실행하지 않는다.
+다음 기술 후보는 S2 intermediate v1 최소 구현이다. 사용자가 S2 착수를 지시하기 전에는 추가 검증·새 하네스·하위 에이전트·model turn으로 빈칸을 채우지 말고 현재 상태만 보고한 뒤 멈춘다.
 
-인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 않는다. S2·S3, profile route, B1 채택 판정을 선행하지 않는다.
+인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 않는다. S1 결과만으로 profile route나 B1 채택을 판정하지 않고 S3를 선행하지 않는다.
 ```
 
 ## 14. 완료된 최초 이해도 심사 프롬프트

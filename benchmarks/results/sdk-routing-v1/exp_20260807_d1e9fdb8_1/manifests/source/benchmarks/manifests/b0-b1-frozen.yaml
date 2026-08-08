@@ -1,0 +1,43 @@
+schema_version: 1
+status: frozen_before_execution
+frozen_at: "2026-08-04"
+fixtures:
+  - id: code-change
+    path: benchmarks/fixtures/code-change
+    commit: e915914c0494cd21969de5bc60f81ad74ec1b037
+    git_tree: 65dee05f3922b421140950b8297f0df2fa602b30
+    success_check: acceptance
+  - id: document-read
+    path: benchmarks/fixtures/document-read
+    commit: e915914c0494cd21969de5bc60f81ad74ec1b037
+    git_tree: 2198d58636119afac24887cffa082e6db658efc1
+    success_check: acceptance
+variants: [b0, b1]
+repetitions: 3
+model:
+  allowed: gpt-5.6-terra
+  auth_method: chatgpt
+budgets:
+  max_turns_per_run: 8
+  max_attempts_per_task: 2
+  task_timeout_seconds: 900
+  stop_on_unexplained_failure: true
+human_intervention:
+  b0: prompt_entry_and_normal_session_operation
+  b1: start_command_only_unless_run_blocks
+  count_rule: every manual copy, relay, correction, retry, or recovery command
+metrics:
+  - check_success
+  - manual_copy_or_relay_count
+  - manual_recovery_count
+  - manual_recovery_seconds
+  - wall_clock_seconds
+  - session_count
+  - turn_count
+  - attempt_count
+  - token_usage_when_measured
+  - errors_found_by_automatic_checks
+  - errors_found_by_human_after_pass
+  - orchestrator_debugging_seconds
+unknown_usage_rule: record_unknown_and_do_not_impute_zero
+failure_rule: do_not_drop_failed_or_interrupted_repetitions
