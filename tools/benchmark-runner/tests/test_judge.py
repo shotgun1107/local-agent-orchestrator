@@ -406,10 +406,15 @@ def test_crash_recovery_terminates_recorded_judge_process_group(tmp_path: Path) 
     )
     try:
         deadline = time.monotonic() + 2
-        while not child_pid_path.is_file() and time.monotonic() < deadline:
+        child_pid_text = ""
+        while time.monotonic() < deadline:
+            if child_pid_path.is_file():
+                child_pid_text = child_pid_path.read_text(encoding="utf-8").strip()
+                if child_pid_text:
+                    break
             time.sleep(0.01)
-        assert child_pid_path.is_file()
-        child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+        assert child_pid_text
+        child_pid = int(child_pid_text)
         identity = _process_start_identity(process.pid)
         assert identity is not None
         judge_dir = tmp_path / "judge"
