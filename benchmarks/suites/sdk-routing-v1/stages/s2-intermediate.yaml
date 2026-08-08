@@ -1,6 +1,6 @@
 schema_version: 1
 stage_id: s2-intermediate
-status: implementation_candidate
+status: frozen_before_execution
 purpose: profile_routing
 fixture_manifests:
   - path: benchmarks/manifests/sdk-routing-s2-intermediate.yaml
