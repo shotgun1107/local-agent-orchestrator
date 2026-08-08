@@ -1494,3 +1494,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 문서 상태를 `frozen_before_implementation`으로 바꾸고 사용자 동결일과 revision 2 재심사 근거를 header에 기록했다. 설계 본문, Task graph, property mapping, 최초 20-turn·역순 10-turn 예산, route 술어와 종료선은 변경하지 않았다.
 - 동결 문서는 452줄·34,278 bytes, SHA-256 `f2ef81fa39119610345576252c4bb35b7dee395ed895af9f10dd00b301fc8b81`다.
 - 이 승인은 명세 동결만 의미한다. 구현·fixture 생성·model-free 테스트·candidate freeze·model turn·live Cell은 시작하지 않았으며 구현 착수에는 별도 사용자 지시가 필요하다.
+
+## SDK 라우팅 S3 구현과 zero-turn 실행 후보 동결
+
+- 작업일: 2026-08-08. 사용자 구현 승인 뒤 frozen revision 2 범위만 기존 Benchmark Runner에 추가했다. 구현 source는 `03eb4a772893130cd3d1000b12fe8a20e0e3643a`, candidate artifact commit은 `b8e6b76`이다.
+- 두 4-Task fixture, 공개 Check 8개, fixture 밖 golden, HCR/HCI post-hoc checker와 S3 policy를 구현했다. 새 S3 controller·runtime·Adapter·Judge·Measurement·seal·상태 기계는 만들지 않고 기존 `routing_suite.py`, `routing_live.py`, 역사적 `s2_policy.py`를 stage-generic하게 확장했다.
+- 최초 Plan은 compatibility C2→B1, incident B1→C2의 4 Cell, base 16 + profile별 B1 retry/resume reserve 2씩, 절대 상한 20 turns다. Control attribution 양성·음성, 최초 replication, 역순 retain/reject, inconclusive, profile-local reserve와 S1/S2/S3 상호 거부를 deterministic 시험으로 고정했다.
+- 최종 source-bound 회귀는 S0 `9 passed`, B1 retry `3 passed`, B1 전체 `74 passed`, Runner 전체 `239 passed`, S3 표적 `19 passed`다. 첫 S0 시도는 pytest 임시 부모 누락, 첫 Runner 전체 시도는 repo 내부 긴 임시 경로가 Windows/R6 경로 계약을 위반해 setup에서 실패했으며 올바른 전용 경로에서 실패 묶음만 재실행했다. 제품 코드 수정과 model turn은 없었고 성공 실행만 regression record에 봉인했다.
+- Candidate는 `benchmarks/artifacts/sdk-routing-s3-v1-03eb4a7-r1/`, Experiment `exp_20260808_66099ac3_1`, Plan fingerprint `66099ac3aa51e8184a8e0bec4ff86db722f891f0765bf2d74f602aaf761117e2`, raw Plan SHA-256 `a71bec8b8217b3f8ef5e3ed70cb592c6f83c37fd814ad4d260ac316181111c0d`, freeze SHA-256 `d574323a86002dd93d18313e33afd3fee121a3a8ffe025c232cde44d20c3559d`다.
+- 별도 clean checkout·별도 process Plan build가 동일했고 resolved state root는 `C:\s3-03eb4a7-r1` 16자, 네 실제 경로 preflight 최대 길이는 각각 114자였다. SDK preflight는 네 Cell 모두 ChatGPT account, SDK 0.144.4, API key 환경 이름 0개, actual model turn 0을 확인했다.
+- Status는 네 Cell 모두 `PLANNED`, sealed 0, actual/combined model turns 0, `S3_INCOMPLETE`, route 미발행, stop 없음이다. 구현 보고서는 `docs/experiments/sdk-routing-s3-implementation-freeze.md`다.
+- Claude 구현 심사 정본은 `docs/prompts/benchmark-runner/claude-review-prompt-sdk-routing-s3-implementation-freeze.md`, 새 세션 복붙 입력은 `docs/prompts/benchmark-runner/claude-session-input-sdk-routing-s3-implementation-review.md`다. 둘 다 diff·artifact read-only 심사만 허용하고 테스트·verifier·model turn·하위 에이전트를 금지한다.
+- 다음 관문은 Claude의 구현 diff·artifact read-only 심사다. 재테스트·verifier·새 구현은 하지 않는다. 심사 뒤에도 최초 네 Cell과 최대 20 turns는 별도 사용자 승인 없이는 실행하지 않으며, 조건부 역순은 최초 결과가 `S3_REPLICATION_REQUIRED`를 낸 profile에 대한 별도 최대 10-turn 승인으로만 연다.
