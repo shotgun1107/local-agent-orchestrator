@@ -252,7 +252,7 @@ def _b1_fake_fixture(fixture_id: str) -> dict[str, object]:
 def test_routing_manifests_and_generated_schemas_match_contracts(tmp_path: Path) -> None:
     suite = load_routing_suite(SUITE_PATH)
     stage = load_routing_stage(STAGE_PATH)
-    assert suite.design_revision == 2
+    assert suite.design_revision == 3
     assert suite.status == "frozen_before_execution"
     assert stage.status == "frozen_before_execution"
     assert stage.purpose == "calibration_only"
