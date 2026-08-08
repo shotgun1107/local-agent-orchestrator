@@ -263,3 +263,26 @@ sealed in the planned order using twelve actual model turns. The terminal state 
 `benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`; its aggregate SHA-256
 is `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`.
 See `docs/experiments/sdk-routing-s1-live-result.md` for the bounded comparison.
+
+### S2 intermediate implementation candidate
+
+S2 reuses the same Plan, fixture restoration, SDK Cell, Judge, Measurement, seal,
+status, and live-controller path. The existing
+`scripts/run_sdk_routing_s1.py` accepts `--stage s2-intermediate`; there is no
+second S2 controller or state machine.
+
+The initial S2 Plan contains four three-Task Cells and protects twelve initial
+turns before allocating an independent three-turn B1 retry/resume reserve. Its
+absolute initial ceiling is fifteen model turns. Each Cell runs the common Judge
+and then the fixture-specific post-hoc property checker before Measurement and
+seal. The exported `routing-policy-v1.json` is derived only from sealed identities,
+Judge/property results, resource limits, and B1 control metrics. A single successful
+pair can record an observation or request a separately approved reverse pair, but
+cannot establish a global B1 default.
+
+The source currently contains the fixture, golden, checker, policy, and
+stage-generic implementation candidate. It is not a live-ready freeze: the S2
+fixture manifest, suite revision 3, frozen stage, source-bound regression record,
+path preflight, and freeze artifact must be created from a clean committed source
+under the exact Python 3.12.10 runtime. Do not run `create` or a live Cell from the
+`implementation_candidate` stage.

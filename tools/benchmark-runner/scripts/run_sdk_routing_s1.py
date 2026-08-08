@@ -1,4 +1,4 @@
-"""CLI for the frozen SDK routing S1 live calibration."""
+"""CLI for frozen SDK routing S1/S2 live stages."""
 
 from __future__ import annotations
 
@@ -23,17 +23,18 @@ for source in (str(B1_SOURCE), str(RUNNER_SOURCE)):
         sys.path.insert(0, source)
 
 from benchmark_runner.routing_live import (  # noqa: E402
-    create_routing_s1_live_candidate,
+    create_routing_live_candidate,
     export_routing_s1_live,
-    routing_s1_live_status,
-    run_next_routing_s1_live_cell,
+    export_routing_s2_live,
+    routing_live_status,
+    run_next_routing_live_cell,
     verify_routing_s1_live_export,
-    verify_routing_s1_live_freeze,
+    verify_routing_live_freeze,
+    verify_routing_s2_live_export,
 )
 
 
 SUITE_PATH = REPOSITORY_ROOT / "benchmarks" / "suites" / "sdk-routing-v1" / "suite.yaml"
-STAGE_PATH = SUITE_PATH.parent / "stages" / "s1-baseline.yaml"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -49,6 +50,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--export-root", type=Path)
     parser.add_argument("--revision", type=int, default=1)
     parser.add_argument("--confirm-model-usage", action="store_true")
+    parser.add_argument(
+        "--stage",
+        choices=["s1-baseline", "s2-intermediate"],
+        default="s1-baseline",
+    )
     return parser
 
 
@@ -60,11 +66,12 @@ def _require(value: Path | None, message: str) -> Path:
 
 def main() -> int:
     args = _parser().parse_args()
+    stage_path = SUITE_PATH.parent / "stages" / f"{args.stage}.yaml"
     if args.command == "create":
-        result = create_routing_s1_live_candidate(
+        result = create_routing_live_candidate(
             repository_root=REPOSITORY_ROOT,
             suite_path=SUITE_PATH,
-            stage_path=STAGE_PATH,
+            stage_path=stage_path,
             state_root=_require(args.state_root, "create requires --state-root"),
             artifact_root=_require(args.artifact_root, "create requires --artifact-root"),
             regression_record_path=_require(
@@ -74,28 +81,36 @@ def main() -> int:
             revision=args.revision,
         )
     elif args.command == "verify-freeze":
-        result = verify_routing_s1_live_freeze(
+        result = verify_routing_live_freeze(
             _require(args.artifact_root, "verify-freeze requires --artifact-root")
         )
     elif args.command == "run-next":
-        result = run_next_routing_s1_live_cell(
+        result = run_next_routing_live_cell(
             state_root=_require(args.state_root, "run-next requires --state-root"),
             benchmark_python=Path(sys.executable),
             confirm_model_usage=args.confirm_model_usage,
         )
     elif args.command == "status":
-        result = routing_s1_live_status(
+        result = routing_live_status(
             _require(args.state_root, "status requires --state-root")
         )
     elif args.command == "export":
-        result = export_routing_s1_live(
+        exporter = (
+            export_routing_s2_live
+            if args.stage == "s2-intermediate"
+            else export_routing_s1_live
+        )
+        result = exporter(
             state_root=_require(args.state_root, "export requires --state-root"),
             results_root=_require(args.results_root, "export requires --results-root"),
         )
     else:
-        result = verify_routing_s1_live_export(
-            _require(args.export_root, "verify-export requires --export-root")
+        verifier = (
+            verify_routing_s2_live_export
+            if args.stage == "s2-intermediate"
+            else verify_routing_s1_live_export
         )
+        result = verifier(_require(args.export_root, "verify-export requires --export-root"))
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0
 

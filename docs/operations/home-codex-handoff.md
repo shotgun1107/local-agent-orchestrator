@@ -242,12 +242,14 @@ Windows `os.replace`의 간헐적 `WinError 5`는 두 번 관측됐다. 새 짧�
 
 S1 live 8-Cell 실행과 정식 export까지 완료됐다. `CALIBRATION_PASS`는 S2 진입 자격이며 B1 채택이나 profile route가 아니다.
 
-다음 기술 후보는 S2 intermediate v1의 최소 구현이다. 사후 속성 검사 계약의 model-free 준비와 3-Task fixture 두 개를 기존 Runner에 연결하고, 구현·동결이 끝난 뒤 별도 사용자 승인으로 최초 live 4 Cell을 실행한다.
+사용자는 2026-08-08 `docs/design/sdk-routing-s2-intermediate-spec.md` revision 5의 구현·시험 명세를 동결했고, 같은 날 최소 구현 후보까지 작성했다. 두 3-Task fixture·fixture 밖 golden·10개 property, stage-generic Plan/Runner/live 확장, 독립 B1 reserve와 `routing-policy-v1`을 기존 하네스에 연결했다. 새 S2 Controller나 별도 상태 기계는 만들지 않았다. S2 표적 model-free 시험은 15개가 통과했고 실제 model turn은 0회다.
+
+현재 다음 기술 단계는 live 실행이 아니라 구현 후보를 실행 후보로 동결하는 일이다. exact Python 3.12.10과 두 프로젝트 venv는 정상이며, 기본 Codex 파일 샌드박스에서는 사용자 프로그램 폴더의 base Python 실행이 거부되므로 승인된 실행 경계를 사용해야 한다. Runner 218개 계약 경로는 실패 표적까지 모두 확인했다. 다음에는 source를 commit해 fixture commit/tree identity를 만들고 suite revision 3, frozen S2 stage·fixture manifest, clean regression record, 경로 preflight와 freeze artifact를 생성한다. 최초 live 4 Cell은 이 동결까지 끝난 뒤 최대 15 turns를 적은 별도 사용자 승인을 받아야 한다.
 
 현재 선행하지 않는 작업:
 
 - S1 단일 pair를 근거로 한 profile route나 B1 채택 판정
-- S2 구현·동결 전 live Cell 실행
+- S2 실행 후보 동결 전 live Cell 실행
 - S3 구현 또는 예약
 - WinError 5 원인을 해결했다고 간주하는 자동 재시도
 
@@ -293,7 +295,9 @@ local-agent-orchestrator의 S1 live 완료 이후 작업을 이어간다. 새 cl
 
 정본은 docs/experiments/sdk-routing-s1-live-result.md와 benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/이다. S1은 8/8 Cell completed·SEALED, 12 actual model turns, CALIBRATION_PASS, route 미발행으로 완료됐다. 이 사실을 다시 실행·재현·교차 검증하지 마라.
 
-다음 기술 후보는 S2 intermediate v1 최소 구현이다. 사용자가 S2 착수를 지시하기 전에는 추가 검증·새 하네스·하위 에이전트·model turn으로 빈칸을 채우지 말고 현재 상태만 보고한 뒤 멈춘다.
+사용자는 docs/design/sdk-routing-s2-intermediate-spec.md revision 5의 구현·시험 명세를 2026-08-08 동결했고 최소 구현 후보가 작성됐다. 기존 Runner의 stage-generic 확장, 두 fixture·golden·property checker, B1 reserve와 routing-policy-v1이 구현됐으며 S2 표적 model-free 15개가 통과했다. 기존 S1 export도 현재 verifier로 정확히 1회 재검증됐다. 실제 model turn은 0회다.
+
+현재 구현을 완료 또는 live-ready라고 과장하지 마라. exact Python 3.12.10과 기존 venv는 정상이고 Runner 218개 계약 경로는 모두 확인했다. 이전 실행 불가는 설치 손실이 아니라 Codex 파일 샌드박스의 사용자 프로그램 폴더 실행 거부였다. 다음 행동은 source commit 뒤 fixture commit/tree identity와 suite revision 3·frozen stage/manifest·clean regression·path preflight·freeze artifact 생성이다. 이미 통과한 S2 표적 시험이나 S1 export를 다시 반복하지 마라. live 4 Cell은 최대 15 turns를 명시한 별도 승인 전 실행하지 않는다.
 
 인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 않는다. S1 결과만으로 profile route나 B1 채택을 판정하지 않고 S3를 선행하지 않는다.
 ```

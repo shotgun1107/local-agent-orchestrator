@@ -972,6 +972,33 @@ class B1SequentialAdapter:
                 "b1_repeatable_quality_regression": repeatable_failure,
             }
         )
+        extra_turns = (
+            normalized_metrics["b1_retry_count"]
+            + normalized_metrics["b1_resume_count"]
+        )
+        normalized_metrics["dual_outcome_status"] = (
+            "reported" if extra_turns > 0 else "not_applicable"
+        )
+        normalized_metrics["attempt_level_cost"] = "not_available"
+        if extra_turns > 0:
+            normalized_metrics["first_attempt_outcome"] = [
+                {
+                    "task_key": task["key"],
+                    "state": task["attempts"][0]["state"],
+                    "failure_kind": task["attempts"][0]["failure_kind"],
+                }
+                for task in report["tasks"]
+            ]
+            normalized_metrics["full_orchestrated_outcome"] = {
+                "state": outcome,
+                "failure_kind": failure_kind,
+                "check_success": None,
+                "turn_count": metrics["turns"],
+                "token_usage_status": (
+                    "measured" if measured_token_usage is not None else "unknown"
+                ),
+                "token_usage": measured_token_usage,
+            }
         model_active_seconds = metrics.get("model_active_seconds")
         if isinstance(model_active_seconds, (int, float)) and not isinstance(
             model_active_seconds, bool

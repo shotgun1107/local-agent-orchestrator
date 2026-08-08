@@ -1,0 +1,13 @@
+{
+  "claims": [
+    {"claim_id":"claim-a1","evidence_id":"e-a1","status":"confirmed","canonical_claim_text":"Deployment of release 42 began at 09:00Z."},
+    {"claim_id":"claim-a2","evidence_id":"e-a2","status":"conflicting","canonical_claim_text":"Source A records an error rate above 8 percent at 09:08Z."},
+    {"claim_id":"claim-a3","evidence_id":"e-a3","status":"conflicting","canonical_claim_text":"Source A reports cache-a as the cache endpoint."},
+    {"claim_id":"claim-b1","evidence_id":"e-b1","status":"confirmed","canonical_claim_text":"Deployment of release 42 completed at 09:02Z."},
+    {"claim_id":"claim-b2","evidence_id":"e-b2","status":"conflicting","canonical_claim_text":"Source B reports an error rate below 2 percent."},
+    {"claim_id":"claim-b3","evidence_id":"e-b3","status":"confirmed","canonical_claim_text":"Rollback of release 42 began at 09:20Z."},
+    {"claim_id":"claim-c1","evidence_id":"e-c1","status":"confirmed","canonical_claim_text":"Service recovery was confirmed at 09:35Z."},
+    {"claim_id":"claim-c2","evidence_id":"e-c2","status":"confirmed","canonical_claim_text":"The approval owner for release 42 remains unknown."},
+    {"claim_id":"claim-c3","evidence_id":"e-c3","status":"conflicting","canonical_claim_text":"Source C reports cache-b as the cache endpoint."}
+  ]
+}

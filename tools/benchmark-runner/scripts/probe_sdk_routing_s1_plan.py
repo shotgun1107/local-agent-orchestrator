@@ -1,4 +1,4 @@
-"""Rebuild an S1 live Plan in a separate clean checkout and process."""
+"""Rebuild an SDK routing live Plan in a separate clean checkout and process."""
 
 from __future__ import annotations
 
@@ -12,7 +12,11 @@ if not sys.flags.safe_path:
     raise SystemExit("independent S1 Plan probe requires python -P")
 
 from benchmark_runner.contract import ArtifactIdentity
-from benchmark_runner.routing_suite import _resolve_stage, build_routing_s1_live_plan
+from benchmark_runner.routing_suite import (
+    _resolve_stage,
+    build_routing_s1_live_plan,
+    build_routing_s2_live_plan,
+)
 from benchmark_runner.runner import _source_tree_sha256, canonical_json_bytes
 from benchmark_runner.sdk_cells import runner_source_sha256
 from benchmark_runner.sdk_pilot import B1_FINGERPRINT_INPUTS
@@ -23,11 +27,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument(
+        "--stage",
+        choices=["s1-baseline", "s2-intermediate"],
+        default="s1-baseline",
+    )
     args = parser.parse_args()
     repository = args.repository.resolve()
     value = json.loads(args.input.read_text(encoding="utf-8"))
     suite_path = repository / "benchmarks" / "suites" / "sdk-routing-v1" / "suite.yaml"
-    stage_path = suite_path.parent / "stages" / "s1-baseline.yaml"
+    stage_path = suite_path.parent / "stages" / f"{args.stage}.yaml"
     suite, stage = _resolve_stage(repository, suite_path, stage_path)
     if suite.status != "frozen_before_execution" or stage.status != "frozen_before_execution":
         raise SystemExit("independent S1 Plan probe requires frozen manifests")
@@ -56,7 +65,12 @@ def main() -> int:
                 }
             )
         )
-    plan = build_routing_s1_live_plan(
+    builder = (
+        build_routing_s1_live_plan
+        if args.stage == "s1-baseline"
+        else build_routing_s2_live_plan
+    )
+    plan = builder(
         repository_root=repository,
         suite_path=suite_path,
         stage_path=stage_path,

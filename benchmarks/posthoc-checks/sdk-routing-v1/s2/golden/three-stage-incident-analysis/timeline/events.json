@@ -1,0 +1,10 @@
+{
+  "events": [
+    {"event_id":"event-cache-conflict","status":"conflicting","evidence_ids":["e-a3","e-c3"],"uncertainty_ids":[]},
+    {"event_id":"event-deployment","status":"confirmed","evidence_ids":["e-a1","e-b1"],"uncertainty_ids":[]},
+    {"event_id":"event-error-conflict","status":"conflicting","evidence_ids":["e-a2","e-b2"],"uncertainty_ids":[]},
+    {"event_id":"event-owner","status":"uncertain","evidence_ids":["e-c2"],"uncertainty_ids":["u-approval"]},
+    {"event_id":"event-recovery","status":"confirmed","evidence_ids":["e-c1"],"uncertainty_ids":[]},
+    {"event_id":"event-rollback","status":"confirmed","evidence_ids":["e-b3"],"uncertainty_ids":[]}
+  ]
+}
