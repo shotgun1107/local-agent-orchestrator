@@ -82,6 +82,7 @@ def test_s2_reverse_live_plan_is_one_bound_c2_then_b1_pair() -> None:
         "cell_s2_b_2_b1",
     ]
     assert [cell.execution_ordinal for cell in plan.cells] == [1, 2]
+    assert [fixture.fixture_id for fixture in plan.fixtures] == [INCIDENT_FIXTURE_ID]
     assert plan.decision_policy["execution_phase"] == "reverse"
     assert plan.decision_policy["expansion_profile"] == INCIDENT_FIXTURE_ID
     assert plan.decision_policy["base_live_model_turns"] == 6
