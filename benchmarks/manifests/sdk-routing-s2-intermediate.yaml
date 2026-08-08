@@ -1,0 +1,49 @@
+schema_version: 1
+status: frozen_before_execution
+frozen_at: "2026-08-08"
+fixtures:
+  - id: three-stage-config-migration
+    path: benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration
+    commit: 59694b4d30d4910e59d1c146644a57ec8fbc63ae
+    git_tree: 6e3791f113c3285765f9e3aba1957c812f3653e4
+    success_check: integration_smoke
+  - id: three-stage-incident-analysis
+    path: benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis
+    commit: 59694b4d30d4910e59d1c146644a57ec8fbc63ae
+    git_tree: ac03bd6d966babefb57daf6bc8bef5730f91fe68
+    success_check: report_structure
+variants: [c2, b1]
+repetitions: 1
+model:
+  allowed: gpt-5.6-terra
+  auth_method: chatgpt
+  reasoning_effort: low
+  sdk: openai-codex==0.144.4
+  approval_mode: deny_all
+  sandbox: workspace_write
+budgets:
+  base_live_model_turns: 12
+  b1_retry_resume_reserve_turns: 3
+  max_actual_live_model_turns: 15
+  max_attempts_per_task: 2
+  task_timeout_seconds: 900
+  check_timeout_seconds: 120
+  run_timeout_seconds: 3300
+  stop_on_unexplained_infrastructure_failure: true
+human_intervention:
+  all_variants: not_applicable_automated_sdk_track
+  count_rule: not_applicable
+metrics:
+  - check_success
+  - property_status
+  - model_active_seconds
+  - wall_clock_seconds
+  - session_count
+  - turn_count
+  - attempt_count
+  - token_usage_when_measured
+  - scope_and_evidence_integrity
+  - b1_control_effect
+  - b1_first_and_full_outcome_when_retried
+unknown_usage_rule: record_unknown_and_do_not_impute_zero
+failure_rule: preserve_all_terminal_cells_and_stop_before_next_turn_on_infrastructure_or_safety_failure
