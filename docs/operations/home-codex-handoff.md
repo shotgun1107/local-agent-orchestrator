@@ -295,9 +295,11 @@ local-agent-orchestrator의 S1 live 완료 이후 작업을 이어간다. 새 cl
 
 정본은 docs/experiments/sdk-routing-s1-live-result.md와 benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/이다. S1은 8/8 Cell completed·SEALED, 12 actual model turns, CALIBRATION_PASS, route 미발행으로 완료됐다. 이 사실을 다시 실행·재현·교차 검증하지 마라.
 
-사용자는 docs/design/sdk-routing-s2-intermediate-spec.md revision 5의 구현·시험 명세를 2026-08-08 동결했고 최소 구현 후보가 작성됐다. 기존 Runner의 stage-generic 확장, 두 fixture·golden·property checker, B1 reserve와 routing-policy-v1이 구현됐으며 S2 표적 model-free 15개가 통과했다. 기존 S1 export도 현재 verifier로 정확히 1회 재검증됐다. 실제 model turn은 0회다.
+사용자는 docs/design/sdk-routing-s2-intermediate-spec.md revision 5를 2026-08-08 동결했고 구현·시험·실행 후보 동결까지 끝났다. 실행 정본은 `benchmarks/artifacts/sdk-routing-s2-v1-56c9133-r2/`이며 source commit은 `56c91334fb32c4699d11ef80769831f14a0431d6`, Experiment는 `exp_20260808_5f4f41a7_2`, Plan fingerprint는 `5f4f41a7fe53f29e13095b7992f3ed24ef7ed8af6d0e4e02f16213ce29ecf373`, freeze SHA-256은 `24c7d4a96d993ccaffdc81c70da878d7c172375e0d71e7e8a617a53daadae980`이다.
 
-현재 구현을 완료 또는 live-ready라고 과장하지 마라. exact Python 3.12.10과 기존 venv는 정상이고 Runner 218개 계약 경로는 모두 확인했다. 이전 실행 불가는 설치 손실이 아니라 Codex 파일 샌드박스의 사용자 프로그램 폴더 실행 거부였다. 다음 행동은 source commit 뒤 fixture commit/tree identity와 suite revision 3·frozen stage/manifest·clean regression·path preflight·freeze artifact 생성이다. 이미 통과한 S2 표적 시험이나 S1 export를 다시 반복하지 마라. live 4 Cell은 최대 15 turns를 명시한 별도 승인 전 실행하지 않는다.
+최종 source-bound 회귀는 S0 9, B1 retry 3, B1 전체 74, Runner 전체 219, S2 post-hoc 16 passed다. 4개 Cell은 모두 PLANNED, sealed 0, actual model turn 0, route 미발행이다. 이 사실을 다시 실행·재현·교차 검증하지 마라. `create`를 다시 실행하거나 동결 artifact를 수정하지 마라.
+
+다음 행동은 검증이 아니라 사용자 결정이다. 사용자가 최초 S2 4-Cell Plan과 절대 상한 15 turns를 별도로 승인하면 기존 외부 state root를 찾아 같은 Plan을 순차 실행한다. 경로를 모르면 새 state를 만들지 말고 사용자에게 물어본다. 승인 전에는 테스트·추가 감사·새 하네스·하위 에이전트·live Cell·역순 확대·S3를 시작하지 않는다.
 
 인증은 ChatGPT 구독 계정만 허용한다. API key를 생성·요구·입력·출력하지 않는다. S1 결과만으로 profile route나 B1 채택을 판정하지 않고 S3를 선행하지 않는다.
 ```

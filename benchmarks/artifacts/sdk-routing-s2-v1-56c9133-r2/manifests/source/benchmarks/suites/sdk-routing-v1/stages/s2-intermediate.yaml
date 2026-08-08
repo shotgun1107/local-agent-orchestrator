@@ -1,0 +1,62 @@
+schema_version: 1
+stage_id: s2-intermediate
+status: frozen_before_execution
+purpose: profile_routing
+fixture_manifests:
+  - path: benchmarks/manifests/sdk-routing-s2-intermediate.yaml
+    fixture_ids: [three-stage-config-migration, three-stage-incident-analysis]
+variants: [c2, b1]
+baseline_variant: c2
+candidate_variants: [b1]
+profile_aliases:
+  a: three-stage-config-migration
+  b: three-stage-incident-analysis
+profiles:
+  - fixture_id: three-stage-config-migration
+    complexity:
+      task_count: 3
+      dependency_depth: 3
+      dependency_edges: 2
+      max_fan_in: 1
+      worker_read_files: 10
+      worker_read_bytes: 2241
+      expected_write_files: {minimum: 6, maximum: 6}
+      write_modules: 4
+      check_count: 6
+      handoff_kind: declared_multiple
+      scope_overlap: disjoint
+      verification_kind: post_hoc_property
+      failure_profile: compatibility_risk
+      solution_ambiguity: low
+  - fixture_id: three-stage-incident-analysis
+    complexity:
+      task_count: 3
+      dependency_depth: 3
+      dependency_edges: 2
+      max_fan_in: 1
+      worker_read_files: 13
+      worker_read_bytes: 3502
+      expected_write_files: {minimum: 7, maximum: 7}
+      write_modules: 3
+      check_count: 6
+      handoff_kind: declared_multiple
+      scope_overlap: disjoint
+      verification_kind: post_hoc_property
+      failure_profile: omission_risk
+      solution_ambiguity: medium
+cells:
+  - {cell_id: cell_s2_a_1_c2, profile_alias: a, fixture_id: three-stage-config-migration, variant_id: c2}
+  - {cell_id: cell_s2_a_1_b1, profile_alias: a, fixture_id: three-stage-config-migration, variant_id: b1}
+  - {cell_id: cell_s2_b_1_b1, profile_alias: b, fixture_id: three-stage-incident-analysis, variant_id: b1}
+  - {cell_id: cell_s2_b_1_c2, profile_alias: b, fixture_id: three-stage-incident-analysis, variant_id: c2}
+base_live_model_turns: 12
+b1_retry_resume_reserve_turns: 3
+max_actual_live_model_turns: 15
+route_decision_allowed: true
+allowed_outcomes:
+  - S2_OBSERVATION_READY
+  - S2_POLICY_READY
+  - S2_EXPANSION_REQUIRED
+  - S2_INCONCLUSIVE
+  - S2_STOP
+  - S2_INCOMPLETE

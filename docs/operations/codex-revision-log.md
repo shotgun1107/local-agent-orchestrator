@@ -1427,3 +1427,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Runner 전체의 첫 실행은 `206 passed, 12 failed`였다. 9건은 저장소 내부의 긴 basetemp가 R6 외부 격리·Windows 경로 계약을 위반한 시험 환경 오류였고 짧은 외부 basetemp에서 통과했다. 2건은 대체 Python의 `sys.prefix` 밖에 있던 기존 SDK·PyYAML을 임시 venv에 연결해 통과했다. 마지막 1건을 조사하면서 Python 3.12.10과 두 프로젝트 venv가 실제로는 정상이며 Codex 파일 샌드박스가 사용자 프로그램 폴더 실행을 거부해 없어진 것처럼 보였음을 확인했다. 기존 B1 venv를 승인된 실행 경계에서 사용해 exact `3.12.10` live-freeze runtime 관문도 `1 passed`로 통과했다. 따라서 실패 표적을 포함한 Runner 218개 계약 경로를 모두 확인했으며, Docker나 Python 재설치는 하지 않았다.
 - 기존 S1 export는 현재 verifier로 정확히 한 번 재검증했다. Experiment `exp_20260807_d1e9fdb8_1`, `CALIBRATION_PASS`, 108 files, export SHA-256 `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`이 그대로다.
 - 현재 결과는 구현 후보이지 live 실행 후보 동결이 아니다. fixture를 포함한 source commit/tree identity, revision 3 suite manifest, frozen S2 stage·fixture manifest, clean source의 regression record와 freeze artifact는 아직 만들지 않았다. 기존 Python 3.12.10 venv를 사용해 source commit 뒤 clean regression record와 freeze 전용 경로 preflight를 통과해야 한다. commit·push와 실제 model turn은 0회다.
+
+## SDK 라우팅 S2 live 실행 후보 revision 2 동결
+
+- 작업일: 2026-08-08. S2 구현·fixture를 `59694b4d30d4910e59d1c146644a57ec8fbc63ae`에, suite revision 3과 frozen stage·fixture identity를 `76c30b455cf98a10cdf666ff9a0ba2699e3b9213`에 커밋했다. 최종 실행 source commit은 `56c91334fb32c4699d11ef80769831f14a0431d6`이다.
+- 기존 Python 3.12.10 B1 venv와 bundled Codex CLI 0.144.4를 사용했다. `codex login status`는 `Logged in using ChatGPT`, 금지된 `OPENAI_API_KEY`·`CODEX_API_KEY` 환경 이름은 0개였다. Docker·WSL·Python 재설치는 하지 않았다.
+- source-bound 최종 회귀 record는 S0 gate `9 passed`, B1 retry 계약 `3 passed`, B1 전체 `74 passed`, Benchmark Runner 전체 `219 passed`, S2 post-hoc 계약 `16 passed`다. 실제 model turn은 0회다.
+- 최초 revision 1 create는 실제 model turn 전에 fixture manifest의 `model` block이 기존 verifier의 exact 두 필드 계약보다 넓어 fail-closed로 중단됐다. 런타임 제어는 이미 Plan environment에 봉인되므로 manifest 중복 필드 4개를 제거하고 exact 계약 시험을 추가했다. 원인·대안·해결은 `DEV-20260808-001`에 기록했으며 실패 state와 artifact는 실행 후보 밖 외부 경로에 보존했다.
+- 성공한 revision 2 artifact는 `benchmarks/artifacts/sdk-routing-s2-v1-56c9133-r2/`이다. Experiment는 `exp_20260808_5f4f41a7_2`, Plan fingerprint는 `5f4f41a7fe53f29e13095b7992f3ed24ef7ed8af6d0e4e02f16213ce29ecf373`, raw Plan SHA-256은 `fcc5fe129fb0ad62f8eda697252f11cfa3b02c184cb11c4a2a15fb9866ce68f4`, freeze SHA-256은 `24c7d4a96d993ccaffdc81c70da878d7c172375e0d71e7e8a617a53daadae980`이다.
+- 별도 clean checkout·별도 process의 Plan build가 동일했고 4개 Cell 경로 preflight의 최대 생성 경로 길이는 모두 105자였다. verifier는 source commit·Python/Git path hash·7개 sealed source file을 다시 확인했다.
+- status에서 `cell_s2_a_1_c2`, `cell_s2_a_1_b1`, `cell_s2_b_1_b1`, `cell_s2_b_1_c2`는 모두 `PLANNED`다. sealed 0, actual model turn 0, 남은 B1 retry/resume reserve 3, route 미발행, `S2_INCOMPLETE`, stop 없음이다.
+- 다음 행동은 반복 검증이나 새 하네스가 아니다. 사용자가 최초 4-Cell Plan과 절대 상한 15 turns를 별도로 승인할 때만 같은 동결 state에서 순차 실행한다. 승인 전에는 `create`, 회귀, freeze 재검증, live Cell, 역순 확대, S3를 실행하지 않는다.

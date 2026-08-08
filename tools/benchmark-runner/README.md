@@ -264,7 +264,7 @@ sealed in the planned order using twelve actual model turns. The terminal state 
 is `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`.
 See `docs/experiments/sdk-routing-s1-live-result.md` for the bounded comparison.
 
-### S2 intermediate implementation candidate
+### S2 intermediate execution freeze
 
 S2 reuses the same Plan, fixture restoration, SDK Cell, Judge, Measurement, seal,
 status, and live-controller path. The existing
@@ -280,9 +280,13 @@ Judge/property results, resource limits, and B1 control metrics. A single succes
 pair can record an observation or request a separately approved reverse pair, but
 cannot establish a global B1 default.
 
-The source currently contains the fixture, golden, checker, policy, and
-stage-generic implementation candidate. It is not a live-ready freeze: the S2
-fixture manifest, suite revision 3, frozen stage, source-bound regression record,
-path preflight, and freeze artifact must be created from a clean committed source
-under the exact Python 3.12.10 runtime. Do not run `create` or a live Cell from the
-`implementation_candidate` stage.
+The source-bound revision 2 execution candidate is frozen at
+`benchmarks/artifacts/sdk-routing-s2-v1-56c9133-r2/`. It binds source commit
+`56c91334fb32c4699d11ef80769831f14a0431d6`, Experiment
+`exp_20260808_5f4f41a7_2`, Plan fingerprint
+`5f4f41a7fe53f29e13095b7992f3ed24ef7ed8af6d0e4e02f16213ce29ecf373`,
+and freeze SHA-256
+`24c7d4a96d993ccaffdc81c70da878d7c172375e0d71e7e8a617a53daadae980`.
+All four Cells remain `PLANNED`, with zero sealed Cells and zero actual model
+turns. Do not recreate the candidate or run a live Cell without a separate user
+approval covering the four-Cell Plan and its fifteen-turn absolute ceiling.
