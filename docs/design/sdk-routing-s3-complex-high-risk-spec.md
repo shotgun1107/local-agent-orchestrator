@@ -1,8 +1,9 @@
 # SDK routing S3 complex/high-risk 구현·시험 명세
 
-- 문서 상태: `review_candidate`
+- 문서 상태: `frozen_before_implementation`
 - 설계 revision: 2
 - 작성일: 2026-08-08
+- 사용자 동결일: 2026-08-08
 - 기준 commit: `5ec4aadfdd12ee829c7368e08f5774006d171267`
 - 선행 S2 최초 Experiment: `exp_20260808_5f4f41a7_2`
 - 선행 S2 역순 Experiment: `exp_20260808_e2f0a870_3`
@@ -11,7 +12,8 @@
 - 선행 상세 계약: [S2 intermediate 명세](./sdk-routing-s2-intermediate-spec.md)
 - 선행 결과: [S2 incident 역순 결과 보고서](../experiments/sdk-routing-s2-reverse-live-result.md)
 - 1차 심사: [Claude revision 1 read-only 심사](../reviews/benchmark-runner/claude-review-sdk-routing-s3-complex-high-risk-spec.md)
-- 구현 전 조건: revision 2 closure 재심사와 사용자 동결 필요
+- closure 재심사: [Claude revision 2 집중 재심사](../reviews/benchmark-runner/claude-rereview-sdk-routing-s3-complex-high-risk-spec.md) — `동결 가능`, 새 P0/P1 0건
+- 구현 전 명세 조건: 충족. 구현 착수는 별도 사용자 지시가 필요하다.
 
 ## 1. 개방 이유와 결정 범위
 

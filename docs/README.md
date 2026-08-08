@@ -37,7 +37,7 @@ docs/
 - [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — Claude 1차 심사·재심사 반영 후 동결된 구현 기준
 - [SDK 통제 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — C0/C1 탐색과 C2/B1 기본 판단을 분리한 판본 3 동결 기준
 - [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — Claude 심사를 반영해 baseline 교정·intermediate 라우팅·조건부 complex·telemetry를 단계화한 판본 2 동결 설계
-- [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사를 통과하고 사용자 동결 승인을 기다리는 revision 2
+- [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사와 사용자 승인을 마친 revision 2 구현 정본
 
 ### `experiments/`
 
@@ -90,6 +90,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - SDK 라우팅 테스트 스위트 v1: Claude 심사 반영 후 판본 2 동결. 실제 model turn 없이 S0 재확인과 manifest 기반 suite runner 최소 vertical slice가 다음 단계
-- SDK routing S3: revision 2 closure 집중 재심사에서 P0/P1 전부 `CLOSED`, 수용 P2 전부 `ACCEPTED_CLOSED`, 새 P0/P1 0건으로 `동결 가능` 판정. 구현·시험·live 없이 사용자 동결 승인 대기
+- SDK routing S3: revision 2 closure 집중 재심사에서 P0/P1 전부 `CLOSED`, 수용 P2 전부 `ACCEPTED_CLOSED`, 새 P0/P1 0건으로 `동결 가능` 판정 후 사용자 동결 완료. 구현·시험·live는 별도 지시 전 미착수
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
