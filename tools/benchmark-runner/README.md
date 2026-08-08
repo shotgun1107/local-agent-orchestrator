@@ -287,6 +287,18 @@ The source-bound revision 2 execution candidate is frozen at
 `5f4f41a7fe53f29e13095b7992f3ed24ef7ed8af6d0e4e02f16213ce29ecf373`,
 and freeze SHA-256
 `24c7d4a96d993ccaffdc81c70da878d7c172375e0d71e7e8a617a53daadae980`.
-All four Cells remain `PLANNED`, with zero sealed Cells and zero actual model
-turns. Do not recreate the candidate or run a live Cell without a separate user
-approval covering the four-Cell Plan and its fifteen-turn absolute ceiling.
+At freeze time all four Cells were `PLANNED`, with zero sealed Cells and zero
+actual model turns. The candidate must not be recreated; its later live execution
+required a separate user approval covering the four-Cell Plan and its fifteen-turn
+absolute ceiling.
+
+The approved initial Plan subsequently completed all four Cells with twelve actual
+turns and no B1 retry/resume use. Config migration passed for both Variants. The
+incident-analysis C2 Cell passed, while B1 failed post-hoc properties `INC-P1` and
+`INC-P3` after its public Judge passed. The terminal state is
+`S2_EXPANSION_REQUIRED`; no route or global B1 default was issued. The verified
+63-file export is at
+`benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_5f4f41a7_2/`
+with aggregate SHA-256
+`5577d8bf54352a9b9930331e3c99d1af761d85211b197ebb9c959cee6de83d55`.
+See `docs/experiments/sdk-routing-s2-live-result.md` for the bounded interpretation.
