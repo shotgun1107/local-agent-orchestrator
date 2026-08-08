@@ -1479,3 +1479,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 기존 `routing_suite.py`와 `routing_live.py`는 exact S1/S2/S3 분기와 stage별 reverse gate state·Task/예산 parameterization으로 확장한다. `s3_posthoc.py`는 허용하고 `s3_policy.py`와 새 S3 controller는 금지하며 역사적 `s2_policy.py`에 S3 함수를 additive하게 넣는 정책을 선택했다. Worker의 Cell-local scope 위반은 상대 Variant로 pair만 닫은 뒤 stage를 종료하고 전역 무결성 실패는 즉시 전체 정지한다.
 - Revision 2 명세는 450줄·34,035 bytes, SHA-256 `1d7accba63189ef812c48fd9bd24f13db1344ce80473671f58f3a37379530797`다. Claude closure 재심사 정본은 `docs/prompts/benchmark-runner/claude-rereview-prompt-sdk-routing-s3-complex-high-risk-spec.md`, 86줄·4,686 bytes, SHA-256 `4df42df42f3f061b4d98abaac9aa96987e4642136e240a527da82afc1c24b35a`이며 새 세션 입력은 13줄·910 bytes, SHA-256 `ce460850aa280ac808226d6b7ae23d426ae421f5413890eb5a1438c0ecbfe5fa`다.
 - 이번 작업은 명세 closure와 재심사 입력 작성뿐이다. 구현·fixture 생성·테스트·verifier·model turn·live Cell·하위 에이전트 호출은 0회이며, 다음 관문은 Claude의 closure 집중 재심사와 사용자의 명세 동결이다.
+
+## SDK 라우팅 S3 revision 2 closure 재심사 통과
+
+- 작업일: 2026-08-08. Claude가 commit `1f8fc8c438e4e4ac9b69a0a49e20686bbe8ba077`의 revision 2를 전체 재감사가 아닌 closure 범위로 read-only 재심사했다.
+- 최종 판정은 `동결 가능`이다. P0-01과 P1-01~P1-05는 모두 `CLOSED`, 수용한 P2-01~P2-04는 모두 `ACCEPTED_CLOSED`이며 새 P0/P1과 사용자 미결정 항목은 각각 0건이다.
+- 재심사는 P5a/P5b 시간적 mapping, stage-neutral reverse builder와 S1/S2/S3 gate 분리, 단일 order와 반복 회귀 술어 분리, retain arm 도달성·residual uncertainty, post-hoc subprocess·seal 계약, 40자 state root와 실제 최장 경로 preflight를 closure 근거로 확인했다.
+- 원문은 `docs/reviews/benchmark-runner/claude-rereview-sdk-routing-s3-complex-high-risk-spec.md`, 65줄·7,567 bytes, SHA-256 `f3682a0c95ae7df82fca2144d4f382b119ddaa35feead58ffbe16c79320f70b1`로 첨부와 byte-identical하게 보존했다.
+- 이번 단계에서도 파일 보존과 운영 문서 갱신 외 구현·fixture 생성·테스트·verifier·script·model turn·live Cell·하위 에이전트 호출은 하지 않았다. Claude의 기술 심사 통과는 사용자 동결 승인을 대신하지 않으므로 S3 명세 상태는 `review_candidate`로 유지하며, 다음 관문은 사용자의 명시적 동결 승인이다.
