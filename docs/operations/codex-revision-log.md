@@ -1506,3 +1506,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Status는 네 Cell 모두 `PLANNED`, sealed 0, actual/combined model turns 0, `S3_INCOMPLETE`, route 미발행, stop 없음이다. 구현 보고서는 `docs/experiments/sdk-routing-s3-implementation-freeze.md`다.
 - Claude 구현 심사 정본은 `docs/prompts/benchmark-runner/claude-review-prompt-sdk-routing-s3-implementation-freeze.md`, 새 세션 복붙 입력은 `docs/prompts/benchmark-runner/claude-session-input-sdk-routing-s3-implementation-review.md`다. 둘 다 diff·artifact read-only 심사만 허용하고 테스트·verifier·model turn·하위 에이전트를 금지한다.
 - 다음 관문은 Claude의 구현 diff·artifact read-only 심사다. 재테스트·verifier·새 구현은 하지 않는다. 심사 뒤에도 최초 네 Cell과 최대 20 turns는 별도 사용자 승인 없이는 실행하지 않으며, 조건부 역순은 최초 결과가 `S3_REPLICATION_REQUIRED`를 낸 profile에 대한 별도 최대 10-turn 승인으로만 연다.
+
+## SDK 라우팅 S3 구현·동결 Claude read-only 심사 통과
+
+- 작업일: 2026-08-08. Claude가 `ac27997..03eb4a7` 구현 diff와 `b8e6b76` candidate artifact를 테스트·verifier·model turn·하위 에이전트 없이 읽기 전용으로 심사했다. 최종 판정은 `실행 후보 승인 가능`, P0 0건, P1 0건, live 전에 반드시 고칠 항목 0건이다.
+- 명세 coverage는 initial 4-Cell 순서, S1/S2/S3 discriminator, checker 격리·schema, 두 fixture Task graph, P5a/P5b 분리, HCR-P6 safety 제외, control attribution, 최초·역순 정책표, 20/10-turn 예산, profile-local reserve, local/global stop, 기존 controller 재사용과 40자 state-root preflight까지 모두 `일치`로 판정됐다.
+- Artifact의 source commit, Plan fingerprint, Experiment ID, 독립 build, exact 회귀 5종, ChatGPT preflight, TaskEnvelope parity, checker identity와 zero-turn freeze seal도 모두 `OK`로 확인됐다. 실제 live 완주, checker 120초 완료와 WinError 5 재발 여부는 실행 전에는 확인할 수 없는 항목으로 남겼다.
+- 비차단 개선은 property 입력 deep copy(P2-a), protected path 방어 중복(P2-b), 공용 controller의 S1 명칭(P3-c) 세 건이다. 현재 기능·결정론·scope·fail-closed를 깨지 않고, 반영하면 동결 source identity를 바꿔 candidate 재생성이 필요하므로 이번 후보에는 적용하지 않는다. 실제 결과 뒤 별도 maintenance 후보로 보존한다.
+- 심사 원문은 `docs/reviews/benchmark-runner/claude-review-sdk-routing-s3-implementation-freeze.md`다. 다음 관문은 네 initial Cell의 정확한 순서와 최대 20 model turns에 대한 사용자 승인뿐이며, 승인 전 추가 구현·재검증·candidate 재생성·`run-next`는 하지 않는다.

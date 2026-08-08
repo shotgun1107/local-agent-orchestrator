@@ -70,3 +70,11 @@ Status는 `S3_INCOMPLETE`, sealed 0, actual/combined model turns 0, 두 profile�
 Claude는 frozen 명세, 구현 diff와 candidate artifact를 read-only로 심사한다. 테스트·verifier·script를 재실행하거나 새 구현을 만들지 않는다. 실제 P0/P1 차단 오류가 없다는 심사 뒤에도 live 실행은 자동으로 열리지 않는다. 사용자가 정확한 네 Cell 순서와 최대 20 model turns를 별도로 승인할 때만 이 candidate에서 `run-next`를 Cell별 한 번씩 호출한다.
 
 최초 결과가 `S3_REPLICATION_REQUIRED`를 낸 profile이 있을 때만 별도 최대 10-turn 사용자 승인으로 반대 순서 pair를 만들 수 있다. 그 전에는 reverse candidate, S4, 세 번째 pair를 만들지 않는다.
+
+## Claude read-only 구현 심사
+
+Claude는 candidate commit `b8e6b76` 이후 HEAD `f83c933`에서 frozen 명세, 구현 diff와 artifact를 읽기 전용으로 심사해 `실행 후보 승인 가능`으로 판정했다. P0과 P1은 각각 0건이며 live 실행 전에 반드시 고칠 항목도 0건이다. 원문은 `docs/reviews/benchmark-runner/claude-review-sdk-routing-s3-implementation-freeze.md`에 보존했다.
+
+비차단 개선은 세 건이다. Property별 입력 deep copy 강화(P2-a), 보호 경로 목록의 방어 중복(P2-b), stage-neutral controller에 남은 S1 명칭 정리(P3-c)다. 현재 경로는 결정론·scope·fail-closed를 이미 만족하고 세 항목 모두 기능 차단이 아니다. 특히 지금 source를 바꾸면 봉인된 candidate의 source identity가 무효가 되므로 이번 live 후보에는 반영하지 않는다. 실제 결과 뒤 별도 maintenance 후보로만 보존한다.
+
+따라서 다음 관문은 추가 구현이나 재검증이 아니라 사용자의 live 승인이다. 승인은 네 initial Cell의 정확한 순서와 최대 20 model turns를 명시해야 하며, 승인 전에는 `run-next`를 호출하지 않는다.
