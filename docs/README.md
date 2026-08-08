@@ -37,7 +37,7 @@ docs/
 - [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — Claude 1차 심사·재심사 반영 후 동결된 구현 기준
 - [SDK 통제 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — C0/C1 탐색과 C2/B1 기본 판단을 분리한 판본 3 동결 기준
 - [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — Claude 심사를 반영해 baseline 교정·intermediate 라우팅·조건부 complex·telemetry를 단계화한 판본 2 동결 설계
-- [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — S2 inconclusive 뒤 B1 control effect의 정책 가치를 검증하는 revision 2 closure 재심사 후보
+- [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사를 통과하고 사용자 동결 승인을 기다리는 revision 2
 
 ### `experiments/`
 
@@ -52,6 +52,7 @@ docs/
 - `b1/` — B1 구현 명세 심사
 - `benchmark-runner/` — Benchmark Runner와 SDK 통제 비교의 1차 심사·재심사 기록
 - [S3 revision 1 Claude 심사 보고서](./reviews/benchmark-runner/claude-review-sdk-routing-s3-complex-high-risk-spec.md) — P0 1건·P1 5건·P2 4건과 `경미한 수정 후 동결` 판정
+- [S3 revision 2 Claude 집중 재심사 보고서](./reviews/benchmark-runner/claude-rereview-sdk-routing-s3-complex-high-risk-spec.md) — 모든 closure 확인, 새 P0/P1 0건, `동결 가능` 판정
 
 심사 보고서는 현재 설계를 대신하지 않는다. 지적이 반영된 뒤에는 **개정 이력과 판단 근거**로 읽는다.
 
@@ -65,7 +66,7 @@ docs/
 - [SDK 라우팅 테스트 스위트 v1 Claude 심사 프롬프트](./prompts/benchmark-runner/claude-review-prompt-sdk-routing-suite-v1.md) — 실행 완료. 8-Cell 교체·복잡도 profile·단계별 중단 규칙을 검토한 지시 기록
 - [S3 complex/high-risk Claude 심사 프롬프트](./prompts/benchmark-runner/claude-review-prompt-sdk-routing-s3-complex-high-risk-spec.md) — revision 1 동결 가능성 read-only 심사용 정본
 - [S3 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-review.md) — 새 Claude 세션에서 위 심사 정본을 호출하는 짧은 복붙 입력
-- [S3 revision 2 Claude 집중 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-routing-s3-complex-high-risk-spec.md) — 1차 P0/P1과 수용한 P2 closure만 확인하는 read-only 정본
+- [S3 revision 2 Claude 집중 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-routing-s3-complex-high-risk-spec.md) — 실행 완료. 1차 P0/P1과 수용한 P2 closure만 확인한 read-only 정본
 - [S3 재심사 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-rereview.md) — 새 Claude 세션에서 closure 재심사 정본을 호출하는 짧은 복붙 입력
 
 ### `operations/`
@@ -89,6 +90,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - SDK 라우팅 테스트 스위트 v1: Claude 심사 반영 후 판본 2 동결. 실제 model turn 없이 S0 재확인과 manifest 기반 suite runner 최소 vertical slice가 다음 단계
-- SDK routing S3: revision 1 Claude 심사 P0 1건·P1 5건과 수용한 P2 4건을 revision 2에 반영. 구현·시험·live 없이 closure 집중 재심사와 사용자 동결 대기
+- SDK routing S3: revision 2 closure 집중 재심사에서 P0/P1 전부 `CLOSED`, 수용 P2 전부 `ACCEPTED_CLOSED`, 새 P0/P1 0건으로 `동결 가능` 판정. 구현·시험·live 없이 사용자 동결 승인 대기
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
