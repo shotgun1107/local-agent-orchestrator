@@ -1,7 +1,7 @@
 # SDK routing S3 complex/high-risk 구현·시험 명세
 
 - 문서 상태: `review_candidate`
-- 설계 revision: 1
+- 설계 revision: 2
 - 작성일: 2026-08-08
 - 기준 commit: `5ec4aadfdd12ee829c7368e08f5774006d171267`
 - 선행 S2 최초 Experiment: `exp_20260808_5f4f41a7_2`
@@ -10,7 +10,8 @@
 - 상위 계약: [SDK routing suite v1 설계](./sdk-routing-suite-v1-design.md)
 - 선행 상세 계약: [S2 intermediate 명세](./sdk-routing-s2-intermediate-spec.md)
 - 선행 결과: [S2 incident 역순 결과 보고서](../experiments/sdk-routing-s2-reverse-live-result.md)
-- 구현 전 조건: Claude 심사와 사용자 동결 필요
+- 1차 심사: [Claude revision 1 read-only 심사](../reviews/benchmark-runner/claude-review-sdk-routing-s3-complex-high-risk-spec.md)
+- 구현 전 조건: revision 2 closure 재심사와 사용자 동결 필요
 
 ## 1. 개방 이유와 결정 범위
 
@@ -19,6 +20,8 @@ S3는 S2 결과가 마음에 들지 않아 표본을 더 모으는 단계가 아
 > 4-Task complex/high-risk 작업에서 B1의 Task 경계, 중간 Check, retry·resume가 C2가 최종 산출물에 남기는 실제 결함을 차단하고 수정하는가?
 
 S2에서는 config profile의 C2/B1이 모두 성공했고 B1 control effect가 없었다. Incident profile은 최초·역순 결과가 일치하지 않았고 C2/B1 모두 서로 다른 의미 오류를 남겼다. B1의 `INC-P1`은 두 order에서 관측됐지만 retry·resume와 intermediate control effect는 0이었다. 따라서 S2는 `S2_POLICY_READY`이지만 incident profile을 `ROUTING_INCONCLUSIVE`로 닫았고 route를 발행하지 않았다.
+
+S1 8개와 S2 6개를 합친 선행 live Cell 14개에서 B1 retry·resume 또는 attributable control effect는 한 번도 관측되지 않았다. 따라서 S3의 `RETAIN_B1_HIGH_RISK` arm은 새 4-Task fixture에서 B1이 실제 중간 실패를 차단하고 수정하며 C2의 대응 결함까지 같은 property mapping으로 재현할 때만 열리는 낮은 도달 가능성의 arm이다. 사전 기대의 최빈 결과는 `ROUTING_INCONCLUSIVE` 또는 `REJECT_B1_PROFILE`이며, 이를 이유로 retain 술어를 완화하지 않는다. `ROUTING_INCONCLUSIVE`는 B1이 열등하다는 뜻이 아니라 이 합성 범위에서 유지 근거를 관측하지 못했다는 뜻이다.
 
 S3가 결정할 수 있는 것은 다음뿐이다.
 
@@ -84,6 +87,20 @@ Fixture A는 C2→B1, Fixture B는 B1→C2다. 결과를 본 뒤 최초 순서�
 
 구현 중 stage와 fixture manifest는 `implementation_candidate`, live Plan 생성 전에는 `frozen_before_execution`이어야 한다. `draft` 또는 `implementation_candidate` manifest로 live candidate를 만들 수 없다.
 
+### 3.4 공통 post-hoc 실행·봉인 계약
+
+S3는 S2 §7의 사후 검사 실행·봉인 경계를 그대로 상속한다. §2에서 S2 checker·Measurement·policy를 S3 결과에 다시 쓰지 않는다는 말은 S2 결과 data와 S2 전용 property 구현을 재사용하지 않는다는 뜻이며, 검증된 subprocess 실행 순서와 seal 형식까지 새로 만든다는 뜻이 아니다.
+
+- checker: `benchmarks/posthoc-checks/sdk-routing-v1/s3/checkers/check_compatibility.py`, `benchmarks/posthoc-checks/sdk-routing-v1/s3/checkers/check_incident.py`
+- golden: `benchmarks/posthoc-checks/sdk-routing-v1/s3/golden/<fixture_id>/`
+- 결과: `cell_dir/judge/posthoc/result.json`
+
+Golden 경로는 어떤 fixture Git tree에도 포함하지 않으며 Worker workspace에도 checker나 golden을 복원하지 않는다. 고정 실행 순서는 `runtime terminal·ResultEnvelope → changed path·Task/Run scope·보호 파일 hash → 공통 success_check·diff_check → 해당 profile의 post-hoc isolated subprocess → Measurement·Evidence 수집과 seal`이다.
+
+Checker는 동결한 Python executable을 `-P`로 실행하고 최소 환경만 받는다. network·model 호출과 workspace 수정은 금지하며 timeout은 120초다. 결과는 canonical JSON이고 exact top-level key는 `fixture_id`, `checker_sha256`, `property_status`, `properties`다. `property_status`는 `pass|fail|checker_error`, 각 property 항목의 exact key는 `property_id`, `status`, `evidence_refs`다. `variant_metrics.values`에도 `property_status`와 `checker_sha256`을 봉인한다.
+
+`profile_success`는 `valid_cell AND outcome.state == completed AND outcome.check_success == true AND property_status == pass`일 때만 참이다. `valid_cell`은 identity·seal·scope·usage·절대 예산 계약을 모두 통과한 Cell이다. Property 실패는 공통 Judge의 `outcome.check_success`를 사후 변경하지 않는다. `checker_error`, timeout, schema 위반, identity drift는 quality failure가 아니라 infrastructure/safety failure로 봉인한다.
+
 ## 4. Fixture A — `four-stage-compatibility-refactor`
 
 ### 4.1 목적과 공개 입력
@@ -131,18 +148,19 @@ Task Check는 공개 compatibility case에서 다음을 검사한다.
 | Check | 실패 의미 | 연결 property |
 |---|---|---|
 | `schema_contract` | public field·오류 code·alias 계약 위반 | `HCR-P1` |
-| `migration_contract` | old payload 변환·idempotence 위반 | `HCR-P2`, `HCR-P5` |
-| `integration_contract` | parser/serializer/adapter 관계 위반 | `HCR-P3`, `HCR-P5` |
-| `backward_compatibility` | legacy API·roundtrip·CLI 호환 위반 | `HCR-P4`, `HCR-P5` |
+| `migration_contract` | old payload 변환·migration 자체 idempotence 위반 | `HCR-P2`, `HCR-P5a` |
+| `integration_contract` | parser/serializer/adapter 관계·pipeline idempotence 위반 | `HCR-P3`, `HCR-P5b` |
+| `backward_compatibility` | legacy API·roundtrip·CLI 호환 또는 pipeline idempotence 위반 | `HCR-P4`, `HCR-P5b` |
 
-최종 post-hoc checker는 다음 여섯 관계만 검사한다.
+최종 post-hoc checker는 다음 일곱 관계만 검사한다.
 
 - `HCR-P1`: public API field, 오류 code와 alias가 contract와 정확히 대응한다.
 - `HCR-P2`: 모든 old payload가 expected canonical object로 migration된다.
 - `HCR-P3`: new/old 입력을 parse한 canonical object와 serialization 결과가 case table과 일치한다.
 - `HCR-P4`: legacy API와 CLI가 같은 case에서 동일한 성공·실패 의미를 보존한다.
-- `HCR-P5`: migration→parse→serialize→parse가 idempotent하고 단계 순서에 따른 의미 손실이 없다.
-- `HCR-P6`: 보호 파일, 허용 write 집합과 overlap 계약이 보존된다.
+- `HCR-P5a`: 같은 old payload에 migration을 두 번 적용해도 한 번 적용한 canonical object와 byte-equivalent하다. 즉 `migrate(migrate(x)) == migrate(x)`다.
+- `HCR-P5b`: migration→parse→serialize→parse pipeline을 두 번 통과해도 canonical 의미와 serialization이 보존된다.
+- `HCR-P6`: 보호 파일, 허용 write 집합과 overlap 계약이 보존된다. 이는 safety/integrity property이며 Task quality나 route 귀속에 사용하지 않는다.
 
 Checker는 public contract와 실행 산출물의 관계를 계산한다. Golden tree byte 비교, 비공개 정답 문자열, Variant별 예외는 금지한다. Fixture 밖 golden은 model-free checker positive test에만 사용하며 live Worker나 route 판정의 입력이 아니다.
 
@@ -151,6 +169,8 @@ Checker는 public contract와 실행 산출물의 관계를 계산한다. Golden
 ### 5.1 목적과 공개 입력
 
 이 fixture는 여러 source의 확인·상충·미확인 정보를 4단계로 보존하는 작업이다. S2 incident보다 source 수, conflict group, 다중 predecessor와 대안 관계를 늘리되 새 사실을 추론해 맞히게 하지 않는다.
+
+새 난도는 단순 source 수 증가가 아니라 I3의 I1·I2 fan-in과 I4의 I1·I2·I3 fan-in, 그리고 conflict group→uncertainty→hypothesis→alternative matrix→claim/action의 다대다 관계에서 생긴다. `HCI-P1`~`HCI-P3`은 S2의 `INC-P1`~`INC-P3` 관계를 더 큰 입력에서 재현·확장하고, `HCI-P4`~`HCI-P6`은 새 alternative matrix와 최종 보고 fan-in을 검사한다. 따라서 S2에서 본 B1 `INC-P1`을 S3의 독립 실패 표본으로 더하거나 새 high-risk 실패처럼 세지 않는다. 다만 두 S3 order 자체에서 같은 Check/property가 반복되면 §8의 사전 등록된 reject 술어에는 사용할 수 있다.
 
 보호 입력은 다음이다.
 
@@ -255,6 +275,8 @@ Task turn timeout은 900초, Check timeout은 120초다. C2 Cell model-active �
 
 최초 4 Cell을 모두 terminal·seal하기 전에는 역순을 삽입하지 않는다.
 
+`single_order_b1_quality_failure=true`는 단일 order의 B1 Cell이 identity·seal·scope·secret·usage 계약을 통과했고 infrastructure/checker 오류가 아니면서, 사전 등록된 Task Check 또는 그에 연결된 post-hoc property에서 quality failure를 남기고 상대 C2는 `profile_success=true`일 때만 성립한다. 이 술어는 역순을 열기 위한 단일 관측일 뿐이며 `repeatable`이라는 표현을 쓰거나 route를 발행할 수 없다. `repeatable_quality_regression=true`는 두 order가 끝난 뒤 B1이 두 order에서 같은 Task Check와 mapped property에 실패한 경우에만 성립한다.
+
 Profile별 최초 pair 결과는 다음처럼 처리한다.
 
 | 최초 pair | 상태 | 역순 |
@@ -262,7 +284,7 @@ Profile별 최초 pair 결과는 다음처럼 처리한다.
 | C2/B1 모두 성공, attributable control effect 없음 | `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR` | 열지 않음 |
 | 둘 다 성공, B1 control effect는 있으나 C2 실패와 귀속 불가 | `B1_CONTROL_OBSERVED_NO_ROUTE` | 열지 않음 |
 | B1 성공, C2가 mapped property에 실패, attributable control effect 성립 | `S3_REPLICATION_REQUIRED` | 해당 profile만 |
-| C2 성공, B1이 non-infrastructure 동일 Task Check에서 repeatable quality regression | `S3_REPLICATION_REQUIRED` | 해당 profile만 |
+| C2 성공, B1에 `single_order_b1_quality_failure` 성립 | `S3_REPLICATION_REQUIRED` | 해당 profile만 |
 | 한 Variant만 성공하지만 위 두 replication predicate가 아님 | `ROUTING_INCONCLUSIVE` | 열지 않음 |
 | 둘 다 실패하거나 order 내 실패 property가 서로 무관 | `ROUTING_INCONCLUSIVE` | 열지 않음 |
 | identity·secret·scope·seal·checker·예산 실패 | `NOT_READY` 또는 `S3_STOP` | 금지 |
@@ -274,7 +296,7 @@ Profile별 최초 pair 결과는 다음처럼 처리한다.
 | 두 order의 봉인 결과 | profile state | route |
 |---|---|---|
 | B1은 두 order 모두 성공, C2는 두 order에서 같은 mapped property 집합 실패, B1 attributable control effect가 두 order 모두 성립 | `RETAIN_B1_HIGH_RISK` | 이 frozen high-risk profile에만 B1 잠정 route |
-| C2는 두 order 모두 성공, B1은 두 order에서 같은 Task Check·property의 repeatable quality regression | `REJECT_B1_PROFILE` | 이 profile의 C2 fallback 유지 |
+| C2는 두 order 모두 성공, B1은 두 order에서 같은 Task Check·property의 `repeatable_quality_regression` | `REJECT_B1_PROFILE` | 이 profile의 C2 fallback 유지 |
 | 위 반복 술어가 성립하지 않음 | `ROUTING_INCONCLUSIVE` | 없음 |
 
 S3가 `ROUTING_INCONCLUSIVE`로 끝나면 synthetic fixture를 더 만들거나 같은 Cell을 반복하지 않는다. 다음 근거는 실제 프로젝트 telemetry 또는 사용자 정책 결정에서만 얻는다.
@@ -303,6 +325,8 @@ Policy는 사람의 사후 평가, 자연어 보고서 품질 점수, token·wal
 - residual uncertainty와 측정하지 않은 범위
 - `global_b1_default_issued=false`
 
+Residual uncertainty에는 선행 S1+S2 live Cell 14개에서 B1 retry·resume·attributable control effect가 0회였다는 사실, S3 retain arm의 낮은 도달 가능성, 그리고 `ROUTING_INCONCLUSIVE`가 B1 열등 판정이 아니라 retain/reject 반복 근거의 부재라는 해석을 필수로 기록한다.
+
 ## 10. Stage 상태와 fail-closed 정지
 
 | Stage 상태 | 의미 |
@@ -319,12 +343,14 @@ Policy는 사람의 사후 평가, 자연어 보고서 품질 점수, token·wal
 - predecessor seal 또는 Plan binding 불일치
 - fixture·runner·B1·controller·runtime profile hash drift
 - API key 환경 이름 또는 secret finding
-- scope·protected file·Evidence hash 실패
+- Controller·Plan·Evidence·seal 전역 무결성 실패
 - checker identity·result·workspace 불변성 실패
 - 현재 Plan turn ceiling 초과 또는 durable dispatch claim 불일치
 - infrastructure failure, timeout 또는 WinError 5 같은 원인 미확인 원자 교체 실패
 
 Infrastructure 실패를 quality regression이나 B1 control effect로 세지 않는다. 자동 retry는 frozen B1 Task 정책에 선언된 model failure에만 허용하며 controller·seal·filesystem 실패에는 추가하지 않는다.
+
+Worker가 일으킨 Cell-local Task/Run scope 또는 protected-file 위반은 해당 Cell을 즉시 실패 봉인하고 자동 retry하지 않는다. 이미 승인된 같은 pair의 상대 Variant만 새 frozen workspace에서 실행해 비교 쌍을 닫은 뒤 stage를 `S3_STOP`으로 끝낸다. 그 뒤 다른 profile이나 역순은 실행하지 않는다. 반면 Controller·Plan binding·secret·Evidence/seal·checker identity 같은 전역 무결성 실패는 상대 Variant도 실행하지 않고 즉시 `S3_STOP`이다. `HCR-P6`과 같은 safety/integrity 실패는 어느 경우에도 B1 quality regression, C2 quality failure 또는 route 귀속 근거로 세지 않는다.
 
 ## 11. 구현 경계와 재사용
 
@@ -334,13 +360,17 @@ S3를 위한 두 번째 하네스나 상태 기계를 만들지 않는다.
 
 - S3 stage manifest와 두 frozen fixture
 - Fixture별 네 공개 Task Check(총 8개)와 profile별 post-hoc checker
-- 기존 stage-generic Plan/status/policy/export의 S3 additive 분기
-- 기존 reverse Plan builder의 Task 수·예산 parameterization
+- `benchmark_runner/s3_posthoc.py`의 S3 property 계산과 기존 `benchmark_runner/s2_policy.py`에 추가하는 S3 policy 함수
+- 기존 `routing_suite.py` stage contract table의 S3 additive 항목과 reverse Plan builder의 Task 수·예산 parameterization
+- 기존 `routing_live.py`의 명시적 S1/S2/S3 3-way stage 분기, S3 status/export와 reverse gate state parameterization
 - S3 schema·summary·policy의 additive field
+
+`routing_suite.py`는 stage별 initial/reverse Cell ID, Task 수, base/reserve/절대 turn cap을 exact contract table에서 고른다. 기존 `build_routing_s2_reverse_live_plan`의 내부 동작은 stage-neutral builder로 인자화하되 S2 public wrapper와 반환 의미는 유지하고, S3는 별도 thin wrapper에서 S3 contract를 전달한다. `routing_live.py`는 stage별 `expected_stage`, 허용 Cell 집합, initial terminal state와 reverse gate state를 고르며 S2의 `S2_EXPANSION_REQUIRED`와 S3의 `S3_REPLICATION_REQUIRED`를 같은 하드코딩 문자열로 취급하지 않는다. 기존 S1/S2 branch와 필드 의미는 바꾸지 않는다. 이번 구현은 분기 하나를 덧붙이는 소규모 patch가 아니라 약 1,500~2,000 source/test line과 frozen fixture tree 2개가 예상되는 작업이다. 이 수치는 일정 추정치일 뿐 DoD나 코드량 목표가 아니다.
 
 금지:
 
 - `routing_s3_live.py` 형태의 controller 복사
+- `benchmark_runner/s3_policy.py` 신설 또는 역사적 `s2_policy.py` rename. 파일명은 현행 호환을 위해 유지하고 S3 함수만 additive하게 넣는다.
 - 새 SDK runtime, Adapter, Judge, Measurement 또는 seal 구현
 - S1/S2 artifact·result·policy 수정 또는 재실행
 - B1에만 보이는 check data, hidden answer, Variant별 fixture
@@ -353,15 +383,15 @@ S3를 위한 두 번째 하네스나 상태 기계를 만들지 않는다.
 
 구현이 승인된 뒤 model-free 검증은 다음으로 제한한다.
 
-1. Stage discriminator와 S1/S2 하위 호환 음성 계약.
-2. 두 fixture의 pristine 실패, fixture 밖 golden 통과와 property별 최소 mutation 거부.
-3. C2/B1 TaskEnvelope·Check·Judge·property label parity.
+1. S1/S2/S3 exact 3-way stage discriminator, reverse gate state와 하위 호환 음성 계약.
+2. 두 fixture의 pristine 실패, fixture 밖 golden 통과와 property별 최소 mutation 거부. `HCR-P5a` migration idempotence와 `HCR-P5b` pipeline idempotence는 별도 mutation으로 각각 거부한다.
+3. C2/B1 TaskEnvelope·Check·Judge·property label parity와 §3.4 post-hoc exact schema·seal 계약.
 4. base 16 + profile별 reserve 2 + 절대 20 turn 보전과 timeout 계산.
 5. Synthetic Measurement로 §6 control attribution의 positive·negative 계약.
 6. 최초·역순 policy 상태표의 table-driven test.
 7. Fake Runtime 4-Cell Plan→Judge→property→seal→export 관통 1회.
 8. 구현이 안정된 최종 source commit에서 S0, B1 관련 계약, Runner 전체 회귀 각 1회와 S3 표적 case record.
-9. Live freeze의 독립 Plan build와 짧은 Windows path preflight 각 1회.
+9. Live freeze의 독립 Plan build와 §14.2의 40자 state root·실제 최장 fixture 경로 Windows write preflight 각 1회.
 
 실패하면 실패 표적만 수정·재실행한다. Source commit을 바꾸는 최종 수정 뒤 freeze에 필요한 source-bound 회귀만 한 번 갱신한다. 이미 통과한 S1/S2 live export를 관성적으로 반복 검증하지 않는다.
 
@@ -369,8 +399,8 @@ Claude의 명세 심사는 read-only이며 테스트·model turn·하위 에이�
 
 ## 13. 구현·동결·실행 순서
 
-1. 이 revision 1을 Claude가 read-only로 심사한다.
-2. P0/P1과 수용한 지적을 revision 2에 반영하고 필요하면 closure만 집중 재심사한다.
+1. Revision 1의 Claude read-only 심사에서 P0 1건·P1 5건과 수용한 P2 명확화를 추출한다.
+2. 이 revision 2에 반영한 closure만 Claude가 read-only로 집중 재심사한다. 새 전체 감사를 열지 않는다.
 3. 사용자가 S3 명세를 동결한다.
 4. 기존 Runner에 허용된 additive S3 분기, fixture와 checker를 구현한다.
 5. §12의 표적 model-free 계약과 Fake 4-Cell 관통을 실행한다.
@@ -397,6 +427,7 @@ Claude의 명세 심사는 read-only이며 테스트·model turn·하위 에이�
 - Public contract에서 checker 결과가 결정론적으로 재계산된다.
 - Golden은 fixture tree 밖에 있고 live policy 입력이 아니다.
 - Stage Plan, fixture tree, checker, Runner/B1/controller/runtime identity와 source-bound regression이 봉인된다.
+- Revision 2는 S2 숫자를 암묵 상속하지 않고 resolved absolute S3 state root의 상한을 40자로 다시 동결한다. Freeze preflight는 네 짧은 initial Cell ID 각각의 disposable workspace에서 실제 frozen fixture의 최장 상대 경로와 `.git/objects/aa/<40-character-name>`를 생성·읽기·삭제하고, 조건부 reverse Cell ID도 같은 계산으로 Windows 경로 한도 안에 있음을 확인한다. 실패하면 상한을 사후 확대하지 않고 더 짧은 state root를 사용하거나 candidate를 개정하며, model turn 0회 상태에서 생성을 거부한다.
 - Candidate preflight는 model turn 0회이며 4 Cell이 `PLANNED`다.
 
 ### 14.3 S3 완료
