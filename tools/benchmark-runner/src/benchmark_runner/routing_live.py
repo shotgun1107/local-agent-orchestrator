@@ -1241,7 +1241,8 @@ def verify_routing_s1_live_freeze(
                 raise RoutingSuiteError("S1 live freeze fixture manifest differs") from exc
     if artifact_fixture_manifest_sha256 != build.get("fixture_manifest_sha256"):
         raise RoutingSuiteError("S1 live freeze fixture manifest hashes differ")
-    if set(frozen_fixtures) != {item.fixture_id for item in plan.fixtures} or any(
+    plan_fixture_ids = {item.fixture_id for item in plan.fixtures}
+    if not plan_fixture_ids.issubset(frozen_fixtures) or any(
         frozen_fixtures[item.fixture_id].commit != item.source_commit
         or frozen_fixtures[item.fixture_id].git_tree != item.git_tree
         for item in plan.fixtures

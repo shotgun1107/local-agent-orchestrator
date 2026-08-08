@@ -946,7 +946,11 @@ def build_routing_s2_reverse_live_plan(
     return build_sdk_controlled_plan(
         source_manifest_path=initial.source_manifest.path,
         source_manifest_sha256=initial.source_manifest.sha256,
-        fixtures=list(initial.fixtures),
+        fixtures=[
+            fixture
+            for fixture in initial.fixtures
+            if fixture.fixture_id == expansion_profile
+        ],
         runner=runner,
         variants=variants,
         cells=cells,
