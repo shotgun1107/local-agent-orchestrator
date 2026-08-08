@@ -1,12 +1,14 @@
 schema_version: 1
 suite_id: sdk-routing-v1
-design_revision: 3
+design_revision: 4
 status: frozen_before_execution
 stages:
   - stage_id: s1-baseline
     path: benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml
   - stage_id: s2-intermediate
     path: benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml
-live_turn_ceiling_including_pilot: 52
+  - stage_id: s3-complex-high-risk
+    path: benchmarks/suites/sdk-routing-v1/stages/s3-complex-high-risk.yaml
+live_turn_ceiling_including_pilot: 72
 auth_method: chatgpt
 api_key_policy: forbidden
