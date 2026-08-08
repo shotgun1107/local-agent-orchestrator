@@ -85,6 +85,29 @@ S2_ALLOWED_OUTCOMES = [
 S2_BASE_LIVE_MODEL_TURNS = 12
 S2_RETRY_RESUME_RESERVE_TURNS = 3
 S2_MAX_ACTUAL_LIVE_MODEL_TURNS = 15
+S3_EXPECTED_CELL_ORDER = [
+    ("cell_s3_a_1_c2", "four-stage-compatibility-refactor", "c2"),
+    ("cell_s3_a_1_b1", "four-stage-compatibility-refactor", "b1"),
+    ("cell_s3_b_1_b1", "four-stage-conflicting-incident-report", "b1"),
+    ("cell_s3_b_1_c2", "four-stage-conflicting-incident-report", "c2"),
+]
+S3_ALLOWED_OUTCOMES = [
+    "S3_OBSERVATION_READY",
+    "S3_POLICY_READY",
+    "S3_REPLICATION_REQUIRED",
+    "S3_INCONCLUSIVE",
+    "S3_STOP",
+    "S3_INCOMPLETE",
+]
+S3_BASE_LIVE_MODEL_TURNS = 16
+S3_RETRY_RESUME_RESERVE_TURNS_PER_PROFILE = 2
+S3_RETRY_RESUME_RESERVE_TURNS = 4
+S3_MAX_ACTUAL_LIVE_MODEL_TURNS = 20
+RoutingStageId: TypeAlias = Literal[
+    "s1-baseline",
+    "s2-intermediate",
+    "s3-complex-high-risk",
+]
 
 
 class ExpectedWriteFiles(StrictModel):
@@ -158,6 +181,14 @@ class RoutingS1CellDeclaration(StrictModel):
 
 class RoutingS2CellDeclaration(StrictModel):
     cell_id: str = Field(pattern=r"^cell_s2_[ab]_[12]_(?:c2|b1)$")
+    profile_alias: Literal["a", "b"]
+    fixture_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
+    variant_id: Literal["c2", "b1"]
+    repetition: Literal[1, 2] = 1
+
+
+class RoutingS3CellDeclaration(StrictModel):
+    cell_id: str = Field(pattern=r"^cell_s3_[ab]_[12]_(?:c2|b1)$")
     profile_alias: Literal["a", "b"]
     fixture_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
     variant_id: Literal["c2", "b1"]
@@ -300,15 +331,92 @@ class RoutingS2StageManifest(StrictModel):
         return self
 
 
+class RoutingS3StageManifest(StrictModel):
+    schema_version: Literal[1]
+    stage_id: Literal["s3-complex-high-risk"]
+    status: Literal["implementation_candidate", "frozen_before_execution"]
+    purpose: Literal["complex_high_risk_routing"]
+    fixture_manifests: list[FixtureManifestSelection] = Field(min_length=1)
+    variants: list[Literal["c2", "b1"]] = Field(min_length=2, max_length=2)
+    baseline_variant: Literal["c2"]
+    candidate_variants: list[Literal["b1"]] = Field(min_length=1, max_length=1)
+    profile_aliases: dict[Literal["a", "b"], str]
+    profiles: list[FixtureProfileDeclaration] = Field(min_length=2, max_length=2)
+    cells: list[RoutingS3CellDeclaration] = Field(min_length=4, max_length=4)
+    base_live_model_turns: Literal[16]
+    b1_retry_resume_reserve_turns_per_profile: Literal[2]
+    b1_retry_resume_reserve_turns: Literal[4]
+    max_actual_live_model_turns: Literal[20]
+    route_decision_allowed: Literal[True]
+    allowed_outcomes: list[
+        Literal[
+            "S3_OBSERVATION_READY",
+            "S3_POLICY_READY",
+            "S3_REPLICATION_REQUIRED",
+            "S3_INCONCLUSIVE",
+            "S3_STOP",
+            "S3_INCOMPLETE",
+        ]
+    ] = Field(min_length=6, max_length=6)
+
+    @model_validator(mode="after")
+    def stage_contract_is_consistent(self) -> RoutingS3StageManifest:
+        if self.variants != ["c2", "b1"] or self.candidate_variants != ["b1"]:
+            raise ValueError("S3 variants must be exactly [c2, b1]")
+        expected_aliases = {
+            "a": "four-stage-compatibility-refactor",
+            "b": "four-stage-conflicting-incident-report",
+        }
+        if self.profile_aliases != expected_aliases:
+            raise ValueError("S3 profile aliases differ from the frozen design")
+        fixture_ids = [profile.fixture_id for profile in self.profiles]
+        if len(fixture_ids) != len(set(fixture_ids)) or set(fixture_ids) != set(
+            expected_aliases.values()
+        ):
+            raise ValueError("S3 profiles differ from the frozen design")
+        selected = [
+            fixture_id
+            for manifest in self.fixture_manifests
+            for fixture_id in manifest.fixture_ids
+        ]
+        if len(selected) != len(set(selected)) or set(selected) != set(fixture_ids):
+            raise ValueError("S3 selected fixture IDs must match profiles")
+        declared_order = [
+            (cell.cell_id, cell.fixture_id, cell.variant_id) for cell in self.cells
+        ]
+        if declared_order != S3_EXPECTED_CELL_ORDER:
+            raise ValueError("S3 Cell order differs from the frozen design")
+        for cell in self.cells:
+            if expected_aliases[cell.profile_alias] != cell.fixture_id:
+                raise ValueError("S3 Cell alias differs from its fixture")
+        if self.allowed_outcomes != S3_ALLOWED_OUTCOMES:
+            raise ValueError("S3 allowed outcomes differ from the frozen design")
+        task_counts = {
+            profile.fixture_id: profile.complexity.task_count for profile in self.profiles
+        }
+        if any(count != 4 for count in task_counts.values()):
+            raise ValueError("S3 profiles must each declare exactly four Tasks")
+        if sum(task_counts[cell.fixture_id] for cell in self.cells) != self.base_live_model_turns:
+            raise ValueError("S3 base turn budget differs from the fixture Task counts")
+        if (
+            self.b1_retry_resume_reserve_turns_per_profile * 2
+            != self.b1_retry_resume_reserve_turns
+            or self.base_live_model_turns + self.b1_retry_resume_reserve_turns
+            != self.max_actual_live_model_turns
+        ):
+            raise ValueError("S3 maximum turn budget differs from base plus reserve")
+        return self
+
+
 RoutingStage: TypeAlias = Annotated[
-    RoutingS1StageManifest | RoutingS2StageManifest,
+    RoutingS1StageManifest | RoutingS2StageManifest | RoutingS3StageManifest,
     Field(discriminator="stage_id"),
 ]
 _ROUTING_STAGE_ADAPTER = TypeAdapter(RoutingStage)
 
 
 class RoutingStageManifest:
-    """Compatibility facade for the discriminated S1/S2 stage union."""
+    """Compatibility facade for the discriminated S1/S2/S3 stage union."""
 
     @classmethod
     def model_validate(cls, value: object) -> RoutingStage:
@@ -320,7 +428,7 @@ class RoutingStageManifest:
 
 
 class RoutingStageReference(StrictModel):
-    stage_id: Literal["s1-baseline", "s2-intermediate"]
+    stage_id: RoutingStageId
     path: str
 
     _path_is_relative = field_validator("path")(validate_relative_path)
@@ -329,10 +437,10 @@ class RoutingStageReference(StrictModel):
 class RoutingSuiteManifest(StrictModel):
     schema_version: Literal[1]
     suite_id: Literal["sdk-routing-v1"]
-    design_revision: Literal[2, 3]
+    design_revision: Literal[2, 3, 4]
     status: Literal["implementation_candidate", "frozen_before_execution"]
     stages: list[RoutingStageReference] = Field(min_length=1)
-    live_turn_ceiling_including_pilot: Literal[31, 34, 43, 52]
+    live_turn_ceiling_including_pilot: Literal[31, 34, 43, 52, 72]
     auth_method: Literal["chatgpt"]
     api_key_policy: Literal["forbidden"]
 
@@ -344,8 +452,14 @@ class RoutingSuiteManifest(StrictModel):
         if self.design_revision == 2:
             if stage_ids != ["s1-baseline"] or self.live_turn_ceiling_including_pilot != 31:
                 raise ValueError("routing suite revision 2 must preserve the S1-only contract")
-        elif stage_ids != ["s1-baseline", "s2-intermediate"]:
-            raise ValueError("routing suite revision 3 must declare S1 then S2")
+        elif self.design_revision == 3:
+            if stage_ids != ["s1-baseline", "s2-intermediate"]:
+                raise ValueError("routing suite revision 3 must declare S1 then S2")
+        elif (
+            stage_ids != ["s1-baseline", "s2-intermediate", "s3-complex-high-risk"]
+            or self.live_turn_ceiling_including_pilot != 72
+        ):
+            raise ValueError("routing suite revision 4 must declare S1, S2, then S3")
         return self
 
 
@@ -681,12 +795,17 @@ def _build_routing_plan(
             "route_decision_allowed": stage.route_decision_allowed,
         }
     else:
-        from benchmark_runner.s2_posthoc import PROPERTY_IDS, checker_sha256
+        if isinstance(stage, RoutingS2StageManifest):
+            from benchmark_runner.s2_posthoc import PROPERTY_IDS, checker_sha256
+        else:
+            from benchmark_runner.s3_posthoc import PROPERTY_IDS, checker_sha256
+
+        stage_label = "s2" if isinstance(stage, RoutingS2StageManifest) else "s3"
 
         cells = [
             PlannedCell(
                 cell_id=cell.cell_id,
-                block_id=f"block_s2_{cell.profile_alias}_{cell.repetition}",
+                block_id=f"block_{stage_label}_{cell.profile_alias}_{cell.repetition}",
                 fixture_id=cell.fixture_id,
                 repetition=cell.repetition,
                 variant_id=cell.variant_id,
@@ -709,6 +828,10 @@ def _build_routing_plan(
                 for fixture_id in stage.profile_aliases.values()
             },
         }
+        if isinstance(stage, RoutingS3StageManifest):
+            stage_policy["b1_retry_resume_reserve_turns_per_profile"] = (
+                stage.b1_retry_resume_reserve_turns_per_profile
+            )
     return build_sdk_controlled_plan(
         source_manifest_path=stage_path.relative_to(repository_root).as_posix(),
         source_manifest_sha256=sha256_file(stage_path),
@@ -864,7 +987,69 @@ def build_routing_s2_live_plan(
     return plan
 
 
-def build_routing_s2_reverse_live_plan(
+def build_routing_s3_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build the zero-turn S3 contract-validation Plan."""
+
+    plan = _build_routing_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
+        track="sdk_routing_s3_model_free_validation",
+        planned_actual_model_turns=0,
+        require_frozen=False,
+    )
+    if plan.decision_policy.get("stage_id") != "s3-complex-high-risk":
+        raise RoutingSuiteError("S3 Plan builder requires the S3 stage")
+    return plan
+
+
+def build_routing_s3_live_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build the immutable S3 live Plan only from frozen manifests."""
+
+    plan = _build_routing_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        created_at=created_at,
+        revision=revision,
+        track="sdk_routing_s3_live_initial",
+        planned_actual_model_turns=None,
+        require_frozen=True,
+    )
+    if plan.decision_policy.get("stage_id") != "s3-complex-high-risk":
+        raise RoutingSuiteError("S3 live Plan builder requires the S3 stage")
+    return plan
+
+
+def _build_routing_reverse_live_plan(
     *,
     repository_root: Path,
     suite_path: Path,
@@ -874,12 +1059,23 @@ def build_routing_s2_reverse_live_plan(
     environment_fingerprint: dict[str, str],
     expansion_profile: str,
     initial_export_identity: dict[str, str],
+    stage_id: Literal["s2-intermediate", "s3-complex-high-risk"],
+    expected_gate_state: Literal["S2_EXPANSION_REQUIRED", "S3_REPLICATION_REQUIRED"],
+    reverse_base_turns: int,
+    reverse_reserve_turns: int,
+    reverse_max_turns: int,
+    reverse_track: str,
     created_at: datetime | None = None,
     revision: int = 1,
 ) -> ExecutionPlan:
-    """Build one separately approved S2 reverse pair from the frozen initial stage."""
+    """Build one stage-bound reverse pair from the frozen initial stage."""
 
-    initial = build_routing_s2_live_plan(
+    initial_builder = (
+        build_routing_s2_live_plan
+        if stage_id == "s2-intermediate"
+        else build_routing_s3_live_plan
+    )
+    initial = initial_builder(
         repository_root=repository_root,
         suite_path=suite_path,
         stage_path=stage_path,
@@ -891,7 +1087,7 @@ def build_routing_s2_reverse_live_plan(
     )
     aliases = initial.decision_policy.get("profile_aliases")
     if not isinstance(aliases, dict) or expansion_profile not in aliases.values():
-        raise RoutingSuiteError("S2 reverse Plan expansion profile is not frozen")
+        raise RoutingSuiteError("routing reverse Plan expansion profile is not frozen")
     alias = next(key for key, value in aliases.items() if value == expansion_profile)
     by_variant = {
         cell.variant_id: cell
@@ -899,7 +1095,7 @@ def build_routing_s2_reverse_live_plan(
         if cell.fixture_id == expansion_profile
     }
     if set(by_variant) != {"c2", "b1"}:
-        raise RoutingSuiteError("S2 reverse Plan requires one frozen C2/B1 pair")
+        raise RoutingSuiteError("routing reverse Plan requires one frozen C2/B1 pair")
     expected_identity_keys = {
         "experiment_id",
         "plan_fingerprint",
@@ -909,13 +1105,13 @@ def build_routing_s2_reverse_live_plan(
     }
     if (
         set(initial_export_identity) != expected_identity_keys
-        or initial_export_identity.get("stage_state") != "S2_EXPANSION_REQUIRED"
+        or initial_export_identity.get("stage_state") != expected_gate_state
         or any(
             not isinstance(value, str) or not value
             for value in initial_export_identity.values()
         )
     ):
-        raise RoutingSuiteError("S2 reverse Plan initial export identity is invalid")
+        raise RoutingSuiteError("routing reverse Plan initial export identity is invalid")
     initial_order = [
         cell.variant_id
         for cell in sorted(initial.cells, key=lambda item: item.execution_ordinal)
@@ -923,12 +1119,13 @@ def build_routing_s2_reverse_live_plan(
     ]
     reverse_order = tuple(reversed(initial_order))
     if set(reverse_order) != {"c2", "b1"} or len(reverse_order) != 2:
-        raise RoutingSuiteError("S2 reverse Plan cannot derive the frozen opposite order")
+        raise RoutingSuiteError("routing reverse Plan cannot derive the frozen opposite order")
+    stage_label = "s2" if stage_id == "s2-intermediate" else "s3"
     cells = [
         by_variant[variant_id].model_copy(
             update={
-                "cell_id": f"cell_s2_{alias}_2_{variant_id}",
-                "block_id": f"block_s2_{alias}_2",
+                "cell_id": f"cell_{stage_label}_{alias}_2_{variant_id}",
+                "block_id": f"block_{stage_label}_{alias}_2",
                 "execution_ordinal": ordinal,
             }
         )
@@ -939,9 +1136,9 @@ def build_routing_s2_reverse_live_plan(
         "execution_phase": "reverse",
         "expansion_profile": expansion_profile,
         "initial_export_identity": dict(initial_export_identity),
-        "base_live_model_turns": 6,
-        "b1_retry_resume_reserve_turns": 3,
-        "max_actual_live_model_turns": 9,
+        "base_live_model_turns": reverse_base_turns,
+        "b1_retry_resume_reserve_turns": reverse_reserve_turns,
+        "max_actual_live_model_turns": reverse_max_turns,
     }
     return build_sdk_controlled_plan(
         source_manifest_path=initial.source_manifest.path,
@@ -961,8 +1158,78 @@ def build_routing_s2_reverse_live_plan(
         created_at=created_at,
         revision=revision,
         seed=0,
-        track="sdk_routing_s2_live_reverse",
+        track=reverse_track,
         planned_actual_model_turns=None,
+    )
+
+
+def build_routing_s2_reverse_live_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    expansion_profile: str,
+    initial_export_identity: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build one separately approved S2 reverse pair."""
+
+    return _build_routing_reverse_live_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        expansion_profile=expansion_profile,
+        initial_export_identity=initial_export_identity,
+        stage_id="s2-intermediate",
+        expected_gate_state="S2_EXPANSION_REQUIRED",
+        reverse_base_turns=6,
+        reverse_reserve_turns=3,
+        reverse_max_turns=9,
+        reverse_track="sdk_routing_s2_live_reverse",
+        created_at=created_at,
+        revision=revision,
+    )
+
+
+def build_routing_s3_reverse_live_plan(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    runner: ArtifactIdentity,
+    variants: list[ArtifactIdentity],
+    environment_fingerprint: dict[str, str],
+    expansion_profile: str,
+    initial_export_identity: dict[str, str],
+    created_at: datetime | None = None,
+    revision: int = 1,
+) -> ExecutionPlan:
+    """Build one separately approved S3 reverse pair."""
+
+    return _build_routing_reverse_live_plan(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        runner=runner,
+        variants=variants,
+        environment_fingerprint=environment_fingerprint,
+        expansion_profile=expansion_profile,
+        initial_export_identity=initial_export_identity,
+        stage_id="s3-complex-high-risk",
+        expected_gate_state="S3_REPLICATION_REQUIRED",
+        reverse_base_turns=8,
+        reverse_reserve_turns=2,
+        reverse_max_turns=10,
+        reverse_track="sdk_routing_s3_live_reverse",
+        created_at=created_at,
+        revision=revision,
     )
 
 
@@ -982,6 +1249,15 @@ def initialize_routing_s2_experiment(
     return initialize_sdk_experiment(state_root, plan)
 
 
+def initialize_routing_s3_experiment(
+    state_root: Path,
+    plan: ExecutionPlan,
+) -> Path:
+    if plan.decision_policy.get("stage_id") != "s3-complex-high-risk":
+        raise RoutingSuiteError("S3 experiment requires an S3 Plan")
+    return initialize_sdk_experiment(state_root, plan)
+
+
 AdapterFactory = Callable[[PlannedCell, PreparedFixture], VariantAdapter]
 
 
@@ -994,7 +1270,7 @@ def _run_next_routing_nonlive_cell(
     adapter_factory: AdapterFactory,
     benchmark_python: Path,
     git_executable: Path,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"],
+    expected_stage_id: RoutingStageId,
 ) -> SdkSealedCellResult:
     repository_root = repository_root.resolve()
     suite, stage = _resolve_stage(repository_root, suite_path, stage_path)
@@ -1008,7 +1284,7 @@ def _run_next_routing_nonlive_cell(
         or plan.decision_policy.get("stage_id") != stage.stage_id
         or stage.stage_id != expected_stage_id
         or plan.decision_policy.get("route_decision_allowed")
-        is not (expected_stage_id == "s2-intermediate")
+        is not (expected_stage_id != "s1-baseline")
     ):
         raise RoutingSuiteError("routing Plan differs from the current stage contract")
     next_cell = next(
@@ -1035,6 +1311,15 @@ def _run_next_routing_nonlive_cell(
     post_judge_hook = None
     if expected_stage_id == "s2-intermediate":
         from benchmark_runner.s2_posthoc import run_posthoc_subprocess
+
+        post_judge_hook = lambda current: run_posthoc_subprocess(
+            repository_root=repository_root,
+            benchmark_python=benchmark_python,
+            fixture_id=current.fixture.id,
+            workspace=current.workspace,
+        )
+    elif expected_stage_id == "s3-complex-high-risk":
+        from benchmark_runner.s3_posthoc import run_posthoc_subprocess
 
         post_judge_hook = lambda current: run_posthoc_subprocess(
             repository_root=repository_root,
@@ -1098,10 +1383,32 @@ def run_next_routing_s2_nonlive_cell(
     )
 
 
+def run_next_routing_s3_nonlive_cell(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    experiment_dir: Path,
+    adapter_factory: AdapterFactory,
+    benchmark_python: Path,
+    git_executable: Path,
+) -> SdkSealedCellResult:
+    return _run_next_routing_nonlive_cell(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        experiment_dir=experiment_dir,
+        adapter_factory=adapter_factory,
+        benchmark_python=benchmark_python,
+        git_executable=git_executable,
+        expected_stage_id="s3-complex-high-risk",
+    )
+
+
 def _load_routing_plan(
     experiment_dir: Path,
     *,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"] = "s1-baseline",
+    expected_stage_id: RoutingStageId = "s1-baseline",
 ) -> ExecutionPlan:
     try:
         plan = ExecutionPlan.model_validate_json(
@@ -1114,12 +1421,13 @@ def _load_routing_plan(
     track_values = [
         item.value for item in plan.plan_supplemented if item.field == "track"
     ]
-    expected_track = (
-        "sdk_routing_s1_model_free_validation"
-        if expected_stage_id == "s1-baseline"
-        else "sdk_routing_s2_model_free_validation"
-    )
-    expected_route = expected_stage_id == "s2-intermediate"
+    stage_label = {
+        "s1-baseline": "s1",
+        "s2-intermediate": "s2",
+        "s3-complex-high-risk": "s3",
+    }[expected_stage_id]
+    expected_track = f"sdk_routing_{stage_label}_model_free_validation"
+    expected_route = expected_stage_id != "s1-baseline"
     if (
         track_values != [expected_track]
         or plan.decision_policy.get("stage_id") != expected_stage_id
@@ -1138,7 +1446,7 @@ def _run_all_routing_nonlive_cells(
     adapter_factory: AdapterFactory,
     benchmark_python: Path,
     git_executable: Path,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"],
+    expected_stage_id: RoutingStageId,
 ) -> list[SdkSealedCellResult]:
     """Run every remaining Cell through the existing one-Cell boundary."""
 
@@ -1219,10 +1527,32 @@ def run_all_routing_s2_nonlive_cells(
     )
 
 
+def run_all_routing_s3_nonlive_cells(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    experiment_dir: Path,
+    adapter_factory: AdapterFactory,
+    benchmark_python: Path,
+    git_executable: Path,
+) -> list[SdkSealedCellResult]:
+    return _run_all_routing_nonlive_cells(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        experiment_dir=experiment_dir,
+        adapter_factory=adapter_factory,
+        benchmark_python=benchmark_python,
+        git_executable=git_executable,
+        expected_stage_id="s3-complex-high-risk",
+    )
+
+
 def _routing_nonlive_status(
     experiment_dir: Path,
     *,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"],
+    expected_stage_id: RoutingStageId,
 ) -> dict[str, Any]:
     """Derive model-free completion from independently verified Cell seals."""
 
@@ -1253,7 +1583,7 @@ def _routing_nonlive_status(
                 }
             )
             all_checks_passed = False
-            if expected_stage_id == "s2-intermediate":
+            if expected_stage_id != "s1-baseline":
                 all_properties_passed = False
             continue
         try:
@@ -1266,7 +1596,7 @@ def _routing_nonlive_status(
         if state.state is CellLifecycleState.SEALED:
             measurement = verify_sealed_cell(cell_dir)
             check_success = measurement.outcome.check_success
-            if expected_stage_id == "s2-intermediate":
+            if expected_stage_id != "s1-baseline":
                 candidate_status = measurement.variant_metrics.values.get(
                     "property_status"
                 )
@@ -1311,7 +1641,7 @@ def _routing_nonlive_status(
         validation_status = "MODEL_FREE_FAIL"
     return {
         "schema_version": 1,
-        "kind": f"sdk_routing_{'s1' if expected_stage_id == 's1-baseline' else 's2'}_model_free_status",
+        "kind": f"sdk_routing_{ {'s1-baseline': 's1', 's2-intermediate': 's2', 's3-complex-high-risk': 's3'}[expected_stage_id] }_model_free_status",
         "experiment_id": plan.experiment_id,
         "stage_id": plan.decision_policy.get("stage_id"),
         "planned_cells": len(plan.cells),
@@ -1341,12 +1671,19 @@ def routing_s2_nonlive_status(experiment_dir: Path) -> dict[str, Any]:
     )
 
 
+def routing_s3_nonlive_status(experiment_dir: Path) -> dict[str, Any]:
+    return _routing_nonlive_status(
+        experiment_dir,
+        expected_stage_id="s3-complex-high-risk",
+    )
+
+
 def _routing_nonlive_summary(
     plan: ExecutionPlan,
     status: dict[str, Any],
     measurements: list[Measurement],
     *,
-    stage_label: Literal["s1", "s2"],
+    stage_label: Literal["s1", "s2", "s3"],
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for measurement in sorted(
@@ -1403,7 +1740,7 @@ def _routing_nonlive_summary(
 def _routing_nonlive_summary_markdown(
     summary: dict[str, Any],
     *,
-    stage_label: Literal["s1", "s2"],
+    stage_label: Literal["s1", "s2", "s3"],
 ) -> bytes:
     lines = [
         f"# SDK routing {stage_label.upper()} model-free validation",
@@ -1452,7 +1789,7 @@ def _export_routing_nonlive(
     stage_path: Path,
     experiment_dir: Path,
     results_root: Path,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"],
+    expected_stage_id: RoutingStageId,
 ) -> dict[str, Any]:
     """Export sealed model-free Cells without issuing a live verdict."""
 
@@ -1482,9 +1819,11 @@ def _export_routing_nonlive(
         verify_sealed_cell(experiment_dir / "cells" / cell.cell_id)
         for cell in sorted(plan.cells, key=lambda item: item.execution_ordinal)
     ]
-    stage_label: Literal["s1", "s2"] = (
-        "s1" if expected_stage_id == "s1-baseline" else "s2"
-    )
+    stage_label: Literal["s1", "s2", "s3"] = {
+        "s1-baseline": "s1",
+        "s2-intermediate": "s2",
+        "s3-complex-high-risk": "s3",
+    }[expected_stage_id]
     summary = _routing_nonlive_summary(
         plan,
         status,
@@ -1616,10 +1955,28 @@ def export_routing_s2_nonlive(
     )
 
 
+def export_routing_s3_nonlive(
+    *,
+    repository_root: Path,
+    suite_path: Path,
+    stage_path: Path,
+    experiment_dir: Path,
+    results_root: Path,
+) -> dict[str, Any]:
+    return _export_routing_nonlive(
+        repository_root=repository_root,
+        suite_path=suite_path,
+        stage_path=stage_path,
+        experiment_dir=experiment_dir,
+        results_root=results_root,
+        expected_stage_id="s3-complex-high-risk",
+    )
+
+
 def _verify_routing_nonlive_export(
     export_root: Path,
     *,
-    expected_stage_id: Literal["s1-baseline", "s2-intermediate"],
+    expected_stage_id: RoutingStageId,
 ) -> dict[str, Any]:
     """Verify only exported bytes; no source workspace is trusted."""
 
@@ -1640,8 +1997,12 @@ def _verify_routing_nonlive_export(
         )
     except (OSError, ValueError, json.JSONDecodeError, yaml.YAMLError) as exc:
         raise RoutingSuiteError("routing export metadata is missing or invalid") from exc
-    stage_label = "s1" if expected_stage_id == "s1-baseline" else "s2"
-    expected_route = expected_stage_id == "s2-intermediate"
+    stage_label = {
+        "s1-baseline": "s1",
+        "s2-intermediate": "s2",
+        "s3-complex-high-risk": "s3",
+    }[expected_stage_id]
+    expected_route = expected_stage_id != "s1-baseline"
     if (
         [item.value for item in plan.plan_supplemented if item.field == "track"]
         != [f"sdk_routing_{stage_label}_model_free_validation"]
@@ -1760,7 +2121,7 @@ def _verify_routing_nonlive_export(
         measured_turns += model_turns
         all_checks_passed = all_checks_passed and measurement.outcome.check_success
         property_status = measurement.variant_metrics.values.get("property_status")
-        if expected_stage_id == "s2-intermediate":
+        if expected_stage_id != "s1-baseline":
             checker_contracts = plan.decision_policy.get("posthoc_checks")
             expected_checker = (
                 checker_contracts.get(cell.fixture_id)
@@ -1838,4 +2199,11 @@ def verify_routing_s2_nonlive_export(export_root: Path) -> dict[str, Any]:
     return _verify_routing_nonlive_export(
         export_root,
         expected_stage_id="s2-intermediate",
+    )
+
+
+def verify_routing_s3_nonlive_export(export_root: Path) -> dict[str, Any]:
+    return _verify_routing_nonlive_export(
+        export_root,
+        expected_stage_id="s3-complex-high-risk",
     )

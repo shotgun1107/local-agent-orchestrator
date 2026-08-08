@@ -1,0 +1,9 @@
+{
+  "canonical_fields": ["endpoint", "max_retries", "timeout_seconds", "mode", "version"],
+  "error_codes": {
+    "missing_field": "MISSING_FIELD",
+    "invalid_mode": "INVALID_MODE",
+    "alias_conflict": "ALIAS_CONFLICT",
+    "unknown_field": "UNKNOWN_FIELD"
+  }
+}

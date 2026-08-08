@@ -1,0 +1,6 @@
+schema_version: 1
+project_id: benchmark-four-stage-compatibility-refactor
+core_compat: ">=0.1,<0.2"
+repository_root: "."
+default_capability_profile: code_change
+default_policy: b1_safe

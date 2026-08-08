@@ -17,6 +17,8 @@ from benchmark_runner.routing_suite import (
     build_routing_s1_live_plan,
     build_routing_s2_live_plan,
     build_routing_s2_reverse_live_plan,
+    build_routing_s3_live_plan,
+    build_routing_s3_reverse_live_plan,
 )
 from benchmark_runner.runner import _source_tree_sha256, canonical_json_bytes
 from benchmark_runner.sdk_cells import runner_source_sha256
@@ -30,7 +32,7 @@ def main() -> int:
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument(
         "--stage",
-        choices=["s1-baseline", "s2-intermediate"],
+        choices=["s1-baseline", "s2-intermediate", "s3-complex-high-risk"],
         default="s1-baseline",
     )
     args = parser.parse_args()
@@ -78,21 +80,26 @@ def main() -> int:
     )
     decision_policy = value.get("decision_policy")
     if (
-        args.stage == "s2-intermediate"
+        args.stage in {"s2-intermediate", "s3-complex-high-risk"}
         and isinstance(decision_policy, dict)
         and decision_policy.get("execution_phase") == "reverse"
     ):
-        plan = build_routing_s2_reverse_live_plan(
+        reverse_builder = (
+            build_routing_s2_reverse_live_plan
+            if args.stage == "s2-intermediate"
+            else build_routing_s3_reverse_live_plan
+        )
+        plan = reverse_builder(
             **common,
             expansion_profile=decision_policy["expansion_profile"],
             initial_export_identity=decision_policy["initial_export_identity"],
         )
     else:
-        builder = (
-            build_routing_s1_live_plan
-            if args.stage == "s1-baseline"
-            else build_routing_s2_live_plan
-        )
+        builder = {
+            "s1-baseline": build_routing_s1_live_plan,
+            "s2-intermediate": build_routing_s2_live_plan,
+            "s3-complex-high-risk": build_routing_s3_live_plan,
+        }[args.stage]
         plan = builder(**common)
     sys.stdout.buffer.write(canonical_json_bytes(plan))
     return 0
