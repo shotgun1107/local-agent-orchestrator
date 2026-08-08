@@ -327,3 +327,13 @@ After the reverse candidate is committed and its model-use ceiling is approved,
 combine the sealed initial and reverse observations for policy derivation while
 counting the reverse Plan's nine-turn ceiling independently. A reverse export embeds
 the complete verified initial export so it remains independently verifiable.
+
+The approved incident reverse pair later completed C2→B1 with six actual turns and
+three reserve turns unused. Both public Judges passed, but C2 failed post-hoc `INC-P2`
+and B1 failed `INC-P1`. The combined stage is `S2_POLICY_READY`, the incident profile
+is `ROUTING_INCONCLUSIVE`, and no route or global B1 default was issued. The verified
+102-file combined export is at
+`benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_e2f0a870_3/`
+with aggregate SHA-256
+`df682d5a13945bc8cc9ef0b3a468800112c720fada89eca2f10bd6b46ae72bc8`.
+See `docs/experiments/sdk-routing-s2-reverse-live-result.md`.

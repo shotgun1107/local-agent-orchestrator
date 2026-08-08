@@ -1,0 +1,7 @@
+warning: in the working copy of 'analysis/evidence-ledger.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'analysis/uncertainties.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'report/action-plan.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'report/claims.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'report/final-report.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'timeline/events.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'timeline/hypotheses.json', LF will be replaced by CRLF the next time Git touches it

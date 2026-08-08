@@ -1448,3 +1448,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최초 incident 순서가 B1→C2인 단일 pair이므로 B1 제외 route를 즉시 발행하지 않았다. terminal state는 `S2_EXPANSION_REQUIRED`, route와 global B1 default는 모두 미발행이다.
 - 정식 export 63개 파일을 `benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_5f4f41a7_2/`에 보존했다. export SHA-256은 `5577d8bf54352a9b9930331e3c99d1af761d85211b197ebb9c959cee6de83d55`이며 정확한 경로에서 verifier가 freeze·Measurement·post-hoc·policy·전체 파일을 다시 열어 통과했다.
 - 사람용 해석은 `docs/experiments/sdk-routing-s2-live-result.md`에 기록했다. 다음 후보는 incident profile의 반대 순서 C2→B1 pair이며 별도 새 Plan과 최대 9 model turns 사용자 승인이 필요하다. Config 확대와 S3는 시작하지 않는다.
+
+## SDK 라우팅 S2 incident 역순 live pair 완료
+
+- 작업일: 2026-08-08. 사용자가 incident profile의 반대 순서 실행과 별도 최대 9 model turns를 승인했다. 기존 정책 계산기를 바꾸거나 새 하네스를 만들지 않고, stage-generic live controller에 최초 export 결박·선택 profile 역순 Plan·결합 status/export 경로를 연결했다.
+- source commit `faecb246ec442b79d375ad4ebd51a230dca11c1e`의 회귀 record는 S0 `9 passed`, B1 retry `3 passed`, B1 전체 `74 passed`, Runner 전체 `220 passed`, S2 표적 `17 passed`다. Candidate artifact commit은 `4507686`이다.
+- 첫 zero-turn create는 역순 Plan이 선택하지 않은 config fixture identity까지 유지해 preflight semantics 집합 검증에서 fail-closed로 중단됐다. 역순 Plan fixture를 승인된 incident profile 하나로 제한했고 `DEV-20260808-002`에 원인과 해결을 기록했다. 거부된 artifact 8개와 외부 state 파일 46개는 정확한 두 경로 확인 뒤 삭제했으며 model turn은 0회였다.
+- 최종 candidate는 `benchmarks/artifacts/sdk-routing-s2-reverse-faecb24-r3/`이다. Experiment `exp_20260808_e2f0a870_3`, Plan fingerprint `e2f0a870804075172b0d6ccaccb643ff2b03e161beed1592fc9edfe87650ccae`, raw Plan SHA-256 `1fc920efdfe4f1e3d44c61b0b2aa062d6e2ff8167c3fe3f09e3a85ff4f39a070`, freeze SHA-256 `555dd4297d1a7c4bd012fb4f75f1bd74298be3df3f1da0acfa128a9bc031bc7d`이다.
+- C2→B1 두 Cell은 각각 3 turns로 `completed`·`SEALED`, 공개 Judge 성공에 도달했다. C2는 320,404 tokens·180.390초이며 사후 `INC-P2`에 실패했다. B1은 320,581 tokens·208.141초이며 사후 `INC-P1`에 실패했다. B1 retry·resume와 control effect는 0이고 reserve 3 turns는 미사용이다.
+- 최초 B1의 `INC-P1`은 역순에서도 관측됐지만 최초 `INC-P3`는 재현되지 않았고, 최초에 성공한 C2도 역순 `INC-P2`에 실패했다. 두 frozen route 조건 모두 충족되지 않아 결합 stage는 `S2_POLICY_READY`, incident profile은 `ROUTING_INCONCLUSIVE`, route와 global B1 default는 미발행이다.
+- 최초 63-file export 전체를 포함한 결합 export는 102개 파일이며 `benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_e2f0a870_3/`에 보존했다. aggregate SHA-256은 `df682d5a13945bc8cc9ef0b3a468800112c720fada89eca2f10bd6b46ae72bc8`이다. 사람용 보고서는 `docs/experiments/sdk-routing-s2-reverse-live-result.md`다. S3는 자동으로 열지 않는다.
