@@ -369,3 +369,18 @@ passed. Create also recorded an identical Plan build from a separate clean check
 and process, a sixteen-character resolved state root, maximum 114-character actual
 path probes, ChatGPT authentication, no API-key environment names, and zero model
 turns. See `docs/experiments/sdk-routing-s3-implementation-freeze.md`.
+
+The approved initial Plan later completed all four Cells with sixteen actual turns;
+the four profile-local reserve turns were unused. Compatibility C2 and B1 both
+passed, producing `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR`. Incident C2 and B1 both
+passed the public Judge but failed the same HCI-P1 through HCI-P6 post-hoc set after
+their final-report headings violated the exact grammar. Because both Variants failed
+the same profile and B1 used no retry/resume or control effect, the incident result
+is `ROUTING_INCONCLUSIVE` and the stage is `S3_INCONCLUSIVE`. No route, replication,
+or global B1 default was issued.
+
+The verified 63-file export is at
+`benchmarks/results/sdk-routing-s3-v1/exp_20260808_66099ac3_1/` with aggregate
+SHA-256 `16fcfddf337dc0b9244b99c816c4026414798543490e47f0194b33887b06adce`.
+The frozen termination rule forbids an opposite-order pair, further synthetic
+repetition, or S4 for this result. See `docs/experiments/sdk-routing-s3-live-result.md`.

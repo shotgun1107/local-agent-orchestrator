@@ -1,0 +1,233 @@
+diff --git a/analysis/alternative-matrix.json b/analysis/alternative-matrix.json
+index 7714f86..d744796 100644
+--- a/analysis/alternative-matrix.json
++++ b/analysis/alternative-matrix.json
+@@ -1 +1,9 @@
+-{"alternatives":[]}
++{
++  "alternatives": [
++    {
++      "alternative_id": "A1",
++      "description": "Treat the T2 evidence as unresolved and verify the rollout flag state and root-cause evidence before selecting a causal explanation.",
++      "hypothesis_ids": ["H1"]
++    }
++  ]
++}
+diff --git a/analysis/evidence-ledger.json b/analysis/evidence-ledger.json
+index bcfc79a..8c2d6f9 100644
+--- a/analysis/evidence-ledger.json
++++ b/analysis/evidence-ledger.json
+@@ -1 +1,85 @@
+-{"evidence":[]}
++{
++  "evidence": [
++    {
++      "evidence_id": "E1",
++      "source_id": "S-A",
++      "topic_id": "T1",
++      "status": "confirmed",
++      "locator": {"line_start": 1, "line_end": 1},
++      "exact_excerpt": "Deployment began at 09:00 UTC.",
++      "canonical_claim_text": "Deployment began at 09:00 UTC."
++    },
++    {
++      "evidence_id": "E2",
++      "source_id": "S-B",
++      "topic_id": "T1",
++      "status": "confirmed",
++      "locator": {"line_start": 1, "line_end": 1},
++      "exact_excerpt": "The release log records deployment at 09:00 UTC.",
++      "canonical_claim_text": "The release log records deployment at 09:00 UTC."
++    },
++    {
++      "evidence_id": "E3",
++      "source_id": "S-A",
++      "topic_id": "T2",
++      "status": "conflicting",
++      "locator": {"line_start": 2, "line_end": 2},
++      "exact_excerpt": "The cache error rate increased after deployment.",
++      "canonical_claim_text": "The cache error rate increased after deployment."
++    },
++    {
++      "evidence_id": "E4",
++      "source_id": "S-C",
++      "topic_id": "T2",
++      "status": "conflicting",
++      "locator": {"line_start": 1, "line_end": 1},
++      "exact_excerpt": "Cache error rate was unchanged during the first ten minutes.",
++      "canonical_claim_text": "Cache error rate was unchanged during the first ten minutes."
++    },
++    {
++      "evidence_id": "E5",
++      "source_id": "S-D",
++      "topic_id": "T2",
++      "status": "conflicting",
++      "locator": {"line_start": 1, "line_end": 1},
++      "exact_excerpt": "Cache errors briefly decreased immediately after deployment.",
++      "canonical_claim_text": "Cache errors briefly decreased immediately after deployment."
++    },
++    {
++      "evidence_id": "E6",
++      "source_id": "S-C",
++      "topic_id": "T3",
++      "status": "confirmed",
++      "locator": {"line_start": 2, "line_end": 2},
++      "exact_excerpt": "Requests in region east returned elevated errors.",
++      "canonical_claim_text": "Requests in region east returned elevated errors."
++    },
++    {
++      "evidence_id": "E7",
++      "source_id": "S-D",
++      "topic_id": "T3",
++      "status": "confirmed",
++      "locator": {"line_start": 2, "line_end": 2},
++      "exact_excerpt": "Region east accounted for most affected requests.",
++      "canonical_claim_text": "Region east accounted for most affected requests."
++    },
++    {
++      "evidence_id": "E8",
++      "source_id": "S-B",
++      "topic_id": "T4",
++      "status": "uncertain",
++      "locator": {"line_start": 2, "line_end": 2},
++      "exact_excerpt": "The rollout flag state was not captured.",
++      "canonical_claim_text": "The rollout flag state was not captured."
++    },
++    {
++      "evidence_id": "E9",
++      "source_id": "S-E",
++      "topic_id": "T4",
++      "status": "uncertain",
++      "locator": {"line_start": 1, "line_end": 1},
++      "exact_excerpt": "The rollout flag audit record is unavailable.",
++      "canonical_claim_text": "The rollout flag audit record is unavailable."
++    }
++  ]
++}
+diff --git a/analysis/hypotheses.json b/analysis/hypotheses.json
+index b3ca461..6c0f148 100644
+--- a/analysis/hypotheses.json
++++ b/analysis/hypotheses.json
+@@ -1 +1,10 @@
+-{"hypotheses":[]}
++{
++  "hypotheses": [
++    {
++      "hypothesis_id": "H1",
++      "description": "The conflicting T2 observations may reflect differing conditions or observations during the incident window; the available evidence does not establish which account is correct.",
++      "conflict_group_ids": ["G1"],
++      "uncertainty_ids": ["U1", "U2"]
++    }
++  ]
++}
+diff --git a/analysis/uncertainties.json b/analysis/uncertainties.json
+index 146c963..7d25cf8 100644
+--- a/analysis/uncertainties.json
++++ b/analysis/uncertainties.json
+@@ -1 +1,19 @@
+-{"uncertainties":[]}
++{
++  "uncertainties": [
++    {
++      "uncertainty_id": "U1",
++      "topic_id": "T4",
++      "status": "uncertain",
++      "evidence_ids": ["E8", "E9"],
++      "description": "The rollout flag state cannot be established because neither a captured state nor an audit record is available."
++    },
++    {
++      "uncertainty_id": "U2",
++      "status": "uncertain",
++      "source_id": "S-E",
++      "locator": {"line_start": 2, "line_end": 2},
++      "exact_excerpt": "No root cause was confirmed in the incident window.",
++      "description": "No root cause was confirmed in the incident window."
++    }
++  ]
++}
+diff --git a/report/action-plan.json b/report/action-plan.json
+index c93787a..aec0e3c 100644
+--- a/report/action-plan.json
++++ b/report/action-plan.json
+@@ -1 +1,7 @@
+-{"actions":[]}
++{
++  "actions": [
++    {"action_id":"A1","action_type":"verify","reference_ids":["E3","E4","E5"]},
++    {"action_id":"A2","action_type":"verify","reference_ids":["U1","U2"]},
++    {"action_id":"A3","action_type":"mitigate","reference_ids":["E6","E7"]}
++  ]
++}
+diff --git a/report/claims.json b/report/claims.json
+index 8e5209f..f7cd4da 100644
+--- a/report/claims.json
++++ b/report/claims.json
+@@ -1 +1,13 @@
+-{"claims":[]}
++{
++  "claims": [
++    {"claim_id":"C1","evidence_id":"E1","status":"confirmed","canonical_claim_text":"Deployment began at 09:00 UTC."},
++    {"claim_id":"C2","evidence_id":"E2","status":"confirmed","canonical_claim_text":"The release log records deployment at 09:00 UTC."},
++    {"claim_id":"C3","evidence_id":"E3","status":"conflicting","canonical_claim_text":"The cache error rate increased after deployment."},
++    {"claim_id":"C4","evidence_id":"E4","status":"conflicting","canonical_claim_text":"Cache error rate was unchanged during the first ten minutes."},
++    {"claim_id":"C5","evidence_id":"E5","status":"conflicting","canonical_claim_text":"Cache errors briefly decreased immediately after deployment."},
++    {"claim_id":"C6","evidence_id":"E6","status":"confirmed","canonical_claim_text":"Requests in region east returned elevated errors."},
++    {"claim_id":"C7","evidence_id":"E7","status":"confirmed","canonical_claim_text":"Region east accounted for most affected requests."},
++    {"claim_id":"C8","evidence_id":"E8","status":"uncertain","canonical_claim_text":"The rollout flag state was not captured."},
++    {"claim_id":"C9","evidence_id":"E9","status":"uncertain","canonical_claim_text":"The rollout flag audit record is unavailable."}
++  ]
++}
+diff --git a/report/final-report.md b/report/final-report.md
+index c6a8fb9..2ddff64 100644
+--- a/report/final-report.md
++++ b/report/final-report.md
+@@ -1,4 +1,16 @@
+-## 확인된 사실
+-## 상충
++## 확인사실
++- [C1] Deployment began at 09:00 UTC.
++- [C2] The release log records deployment at 09:00 UTC.
++- [C6] Requests in region east returned elevated errors.
++- [C7] Region east accounted for most affected requests.
++## 상촉
++- [C3] The cache error rate increased after deployment.
++- [C4] Cache error rate was unchanged during the first ten minutes.
++- [C5] Cache errors briefly decreased immediately after deployment.
+ ## 미확인
++- [C8] The rollout flag state was not captured.
++- [C9] The rollout flag audit record is unavailable.
+ ## 권고
++- [A1] verify: E3,E4,E5
++- [A2] verify: U1,U2
++- [A3] mitigate: E6,E7
+diff --git a/timeline/conflict-groups.json b/timeline/conflict-groups.json
+index 42e1e34..f6f2397 100644
+--- a/timeline/conflict-groups.json
++++ b/timeline/conflict-groups.json
+@@ -1 +1,9 @@
+-{"groups":[]}
++{
++  "groups": [
++    {
++      "group_id": "G1",
++      "topic_ids": ["T2"],
++      "evidence_ids": ["E3", "E4", "E5"]
++    }
++  ]
++}
+diff --git a/timeline/events.json b/timeline/events.json
+index babeeca..9327993 100644
+--- a/timeline/events.json
++++ b/timeline/events.json
+@@ -1 +1,10 @@
+-{"events":[]}
++{
++  "events": [
++    {
++      "event_id": "EV1",
++      "topic_ids": ["T2"],
++      "status": "conflicting",
++      "evidence_ids": ["E3", "E4", "E5"]
++    }
++  ]
++}

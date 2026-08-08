@@ -1514,3 +1514,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Artifact의 source commit, Plan fingerprint, Experiment ID, 독립 build, exact 회귀 5종, ChatGPT preflight, TaskEnvelope parity, checker identity와 zero-turn freeze seal도 모두 `OK`로 확인됐다. 실제 live 완주, checker 120초 완료와 WinError 5 재발 여부는 실행 전에는 확인할 수 없는 항목으로 남겼다.
 - 비차단 개선은 property 입력 deep copy(P2-a), protected path 방어 중복(P2-b), 공용 controller의 S1 명칭(P3-c) 세 건이다. 현재 기능·결정론·scope·fail-closed를 깨지 않고, 반영하면 동결 source identity를 바꿔 candidate 재생성이 필요하므로 이번 후보에는 적용하지 않는다. 실제 결과 뒤 별도 maintenance 후보로 보존한다.
 - 심사 원문은 `docs/reviews/benchmark-runner/claude-review-sdk-routing-s3-implementation-freeze.md`다. 다음 관문은 네 initial Cell의 정확한 순서와 최대 20 model turns에 대한 사용자 승인뿐이며, 승인 전 추가 구현·재검증·candidate 재생성·`run-next`는 하지 않는다.
+
+## SDK 라우팅 S3 initial live 완료와 synthetic 종료
+
+- 작업일: 2026-08-08. 사용자가 frozen initial 네 Cell 전체와 최대 20 model turns를 승인했다. Controller 순서 `cell_s3_a_1_c2` → `cell_s3_a_1_b1` → `cell_s3_b_1_b1` → `cell_s3_b_1_c2`로 실행했고 네 Cell 모두 4 turns, `completed`·`SEALED`, 공개 Judge 성공에 도달했다. Infrastructure·controller·seal·scope·secret·WinError 5 오류는 없었다.
+- 총 actual model turn은 16회, token은 1,489,373, Measurement 합산 wall-clock은 863.563초다. 두 B1 Cell 모두 retry·resume·intermediate control effect 0이며 profile별 reserve 2 turns는 사용하지 않았다.
+- Compatibility profile은 C2/B1 모두 HCR post-hoc까지 통과해 `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR`다. B1은 C2보다 token 11.3%, wall-clock 6.2% 많았지만 단일 pair 효율 관측은 route 근거가 아니다.
+- Incident profile은 C2/B1 모두 공개 Judge 성공 뒤 HCI-P1~P6 전체가 post-hoc `fail`로 봉인됐다. 두 `final-report.md`가 exact 한글 heading grammar를 위반했고 report 선행 parse 예외가 checker의 fail-closed 경로에서 모든 HCI를 실패 처리했다. 따라서 여섯 독립 결함을 각각 주장하지 않고 공통 report grammar 오류로 세부 판별이 닫혔다고 해석한다.
+- Incident B1은 C2보다 token 21.3%, wall-clock 25.0% 많았으나 양쪽 모두 profile 실패이고 B1 control effect가 없어 귀속할 수 없다. Profile은 `ROUTING_INCONCLUSIVE`, stage는 `S3_INCONCLUSIVE`, replication·route·global B1 default는 모두 미발행이다.
+- 정식 export 63개 파일을 `benchmarks/results/sdk-routing-s3-v1/exp_20260808_66099ac3_1/`에 보존했다. Aggregate SHA-256은 `16fcfddf337dc0b9244b99c816c4026414798543490e47f0194b33887b06adce`이며 verifier가 freeze·Measurement·Evidence·post-hoc·policy·exact 파일 집합을 다시 열어 통과했다.
+- 사람용 보고서는 `docs/experiments/sdk-routing-s3-live-result.md`다. Frozen 종료선에 따라 역순 pair·세 번째 pair·추가 synthetic fixture·S4를 열지 않고 이번 시험을 종료한다. Checker의 전역 parse fail-closed와 public Check grammar 범위는 별도 maintenance 후보일 뿐, 현재 봉인 결과를 고치거나 처음부터 자동 재실행하지 않는다.
