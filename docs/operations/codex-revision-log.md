@@ -1458,3 +1458,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - C2→B1 두 Cell은 각각 3 turns로 `completed`·`SEALED`, 공개 Judge 성공에 도달했다. C2는 320,404 tokens·180.390초이며 사후 `INC-P2`에 실패했다. B1은 320,581 tokens·208.141초이며 사후 `INC-P1`에 실패했다. B1 retry·resume와 control effect는 0이고 reserve 3 turns는 미사용이다.
 - 최초 B1의 `INC-P1`은 역순에서도 관측됐지만 최초 `INC-P3`는 재현되지 않았고, 최초에 성공한 C2도 역순 `INC-P2`에 실패했다. 두 frozen route 조건 모두 충족되지 않아 결합 stage는 `S2_POLICY_READY`, incident profile은 `ROUTING_INCONCLUSIVE`, route와 global B1 default는 미발행이다.
 - 최초 63-file export 전체를 포함한 결합 export는 102개 파일이며 `benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_e2f0a870_3/`에 보존했다. aggregate SHA-256은 `df682d5a13945bc8cc9ef0b3a468800112c720fada89eca2f10bd6b46ae72bc8`이다. 사람용 보고서는 `docs/experiments/sdk-routing-s2-reverse-live-result.md`다. S3는 자동으로 열지 않는다.
+
+## SDK 라우팅 S3 complex/high-risk revision 1 명세 후보
+
+- 작업일: 2026-08-08. 사용자가 S2 `ROUTING_INCONCLUSIVE` 뒤 S3 명세 작성과 Claude read-only 심사를 요청했다. 이 단계에서는 구현, fixture·checker 생성, 테스트, 실제 model turn, 하위 에이전트 호출을 하지 않았다.
+- `docs/design/sdk-routing-s3-complex-high-risk-spec.md`에 revision 1 `review_candidate`를 작성했다. 419줄·26,222 bytes, SHA-256 `420828ad1993f441e778ec98237d028ee4965a51f2ac46eec26ca4a53e06e0ac`다.
+- S3 질문을 “4-Task high-risk 작업에서 B1 Task 경계·중간 Check·retry/resume가 C2가 남기는 실제 결함을 차단·수정하는가”로 제한했다. 단순 Variant 승패는 route 근거가 아니며 최초 Check 실패→downstream 차단→reserve turn 수정→같은 Check 통과→C2 mapped property 실패가 봉인돼야 attributable control effect로 센다.
+- Fixture A는 4단계 compatibility refactor, Fixture B는 다중 predecessor conflicting incident report다. 두 fixture 모두 공개 입력·Check·property 관계만 사용하며 hidden golden, Variant별 fixture와 비공개 정답은 금지했다.
+- 최초 Plan은 4 Cell base 16 + B1 profile별 reserve 2의 최대 20 turns다. Mechanistic replication predicate가 있는 profile만 반대 순서 pair를 별도 최대 10 turns로 한 번 열 수 있다. 두 order의 같은 control/property 패턴이 재현되지 않으면 `ROUTING_INCONCLUSIVE`로 닫고 S4·세 번째 pair·추가 synthetic fixture를 금지했다.
+- 기존 stage-generic Runner·controller·runtime·Adapter·Judge·Measurement·seal을 재사용한다. 새 S3 controller·상태 기계·하네스, S1/S2 재실행과 artifact 변경은 허용하지 않는다. 구현 전 관문은 Claude 심사와 사용자 동결이다.
+- Claude 전체 심사 정본은 `docs/prompts/benchmark-runner/claude-review-prompt-sdk-routing-s3-complex-high-risk-spec.md`, 95줄·7,744 bytes, SHA-256 `4828e03edf743c9140324444115ba652e8f99c8f93c5cf06965e709b165be701`이다. 새 세션 복붙 입력은 `docs/prompts/benchmark-runner/claude-session-input-sdk-routing-s3-review.md`, 15줄·1,105 bytes, SHA-256 `f2f093b5dcc5bc221af84a02c88add809c48cec1dbfdbc619a60999cee7d8ff8`다.
+- 심사는 파일 수정·테스트·model turn·하위 에이전트 없이 명세 동결 가능성만 판정한다. 추가 시험을 권고할 때 어떤 route·동결 결정·fail-closed 경계를 바꾸는지 요구하며, 무결정 재검증·반복 전체 회귀·cross-clone·P1-zero gate·새 하네스 권고를 금지했다.
