@@ -1,7 +1,7 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_13_phase_d_spec_review_candidate`
-- 설계 revision: 13
+- 문서 상태: `revision_14_phase_d_r2_closure_rereview_candidate`
+- 설계 revision: 14
 - 작성일: 2026-08-09
 - Phase B 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
 - Phase C 최초 구현 commit: `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`
@@ -15,8 +15,9 @@
 - Phase B 최종 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md) — P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`
 - Phase C 결과: [model-free 구현 결과](../experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md) — 표적 `33 passed`, 영향 회귀 `19 passed, 1 skipped`, actual model turn 0
 - 현재 완료: Phase C Schema·SS1 Fake Adapter·passive observer·property/triage 순수 구현과 model-free targeted test
-- Phase D 후보: [snapshot·checker 명세 revision 1](./sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — 외부 심사 전, artifact 제작 미승인
-- 현재 허용: Phase D 명세와 읽기 전용 심사 자료 작성
+- Phase D revision 1 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-r1.md) — P0 0건, P1 3건, P2 2건, same-repository independence와 Profile I 구조 예외 수용, artifact `NO-GO`
+- Phase D 후보: [snapshot·checker 명세 revision 2](./sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — P1/P2 closure 재심사 전, artifact 제작 미승인
+- 현재 허용: Phase D revision 2 명세와 읽기 전용 closure 심사 자료 작성
 - 현재 금지: Phase D snapshot·fixture·reference·checker artifact, Phase E live candidate, Phase F model turn
 
 ## 1. 목적과 결론
@@ -30,7 +31,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. ChatGPT Pro의 최종 읽기 전용 심사는 남은 P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`로 판정했고 사용자가 Phase C model-free 구현을 별도로 승인했다. Phase C는 commit `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`에서 구현되고 승인 범위의 표적 시험을 통과했다. Phase D 계약 대조 중 SS1 self-review literal이 상위 명세와 다른 사실을 발견해 commit `c4df661f608a7580f28738687e1c47100b2e5093`에서 exact 문구와 고정 회귀를 교정했고 표적 `33 passed`를 다시 확인했다. 이 완료는 Phase D artifact, live Plan 또는 model usage로 확대되지 않는다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. ChatGPT Pro의 최종 읽기 전용 심사는 남은 P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`로 판정했고 사용자가 Phase C model-free 구현을 별도로 승인했다. Phase C는 commit `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`에서 구현되고 승인 범위의 표적 시험을 통과했다. Phase D 계약 대조 중 SS1 self-review literal이 상위 명세와 다른 사실을 발견해 commit `c4df661f608a7580f28738687e1c47100b2e5093`에서 exact 문구와 고정 회귀를 교정했고 표적 `33 passed`를 다시 확인했다. Phase D revision 1은 외부 심사에서 same-repository independence와 Profile I 6-file 구조 예외를 수용받았지만 Worker-visible solution leakage, Judge operation matrix, repository J와 runtime J의 분리 부족 때문에 P1 3건과 artifact `NO-GO`를 받았다. revision 2는 이 세 경계와 P2 2건만 문서상 closure 후보로 보강했고 아직 외부 재심사를 통과하지 않았다. 이 완료는 Phase D artifact, live Plan 또는 model usage로 확대되지 않는다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
@@ -459,10 +460,12 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
 ### 7.1 필요한 경계
 
 - `W`: Worker가 읽고 쓸 수 있는 독립 workspace
-- `J`: checker·reference·positive evidence가 있는 Controller 전용 root. Opaque private parent와 J leaf 모두 inheritance를 제거하고 Controller·SYSTEM·Administrators 외 ACE를 허용하지 않음
+- `J runtime`: checker·reference·positive evidence가 있는 Controller 전용 실행 root. Phase B에서 `J`라고 부른 root이며, opaque private parent와 J leaf 모두 inheritance를 제거하고 Controller·SYSTEM·Administrators 외 ACE를 허용하지 않음
+- `J source`: Phase D에서 repository에 versioned하는 재현용 source bundle. runtime root가 아니며 frozen Git object에서 매 invocation의 새 `J runtime`으로 byte-exact 복사·hash 결합한 뒤에만 사용
+- `O`: Judge invocation마다 새로 만드는 empty opaque read/write output root
 - `S`: Plan·Measurement·seal이 있는 Controller 전용 외부 state root. J와 별도 opaque private parent와 같은 exact protected ACL 사용
 
-세 root는 서로의 하위, 상위, symlink, junction 대상이 아니어야 한다. Worker prompt·환경 변수·process argument에는 `J`·`S`의 path나 내용을 넣지 않는다.
+W, J runtime, O, S는 서로의 하위, 상위, symlink, junction 대상이 아니어야 한다. Worker prompt·환경 변수·process argument에는 J runtime·S의 path나 내용을 넣지 않는다. J source는 Worker/Judge 허용 root나 runtime fallback으로 사용할 수 없다. Phase D의 exact binding과 operation matrix는 [snapshot·checker 명세 revision 2](./sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md)가 소유한다.
 
 ### 7.2 Phase B exact 실행 표면
 
@@ -494,7 +497,7 @@ model turn을 probe 대용으로 쓰지 않는다. 요구 경계를 구현할 �
 Worker 격리와 Judge 격리는 별도다. snapshot/checker revision은 Judge subprocess에 다음을 동결한다.
 
 - model·network가 비활성인 dedicated checker permission profile
-- W read-only, J exact read roots, Judge output 전용 write root만 허용
+- W read-only, protected J runtime exact read/execute, fresh O read/write만 허용하고 S와 repository J source는 금지
 - API key·인증 token 환경변수 제거와 environment allowlist
 - checker source, interpreter, dependency allowlist와 각 SHA-256
 - network denial positive/negative preflight와 결과 hash
