@@ -436,17 +436,30 @@ class FakeTurnScript:
     effects: tuple[tuple[str, str], ...]
     result: dict[str, JsonValue]
     usage: SdkUsage = SdkUsage(input_tokens=10, output_tokens=5, total_tokens=15)
+    terminal_status: str = "completed"
+    error_kind: str | None = None
 
 
 class FakeSdkRuntime:
     """Deterministic no-model runtime that records SDK thread and turn boundaries."""
 
-    def __init__(self, workspace: Path, scripts: dict[str, FakeTurnScript]) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        scripts: dict[str, FakeTurnScript | tuple[FakeTurnScript, ...]],
+    ) -> None:
         self.workspace = Path(workspace).resolve()
         self.scripts = dict(scripts)
         self.started_threads: list[str] = []
         self.turns: list[dict[str, JsonValue]] = []
         self._usage_by_thread: dict[str, SdkUsage] = {}
+        self._task_turn_ordinals: dict[str, int] = {}
+
+    @property
+    def actual_model_turns(self) -> int:
+        """Fake turns exercise contracts only and never consume model usage."""
+
+        return 0
 
     def preflight(self) -> None:
         if not self.workspace.is_dir():
@@ -469,9 +482,20 @@ class FakeSdkRuntime:
         if thread.id not in self._usage_by_thread:
             raise ValueError("unknown fake SDK thread")
         try:
-            script = self.scripts[task_id]
+            configured = self.scripts[task_id]
         except KeyError as exc:
             raise ValueError(f"missing fake SDK script for {task_id}") from exc
+        task_turn_ordinal = self._task_turn_ordinals.get(task_id, 0) + 1
+        if isinstance(configured, tuple):
+            if task_turn_ordinal > len(configured):
+                raise ValueError(
+                    f"fake SDK script sequence exhausted for {task_id} "
+                    f"at turn {task_turn_ordinal}"
+                )
+            script = configured[task_turn_ordinal - 1]
+        else:
+            script = configured
+        self._task_turn_ordinals[task_id] = task_turn_ordinal
         for relative, content in script.effects:
             destination = (self.workspace / relative).resolve()
             if not destination.is_relative_to(self.workspace):
@@ -489,15 +513,17 @@ class FakeSdkRuntime:
             {
                 "thread_id": thread.id,
                 "task_id": task_id,
+                "task_turn_ordinal": task_turn_ordinal,
                 "prompt": prompt,
                 "output_schema_title": str(output_schema.get("title", "")),
             }
         )
         return SdkTurnResult(
-            terminal_status="completed",
+            terminal_status=script.terminal_status,
             raw_result=script.result,
             cumulative_usage=cumulative,
             duration_seconds=0.001,
+            error_kind=script.error_kind,
         )
 
     def close(self) -> None:
