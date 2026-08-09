@@ -77,6 +77,7 @@ def _identity(
     sid: str,
     *,
     elevated_raw: int = 0,
+    restricted_sid_sha256s: list[str] | None = None,
     capability_sid_sha256s: list[str] | None = None,
 ) -> WindowsProcessIdentityObservation:
     calls = [
@@ -92,7 +93,7 @@ def _identity(
         "integrity_level_sid": "S-1-16-4096",
         "token_is_elevated_raw": elevated_raw,
         "token_is_app_container_raw": 0,
-        "restricted_sid_sha256s": [],
+        "restricted_sid_sha256s": sorted(set(restricted_sid_sha256s or [])),
         "capability_sid_sha256s": sorted(set(capability_sid_sha256s or [])),
         "calls": [item.model_dump(mode="json") for item in calls],
     }
@@ -128,7 +129,7 @@ def _workspace_acl_transition(
     initial_hash = sha256_bytes(initial_ace.encode("utf-8"))
     added_hash = sha256_bytes(added_ace.encode("utf-8"))
     return WorkspaceAclTransitionObservation(
-        selection_method="initial_acl+exact_w_only_ace_delta+p01_capability_sid",
+        selection_method="initial_acl+exact_w_only_ace_delta+p01_restricted_sid",
         initial_W_acl_sddl_sha256=initial_acl_sha256,
         active_W_acl_sddl_sha256=ONE,
         initial_W_dacl_control_sha256=TWO,
@@ -150,7 +151,7 @@ def _workspace_acl_transition(
         W_volume_unchanged=True,
         J_identity_unchanged=True,
         S_identity_unchanged=True,
-        P01_capability_contains_added_ace_sid=True,
+        P01_restricted_contains_added_ace_sid=True,
         derived_transition_passed=True,
     )
 
@@ -911,7 +912,7 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
     sandbox_identity = _identity(
         "S-1-5-21-1-2-3-1001",
         elevated_raw=0,
-        capability_sid_sha256s=[capability_hash],
+        restricted_sid_sha256s=[capability_hash],
     )
     controller_identity = _identity("S-1-5-21-1-2-3-1000", elevated_raw=1)
     probes = _passing_probes(manifest, sandbox_identity)
@@ -970,12 +971,12 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         verify_runtime_boundary_bundle(bundle)
 
 
-def test_workspace_acl_transition_is_bound_to_exact_p01_capability_sid() -> None:
+def test_workspace_acl_transition_is_bound_to_exact_p01_restricted_sid() -> None:
     capability_sid = "S-1-5-21-10-20-30-1193176752"
     capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
     P01 = _identity(
         "S-1-5-21-1-2-3-1001",
-        capability_sid_sha256s=[capability_hash],
+        restricted_sid_sha256s=[capability_hash],
     )
     evidence = _workspace_acl_transition(capability_sid)
 
@@ -997,7 +998,7 @@ def test_workspace_acl_transition_rejects_an_extra_ace() -> None:
     capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
     P01 = _identity(
         "S-1-5-21-1-2-3-1001",
-        capability_sid_sha256s=[capability_hash],
+        restricted_sid_sha256s=[capability_hash],
     )
     evidence = _workspace_acl_transition(capability_sid)
     forged = evidence.model_copy(
