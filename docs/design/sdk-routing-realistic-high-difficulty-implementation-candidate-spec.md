@@ -1,16 +1,16 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_4_runtime_observation_corrected`
-- 설계 revision: 4
+- 문서 상태: `revision_5_runtime_boundary_profile_corrected`
+- 설계 revision: 5
 - 작성일: 2026-08-09
-- 기준 commit: `236afd3c481eebad4d46017f0cd26c1ebb16f6e8`
+- 기준 commit: `b9de58ed8436309b88990c36b8a370f6d9f62b37`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
 - revision 2 재심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md) — P0 0건, P1 4건 closed·P1-1 partial
 - runtime boundary: [Windows·SDK runtime boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)
-- runtime 교정: 최초 Phase B model-free 실행에서 드러난 SDK profile provenance 오류만 실제 bundled app-server surface에 맞춰 수정
-- 이번 교정의 금지: P01~P08 재실행, model turn, Phase C·snapshot·fixture·checker 선행 구현
+- runtime 교정: Phase B 009에서 확인된 built-in `:workspace`의 J read 허용을 전용 least-privilege profile로 차단
+- 이번 교정의 금지: model turn, Phase C·snapshot·fixture·checker 선행 구현
 
 ## 1. 목적과 결론
 
@@ -23,7 +23,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 사용자 승인으로 Phase B를 구현했으나 최초 model-free 실행은 P01 전에 SDK profile evidence gate에서 중단됐다. Revision 4는 실제 bundled app-server가 제공하는 `permissions`, `activePermissionProfile`, `permissionProfile/list`, `thread/started`에 맞춰 그 수집 계약만 교정한다. Windows·Codex SDK에서 `W`만 읽고 `J`·`S`는 읽을 수 없다는 실제 실행 증거는 새 manifest로 P01~P08을 실행하기 전까지 여전히 없다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 009는 P01까지 통과했지만 built-in `:workspace`로 P02의 J 내용이 노출돼 `NOT_READY`로 닫혔다. Revision 5는 공식 custom-profile 계약을 따라 `runtime-boundary-worker`가 `:workspace`를 상속하되 `:root=deny`, `:minimal=read`, network disabled를 적용하도록 SDK와 CLI 양쪽의 exact config를 교정한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
@@ -35,7 +35,7 @@ Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO
 - sandbox에서 시작된 child process도 같은 경계를 상속한다: <https://learn.chatgpt.com/codex/sandboxing>
 - sandbox와 approval policy는 별개이며 workspace 밖 쓰기와 network는 기본적으로 제한된다: <https://learn.chatgpt.com/codex/agent-approvals-security>
 - stable `codex sandbox` helper는 permission profile과 cwd·config를 지정해 Codex의 native Windows sandbox 아래 임의 command를 model turn 없이 실행할 수 있다: <https://developers.openai.com/codex/developer-commands>
-- permission profile은 legacy `sandbox_mode`/`--sandbox`와 조합되지 않는다: <https://learn.chatgpt.com/codex/permissions>
+- permission profile은 legacy `sandbox_mode`/`--sandbox`와 조합되지 않으며, custom profile에서 broad root deny와 narrower workspace/minimal 허용을 구성할 수 있다: <https://learn.chatgpt.com/codex/permissions>
 
 이 문서가 공식 문서에서 추론하지 않는 것은 다음과 같다.
 
@@ -44,7 +44,7 @@ Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO
 3. Windows `unelevated` fallback을 `elevated`와 같은 증거로 인정하지 않는다.
 4. `/sandbox-add-read-dir` 같은 session read grant는 `J`·`S` 격리를 약화할 수 있으므로 비교 실행 중 사용하지 않는다.
 
-새 비교 계보는 built-in permission profile `:workspace`만 사용한다. SDK thread/turn의 legacy `sandbox` argument는 생략하며 app-server config에 `default_permissions=":workspace"`를 명시한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
+새 비교 계보는 `runtime-boundary-worker` custom permission profile만 사용한다. 이 profile은 built-in `:workspace`를 상속해 W write를 유지하면서 `:root=deny`, `:minimal=read`, network disabled를 exact override로 고정한다. SDK thread/turn의 legacy `sandbox` argument는 생략한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
 
 exact executable·config·permission profile binding과 elevated 경계를 runtime-boundary 명세대로 증명할 수 없으면 Adapter 구현으로 넘어가지 않고 `RUNTIME_BOUNDARY_NOT_PROVEN`으로 닫는다.
 
@@ -54,7 +54,7 @@ exact executable·config·permission profile binding과 elevated 경계를 runti
 
 | 현재 파일 | 재사용 책임 | 허용되는 최소 확장 후보 |
 |---|---|---|
-| `tools/benchmark-runner/src/benchmark_runner/sdk_common.py` | pinned Codex SDK, ChatGPT 인증, thread start/turn, usage와 timeout | 새 track의 `:workspace` permission-profile mode, bundled executable/config identity Evidence. 기존 S1~S3 legacy mode 변경 금지 |
+| `tools/benchmark-runner/src/benchmark_runner/sdk_common.py` | pinned Codex SDK, ChatGPT 인증, thread start/turn, usage와 timeout | 새 track의 `runtime-boundary-worker` permission-profile mode, bundled executable/config identity Evidence. 기존 S1~S3 legacy mode 변경 금지 |
 | `tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py` | 같은 thread를 유지하는 기존 C1 실행 형태와 fresh-thread C2 형태 | `SS1PersistentAdapter`, self-request reserve, Task별 turn trace. 기존 C1/C2 의미 변경 금지 |
 | `tools/benchmark-runner/src/benchmark_runner/sdk_cells.py` | 공통 Plan→Adapter→Judge→Measurement→seal lifecycle, exact runtime admission, model-turn 계수, Evidence redaction | `AdapterAdmission` registry에 exact SS1/B1 fake·live runtime과 turn counter 등록. 임의 subclass·duck typing 허용 금지 |
 | `tools/benchmark-runner/src/benchmark_runner/adapter.py` | 기존 `B1SequentialAdapter`와 B1 normalized metrics | versioned B1 public report의 boundary record·reserve·feedback Evidence 검증. B1 CLI·원장 소유권 변경 금지 |
@@ -103,7 +103,7 @@ preflight_evidence_validator
 - 등록되지 않은 Adapter, subclass, runtime, turn counter는 계속 거부한다.
 - SS1의 actual model turns는 runtime counter와 turn trace 길이가 같아야 한다.
 - B1은 report turns, public boundary records와 adapter normalized turn count가 같아야 한다.
-- 새 track의 두 live runtime 모두 permission profile `:workspace`, legacy sandbox argument omitted를 preflight Evidence로 증명해야 한다.
+- 새 track의 두 live runtime 모두 permission profile `runtime-boundary-worker`, exact least-privilege override와 legacy sandbox argument omitted를 preflight Evidence로 증명해야 한다.
 
 ### 3.3 B1 turn-boundary hook
 
@@ -125,8 +125,8 @@ B1 원장·Task scheduling·Check와 retry/resume 결정권은 계속 `stages/b1
 
 ```text
 runtime_contract_version: 2
-permission_profile_id: Literal[:workspace]
-default_permissions_override: Literal[:workspace]
+permission_profile_id: Literal[runtime-boundary-worker]
+default_permissions_override: Literal[runtime-boundary-worker]
 thread_sandbox_argument: Literal[omitted]
 turn_sandbox_argument: Literal[omitted]
 legacy_sandbox_settings_present: Literal[False]
@@ -136,12 +136,12 @@ active_profile_provenance_required: Literal[True]
 ```
 
 - SS1과 B1 모두 같은 contract v2를 사용한다.
-- SS1 `CodexSdkRuntime`은 bundled app-server에 `default_permissions=":workspace"` config override를 주고 thread/turn의 `sandbox` 인자를 생략한다.
+- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 6개를 주고 thread/turn의 `sandbox` 인자를 생략한다.
 - B1은 versioned RunSpec·TaskEnvelope와 public report에 위 필드를 추가하고 `CodexRuntime`이 같은 config override·sandbox 생략을 사용한다.
 - B1의 기존 `SandboxMode.read_only|workspace_write` v1 계약과 기존 S1~S3 실행 bytes는 변경하지 않는다.
-- active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `:workspace`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
+- active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `runtime-boundary-worker`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
 - public preflight/report에는 effective permission profile ID, config identity hash와 legacy argument 부재를 봉인한다.
-- Phase B는 `permissionProfile/list`에서 허용된 `:workspace`를 확인하고 empty `thread/start`에 `permissions=":workspace"`를 직접 보낸 뒤 raw response의 `activePermissionProfile.id`를 봉인한다. response와 `thread/started`의 thread ID가 같아야 하며 request에 `sandbox` key가 없어야 한다. raw `approvalPolicy="never"`만 `deny_all`로 정규화하고 `ThreadStartResponse.sandbox`는 profile 증거로 사용하지 않는다.
+- Phase B는 `permissionProfile/list`에서 허용된 `runtime-boundary-worker`를 확인하고 empty `thread/start`에 같은 profile을 직접 보낸 뒤 raw response의 `activePermissionProfile.id`를 봉인한다. response와 `thread/started`의 thread ID가 같아야 하며 request에 `sandbox` key가 없어야 한다. raw `approvalPolicy="never"`만 `deny_all`로 정규화하고 `ThreadStartResponse.sandbox`는 profile 증거로 사용하지 않는다.
 
 ## 4. suite와 Plan 계약
 
@@ -463,8 +463,8 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
 
 - Python SDK가 `codex_cli_bin.bundled_codex_path()`로 resolve한 exact `codex.exe`를 사용한다.
 - 같은 파일을 SDK app-server와 `codex sandbox` probe에 사용하고 path·version·SHA-256을 결합한다.
-- SDK/CLI `0.144.4`, config stack, managed requirements, built-in permission profile `:workspace`, cwd, environment와 elevated identity가 모두 같아야 한다.
-- SDK profile list와 empty thread의 request/raw response/`thread/started` canonical JSON을 result 안에 넣고 requested/active profile `:workspace`, allowed=true, raw approval `never`, cwd=W, request `sandbox` key 부재, `turn/start` 0회를 독립 verifier가 다시 계산한다.
+- SDK/CLI `0.144.4`, config stack, managed requirements, custom permission profile `runtime-boundary-worker`, cwd, environment와 elevated identity가 모두 같아야 한다.
+- SDK profile list와 empty thread의 request/raw response/`thread/started` canonical JSON을 result 안에 넣고 requested/active custom profile, allowed=true, raw approval `never`, cwd=W, request `sandbox` key 부재, `turn/start` 0회를 독립 verifier가 다시 계산한다.
 - SDK thread/turn과 CLI command 어디에도 legacy sandbox argument가 없어야 한다. active config에 `sandbox_mode`·`sandbox_workspace_write`가 있으면 실패다.
 - Codex의 `elevated` 구현은 Windows token의 `TokenIsElevated`와 혼동하지 않는다. effective `windows.sandbox=elevated`, `windowsSandbox/readiness=ready`, Controller와 dedicated sandbox user의 TokenUser SID 차이, 모든 probe identity 일치를 typed result로 재계산한다.
 - W positive, J/S absolute·relative·enumeration·link·child·process-input·state read/write의 8개 argv와 64 KiB stream cap·30초 timeout을 manifest에 봉인한다. 결과는 P01~P08 discriminated union이며 enumeration·symlink/junction·child identity·환경/argument match·S read/create/replace를 각각 보존한다.
@@ -535,7 +535,7 @@ B가 실패하면 C를 억지로 진행하지 않는다. runtime 경계가 해�
 ChatGPT Pro는 구현하지 말고 다음을 read-only로 판정한다.
 
 1. 기존 Runner 구성요소를 재사용하면서도 새 Controller·Judge·seal을 복제하지 않는가?
-2. SDK의 profile list·explicit `permissions` request·raw `thread/start` response가 actual `:workspace` profile을 직접 증명하며 `thread/started` binding까지 재검증할 수 있는가?
+2. SDK의 profile list·explicit `permissions` request·raw `thread/start` response가 actual `runtime-boundary-worker` profile과 exact least-privilege config를 직접 증명하며 `thread/started` binding까지 재검증할 수 있는가?
 3. elevated 분류가 effective config·readiness·Controller/probe TokenUser SID에서 독립 재계산되고 `TokenIsElevated`를 잘못 쓰지 않는가?
 4. P01~P08 strict union이 각 복합 관측을 보존하고 verifier가 stored pass를 불신해 다시 계산하는가?
 5. `AdapterAdmission`, stage registry, SS1 factory와 B1 public hook이 실제 연결 공백을 닫는가?

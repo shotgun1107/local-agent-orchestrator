@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_11_workspace_restricted_sid_candidate`
+- 문서 상태: `revision_12_workspace_only_profile_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `0102f0de802a916975beafb6ed0b8342563e648b`
+- 기준 commit: `b9de58ed8436309b88990c36b8a370f6d9f62b37`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 여덟 번째 model-free 실행은 P01 JSON 수집까지 진행했지만 capability SID를 `TokenCapabilities`에서 찾은 잘못된 결합에서 중단됨. 설치된 runtime은 `cap_sids`로 `CreateRestrictedToken`을 호출하므로 candidate는 아직 증명되지 않음
-- 이번 교정 범위: 초기 ACL 기준선, exact W-only ACE delta, 추가 ACE SID hash와 P01 restricted SID hash 결합, J·S exact identity 유지와 model-free 회귀. 새 P01~P08 실행·model turn·Phase C는 포함하지 않음
+- 현재 상태: 아홉 번째 model-free 실행은 P01과 ACL restricted-SID 결합을 통과했지만 built-in `:workspace`가 J absolute read를 허용해 P02에서 즉시 `NOT_READY`로 중단됨. candidate는 아직 증명되지 않음
+- 이번 교정 범위: `:workspace`를 직접 쓰지 않고 이를 상속한 전용 `runtime-boundary-worker` profile에 `:root=deny`, `:minimal=read`, network disabled를 동결해 W만 다시 허용한다. model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -16,8 +16,8 @@ Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `code
 
 1. SDK app-server와 sandbox helper의 resolved executable path가 같다.
 2. executable SHA-256과 package metadata version·target이 같다.
-3. config override·managed requirements와 built-in permission profile `:workspace`의 effective identity가 같다.
-4. cwd, environment allowlist, `default_permissions=":workspace"`, approval=`deny_all`이 같고 legacy sandbox 인자는 양쪽 모두 없다.
+3. config override·managed requirements와 custom permission profile `runtime-boundary-worker`의 effective identity가 같다.
+4. cwd, environment allowlist, `default_permissions="runtime-boundary-worker"`, approval=`deny_all`이 같고 legacy sandbox 인자는 양쪽 모두 없다.
 5. 실제 SDK thread의 `activePermissionProfile.id`와 native Windows elevated sandbox 선택이 재계산 가능한 typed Evidence로 증명된다.
 6. actual model turns는 0이다.
 
@@ -29,9 +29,9 @@ Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `code
 - Windows subcommand는 `--cd`, `--config`, `--include-managed-config`, `--permission-profile`, `--profile`, `COMMAND...`을 지원한다: <https://developers.openai.com/codex/developer-commands>
 - app-server는 JSONL JSON-RPC를 사용하고 `thread/start`는 turn과 별개다: <https://developers.openai.com/codex/app-server>
 - native Windows elevated sandbox는 unelevated fallback보다 강하며 기본 후보로 사용해야 한다: <https://developers.openai.com/codex/windows/windows-sandbox>
-- permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않으며 `:workspace`는 runtime workspace root 쓰기와 최소 runtime 읽기를 제공한다: <https://learn.chatgpt.com/codex/permissions>
+- permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않는다. Custom profile은 `:workspace`를 상속하고 `:root="deny"`로 나머지 filesystem read를 제거한 뒤 `:minimal="read"`만 복원할 수 있으며, native Windows의 split deny-read는 elevated backend가 필요하다: <https://learn.chatgpt.com/codex/permissions>
 
-이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions=":workspace"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 `default_permissions=":workspace"`를 명시한다. `codex sandbox`도 `--permission-profile :workspace`를 사용한다. active config 어디에든 legacy `sandbox_mode`·`sandbox_workspace_write`가 있거나 CLI에 `--sandbox`가 들어가면 profile 결합이 무효이므로 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
+이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions="runtime-boundary-worker"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 같은 default를 명시한다. `codex sandbox`도 같은 custom profile과 exact 6개 override를 사용한다. Profile은 `:workspace`를 상속해 W write를 유지하되 `:root=deny`, `:minimal=read`, network disabled로 W 밖의 일반 read를 제거한다. override 추가·누락, active legacy `sandbox_mode`·`sandbox_workspace_write`, CLI `--sandbox`는 모두 결합 무효다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
 
 ## 2. 구현 책임과 금지
 
@@ -83,9 +83,9 @@ runtime:
   codex_bin_override_present: Literal[False]
   launch_args_override_present: Literal[False]
 configuration:
-  default_permissions: Literal[:workspace]
-  permission_profile_name: Literal[:workspace]
-  config_overrides[]
+  default_permissions: Literal[runtime-boundary-worker]
+  permission_profile_name: Literal[runtime-boundary-worker]
+  config_overrides[6]: exact sorted set
   effective_config_sha256
   config_sources[{kind, redacted_path_id, sha256}]
   managed_requirement_sources[{redacted_path_id, sha256}]
@@ -103,8 +103,8 @@ sdk_profile_probe:
   thread_start_request_method: Literal[thread/start]
   thread_started_notification_method: Literal[thread/started]
   notification_timeout_seconds: Literal[2]
-  expected_requested_permission_profile_id: Literal[:workspace]
-  expected_active_permission_profile_id: Literal[:workspace]
+  expected_requested_permission_profile_id: Literal[runtime-boundary-worker]
+  expected_active_permission_profile_id: Literal[runtime-boundary-worker]
   expected_approval_policy_raw: Literal[never]
   expected_cwd_role: Literal[W]
   require_sandbox_key_absent: Literal[True]
@@ -168,9 +168,9 @@ expected_actual_model_turns: Literal[0]
 
 1. `initialize`에 `capabilities.experimentalApi=true`를 보내고 `initialized`를 보낸다.
 2. `account/read`가 ChatGPT account임을 확인한다.
-3. 같은 cwd로 `permissionProfile/list`를 한 번 호출해 `id=":workspace"`가 정확히 하나이고 `allowed=true`인지 확인한다.
-4. `thread/start`를 정확히 한 번 raw JSON-RPC로 호출한다. request의 `cwd=W`, `approvalPolicy="never"`, `permissions=":workspace"`, `config.default_permissions=":workspace"`를 강제하고 `sandbox` key는 존재해서는 안 된다.
-5. raw response의 `activePermissionProfile.id == ":workspace"`, `approvalPolicy == "never"`, `cwd == W`를 확인한다. 같은 connection의 보장된 `thread/started.params.thread.id`는 response의 `thread.id`와 같아야 한다.
+3. 같은 cwd로 `permissionProfile/list`를 한 번 호출해 `id="runtime-boundary-worker"`가 정확히 하나이고 `allowed=true`인지 확인한다.
+4. `thread/start`를 정확히 한 번 raw JSON-RPC로 호출한다. request의 `cwd=W`, `approvalPolicy="never"`, `permissions="runtime-boundary-worker"`, 같은 `config.default_permissions`를 강제하고 `sandbox` key는 존재해서는 안 된다.
+5. raw response의 `activePermissionProfile.id == "runtime-boundary-worker"`, `approvalPolicy == "never"`, `cwd == W`를 확인한다. 같은 connection의 보장된 `thread/started.params.thread.id`는 response의 `thread.id`와 같아야 한다.
 6. thread를 닫고 app-server를 종료한다. `turn/start`는 호출하지 않는다.
 
 같은 connection의 전체 방향 결합 JSON-RPC transcript를 canonical JSON bytes로 `result.json` 안에 넣고 byte length와 SHA-256을 함께 기록한다. verifier는 base64를 decode해 JSON을 다시 parse하고, request key 부재·profile list·response field·thread ID binding·method ledger·hash를 직접 재계산한다. profile이 없거나 금지됨, response 오류, `activePermissionProfile=null`, 다른 profile, `thread/started` 누락·중복·다른 thread ID면 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. `approvalPolicy`의 wire 값 `never`만 내부 `deny_all`로 정규화한다.
@@ -184,8 +184,8 @@ resolved_executable_sha256
 config_identity_sha256
 initialize_experimental_api: bool
 permission_profile_list_request_count: nonnegative int
-workspace_permission_profile_match_count: nonnegative int
-workspace_permission_profile_allowed: bool
+selected_permission_profile_match_count: nonnegative int
+selected_permission_profile_allowed: bool
 thread_start_request_count: nonnegative int
 thread_start_response_thread_id_sha256
 thread_started_notification_thread_id_sha256
@@ -205,7 +205,7 @@ profile_failure_reason_codes[]
 derived_profile_passed: bool
 ```
 
-verifier는 embedded transcript에서 모든 derived field와 실패 코드를 다시 계산한다. 합격 조건은 account `chatgpt`, experimental flag true, `permissionProfile/list`의 유일한 `:workspace`가 allowed, exact method ledger, `thread/started` count 1, thread binding true, request `permissions=:workspace`, request에 `sandbox` key 없음, response active profile `:workspace`, raw approval `never`, cwd=W, legacy provenance false, `turn_start_request_count=0`, `actual_model_turns=0`의 conjunction이다. stored `derived_profile_passed`나 실패 코드가 재계산값과 다르면 Schema failure다.
+verifier는 embedded transcript에서 모든 derived field와 실패 코드를 다시 계산한다. 합격 조건은 account `chatgpt`, experimental flag true, `permissionProfile/list`의 유일한 `runtime-boundary-worker`가 allowed, exact method ledger, `thread/started` count 1, thread binding true, request와 response의 selected profile 일치, request에 `sandbox` key 없음, raw approval `never`, cwd=W, legacy provenance false, `turn_start_request_count=0`, `actual_model_turns=0`의 conjunction이다. stored `derived_profile_passed`나 실패 코드가 재계산값과 다르면 Schema failure다.
 
 ### 3.2 elevated 판별 surface
 
@@ -274,11 +274,14 @@ manifest의 모든 command는 shell 문자열이 아니라 argv 배열로 봉인
   <sdk_resolved_executable>,
   "sandbox",
   "--cd", <W>,
-  "--permission-profile", ":workspace",
+  "--permission-profile", "runtime-boundary-worker",
   "--include-managed-config",
-  "--config", "default_permissions=\":workspace\"",
+  "--config", "default_permissions=\"runtime-boundary-worker\"",
+  "--config", "permissions.runtime-boundary-worker.extends=\":workspace\"",
+  "--config", "permissions.runtime-boundary-worker.filesystem.\":minimal\"=\"read\"",
+  "--config", "permissions.runtime-boundary-worker.filesystem.\":root\"=\"deny\"",
+  "--config", "permissions.runtime-boundary-worker.network.enabled=false",
   "--config", "windows.sandbox=\"elevated\"",
-  <그 밖의 frozen config override마다 "--config", "key=value">,
   "--",
   <probe_python>, "-P",
   <W>/.orchestrator-probe/probe_runtime_boundary.py,
@@ -547,8 +550,8 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 1. exact 4-file set와 aggregate hash
 2. bundled executable path·version·SHA-256
 3. SDK·CLI package metadata hash
-4. embedded profile list·thread/start request/response·`thread/started`를 다시 parse해 actual `:workspace` profile·approval·cwd·sandbox key 부재·thread ID binding 확인
-5. effective config·`:workspace` permission profile·managed requirements identity와 legacy sandbox 부재
+4. embedded profile list·thread/start request/response·`thread/started`를 다시 parse해 actual `runtime-boundary-worker` profile·approval·cwd·sandbox key 부재·thread ID binding 확인
+5. effective config·custom least-privilege permission profile·managed requirements identity와 legacy sandbox 부재
 6. `windowsSandbox/readiness`, effective `windows.sandbox`, Controller/probe token-user SID와 W ACL transition으로 elevated classification 재계산
 7. P01~P08 strict union, exact order와 operation-specific observation에서 각 `derived_passed` 재계산
 8. 초기 W/J/S resolved root·volume·ACL identity와 W-only ACL transition·P01 SID 결합
@@ -562,7 +565,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 
 1. model-free manifest build
 2. 독립 verifier로 manifest와 bundled executable binding 확인
-3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions=":workspace"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
+3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions="runtime-boundary-worker"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
 5. Controller Win32 token observation과 준비 뒤 W/J/S ACL transition 수집
 6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회; P01 restricted SID와 W 추가 ACE를 결합한 뒤에만 P02 진행

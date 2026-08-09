@@ -167,10 +167,14 @@ def _denied() -> FileReadObservation:
 
 def _configuration() -> ConfigurationExpectation:
     return ConfigurationExpectation(
-        default_permissions=":workspace",
-        permission_profile_name=":workspace",
+        default_permissions="runtime-boundary-worker",
+        permission_profile_name="runtime-boundary-worker",
         config_overrides=[
-            'default_permissions=":workspace"',
+            'default_permissions="runtime-boundary-worker"',
+            'permissions.runtime-boundary-worker.extends=":workspace"',
+            'permissions.runtime-boundary-worker.filesystem.":minimal"="read"',
+            'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
+            "permissions.runtime-boundary-worker.network.enabled=false",
             'windows.sandbox="elevated"',
         ],
         include_managed_config=True,
@@ -305,7 +309,7 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
                 "id": "profiles-1",
                 "result": {
                     "data": [
-                        {"id": ":workspace", "allowed": True},
+                        {"id": "runtime-boundary-worker", "allowed": True},
                         {"id": ":read-only", "allowed": True},
                     ],
                     "nextCursor": None,
@@ -320,8 +324,8 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
                 "params": {
                     "cwd": str(W.resolve()),
                     "approvalPolicy": "never",
-                    "config": {"default_permissions": ":workspace"},
-                    "permissions": ":workspace",
+                    "config": {"default_permissions": "runtime-boundary-worker"},
+                    "permissions": "runtime-boundary-worker",
                     "ephemeral": True,
                 },
             },
@@ -332,7 +336,7 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
                 "id": "thread-1-request",
                 "result": {
                     "thread": {"id": thread_id},
-                    "activePermissionProfile": {"id": ":workspace"},
+                    "activePermissionProfile": {"id": "runtime-boundary-worker"},
                     "approvalPolicy": "never",
                     "cwd": str(W.resolve()),
                     "sandbox": "legacy-ignored",
@@ -354,7 +358,7 @@ def _policy() -> EffectivePolicyEvidence:
         "id": "config-1",
         "result": {
             "config": {
-                "default_permissions": ":workspace",
+                "default_permissions": "runtime-boundary-worker",
                 "windows": {"sandbox": "elevated"},
             },
             "layers": [
@@ -546,10 +550,10 @@ def test_complete_zero_turn_transcript_is_recomputed(tmp_path: Path) -> None:
         "thread/start": 1,
     }
     assert evidence.method_ledger.client_notification_method_counts == {"initialized": 1}
-    assert evidence.workspace_permission_profile_match_count == 1
-    assert evidence.workspace_permission_profile_allowed is True
-    assert evidence.requested_permission_profile_id == ":workspace"
-    assert evidence.active_permission_profile_id == ":workspace"
+    assert evidence.selected_permission_profile_match_count == 1
+    assert evidence.selected_permission_profile_allowed is True
+    assert evidence.requested_permission_profile_id == "runtime-boundary-worker"
+    assert evidence.active_permission_profile_id == "runtime-boundary-worker"
     assert evidence.thread_started_notification_count == 1
     assert evidence.turn_start_request_count == 0
     assert evidence.actual_model_turns == 0
@@ -583,9 +587,24 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
         assert command.argv[1:3] == ["sandbox", "--cd"]
         assert "--permission-profile" in command.argv
         assert "--sandbox" not in command.argv
-        assert 'default_permissions=":workspace"' in command.argv
+        assert 'default_permissions="runtime-boundary-worker"' in command.argv
+        assert 'permissions.runtime-boundary-worker.filesystem.":root"="deny"' in command.argv
         assert 'windows.sandbox="elevated"' in command.argv
     assert built.fixtures.p07_expected_answer_sha256 in built.commands[6].argv
+
+
+def test_configuration_rejects_weakened_runtime_boundary_profile() -> None:
+    payload = _configuration().model_dump(mode="json")
+    payload["config_overrides"] = [
+        value.replace(
+            'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
+            'permissions.runtime-boundary-worker.filesystem.":root"="read"',
+        )
+        for value in payload["config_overrides"]
+    ]
+
+    with pytest.raises(ValueError, match="exact frozen least-privilege set"):
+        ConfigurationExpectation.model_validate(payload)
 
 
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
@@ -631,9 +650,9 @@ def test_transcript_rejects_disallowed_workspace_profile(tmp_path: Path) -> None
         config_identity_sha256=_sha(manifest.configuration),
     )
 
-    assert evidence.workspace_permission_profile_allowed is False
+    assert evidence.selected_permission_profile_allowed is False
     assert evidence.derived_profile_passed is False
-    assert "WORKSPACE_PROFILE_NOT_ALLOWED" in evidence.profile_failure_reason_codes
+    assert "SELECTED_PROFILE_NOT_ALLOWED" in evidence.profile_failure_reason_codes
     assert verify_sdk_profile_provenance(manifest, evidence) is False
 
 
@@ -689,7 +708,7 @@ def test_collector_uses_named_profile_and_guaranteed_thread_started(
     method, params = client.raw_calls[1]
     assert method == "thread/start"
     assert isinstance(params, dict)
-    assert params["permissions"] == ":workspace"
+    assert params["permissions"] == "runtime-boundary-worker"
     assert "sandbox" not in params
     assert client.waited_for == ("thread/started", 2.0)
     assert evidence.derived_profile_passed is True
@@ -835,7 +854,7 @@ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
         "id": "config-1",
         "result": {
             "config": {
-                "default_permissions": ":workspace",
+                "default_permissions": "runtime-boundary-worker",
                 "windows": {"sandbox": "elevated"},
                 "sandbox_mode": None,
                 "sandbox_workspace_write": None,
@@ -874,7 +893,7 @@ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
         "id": "config-legacy",
         "result": {
             "config": {
-                "default_permissions": ":workspace",
+                "default_permissions": "runtime-boundary-worker",
                 "windows": {"sandbox": "elevated"},
                 "sandbox_mode": "workspace-write",
                 "sandbox_workspace_write": {},
