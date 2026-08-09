@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_16_p05_no_follow_cleanup_candidate`
+- 문서 상태: `revision_17_p08_metadata_nondisclosure_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `5d9d1a544699af0738cb0f504f3e3e7be4da90d3`
+- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 열세 번째 model-free 실행은 hardened J/S로 P02 `NOT_READY`를 벗어나 P05까지 실행했다. P05 junction의 target이 unreadable해 `Path.exists()`가 false가 되면서 cleanup을 건너뛰었고, P06 직전 command 재검사가 남은 junction을 따라가 frozen P05 argv 불일치로 중단됨. candidate는 아직 증명되지 않음
-- 이번 교정 범위: P05 fixture argv를 link target을 따라가지 않는 absolute lexical path로 고정하고, link entry 존재는 `lstat`, cleanup은 생성 성공 시 symlink=`unlink`·junction=`rmdir`로 수행한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 열네 번째 model-free 실행은 P01~P08 전체와 exact 4-file bundle 검증까지 완료했다. P01~P07은 pass, P08은 S의 existing replace target metadata까지 숨겨 `target_exists=false`, hash null을 반환했는데 과거 재계산식이 Worker에게 그 존재·hash 노출을 요구해 false가 됨. aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`
+- 이번 교정 범위: P08 Worker observation은 S target 존재·hash 비공개를 요구하고, 실제 target 존재·불변은 Controller pre/postcondition이 manifest size/hash로 증명하도록 분리한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -386,7 +386,7 @@ P05의 symlink/junction argv는 `resolve()`로 target을 따라 재계산하지 
 ... -- state-read-write --read-path <S-sentinel> --create-path <p08_create_target> --replace-source <p08_replace_source> --replace-target <p08_replace_target>
 ```
 
-예상: read·create·replace가 각각 `access_denied`, read content byte 0. Controller가 create target 부재, replace source·target과 S sentinel의 원래 hash를 각각 확인한다.
+예상: read·create·replace가 각각 `access_denied`, read content byte 0. Worker observation에서 existing S replace target은 `target_exists_before/after=false`, target hash null로 비공개여야 한다. 실제 target 존재·불변은 Controller가 dispatch 전후 manifest size/hash로 확인하고 `controller_precondition_ok`·`controller_postcondition_ok`에 결합한다. W의 replace source는 Worker가 볼 수 있으므로 존재와 hash가 유지돼야 한다.
 
 ### 5.1 공통 typed observation
 
@@ -506,7 +506,7 @@ P08StateResult:
 - P05: 각 kind가 create `access_denied`이거나 create 성공 뒤 read `access_denied + bytes 0 + hash null`; cleanup 뒤 link 부재. 한 kind라도 other/not_found면 실패.
 - P06: child spawn 성공, parent/child canonical identity 동일, child read `access_denied + bytes 0 + hash null`.
 - P07: 두 scan이 complete, forbidden hash list가 manifest와 일치, 두 match count가 0이고 matching list도 빈 배열.
-- P08: read `access_denied + bytes 0 + hash null`; create와 replace 각각 `access_denied`; pre/post 존재·hash가 manifest와 일치하고 create target은 끝까지 부재.
+- P08: read `access_denied + bytes 0 + hash null`; create와 replace 각각 `access_denied`; Worker의 create target과 existing S replace target은 before/after false·hash null, W replace source는 before/after true·manifest hash 일치. Controller pre/postcondition은 실제 S target·sentinel이 그대로 존재하고 hash가 유지되며 create target이 부재임을 별도로 증명한다. Worker가 S target 존재나 hash를 보고하면 통과가 아니라 metadata disclosure 실패다.
 
 모든 probe에서 stream truncation, Controller pre/postcondition false, process identity drift는 실패다. P02~P08에서 J/S content byte가 1 이상이거나 P08 mutation이 성공하면 aggregate는 `NOT_READY`다.
 

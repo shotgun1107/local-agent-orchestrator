@@ -1,9 +1,9 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_9_runtime_boundary_p05_cleanup_corrected`
-- 설계 revision: 9
+- 문서 상태: `revision_10_runtime_boundary_p08_nondisclosure_corrected`
+- 설계 revision: 10
 - 작성일: 2026-08-09
-- 기준 commit: `5d9d1a544699af0738cb0f504f3e3e7be4da90d3`
+- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
@@ -23,7 +23,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 013은 hardened J/S로 P02를 넘겨 P05까지 갔지만 unreadable junction target 때문에 cleanup 존재 확인이 false가 되어 P06 전에 멈췄다. Revision 9는 P05 fixture path를 no-follow lexical absolute path로 고정하고 link entry를 `lstat`, 종류별 cleanup으로 처리한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 014는 처음으로 8개 probe와 bundle 검증을 마쳤다. P01~P07은 통과했지만 P08의 강한 S metadata 비공개를 과거 판정식이 실패로 보아 aggregate가 아직 NOT_PROVEN이다. Revision 10은 Worker에게 S target 존재·hash 비공개를 요구하고 실제 불변은 Controller 전후조건에만 맡긴다. 새 source·새 root token의 재실행 전까지 candidate는 아니다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 

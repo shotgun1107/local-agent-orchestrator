@@ -1604,3 +1604,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 보존된 W에는 P05 symlink는 없고 `escape-junction`만 남아 있었다. Junction target J가 unreadable하면 `Path.exists()`도 false가 될 수 있어 기존 cleanup 분기가 `os.rmdir`를 호출하지 않았고, 후속 `_probe_command_argvs()`의 `resolve()`가 남은 junction target을 따라가 frozen literal path와 달라진 것이 직접 원인이다. J content가 노출된 사건은 아니다.
 - `phaseb-20260809-013` W/J/S와 pending manifest, 남은 junction은 진단 증거로 삭제·재사용하지 않는다. P05 fixture argv는 `abspath` 기반 no-follow lexical path로 고정하고, entry 존재는 `os.lstat`, 생성 성공 시 symlink는 `os.unlink`, junction은 `os.rmdir`로 cleanup한다.
 - 실제 junction이 존재해도 command identity가 유지되는 회귀와 target unreadable 상황을 모사해 `Path.exists()`에 의존하지 않고 junction이 제거되는 회귀를 추가했다. Controller-only ACL 회귀를 포함한 표적 시험은 `18 passed`다. 새 source·새 root token 전까지 candidate 주장은 금지한다.
+
+## 현실 고난도 Phase B 8-probe 완주와 P08 metadata 계약 교정
+
+- 작업일: 2026-08-09. source `d21f3d86e738a18818c0d318b51864e33646f7bb`, pending/embedded manifest SHA-256 `9c2024a3294998dfb810886e3329d2c9af10e8a0a2a76475308f73948abfc351`의 `phaseb-20260809-014`는 P01~P08을 모두 실행하고 exact 4-file bundle을 생성·검증했다. P01~P07은 모두 true, P08만 false, actual model turn은 0이며 aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
+- P08 typed Evidence는 S sentinel read, absent target create, existing target replace가 모두 `access_denied`였고 S sentinel Controller hash와 W source hash는 전후 동일했다. Sandbox는 existing S replace target의 존재·hash도 볼 수 없어 before/after false·null을 반환했다. 과거 재계산식은 오히려 target 존재 true와 manifest hash 노출을 요구해 P08을 false로 만들었다.
+- 이 결과는 mutation이나 content disclosure가 아니라 더 강한 metadata nondisclosure다. 새 계약은 Worker 쪽 existing S target을 false/null로 요구하고, 실제 target 존재·size·hash 불변과 create target 부재는 이미 실행 전후 `_probe_precondition`이 확인한 Controller evidence로만 증명한다. Worker가 S target 존재·hash를 관측하면 실패다.
+- 014 bundle aggregate SHA-256은 `07ec2b31a49ad11b88f8e13570c9e72745e48aaf407efe642e012354a923468d`, result SHA-256은 `a1b4adc43d565e8c4337d7aa266046fff0317e9f5cb5da1f2246f0e792736cbc`다. Bundle과 W/J/S는 비candidate 진단 증거로 보존하며 재사용하지 않는다. P08 nondisclosure/metadata disclosure negative 회귀를 포함한 표적 시험은 `19 passed`다.
