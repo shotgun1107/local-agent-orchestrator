@@ -29,10 +29,10 @@ REALISTIC_SUITE_ID = "sdk-routing-realistic-high-difficulty-v1"
 REALISTIC_STAGE_ID = "realistic-high-difficulty-initial"
 REALISTIC_SUPPLEMENT_FIELD = "realistic_routing_contract"
 SS1_NEUTRAL_REVIEW_PROMPT = (
-    "Review the work you just completed for the same Task using only its original "
-    "request and the current workspace. Correct any issue you independently find "
-    "without expanding scope. Return only JSON matching the supplied "
-    "ResultEnvelope schema."
+    "Continue in the same thread. Review the current workspace and your prior reasoning\n"
+    "against the original Task goals, declared inputs, allowed scope, and public\n"
+    "developer-visible checks. Correct issues you can substantiate. No controller-check\n"
+    "or judge-only feedback is available. Return the same ResultEnvelope schema."
 )
 
 AdditionalReviewReason = Literal[
