@@ -1,5 +1,7 @@
 # 집 PC 작업 인수인계
 
+> 상태: 집 PC 진입 당시의 역사적 인수 문서다. 2026-08-09 집 로컬에서 회사 로컬로 복귀하는 현재 절차는 [집 로컬 → 회사 로컬 작업 인수인계](./home-to-company-codex-handoff.md)를 따른다. 아래 S1/S2 재개 지시는 현재 작업 지시로 사용하지 않는다.
+
 - 갱신일: 2026-08-07
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 브랜치: `main`
