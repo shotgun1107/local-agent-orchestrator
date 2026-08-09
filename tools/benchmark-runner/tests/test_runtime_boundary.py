@@ -41,13 +41,16 @@ from benchmark_runner.runtime_boundary import (
     collect_sdk_profile_provenance,
     effective_policy_failure_reason_codes,
     effective_policy_evidence_from_projection,
+    execute_frozen_probe_command,
     project_effective_policy,
     result_with_recomputed_verdict,
     runtime_boundary_policy_failure_path,
+    runtime_boundary_probe_failure_path,
     runtime_boundary_profile_failure_path,
     sdk_profile_evidence_from_transcript,
     verify_effective_policy,
     verify_runtime_boundary_policy_failure,
+    verify_runtime_boundary_probe_failure,
     verify_runtime_boundary_profile_failure,
     verify_runtime_boundary_bundle,
     verify_runtime_boundary_result,
@@ -727,6 +730,59 @@ def test_policy_failure_is_written_beside_uncreated_bundle(tmp_path: Path) -> No
             requirements,
             readiness,
         )
+
+
+def test_non_json_probe_stdout_is_written_beside_uncreated_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest = _manifest(tmp_path)
+    command = manifest.commands[0]
+    bundle = tmp_path / "candidate-bundle"
+    stdout = b""
+    stderr = b"windows sandbox wrapper failed"
+
+    monkeypatch.setattr(runtime_boundary, "verify_pinned_runtime_identity", lambda _value: None)
+    monkeypatch.setattr(runtime_boundary, "verify_root_identity_contract", lambda _value: True)
+    monkeypatch.setattr(runtime_boundary, "verify_probe_command_contract", lambda _value: True)
+    monkeypatch.setattr(runtime_boundary, "_probe_precondition", lambda *_args: True)
+    monkeypatch.setattr(runtime_boundary, "_probe_postcondition", lambda *_args: True)
+    monkeypatch.setattr(
+        runtime_boundary,
+        "_run_command_capped",
+        lambda *_args, **_kwargs: (
+            1,
+            stdout,
+            len(stdout),
+            sha256_bytes(stdout),
+            stderr,
+            len(stderr),
+            sha256_bytes(stderr),
+            17,
+        ),
+    )
+
+    with pytest.raises(RuntimeBoundaryError, match="failure evidence"):
+        execute_frozen_probe_command(
+            manifest,
+            command,
+            source_environment={},
+            failure_bundle_root=bundle,
+        )
+
+    failure_path = runtime_boundary_probe_failure_path(bundle)
+    assert failure_path.is_file()
+    assert not bundle.exists()
+    verified = verify_runtime_boundary_probe_failure(failure_path, manifest)
+    assert verified.failed_probe_id == "P01"
+    assert verified.failure_reason_codes == [
+        "PROBE_STDOUT_NOT_JSON",
+        "PROBE_WRAPPER_EXIT_NONZERO",
+    ]
+    assert verified.wrapper_exit_code == 1
+    assert verified.stdout.bytes_value() == b""
+    assert verified.stderr.bytes_value() == stderr
+    assert verified.actual_model_turns == 0
 
 
 def test_effective_policy_projection_is_redacted_and_recomputed() -> None:

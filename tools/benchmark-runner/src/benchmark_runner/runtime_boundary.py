@@ -20,7 +20,7 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any, Literal, Mapping, Sequence
+from typing import Annotated, Any, Literal, Mapping, NoReturn, Sequence
 
 from pydantic import Field, JsonValue, TypeAdapter, field_validator, model_validator
 
@@ -827,6 +827,89 @@ class RuntimeBoundaryPolicyFailureArtifact(StrictModel):
         expected_codes = effective_policy_failure_reason_codes(self.effective_policy)
         if self.failure_reason_codes != expected_codes:
             raise ValueError("failure reason codes differ from effective policy evidence")
+        return self
+
+
+class CappedStreamEvidence(StrictModel):
+    """A bounded byte capture plus the identity of the complete process stream."""
+
+    captured_b64: str
+    captured_byte_count: int = Field(ge=0)
+    total_byte_count: int = Field(ge=0)
+    limit_bytes: int = Field(gt=0)
+    captured_sha256: Sha256
+    sha256: Sha256
+    truncated: bool
+
+    @classmethod
+    def from_capture(
+        cls,
+        captured: bytes,
+        *,
+        total: int,
+        limit: int,
+        sha256: str,
+    ) -> "CappedStreamEvidence":
+        bounded = captured[:limit]
+        return cls(
+            captured_b64=base64.b64encode(bounded).decode("ascii"),
+            captured_byte_count=len(bounded),
+            total_byte_count=total,
+            limit_bytes=limit,
+            captured_sha256=sha256_bytes(bounded),
+            sha256=sha256,
+            truncated=total > limit,
+        )
+
+    def bytes_value(self) -> bytes:
+        try:
+            return base64.b64decode(self.captured_b64, validate=True)
+        except (ValueError, TypeError) as exc:
+            raise ValueError("captured stream is not valid base64") from exc
+
+    @model_validator(mode="after")
+    def capture_is_self_consistent(self) -> "CappedStreamEvidence":
+        data = self.bytes_value()
+        expected_count = min(self.total_byte_count, self.limit_bytes)
+        if len(data) != self.captured_byte_count or len(data) != expected_count:
+            raise ValueError("captured stream byte count mismatch")
+        if self.truncated != (self.total_byte_count > self.limit_bytes):
+            raise ValueError("captured stream truncation flag mismatch")
+        if sha256_bytes(data) != self.captured_sha256:
+            raise ValueError("captured stream prefix SHA-256 mismatch")
+        if not self.truncated and sha256_bytes(data) != self.sha256:
+            raise ValueError("complete captured stream SHA-256 mismatch")
+        return self
+
+
+class RuntimeBoundaryProbeFailureArtifact(StrictModel):
+    """Unsealed diagnostic for a dispatched probe that cannot be parsed."""
+
+    schema_version: Literal[1] = 1
+    probe_id: str = Field(pattern=r"^runtime-boundary-[a-z0-9._-]+$")
+    manifest_sha256: Sha256
+    recorded_at: datetime
+    failed_stage: Literal["probe_dispatch"]
+    failed_probe_id: str = Field(pattern=r"^P0[1-8]$")
+    command_argv_sha256: Sha256
+    failure_reason_codes: list[str] = Field(min_length=1)
+    actual_model_turns: Literal[0]
+    wrapper_exit_code: int
+    stdout: CappedStreamEvidence
+    stderr: CappedStreamEvidence
+    duration_ms: int = Field(ge=0)
+    controller_precondition_ok: Literal[True]
+    controller_postcondition_ok: bool
+
+    _recorded_has_timezone = field_validator("recorded_at")(validate_timestamp)
+
+    @model_validator(mode="after")
+    def failure_is_canonical(self) -> "RuntimeBoundaryProbeFailureArtifact":
+        if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
+            raise ValueError("failure reason codes must be sorted and unique")
+        expected_codes = probe_dispatch_failure_reason_codes(self)
+        if self.failure_reason_codes != expected_codes:
+            raise ValueError("failure reason codes differ from captured process evidence")
         return self
 
 
@@ -1664,7 +1747,7 @@ def _drain_binary_stream(
     *,
     limit: int,
     destination: queue.Queue[tuple[bytes, int, str]],
-) -> None:
+) -> NoReturn:
     captured = bytearray()
     total = 0
     digest = hashlib.sha256()
@@ -1742,11 +1825,49 @@ def _run_command_capped(
     )
 
 
+def _raise_probe_stream_failure(
+    message: str,
+    *,
+    failure_bundle_root: Path | None,
+    manifest: RuntimeBoundaryProbeManifest,
+    command: ProbeCommandSpec,
+    wrapper_exit_code: int,
+    stdout: bytes,
+    stdout_total: int,
+    stdout_sha256: str,
+    stderr: bytes,
+    stderr_total: int,
+    stderr_sha256: str,
+    duration_ms: int,
+    controller_precondition_ok: bool,
+    controller_postcondition_ok: bool,
+) -> None:
+    if failure_bundle_root is None:
+        raise RuntimeBoundaryError(message)
+    failure_path = write_runtime_boundary_probe_failure(
+        failure_bundle_root,
+        manifest,
+        command,
+        wrapper_exit_code=wrapper_exit_code,
+        stdout=stdout,
+        stdout_total=stdout_total,
+        stdout_sha256=stdout_sha256,
+        stderr=stderr,
+        stderr_total=stderr_total,
+        stderr_sha256=stderr_sha256,
+        duration_ms=duration_ms,
+        controller_precondition_ok=controller_precondition_ok,
+        controller_postcondition_ok=controller_postcondition_ok,
+    )
+    raise RuntimeBoundaryError(f"{message}; failure evidence: {failure_path}")
+
+
 def execute_frozen_probe_command(
     manifest: RuntimeBoundaryProbeManifest,
     command: ProbeCommandSpec,
     *,
     source_environment: Mapping[str, str] | None = None,
+    failure_bundle_root: Path | None = None,
 ) -> ProbeResult:
     """Execute one frozen probe exactly once; the caller owns sequencing and stop rules."""
 
@@ -1774,7 +1895,7 @@ def execute_frozen_probe_command(
         stdout,
         stdout_total,
         stdout_hash,
-        _stderr,
+        stderr,
         stderr_total,
         stderr_hash,
         duration_ms,
@@ -1787,13 +1908,80 @@ def execute_frozen_probe_command(
     )
     stdout_truncated = stdout_total > manifest.stdout_limit_bytes
     stderr_truncated = stderr_total > manifest.stderr_limit_bytes
+    postcondition = _probe_postcondition(manifest, command.probe_id)
     if stdout_truncated:
-        raise RuntimeBoundaryError("runtime-boundary probe stdout exceeded the frozen limit")
+        _raise_probe_stream_failure(
+            "runtime-boundary probe stdout exceeded the frozen limit",
+            failure_bundle_root=failure_bundle_root,
+            manifest=manifest,
+            command=command,
+            wrapper_exit_code=wrapper_exit_code,
+            stdout=stdout,
+            stdout_total=stdout_total,
+            stdout_sha256=stdout_hash,
+            stderr=stderr,
+            stderr_total=stderr_total,
+            stderr_sha256=stderr_hash,
+            duration_ms=duration_ms,
+            controller_precondition_ok=precondition,
+            controller_postcondition_ok=postcondition,
+        )
     try:
-        raw = json.loads(stdout.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise RuntimeBoundaryError("runtime-boundary probe stdout is not one JSON object") from exc
-    payload = _json_object(raw, "runtime-boundary probe output")
+        stdout_text = stdout.decode("utf-8")
+    except UnicodeDecodeError:
+        _raise_probe_stream_failure(
+            "runtime-boundary probe stdout is not UTF-8",
+            failure_bundle_root=failure_bundle_root,
+            manifest=manifest,
+            command=command,
+            wrapper_exit_code=wrapper_exit_code,
+            stdout=stdout,
+            stdout_total=stdout_total,
+            stdout_sha256=stdout_hash,
+            stderr=stderr,
+            stderr_total=stderr_total,
+            stderr_sha256=stderr_hash,
+            duration_ms=duration_ms,
+            controller_precondition_ok=precondition,
+            controller_postcondition_ok=postcondition,
+        )
+    try:
+        raw = json.loads(stdout_text)
+    except json.JSONDecodeError:
+        _raise_probe_stream_failure(
+            "runtime-boundary probe stdout is not JSON",
+            failure_bundle_root=failure_bundle_root,
+            manifest=manifest,
+            command=command,
+            wrapper_exit_code=wrapper_exit_code,
+            stdout=stdout,
+            stdout_total=stdout_total,
+            stdout_sha256=stdout_hash,
+            stderr=stderr,
+            stderr_total=stderr_total,
+            stderr_sha256=stderr_hash,
+            duration_ms=duration_ms,
+            controller_precondition_ok=precondition,
+            controller_postcondition_ok=postcondition,
+        )
+    if not isinstance(raw, dict):
+        _raise_probe_stream_failure(
+            "runtime-boundary probe stdout JSON is not one object",
+            failure_bundle_root=failure_bundle_root,
+            manifest=manifest,
+            command=command,
+            wrapper_exit_code=wrapper_exit_code,
+            stdout=stdout,
+            stdout_total=stdout_total,
+            stdout_sha256=stdout_hash,
+            stderr=stderr,
+            stderr_total=stderr_total,
+            stderr_sha256=stderr_hash,
+            duration_ms=duration_ms,
+            controller_precondition_ok=precondition,
+            controller_postcondition_ok=postcondition,
+        )
+    payload = raw
     operation_payload = _json_object(payload.get("payload"), "runtime-boundary operation payload")
     identity = WindowsProcessIdentityObservation.model_validate(
         payload.get("sandbox_process_identity")
@@ -1813,7 +2001,6 @@ def execute_frozen_probe_command(
         duration_ms=duration_ms,
         sandbox_process_identity=identity,
     )
-    postcondition = _probe_postcondition(manifest, command.probe_id)
     common: dict[str, Any] = {
         "probe_id": command.probe_id,
         "argv_sha256": command.argv_sha256,
@@ -2381,6 +2568,120 @@ def verify_runtime_boundary_policy_failure(
         configuration=manifest.configuration,
     ):
         raise RuntimeBoundaryError("effective-policy failure artifact contains passing evidence")
+    return artifact
+
+
+def runtime_boundary_probe_failure_path(bundle_root: Path) -> Path:
+    root = Path(bundle_root)
+    return root.with_name(f"{root.name}.probe-failure.json")
+
+
+def probe_dispatch_failure_reason_codes(
+    artifact: RuntimeBoundaryProbeFailureArtifact,
+) -> list[str]:
+    codes: list[str] = []
+    if artifact.wrapper_exit_code != 0:
+        codes.append("PROBE_WRAPPER_EXIT_NONZERO")
+    if artifact.stdout.truncated:
+        codes.append("PROBE_STDOUT_LIMIT_EXCEEDED")
+    else:
+        try:
+            stdout_text = artifact.stdout.bytes_value().decode("utf-8")
+        except UnicodeDecodeError:
+            codes.append("PROBE_STDOUT_NOT_UTF8")
+        else:
+            try:
+                stdout_value = json.loads(stdout_text)
+            except json.JSONDecodeError:
+                codes.append("PROBE_STDOUT_NOT_JSON")
+            else:
+                if not isinstance(stdout_value, dict):
+                    codes.append("PROBE_STDOUT_NOT_OBJECT")
+    if artifact.stderr.truncated:
+        codes.append("PROBE_STDERR_LIMIT_EXCEEDED")
+    if not artifact.controller_postcondition_ok:
+        codes.append("PROBE_CONTROLLER_POSTCONDITION_FAILED")
+    return sorted(codes)
+
+
+def write_runtime_boundary_probe_failure(
+    bundle_root: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+    command: ProbeCommandSpec,
+    *,
+    wrapper_exit_code: int,
+    stdout: bytes,
+    stdout_total: int,
+    stdout_sha256: str,
+    stderr: bytes,
+    stderr_total: int,
+    stderr_sha256: str,
+    duration_ms: int,
+    controller_precondition_ok: bool,
+    controller_postcondition_ok: bool,
+) -> Path:
+    """Persist one non-secret, capped process failure without creating a candidate."""
+
+    if not controller_precondition_ok:
+        raise RuntimeBoundaryError("probe dispatch failure requires a passing precondition")
+    expected_command = manifest.commands[EXACT_PROBE_IDS.index(command.probe_id)]
+    if command != expected_command:
+        raise RuntimeBoundaryError("probe failure command differs from frozen manifest")
+    path = runtime_boundary_probe_failure_path(bundle_root)
+    if path.exists():
+        raise RuntimeBoundaryError("probe failure artifact already exists; retry is forbidden")
+    provisional = RuntimeBoundaryProbeFailureArtifact.model_construct(
+        schema_version=1,
+        probe_id=manifest.probe_id,
+        manifest_sha256=sha256_bytes(canonical_json_bytes(manifest)),
+        recorded_at=utc_now(),
+        failed_stage="probe_dispatch",
+        failed_probe_id=command.probe_id,
+        command_argv_sha256=command.argv_sha256,
+        failure_reason_codes=["PROVISIONAL"],
+        actual_model_turns=0,
+        wrapper_exit_code=wrapper_exit_code,
+        stdout=CappedStreamEvidence.from_capture(
+            stdout,
+            total=stdout_total,
+            limit=manifest.stdout_limit_bytes,
+            sha256=stdout_sha256,
+        ),
+        stderr=CappedStreamEvidence.from_capture(
+            stderr,
+            total=stderr_total,
+            limit=manifest.stderr_limit_bytes,
+            sha256=stderr_sha256,
+        ),
+        duration_ms=duration_ms,
+        controller_precondition_ok=True,
+        controller_postcondition_ok=controller_postcondition_ok,
+    )
+    failure_reason_codes = probe_dispatch_failure_reason_codes(provisional)
+    if not failure_reason_codes:
+        raise RuntimeBoundaryError("passing probe stdout cannot be recorded as dispatch failure")
+    artifact = RuntimeBoundaryProbeFailureArtifact.model_validate(
+        {
+            **provisional.model_dump(mode="json"),
+            "failure_reason_codes": failure_reason_codes,
+        }
+    )
+    atomic_write(path, canonical_json_bytes(artifact))
+    return path
+
+
+def verify_runtime_boundary_probe_failure(
+    path: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+) -> RuntimeBoundaryProbeFailureArtifact:
+    artifact = RuntimeBoundaryProbeFailureArtifact.model_validate_json(Path(path).read_bytes())
+    if artifact.probe_id != manifest.probe_id:
+        raise RuntimeBoundaryError("probe failure probe ID mismatch")
+    if artifact.manifest_sha256 != sha256_bytes(canonical_json_bytes(manifest)):
+        raise RuntimeBoundaryError("probe failure manifest SHA-256 mismatch")
+    command = manifest.commands[EXACT_PROBE_IDS.index(artifact.failed_probe_id)]
+    if artifact.command_argv_sha256 != command.argv_sha256:
+        raise RuntimeBoundaryError("probe failure argv SHA-256 mismatch")
     return artifact
 
 
@@ -3116,6 +3417,7 @@ def execute_runtime_boundary_probe(
             manifest,
             command,
             source_environment=source_environment,
+            failure_bundle_root=bundle_root,
         )
         probes.append(probe)
         if _has_not_ready_disclosure(probes):
