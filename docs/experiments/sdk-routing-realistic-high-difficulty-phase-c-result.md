@@ -2,6 +2,7 @@
 
 - 결과: `PHASE_C_MODEL_FREE_IMPLEMENTED`
 - 구현 commit: `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`
+- exact-prompt 교정 commit: `c4df661f608a7580f28738687e1c47100b2e5093`
 - 작업일: 2026-08-09
 - actual model turns: 0
 
@@ -57,3 +58,7 @@ skip 1건은 선택 의존성 `openai_codex`가 현재 테스트 환경에 설�
 ## 다음 관문
 
 다음은 Phase D의 snapshot·fixture·reference solution·property checker와 Judge 경계를 구체화하는 작업이다. Phase C 결과만으로 Phase D 구현, Phase E live candidate 또는 Phase F model turn을 자동으로 열지 않는다.
+
+## 후속 교정
+
+Phase D 상위 계약을 대조하는 과정에서 최초 구현의 `SS1_NEUTRAL_REVIEW_PROMPT`가 승인된 비교 명세의 exact literal과 다름을 발견했다. commit `c4df661f608a7580f28738687e1c47100b2e5093`에서 UTF-8·LF 기준 문구를 상위 명세와 일치시키고 literal 자체를 고정하는 회귀를 추가했다. Phase C 표적 시험은 `33 passed in 0.23s`, actual model turn은 0회다.

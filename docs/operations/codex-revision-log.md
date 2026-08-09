@@ -1633,3 +1633,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - SS1은 모든 Task와 선택적 self-review를 한 thread에서 실행하고, Task당 추가 1 turn·Variant당 추가 2 turns를 넘지 않는다. Check/Judge/stdout/stderr 정보는 prompt에서 차단하고 모든 terminal 뒤 observer를 호출한다. 일반 Task scope finding은 기록만 하며 secret·J/S 접근, observer 실패와 thread drift는 fail-closed로 끝낸다.
 - Phase C 표적 시험은 `33 passed in 0.22s`다. 변경한 Fake SDK와 기존 기준선에 대한 영향 회귀는 `19 passed, 1 skipped in 28.12s`이며 skip은 현재 환경의 선택 의존성 `openai_codex` 부재다. 나머지 live-runtime 파일 시험은 가짜 client 주입으로 수행됐고 actual model turn은 0회다. `git diff --check`도 통과했다.
 - 새 Docker 환경, Phase B probe, 실제 SDK thread, snapshot·fixture·reference·checker, B1 public hook, stage registry, live Plan·seal·export는 만들거나 실행하지 않았다. 다음 Phase D와 이후 live/model 단계는 별도 승인 전까지 닫혀 있다.
+
+## Phase C exact prompt 교정과 Phase D 명세 후보 작성
+
+- 작업일: 2026-08-09. Phase D 상위 계약 대조 중 Phase C의 `SS1_NEUTRAL_REVIEW_PROMPT`가 승인된 비교 명세의 exact four-line literal과 다름을 발견했다. 기능 시험이 통과했다는 사실로 literal 계약을 대신하지 않고 commit `c4df661f608a7580f28738687e1c47100b2e5093`에서 구현 문구를 교정하고 exact literal 회귀를 추가했다.
+- 교정 뒤 Phase C 표적 시험은 `33 passed in 0.23s`, actual model turn은 0회다. 전체 회귀와 Phase B probe는 반복하지 않았다.
+- Phase D는 artifact를 바로 만드는 단계가 아니라 별도 snapshot/checker 명세와 외부 심사를 먼저 통과해야 한다. revision 1 후보는 실제 historical window 두 개, 각 8-Task graph, 공개/Controller/judge-only 경계, reference·mutation positive evidence, property DAG와 OS-level Judge no-network proof를 고정한다.
+- 두 후보가 같은 저장소의 다른 시점이라는 독립성 문제와 Profile I의 6-file 구조 예외는 외부 심사의 명시적 `accepted`를 요구한다. 하나라도 rejected이면 Phase D artifact 제작은 `NO-GO`다. snapshot·fixture·reference·checker·Judge probe·live Plan·model turn은 이번 작업에서 만들거나 실행하지 않았다.

@@ -1,10 +1,11 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_12_phase_c_model_free_implemented`
-- 설계 revision: 12
+- 문서 상태: `revision_13_phase_d_spec_review_candidate`
+- 설계 revision: 13
 - 작성일: 2026-08-09
 - Phase B 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
-- Phase C 구현 commit: `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`
+- Phase C 최초 구현 commit: `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`
+- Phase C exact-prompt 교정 commit: `c4df661f608a7580f28738687e1c47100b2e5093`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
@@ -14,7 +15,9 @@
 - Phase B 최종 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md) — P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`
 - Phase C 결과: [model-free 구현 결과](../experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md) — 표적 `33 passed`, 영향 회귀 `19 passed, 1 skipped`, actual model turn 0
 - 현재 완료: Phase C Schema·SS1 Fake Adapter·passive observer·property/triage 순수 구현과 model-free targeted test
-- 현재 금지: Phase D snapshot·fixture·reference·checker, Phase E live candidate, Phase F model turn
+- Phase D 후보: [snapshot·checker 명세 revision 1](./sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — 외부 심사 전, artifact 제작 미승인
+- 현재 허용: Phase D 명세와 읽기 전용 심사 자료 작성
+- 현재 금지: Phase D snapshot·fixture·reference·checker artifact, Phase E live candidate, Phase F model turn
 
 ## 1. 목적과 결론
 
@@ -27,7 +30,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. ChatGPT Pro의 최종 읽기 전용 심사는 남은 P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`로 판정했고 사용자가 Phase C model-free 구현을 별도로 승인했다. Phase C는 commit `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`에서 구현되고 승인 범위의 표적 시험을 통과했다. 이 완료는 Phase D snapshot/checker, live Plan 또는 model usage로 확대되지 않는다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. ChatGPT Pro의 최종 읽기 전용 심사는 남은 P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`로 판정했고 사용자가 Phase C model-free 구현을 별도로 승인했다. Phase C는 commit `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`에서 구현되고 승인 범위의 표적 시험을 통과했다. Phase D 계약 대조 중 SS1 self-review literal이 상위 명세와 다른 사실을 발견해 commit `c4df661f608a7580f28738687e1c47100b2e5093`에서 exact 문구와 고정 회귀를 교정했고 표적 `33 passed`를 다시 확인했다. 이 완료는 Phase D artifact, live Plan 또는 model usage로 확대되지 않는다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
