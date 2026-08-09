@@ -1560,3 +1560,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - raw ACL 차이는 W에만 새 non-inherited allow ACE 하나가 추가된 것이다. 이 ACE는 새 SID에 `Modify, Synchronize`와 child object/container inheritance를 부여하며 J·S에는 추가되지 않았다. 이는 `:workspace` 준비가 dedicated sandbox user에게 W 접근만 부여한 정상 transition으로 추정된다. raw SID는 공개 기록에 남기지 않았다.
 - 현재 exact-equality root gate는 안전한 W-only grant와 J/S scope 확장을 구분하지 못한다. 다음 교정은 초기 W ACL을 보존하면서 dispatch 전에는 이 exact W-only ACE delta만 잠정 허용하고, P01 결과의 sandbox process TokenUser SID가 추가 ACE SID와 같을 때만 최종 통과시켜야 한다. J·S owner·ACL·volume은 계속 bit-for-bit 동일해야 하며 다른 delta는 즉시 중단한다.
 - `phaseb-20260809-006` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. 자동 재시도는 하지 않았고 Phase B·Phase C는 계속 중단 상태다.
+
+## 현실 고난도 Phase B W ACL 전이와 capability SID 교정
+
+- 작업일: 2026-08-09. commit `b93ce1b1e5e970d5d64e2ad44f15c54f7b643051`에서 초기 W ACL과 준비 뒤 ACL의 multiset 차이를 비교해 explicit `A;OICI;0x1301bf` ACE 정확히 1개만 잠정 허용하고, W owner·group descriptor·volume·DACL control 및 J·S 전체 identity를 각 probe 전후에 고정하는 guard를 구현했다. 표적 시험 `13 passed`, 실제 SDK가 있는 B1 Python과 저장소 밖 short basetemp에서 Runner 전체 `252 passed`를 확인했다.
+- source `b93ce1b1e5e970d5d64e2ad44f15c54f7b643051`의 `phaseb-20260809-007`은 profile·effective policy·readiness·requirements·Controller identity를 통과하고 P01을 정확히 1회 dispatch해 typed JSON과 sandbox process identity까지 수집했다. 그러나 추가 ACE SID를 P01 TokenUser SID와 직접 비교한 관문에서 다르다고 판정해 P02 전에 중단됐다. actual model turn은 0회이고 candidate bundle은 생성되지 않았다.
+- 007 W의 explicit ACE 대상은 Controller SID, 현재 `CodexSandboxOffline`·`CodexSandboxOnline` 사용자 SID, `CodexSandboxUsers` 그룹 SID 어느 것과도 같지 않았으며 계정명으로 translate되지 않았다. 설치된 pinned runtime binary에는 sandbox spawn request의 `cap_sids`, capability SID file과 permission-profile ACL 적용 경로가 존재한다. 따라서 006의 “dedicated sandbox user SID 직접 grant” 추정은 폐기하고 **workspace capability SID grant**로 교정한다.
+- 다음 계약은 추가 ACE raw SID의 SHA-256이 P01 `WindowsProcessIdentityObservation.capability_sid_sha256s`에 포함될 때만 결합을 통과시킨다. TokenUser는 여전히 Controller와 다른 dedicated sandbox user임을 별도로 증명한다. J·S exact identity와 W-only one-ACE delta는 완화하지 않는다.
+- `phaseb-20260809-007` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. P01 재시도는 하지 않았으며 새 source commit과 새 root token으로만 다음 model-free 실행을 수행한다. Phase B·Phase C는 계속 중단 상태다.
