@@ -1524,3 +1524,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Incident B1은 C2보다 token 21.3%, wall-clock 25.0% 많았으나 양쪽 모두 profile 실패이고 B1 control effect가 없어 귀속할 수 없다. Profile은 `ROUTING_INCONCLUSIVE`, stage는 `S3_INCONCLUSIVE`, replication·route·global B1 default는 모두 미발행이다.
 - 정식 export 63개 파일을 `benchmarks/results/sdk-routing-s3-v1/exp_20260808_66099ac3_1/`에 보존했다. Aggregate SHA-256은 `16fcfddf337dc0b9244b99c816c4026414798543490e47f0194b33887b06adce`이며 verifier가 freeze·Measurement·Evidence·post-hoc·policy·exact 파일 집합을 다시 열어 통과했다.
 - 사람용 보고서는 `docs/experiments/sdk-routing-s3-live-result.md`다. Frozen 종료선에 따라 역순 pair·세 번째 pair·추가 synthetic fixture·S4를 열지 않고 이번 시험을 종료한다. Checker의 전역 parse fail-closed와 public Check grammar 범위는 별도 maintenance 후보일 뿐, 현재 봉인 결과를 고치거나 처음부터 자동 재실행하지 않는다.
+
+## 현실 고난도 Phase B 최초 중단과 SDK profile provenance 교정
+
+- 작업일: 2026-08-09. 기준 source commit은 `5fe78aa5c6a357c08682684a258b41e7d84c4dbc`다. 사용자가 승인한 최초 model-free Phase B 실행은 SDK empty thread 생성 뒤 `SDK :workspace profile provenance was not proven`으로 P01 전에 fail-closed 중단됐다. 실제 model turn과 P01~P08 실행은 각각 0회이며 candidate bundle은 생성되지 않았다.
+- 중단 원인은 sandbox 자체가 아니라 수집 계약이었다. 구현은 `thread/start`가 `thread/settings/updated`를 발생시킨다고 가정해 10초 동안 기다렸지만, 해당 notification은 thread 생성의 보장 이벤트가 아니다. 실패한 W/J/S root와 pending manifest는 삭제·정리·재사용하지 않고 보존했다.
+- 동일 pinned `codex.exe`가 `app-server generate-json-schema --experimental`로 직접 생성한 protocol을 확인했다. 실제 executable surface에는 `thread/start.permissions`, `ThreadStartResponse.activePermissionProfile`, `permissionProfile/list`, `thread/started`가 있지만 설치된 Python generated response model은 이 필드 일부가 뒤처져 있었다.
+- 교정 구현은 raw JSON-RPC로 `permissionProfile/list(cwd=W)`의 유일한 `:workspace`가 `allowed=true`인지 확인하고, `thread/start`에 `permissions=":workspace"`를 직접 보낸다. 통과하려면 raw response의 active profile·approval·cwd와 보장된 `thread/started`의 thread ID가 모두 맞아야 한다. legacy `sandbox` response는 여전히 provenance로 인정하지 않고 `turn/start` 0회를 강제한다.
+- profile 실패는 이제 재계산된 구체적 reason code와 전체 방향 결합 transcript를 exact 4-file candidate bundle 밖의 `<bundle>.profile-failure.json`에 남긴다. 같은 경로의 자동 재시도와 실패 파일 덮어쓰기는 거부한다.
+- 수정된 profile 계약·허용 거부·thread mismatch/turn 관측·raw collector 호출·failure artifact·기존 bundle 재검증을 포함한 표적 단위시험은 `8 passed`다. 첫 호출은 사용자 프로그램 폴더의 Python 실행을 샌드박스가 막아 시험 수집 전에 종료됐고, 승인된 실행 경계에서 같은 명령을 실행해 통과했다. `py_compile`과 `git diff --check`도 통과했다.
+- 이번 수정에서는 전체 회귀, 실제 SDK handshake 재호출, P01~P08, model turn을 실행하지 않았다. 기존 pending manifest는 source commit이 바뀌므로 새 실행 후보에 사용할 수 없다. 다음 실제 Phase B는 이 수정 commit을 기준으로 새 manifest와 새 root token을 만들고 별도 실행 지시가 있을 때만 한 번 수행한다.

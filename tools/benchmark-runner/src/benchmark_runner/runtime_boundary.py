@@ -41,7 +41,8 @@ PINNED_CODEX_VERSION = "0.144.4"
 PINNED_CLI_TARGET = "x86_64-pc-windows-msvc"
 PERMISSION_PROFILE_ID = ":workspace"
 WINDOWS_SANDBOX_KIND = "elevated"
-PROFILE_NOTIFICATION_METHOD = "thread/settings/updated"
+PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list"
+THREAD_STARTED_NOTIFICATION_METHOD = "thread/started"
 EXACT_PROBE_IDS = tuple(f"P{number:02d}" for number in range(1, 9))
 EXACT_BUNDLE_FILES = frozenset(
     {
@@ -655,13 +656,17 @@ class SdkProfileProvenanceObservation(StrictModel):
     resolved_executable_sha256: Sha256
     config_identity_sha256: Sha256
     initialize_experimental_api: bool
+    permission_profile_list_request_count: int = Field(ge=0)
+    workspace_permission_profile_match_count: int = Field(ge=0)
+    workspace_permission_profile_allowed: bool
     thread_start_request_count: int = Field(ge=0)
-    settings_notification_count: int = Field(ge=0)
+    thread_started_notification_count: int = Field(ge=0)
     turn_start_request_count: int = Field(ge=0)
     thread_start_response_thread_id_sha256: Sha256 | None = None
-    settings_notification_thread_id_sha256: Sha256 | None = None
+    thread_started_notification_thread_id_sha256: Sha256 | None = None
     thread_id_binding_equal: bool
     sandbox_key_present_in_thread_start_request: bool
+    requested_permission_profile_id: str | None = None
     active_permission_profile_id: str | None = None
     approval_policy_raw: JsonValue = None
     approval_mode_normalized: Literal["deny_all", "other", "unknown"]
@@ -669,12 +674,17 @@ class SdkProfileProvenanceObservation(StrictModel):
     observed_cwd_equals_W: bool
     legacy_response_sandbox_used_as_provenance: bool
     actual_model_turns: int = Field(ge=0)
+    profile_failure_reason_codes: list[str]
     derived_profile_passed: bool
 
     @model_validator(mode="after")
     def transcript_sequence_is_contiguous(self) -> "SdkProfileProvenanceObservation":
         if [item.sequence for item in self.transcript] != list(range(len(self.transcript))):
             raise ValueError("JSON-RPC transcript sequence must be contiguous from zero")
+        if self.profile_failure_reason_codes != sorted(
+            set(self.profile_failure_reason_codes)
+        ):
+            raise ValueError("profile failure reason codes must be sorted and unique")
         return self
 
 
@@ -759,6 +769,33 @@ class RuntimeBoundaryProbeResult(StrictModel):
             raise ValueError("runtime-boundary completion precedes start")
         if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
             raise ValueError("failure reason codes must be sorted and unique")
+        return self
+
+
+class RuntimeBoundaryProfileFailureArtifact(StrictModel):
+    """Unsealed diagnostic written beside, never inside, the exact candidate bundle."""
+
+    schema_version: Literal[1] = 1
+    probe_id: str = Field(pattern=r"^runtime-boundary-[a-z0-9._-]+$")
+    manifest_sha256: Sha256
+    recorded_at: datetime
+    failed_stage: Literal["sdk_profile_provenance"]
+    failure_reason_codes: list[str] = Field(min_length=1)
+    actual_model_turns: int = Field(ge=0)
+    sdk_profile_provenance: SdkProfileProvenanceObservation
+
+    _recorded_has_timezone = field_validator("recorded_at")(validate_timestamp)
+
+    @model_validator(mode="after")
+    def failure_is_canonical(self) -> "RuntimeBoundaryProfileFailureArtifact":
+        if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
+            raise ValueError("failure reason codes must be sorted and unique")
+        if self.failure_reason_codes != self.sdk_profile_provenance.profile_failure_reason_codes:
+            raise ValueError("failure reason codes differ from SDK profile evidence")
+        if self.actual_model_turns != self.sdk_profile_provenance.actual_model_turns:
+            raise ValueError("failure actual model-turn count mismatch")
+        if self.sdk_profile_provenance.derived_profile_passed:
+            raise ValueError("passing profile evidence cannot be written as failure")
         return self
 
 
@@ -1422,15 +1459,24 @@ def collect_sdk_profile_provenance(
         started = True
         client.initialize()
         client.account_read({})
-        client.thread_start(
+        client._request_raw(
+            PERMISSION_PROFILE_LIST_METHOD,
+            {"cwd": manifest.W.resolved_absolute_path},
+        )
+        # Use raw JSON-RPC here.  The pinned bundled app-server exposes the
+        # named-profile request and active-profile response fields even when a
+        # generated Python response model lags the executable protocol.
+        client._request_raw(
+            "thread/start",
             {
                 "cwd": manifest.W.resolved_absolute_path,
                 "approvalPolicy": manifest.configuration.approval_policy_wire_value,
                 "config": {"default_permissions": PERMISSION_PROFILE_ID},
+                "permissions": PERMISSION_PROFILE_ID,
                 "ephemeral": True,
-            }
+            },
         )
-        client.wait_for_notification(PROFILE_NOTIFICATION_METHOD, timeout=10.0)
+        client.wait_for_notification(THREAD_STARTED_NOTIFICATION_METHOD, timeout=2.0)
     except Exception:
         # The full transport record remains authoritative; derivation will fail closed.
         pass
@@ -1948,14 +1994,19 @@ def derive_sdk_profile_provenance(
     transcript: Sequence[JsonRpcFrameEvidence],
     *,
     W: Path,
+    app_server_started: bool = True,
 ) -> dict[str, Any]:
     frames = list(transcript)
     ledger = derive_json_rpc_method_ledger(frames)
     initialize_requests = _requests(frames, "initialize")
     account_requests = _requests(frames, "account/read")
+    profile_list_requests = _requests(frames, PERMISSION_PROFILE_LIST_METHOD)
     thread_requests = _requests(frames, "thread/start")
     turn_requests = _requests(frames, "turn/start")
-    settings_notifications = _notifications(frames, PROFILE_NOTIFICATION_METHOD)
+    thread_started_notifications = _notifications(
+        frames,
+        THREAD_STARTED_NOTIFICATION_METHOD,
+    )
     initialized_notifications = _notifications(
         frames,
         "initialized",
@@ -1970,14 +2021,50 @@ def derive_sdk_profile_provenance(
             if isinstance(capabilities, dict):
                 initialize_experimental = capabilities.get("experimentalApi") is True
 
+    initialize_response = (
+        _response_for_request(frames, initialize_requests[0])
+        if len(initialize_requests) == 1
+        else None
+    )
+    initialize_response_ok = initialize_response is not None and "error" not in initialize_response
     account_response = (
         _response_for_request(frames, account_requests[0]) if len(account_requests) == 1 else None
     )
     account_type = _account_type_from_response(account_response)
 
+    profile_list_response = (
+        _response_for_request(frames, profile_list_requests[0])
+        if len(profile_list_requests) == 1
+        else None
+    )
+    profile_list_response_ok = (
+        profile_list_response is not None and "error" not in profile_list_response
+    )
+    profile_list_result = _result_object(
+        profile_list_response,
+        "permissionProfile/list response",
+    )
+    profile_data = profile_list_result.get("data")
+    workspace_profile_matches = (
+        [
+            item
+            for item in profile_data
+            if isinstance(item, dict) and item.get("id") == PERMISSION_PROFILE_ID
+        ]
+        if isinstance(profile_data, list)
+        else []
+    )
+    workspace_profile_allowed = (
+        len(workspace_profile_matches) == 1
+        and workspace_profile_matches[0].get("allowed") is True
+    )
+
     thread_params: dict[str, JsonValue] = {}
     thread_response: dict[str, JsonValue] | None = None
     response_thread_id: str | None = None
+    active_profile: str | None = None
+    approval_raw: JsonValue = None
+    observed_cwd: str | None = None
     if len(thread_requests) == 1:
         raw_params = thread_requests[0].get("params")
         if isinstance(raw_params, dict):
@@ -1987,24 +2074,20 @@ def derive_sdk_profile_provenance(
         thread = thread_result.get("thread")
         if isinstance(thread, dict) and isinstance(thread.get("id"), str):
             response_thread_id = str(thread["id"])
+        active = thread_result.get("activePermissionProfile")
+        if isinstance(active, dict) and isinstance(active.get("id"), str):
+            active_profile = str(active["id"])
+        approval_raw = thread_result.get("approvalPolicy")
+        if isinstance(thread_result.get("cwd"), str):
+            observed_cwd = str(thread_result["cwd"])
 
     notification_thread_id: str | None = None
-    active_profile: str | None = None
-    approval_raw: JsonValue = None
-    observed_cwd: str | None = None
-    if len(settings_notifications) == 1:
-        params = settings_notifications[0].get("params")
+    if len(thread_started_notifications) == 1:
+        params = thread_started_notifications[0].get("params")
         if isinstance(params, dict):
-            if isinstance(params.get("threadId"), str):
-                notification_thread_id = str(params["threadId"])
-            settings = params.get("threadSettings")
-            if isinstance(settings, dict):
-                active = settings.get("activePermissionProfile")
-                if isinstance(active, dict) and isinstance(active.get("id"), str):
-                    active_profile = str(active["id"])
-                approval_raw = settings.get("approvalPolicy")
-                if isinstance(settings.get("cwd"), str):
-                    observed_cwd = str(settings["cwd"])
+            thread = params.get("thread")
+            if isinstance(thread, dict) and isinstance(thread.get("id"), str):
+                notification_thread_id = str(thread["id"])
 
     response_hash = _sha_text(response_thread_id) if response_thread_id is not None else None
     notification_hash = (
@@ -2021,51 +2104,85 @@ def derive_sdk_profile_provenance(
     request_default_permissions = (
         config.get("default_permissions") if isinstance(config, dict) else None
     )
+    requested_permission_profile = thread_params.get("permissions")
+    requested_permission_profile_id = (
+        str(requested_permission_profile)
+        if isinstance(requested_permission_profile, str)
+        else None
+    )
     request_contract_ok = (
         thread_params.get("cwd") == str(W.resolve())
         and thread_params.get("approvalPolicy") == "never"
         and request_default_permissions == PERMISSION_PROFILE_ID
+        and requested_permission_profile_id == PERMISSION_PROFILE_ID
         and not sandbox_present
     )
-    passed = all(
+    expected_client_requests = {
+        "account/read": 1,
+        "initialize": 1,
+        PERMISSION_PROFILE_LIST_METHOD: 1,
+        "thread/start": 1,
+    }
+    failure_checks = (
+        ("APP_SERVER_NOT_STARTED", app_server_started),
+        ("INITIALIZE_REQUEST_COUNT", len(initialize_requests) == 1),
+        ("INITIALIZE_EXPERIMENTAL_API_NOT_PROVEN", initialize_experimental),
+        ("INITIALIZE_RESPONSE_NOT_PROVEN", initialize_response_ok),
+        ("INITIALIZED_NOTIFICATION_COUNT", len(initialized_notifications) == 1),
+        ("ACCOUNT_REQUEST_COUNT", len(account_requests) == 1),
         (
-            len(initialize_requests) == 1,
-            initialize_experimental,
-            _response_for_request(frames, initialize_requests[0]) is not None
-            if len(initialize_requests) == 1
-            else False,
-            len(initialized_notifications) == 1,
-            len(account_requests) == 1,
-            account_type == "chatgpt",
-            account_response is not None,
-            len(thread_requests) == 1,
-            thread_response is not None,
-            len(settings_notifications) == 1,
-            len(turn_requests) == 0,
-            request_contract_ok,
-            thread_ids_equal,
-            active_profile == PERMISSION_PROFILE_ID,
-            approval_raw == "never",
-            cwd_equal,
-            ledger.client_request_method_counts
-            == {"account/read": 1, "initialize": 1, "thread/start": 1},
+            "ACCOUNT_RESPONSE_NOT_PROVEN",
+            account_response is not None and "error" not in account_response,
+        ),
+        ("CHATGPT_ACCOUNT_NOT_PROVEN", account_type == "chatgpt"),
+        ("PERMISSION_PROFILE_LIST_REQUEST_COUNT", len(profile_list_requests) == 1),
+        ("PERMISSION_PROFILE_LIST_RESPONSE_NOT_PROVEN", profile_list_response_ok),
+        ("WORKSPACE_PROFILE_NOT_UNIQUE", len(workspace_profile_matches) == 1),
+        ("WORKSPACE_PROFILE_NOT_ALLOWED", workspace_profile_allowed),
+        ("THREAD_START_REQUEST_COUNT", len(thread_requests) == 1),
+        (
+            "THREAD_START_RESPONSE_NOT_PROVEN",
+            thread_response is not None and "error" not in thread_response,
+        ),
+        (
+            "THREAD_STARTED_NOTIFICATION_COUNT",
+            len(thread_started_notifications) == 1,
+        ),
+        ("THREAD_START_REQUEST_CONTRACT_MISMATCH", request_contract_ok),
+        ("THREAD_ID_BINDING_MISMATCH", thread_ids_equal),
+        ("ACTIVE_PERMISSION_PROFILE_MISMATCH", active_profile == PERMISSION_PROFILE_ID),
+        ("APPROVAL_POLICY_MISMATCH", approval_raw == "never"),
+        ("CWD_MISMATCH", cwd_equal),
+        ("MODEL_TURN_OBSERVED", len(turn_requests) == 0),
+        (
+            "CLIENT_REQUEST_LEDGER_MISMATCH",
+            ledger.client_request_method_counts == expected_client_requests,
+        ),
+        (
+            "CLIENT_NOTIFICATION_LEDGER_MISMATCH",
             ledger.client_notification_method_counts == {"initialized": 1},
-            ledger.server_request_method_counts == {},
-            ledger.server_response_count == 3,
-            ledger.unmatched_server_response_count == 0,
-        )
+        ),
+        ("SERVER_REQUEST_OBSERVED", ledger.server_request_method_counts == {}),
+        ("SERVER_RESPONSE_COUNT_MISMATCH", ledger.server_response_count == 4),
+        ("UNMATCHED_SERVER_RESPONSE", ledger.unmatched_server_response_count == 0),
     )
+    failure_reason_codes = sorted(code for code, passed in failure_checks if not passed)
+    passed = not failure_reason_codes
     return {
         "method_ledger": ledger,
         "account_type_raw": account_type,
         "initialize_experimental_api": initialize_experimental,
+        "permission_profile_list_request_count": len(profile_list_requests),
+        "workspace_permission_profile_match_count": len(workspace_profile_matches),
+        "workspace_permission_profile_allowed": workspace_profile_allowed,
         "thread_start_request_count": len(thread_requests),
-        "settings_notification_count": len(settings_notifications),
+        "thread_started_notification_count": len(thread_started_notifications),
         "turn_start_request_count": len(turn_requests),
         "thread_start_response_thread_id_sha256": response_hash,
-        "settings_notification_thread_id_sha256": notification_hash,
+        "thread_started_notification_thread_id_sha256": notification_hash,
         "thread_id_binding_equal": thread_ids_equal,
         "sandbox_key_present_in_thread_start_request": sandbox_present,
+        "requested_permission_profile_id": requested_permission_profile_id,
         "active_permission_profile_id": active_profile,
         "approval_policy_raw": approval_raw,
         "approval_mode_normalized": _approval_mode(approval_raw),
@@ -2073,6 +2190,7 @@ def derive_sdk_profile_provenance(
         "observed_cwd_equals_W": cwd_equal,
         "legacy_response_sandbox_used_as_provenance": False,
         "actual_model_turns": len(turn_requests),
+        "profile_failure_reason_codes": failure_reason_codes,
         "derived_profile_passed": passed,
     }
 
@@ -2098,7 +2216,11 @@ def sdk_profile_evidence_from_transcript(
         )
         for index, (direction, frame) in enumerate(frames)
     ]
-    derived = derive_sdk_profile_provenance(transcript, W=W)
+    derived = derive_sdk_profile_provenance(
+        transcript,
+        W=W,
+        app_server_started=app_server_started,
+    )
     return SdkProfileProvenanceObservation(
         transcript=transcript,
         transcript_complete=True,
@@ -2116,6 +2238,7 @@ def verify_sdk_profile_provenance(
     derived = derive_sdk_profile_provenance(
         evidence.transcript,
         W=Path(manifest.W.resolved_absolute_path),
+        app_server_started=evidence.app_server_started,
     )
     for field, value in derived.items():
         if getattr(evidence, field) != value:
@@ -2126,6 +2249,50 @@ def verify_sdk_profile_provenance(
     if evidence.config_identity_sha256 != expected_config_identity:
         raise RuntimeBoundaryError("SDK profile configuration identity mismatch")
     return evidence.app_server_started and bool(derived["derived_profile_passed"])
+
+
+def runtime_boundary_profile_failure_path(bundle_root: Path) -> Path:
+    root = Path(bundle_root)
+    return root.with_name(f"{root.name}.profile-failure.json")
+
+
+def write_runtime_boundary_profile_failure(
+    bundle_root: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+    evidence: SdkProfileProvenanceObservation,
+) -> Path:
+    """Persist a fail-closed SDK transcript without polluting the four-file bundle."""
+
+    if verify_sdk_profile_provenance(manifest, evidence):
+        raise RuntimeBoundaryError("passing SDK profile evidence cannot be recorded as failure")
+    path = runtime_boundary_profile_failure_path(bundle_root)
+    if path.exists():
+        raise RuntimeBoundaryError("SDK profile failure artifact already exists; retry is forbidden")
+    artifact = RuntimeBoundaryProfileFailureArtifact(
+        probe_id=manifest.probe_id,
+        manifest_sha256=sha256_bytes(canonical_json_bytes(manifest)),
+        recorded_at=utc_now(),
+        failed_stage="sdk_profile_provenance",
+        failure_reason_codes=evidence.profile_failure_reason_codes,
+        actual_model_turns=evidence.actual_model_turns,
+        sdk_profile_provenance=evidence,
+    )
+    atomic_write(path, canonical_json_bytes(artifact))
+    return path
+
+
+def verify_runtime_boundary_profile_failure(
+    path: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+) -> RuntimeBoundaryProfileFailureArtifact:
+    artifact = RuntimeBoundaryProfileFailureArtifact.model_validate_json(Path(path).read_bytes())
+    if artifact.probe_id != manifest.probe_id:
+        raise RuntimeBoundaryError("SDK profile failure probe ID mismatch")
+    if artifact.manifest_sha256 != sha256_bytes(canonical_json_bytes(manifest)):
+        raise RuntimeBoundaryError("SDK profile failure manifest SHA-256 mismatch")
+    if verify_sdk_profile_provenance(manifest, artifact.sdk_profile_provenance):
+        raise RuntimeBoundaryError("SDK profile failure artifact contains passing evidence")
+    return artifact
 
 
 _SENSITIVE_KEY_PARTS = (
@@ -2781,7 +2948,15 @@ def execute_runtime_boundary_probe(
         source_environment=source_environment,
     )
     if not verify_sdk_profile_provenance(manifest, profile):
-        raise RuntimeBoundaryError("SDK :workspace profile provenance was not proven")
+        failure_path = write_runtime_boundary_profile_failure(
+            bundle_root,
+            manifest,
+            profile,
+        )
+        raise RuntimeBoundaryError(
+            "SDK :workspace profile provenance was not proven; "
+            f"failure evidence: {failure_path}"
+        )
     policy, requirements, readiness = collect_effective_policy_surfaces(
         manifest,
         source_environment=source_environment,

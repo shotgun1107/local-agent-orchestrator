@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import benchmark_runner.runtime_boundary as runtime_boundary
 from benchmark_runner.runner import canonical_json_bytes, sha256_bytes, sha256_file
 from benchmark_runner.runtime_boundary import (
     ConfigurationExpectation,
@@ -37,16 +38,20 @@ from benchmark_runner.runtime_boundary import (
     Win32CallObservation,
     build_windows_sandbox_provenance,
     build_runtime_boundary_manifest,
+    collect_sdk_profile_provenance,
     effective_policy_evidence_from_projection,
     project_effective_policy,
     result_with_recomputed_verdict,
+    runtime_boundary_profile_failure_path,
     sdk_profile_evidence_from_transcript,
     verify_effective_policy,
+    verify_runtime_boundary_profile_failure,
     verify_runtime_boundary_bundle,
     verify_runtime_boundary_result,
     verify_sdk_profile_provenance,
     verify_probe_command_contract,
     write_runtime_boundary_bundle,
+    write_runtime_boundary_profile_failure,
 )
 
 
@@ -238,12 +243,34 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
         (
             "client_to_server",
             {
+                "id": "profiles-1",
+                "method": "permissionProfile/list",
+                "params": {"cwd": str(W.resolve())},
+            },
+        ),
+        (
+            "server_to_client",
+            {
+                "id": "profiles-1",
+                "result": {
+                    "data": [
+                        {"id": ":workspace", "allowed": True},
+                        {"id": ":read-only", "allowed": True},
+                    ],
+                    "nextCursor": None,
+                },
+            },
+        ),
+        (
+            "client_to_server",
+            {
                 "id": "thread-1-request",
                 "method": "thread/start",
                 "params": {
                     "cwd": str(W.resolve()),
                     "approvalPolicy": "never",
                     "config": {"default_permissions": ":workspace"},
+                    "permissions": ":workspace",
                     "ephemeral": True,
                 },
             },
@@ -252,21 +279,20 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
             "server_to_client",
             {
                 "id": "thread-1-request",
-                "result": {"thread": {"id": thread_id}, "sandbox": "legacy-ignored"},
+                "result": {
+                    "thread": {"id": thread_id},
+                    "activePermissionProfile": {"id": ":workspace"},
+                    "approvalPolicy": "never",
+                    "cwd": str(W.resolve()),
+                    "sandbox": "legacy-ignored",
+                },
             },
         ),
         (
             "server_to_client",
             {
-                "method": "thread/settings/updated",
-                "params": {
-                    "threadId": thread_id,
-                    "threadSettings": {
-                        "activePermissionProfile": {"id": ":workspace"},
-                        "approvalPolicy": "never",
-                        "cwd": str(W.resolve()),
-                    },
-                },
+                "method": "thread/started",
+                "params": {"thread": {"id": thread_id}},
             },
         ),
     ]
@@ -465,11 +491,18 @@ def test_complete_zero_turn_transcript_is_recomputed(tmp_path: Path) -> None:
     assert evidence.method_ledger.client_request_method_counts == {
         "account/read": 1,
         "initialize": 1,
+        "permissionProfile/list": 1,
         "thread/start": 1,
     }
     assert evidence.method_ledger.client_notification_method_counts == {"initialized": 1}
+    assert evidence.workspace_permission_profile_match_count == 1
+    assert evidence.workspace_permission_profile_allowed is True
+    assert evidence.requested_permission_profile_id == ":workspace"
+    assert evidence.active_permission_profile_id == ":workspace"
+    assert evidence.thread_started_notification_count == 1
     assert evidence.turn_start_request_count == 0
     assert evidence.actual_model_turns == 0
+    assert evidence.profile_failure_reason_codes == []
     assert verify_sdk_profile_provenance(manifest, evidence) is True
 
 
@@ -507,7 +540,7 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
     manifest = _manifest(tmp_path)
     frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
-    frames[-1][1]["params"]["threadId"] = "different-thread"  # type: ignore[index]
+    frames[-1][1]["params"]["thread"]["id"] = "different-thread"  # type: ignore[index]
     frames.append(
         (
             "client_to_server",
@@ -529,6 +562,115 @@ def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> No
     forged = evidence.model_copy(update={"derived_profile_passed": True})
     with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
         verify_sdk_profile_provenance(manifest, forged)
+
+
+def test_transcript_rejects_disallowed_workspace_profile(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
+    profile_response = next(
+        frame
+        for direction, frame in frames
+        if direction == "server_to_client" and frame.get("id") == "profiles-1"
+    )
+    profile_response["result"]["data"][0]["allowed"] = False  # type: ignore[index]
+    evidence = sdk_profile_evidence_from_transcript(
+        frames,
+        W=Path(manifest.W.resolved_absolute_path),
+        resolved_executable_sha256=manifest.runtime.executable_sha256,
+        config_identity_sha256=_sha(manifest.configuration),
+    )
+
+    assert evidence.workspace_permission_profile_allowed is False
+    assert evidence.derived_profile_passed is False
+    assert "WORKSPACE_PROFILE_NOT_ALLOWED" in evidence.profile_failure_reason_codes
+    assert verify_sdk_profile_provenance(manifest, evidence) is False
+
+
+def test_collector_uses_named_profile_and_guaranteed_thread_started(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest = _manifest(tmp_path)
+    frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
+
+    class FakeClient:
+        def __init__(self) -> None:
+            self.raw_calls: list[tuple[str, object]] = []
+            self.waited_for: tuple[str, float] | None = None
+
+        def start(self) -> None:
+            return None
+
+        def initialize(self) -> None:
+            return None
+
+        def account_read(self, _params: object) -> None:
+            return None
+
+        def _request_raw(self, method: str, params: object) -> dict[str, object]:
+            self.raw_calls.append((method, params))
+            return {}
+
+        def wait_for_notification(self, method: str, timeout: float) -> bool:
+            self.waited_for = (method, timeout)
+            return True
+
+        def close(self) -> None:
+            return None
+
+        def transcript(self) -> list[tuple[str, dict[str, object]]]:
+            return frames
+
+    client = FakeClient()
+    monkeypatch.setattr(runtime_boundary, "verify_pinned_runtime_identity", lambda _runtime: None)
+    monkeypatch.setattr(
+        runtime_boundary,
+        "_new_recording_client",
+        lambda _manifest, _environment: client,
+    )
+
+    evidence = collect_sdk_profile_provenance(manifest, source_environment={})
+
+    assert client.raw_calls[0] == (
+        "permissionProfile/list",
+        {"cwd": manifest.W.resolved_absolute_path},
+    )
+    method, params = client.raw_calls[1]
+    assert method == "thread/start"
+    assert isinstance(params, dict)
+    assert params["permissions"] == ":workspace"
+    assert "sandbox" not in params
+    assert client.waited_for == ("thread/started", 2.0)
+    assert evidence.derived_profile_passed is True
+
+
+def test_profile_failure_is_written_beside_uncreated_bundle(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
+    profile_response = next(
+        frame
+        for direction, frame in frames
+        if direction == "server_to_client" and frame.get("id") == "profiles-1"
+    )
+    profile_response["result"]["data"][0]["allowed"] = False  # type: ignore[index]
+    evidence = sdk_profile_evidence_from_transcript(
+        frames,
+        W=Path(manifest.W.resolved_absolute_path),
+        resolved_executable_sha256=manifest.runtime.executable_sha256,
+        config_identity_sha256=_sha(manifest.configuration),
+    )
+    bundle = tmp_path / "candidate-bundle"
+
+    failure_path = write_runtime_boundary_profile_failure(bundle, manifest, evidence)
+
+    assert failure_path == runtime_boundary_profile_failure_path(bundle)
+    assert failure_path.is_file()
+    assert not bundle.exists()
+    verified = verify_runtime_boundary_profile_failure(failure_path, manifest)
+    assert verified.failure_reason_codes == evidence.profile_failure_reason_codes
+    assert verified.actual_model_turns == 0
+    with pytest.raises(RuntimeBoundaryError, match="retry is forbidden"):
+        write_runtime_boundary_profile_failure(bundle, manifest, evidence)
 
 
 def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
