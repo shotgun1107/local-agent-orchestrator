@@ -34,13 +34,13 @@ Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO
 - native Windows sandbox는 `elevated`와 더 약한 fallback인 `unelevated`가 있으며 elevated가 권장된다: <https://learn.chatgpt.com/codex/windows/windows-sandbox>
 - sandbox에서 시작된 child process도 같은 경계를 상속한다: <https://learn.chatgpt.com/codex/sandboxing>
 - sandbox와 approval policy는 별개이며 workspace 밖 쓰기와 network는 기본적으로 제한된다: <https://learn.chatgpt.com/codex/agent-approvals-security>
-- stable `codex sandbox windows` helper는 permission profile과 cwd·config를 지정해 Codex의 native Windows sandbox 아래 임의 command를 model turn 없이 실행할 수 있다: <https://developers.openai.com/codex/developer-commands>
+- stable `codex sandbox` helper는 permission profile과 cwd·config를 지정해 Codex의 native Windows sandbox 아래 임의 command를 model turn 없이 실행할 수 있다: <https://developers.openai.com/codex/developer-commands>
 - permission profile은 legacy `sandbox_mode`/`--sandbox`와 조합되지 않는다: <https://learn.chatgpt.com/codex/permissions>
 
 이 문서가 공식 문서에서 추론하지 않는 것은 다음과 같다.
 
 1. `workspace_write`라는 이름만으로 `J`·`S` read deny가 보장된다고 주장하지 않는다.
-2. Python SDK 객체 자체가 임의 model-free command probe API를 제공한다고 주장하지 않는다. Phase B 후보는 SDK가 resolve한 동일 bundled executable의 stable `codex sandbox windows` helper를 사용한다.
+2. Python SDK 객체 자체가 임의 model-free command probe API를 제공한다고 주장하지 않는다. Phase B 후보는 SDK가 resolve한 동일 bundled executable의 stable `codex sandbox` helper를 사용한다.
 3. Windows `unelevated` fallback을 `elevated`와 같은 증거로 인정하지 않는다.
 4. `/sandbox-add-read-dir` 같은 session read grant는 `J`·`S` 격리를 약화할 수 있으므로 비교 실행 중 사용하지 않는다.
 
@@ -462,7 +462,7 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
 세부 계약은 [runtime-boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)가 소유한다.
 
 - Python SDK가 `codex_cli_bin.bundled_codex_path()`로 resolve한 exact `codex.exe`를 사용한다.
-- 같은 파일을 SDK app-server와 `codex sandbox windows` probe에 사용하고 path·version·SHA-256을 결합한다.
+- 같은 파일을 SDK app-server와 `codex sandbox` probe에 사용하고 path·version·SHA-256을 결합한다.
 - SDK/CLI `0.144.4`, config stack, managed requirements, built-in permission profile `:workspace`, cwd, environment와 elevated identity가 모두 같아야 한다.
 - SDK profile list와 empty thread의 request/raw response/`thread/started` canonical JSON을 result 안에 넣고 requested/active profile `:workspace`, allowed=true, raw approval `never`, cwd=W, request `sandbox` key 부재, `turn/start` 0회를 독립 verifier가 다시 계산한다.
 - SDK thread/turn과 CLI command 어디에도 legacy sandbox argument가 없어야 한다. active config에 `sandbox_mode`·`sandbox_workspace_write`가 있으면 실패다.

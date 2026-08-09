@@ -1,16 +1,16 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_6_p01_cli_argv_diagnosed`
+- 문서 상태: `revision_7_cli_argv_corrected`
 - 작성일: 2026-08-09
-- 기준 commit: `d8f2ac1d257a2ae2f1ed459253e9d3bc3bfb9908`
+- 기준 commit: `36b868783b3cb959edf4c2aa5960c3898e4f8f0f`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 다섯 번째 model-free 실행에서 P01 실패 증거를 확보해 frozen argv의 obsolete `windows` token이 실제 child command로 해석된 원인을 확정함. Phase B candidate는 아직 증명되지 않음
-- 이번 교정 범위: P01 dispatch의 capped stdout/stderr·exit code 실패 증거 보존과 CLI argv 원인 기록. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 다섯 번째 model-free 실행에서 확정한 obsolete `windows` token을 pinned CLI usage에 맞춰 frozen argv에서 제거함. 새 source의 Phase B 실행은 아직 하지 않음
+- 이번 교정 범위: `codex sandbox [OPTIONS] [COMMAND]...` exact argv 교정. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
-Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `codex.exe`를 사용하지 않는다. Python SDK가 실제 app-server 실행에 resolve하는 **bundled `codex.exe`와 동일한 파일**을 `codex sandbox windows`의 실행 파일로 사용한다.
+Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `codex.exe`를 사용하지 않는다. Python SDK가 실제 app-server 실행에 resolve하는 **bundled `codex.exe`와 동일한 파일**을 `codex sandbox`의 실행 파일로 사용한다.
 
 현재 pinned SDK `openai-codex==0.144.4`는 `openai-codex-cli-bin==0.144.4`에 의존한다. 설치된 SDK의 `openai_codex.client`는 기본 설정에서 `codex_cli_bin.bundled_codex_path()`를 resolve해 그 파일을 `app-server --listen stdio://`로 실행한다. 따라서 다음 결합을 모두 만족할 때만 CLI probe를 SDK Worker 경계 후보로 인정한다.
 
@@ -31,7 +31,7 @@ Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `code
 - native Windows elevated sandbox는 unelevated fallback보다 강하며 기본 후보로 사용해야 한다: <https://developers.openai.com/codex/windows/windows-sandbox>
 - permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않으며 `:workspace`는 runtime workspace root 쓰기와 최소 runtime 읽기를 제공한다: <https://learn.chatgpt.com/codex/permissions>
 
-이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions=":workspace"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 `default_permissions=":workspace"`를 명시한다. `codex sandbox windows`도 `--permission-profile :workspace`를 사용한다. active config 어디에든 legacy `sandbox_mode`·`sandbox_workspace_write`가 있거나 CLI에 `--sandbox`가 들어가면 profile 결합이 무효이므로 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
+이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions=":workspace"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 `default_permissions=":workspace"`를 명시한다. `codex sandbox`도 `--permission-profile :workspace`를 사용한다. active config 어디에든 legacy `sandbox_mode`·`sandbox_workspace_write`가 있거나 CLI에 `--sandbox`가 들어가면 profile 결합이 무효이므로 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
 
 ## 2. 구현 책임과 금지
 
@@ -257,7 +257,7 @@ manifest의 모든 command는 shell 문자열이 아니라 argv 배열로 봉인
 ```text
 [
   <sdk_resolved_executable>,
-  "sandbox", "windows",
+  "sandbox",
   "--cd", <W>,
   "--permission-profile", ":workspace",
   "--include-managed-config",
@@ -550,7 +550,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions=":workspace"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
 5. Controller Win32 token observation 수집
-6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox windows` P01~P08 각 1회
+6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회
 7. strict typed 결과와 4-file bundle 생성
 8. 독립 verifier로 embedded JSON·elevated classification·8개 derived result·exact file set·aggregate 재계산
 9. 보고 후 중단

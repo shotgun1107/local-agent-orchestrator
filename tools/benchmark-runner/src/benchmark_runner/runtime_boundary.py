@@ -1056,7 +1056,6 @@ def _probe_command_argvs(
     prefix = [
         runtime.probe_resolved_executable,
         "sandbox",
-        "windows",
         "--cd",
         str(W_path),
         "--permission-profile",

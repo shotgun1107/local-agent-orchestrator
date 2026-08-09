@@ -536,7 +536,7 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
 
     verify_probe_command_contract(built)
     for command in built.commands:
-        assert command.argv[1:3] == ["sandbox", "windows"]
+        assert command.argv[1:3] == ["sandbox", "--cd"]
         assert "--permission-profile" in command.argv
         assert "--sandbox" not in command.argv
         assert 'default_permissions=":workspace"' in command.argv
