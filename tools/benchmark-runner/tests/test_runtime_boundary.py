@@ -165,17 +165,17 @@ def _denied() -> FileReadObservation:
     )
 
 
-def _configuration() -> ConfigurationExpectation:
+def _configuration(
+    W: Path = Path("C:/runtime-boundary-w"),
+    J: Path = Path("C:/runtime-boundary-j"),
+    S: Path = Path("C:/runtime-boundary-s"),
+) -> ConfigurationExpectation:
     return ConfigurationExpectation(
         default_permissions="runtime-boundary-worker",
         permission_profile_name="runtime-boundary-worker",
-        config_overrides=[
-            'default_permissions="runtime-boundary-worker"',
-            'permissions.runtime-boundary-worker.extends=":workspace"',
-            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
-            "permissions.runtime-boundary-worker.network.enabled=false",
-            'windows.sandbox="elevated"',
-        ],
+        config_overrides=list(
+            runtime_boundary._runtime_boundary_config_overrides(W=W, J=J, S=S)
+        ),
         include_managed_config=True,
         legacy_sandbox_settings_present=False,
         sdk_thread_sandbox_argument_omitted=True,
@@ -245,7 +245,7 @@ def _manifest(tmp_path: Path) -> RuntimeBoundaryProbeManifest:
         created_at=datetime(2026, 8, 9, tzinfo=timezone.utc),
         source_commit="a" * 40,
         runtime=runtime,
-        configuration=_configuration(),
+        configuration=_configuration(W, J, S),
         environment_name_allowlist=allowlist,
         environment_contract_sha256=_sha(allowlist),
         api_key_environment_names_present=(),
@@ -586,11 +586,8 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
         assert command.argv[1:3] == ["sandbox", "--cd"]
         assert "--permission-profile" in command.argv
         assert "--sandbox" not in command.argv
-        assert 'default_permissions="runtime-boundary-worker"' in command.argv
-        assert (
-            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}'
-            in command.argv
-        )
+        for override in built.configuration.config_overrides:
+            assert override in command.argv
         assert 'windows.sandbox="elevated"' in command.argv
     assert built.fixtures.p07_expected_answer_sha256 in built.commands[6].argv
 
@@ -599,14 +596,30 @@ def test_configuration_rejects_weakened_runtime_boundary_profile() -> None:
     payload = _configuration().model_dump(mode="json")
     payload["config_overrides"] = [
         value.replace(
-            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
-            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="read"}',
+            '":root"="deny"',
+            '":root"="read"',
         )
         for value in payload["config_overrides"]
     ]
 
     with pytest.raises(ValueError, match="exact frozen least-privilege set"):
         ConfigurationExpectation.model_validate(payload)
+
+
+def test_manifest_rejects_profile_not_bound_to_controller_roots(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    payload = manifest.model_dump(mode="json")
+    J_key = runtime_boundary._toml_basic_string(manifest.J.resolved_absolute_path)
+    other_key = runtime_boundary._toml_basic_string(
+        str((tmp_path / "different-controller-root").resolve())
+    )
+    payload["configuration"]["config_overrides"] = [
+        value.replace(J_key, other_key)
+        for value in payload["configuration"]["config_overrides"]
+    ]
+
+    with pytest.raises(ValueError, match="exactly bound to the W/J/S roots"):
+        RuntimeBoundaryProbeManifest.model_validate(payload)
 
 
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:

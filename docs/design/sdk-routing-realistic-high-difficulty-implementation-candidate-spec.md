@@ -1,9 +1,9 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_6_runtime_boundary_profile_serialization_corrected`
-- 설계 revision: 6
+- 문서 상태: `revision_7_runtime_boundary_controller_roots_denied`
+- 설계 revision: 7
 - 작성일: 2026-08-09
-- 기준 commit: `a640a002707a3fc1aab865dab7803c7552ff3b5b`
+- 기준 commit: `2eff82d8489ae7d6d215f6f8f584b6ae3907b779`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
@@ -23,7 +23,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 009는 P01까지 통과했지만 built-in `:workspace`로 P02의 J 내용이 노출돼 `NOT_READY`로 닫혔다. Revision 5는 공식 custom-profile 계약을 따라 `runtime-boundary-worker`가 `:workspace`를 상속하되 `:root=deny`, `:minimal=read`, network disabled를 적용하도록 SDK와 CLI 양쪽의 exact config를 교정한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 011은 custom profile과 P01까지 통과했지만 broad root deny만으로 J read가 닫히지 않아 P02 `NOT_READY`로 종료됐다. Revision 7은 resolved 공통 부모·J·S를 exact deny로 추가하고 그 serialized profile을 manifest root identity에 결합한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
@@ -44,7 +44,7 @@ Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO
 3. Windows `unelevated` fallback을 `elevated`와 같은 증거로 인정하지 않는다.
 4. `/sandbox-add-read-dir` 같은 session read grant는 `J`·`S` 격리를 약화할 수 있으므로 비교 실행 중 사용하지 않는다.
 
-새 비교 계보는 `runtime-boundary-worker` custom permission profile만 사용한다. 이 profile은 built-in `:workspace`를 상속해 W write를 유지하면서 `:root=deny`, `:minimal=read`, network disabled를 exact override로 고정한다. SDK thread/turn의 legacy `sandbox` argument는 생략한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
+새 비교 계보는 `runtime-boundary-worker` custom permission profile만 사용한다. 이 profile은 built-in `:workspace`를 상속해 W write를 유지하면서 `:root=deny`, `:minimal=read`, resolved 공통 부모·J·S exact deny, network disabled를 고정한다. SDK thread/turn의 legacy `sandbox` argument는 생략한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
 
 exact executable·config·permission profile binding과 elevated 경계를 runtime-boundary 명세대로 증명할 수 없으면 Adapter 구현으로 넘어가지 않고 `RUNTIME_BOUNDARY_NOT_PROVEN`으로 닫는다.
 
@@ -136,7 +136,7 @@ active_profile_provenance_required: Literal[True]
 ```
 
 - SS1과 B1 모두 같은 contract v2를 사용한다.
-- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 5개를 주고 thread/turn의 `sandbox` 인자를 생략한다. Filesystem의 `:minimal`·`:root` 두 규칙은 CLI dotted-key quoting 차이를 피하도록 하나의 TOML inline table 값으로 전달한다.
+- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 5개를 주고 thread/turn의 `sandbox` 인자를 생략한다. Filesystem 규칙은 하나의 TOML inline table로 전달하며 공통 부모·J·S exact deny path가 manifest root와 다르면 생성·검증을 거부한다.
 - B1은 versioned RunSpec·TaskEnvelope와 public report에 위 필드를 추가하고 `CodexRuntime`이 같은 config override·sandbox 생략을 사용한다.
 - B1의 기존 `SandboxMode.read_only|workspace_write` v1 계약과 기존 S1~S3 실행 bytes는 변경하지 않는다.
 - active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `runtime-boundary-worker`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
