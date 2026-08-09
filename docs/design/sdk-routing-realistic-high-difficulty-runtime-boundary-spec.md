@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_15_controller_only_ntfs_acl_candidate`
+- 문서 상태: `revision_16_p05_no_follow_cleanup_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `f7b530f7826075efe417b5e4ade189ae6c25528c`
+- 기준 commit: `5d9d1a544699af0738cb0f504f3e3e7be4da90d3`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 열두 번째 model-free 실행도 exact profile path deny와 P01을 통과했지만 P02 J read가 성공해 `NOT_READY`로 중단됨. 상위 폴더에서 상속된 `CodexSandboxUsers` Modify ACE가 J/S에 남아 있어 profile 선언만으로 실제 NTFS read가 제거되지 않았으며 candidate는 아직 증명되지 않음
-- 이번 교정 범위: J/S를 각각 opaque Controller-only parent 아래 만들고 parent와 J/S 양쪽 상속을 제거한 뒤 Controller·SYSTEM·Administrators만 Full Control인 exact protected ACL을 적용·검증한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 열세 번째 model-free 실행은 hardened J/S로 P02 `NOT_READY`를 벗어나 P05까지 실행했다. P05 junction의 target이 unreadable해 `Path.exists()`가 false가 되면서 cleanup을 건너뛰었고, P06 직전 command 재검사가 남은 junction을 따라가 frozen P05 argv 불일치로 중단됨. candidate는 아직 증명되지 않음
+- 이번 교정 범위: P05 fixture argv를 link target을 따라가지 않는 absolute lexical path로 고정하고, link entry 존재는 `lstat`, cleanup은 생성 성공 시 symlink=`unlink`·junction=`rmdir`로 수행한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -361,6 +361,8 @@ negative read에서 `not_found`는 합격이 아니다. Controller가 직전·�
 ```
 
 예상: symlink와 junction 각각 link 생성이 거부되거나 생성된 link read가 `access_denied`; 어떤 경우에도 content byte 0. probe 종료 뒤 Controller가 두 link·target·W tree를 검사한다.
+
+P05의 symlink/junction argv는 `resolve()`로 target을 따라 재계산하지 않고 W 기준 lexical absolute path로 봉인한다. Link entry 존재는 target read 가능 여부와 무관하게 `lstat`로 확인한다. 생성에 성공한 symlink는 `unlink`, junction은 `rmdir`를 반드시 시도하며 cleanup 뒤 entry가 남으면 P05 실패다. 남은 reparse point 때문에 후속 command identity가 바뀌어서는 안 된다.
 
 ### P06 — allowed child process read
 

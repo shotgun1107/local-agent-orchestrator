@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
+import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -635,6 +638,76 @@ def test_controller_only_directory_hardening_is_exact(tmp_path: Path) -> None:
     assert verified.identity == identity
     assert verified.dacl_control == "PAI"
     assert len(verified.dacl_aces) == 3
+
+
+def test_p05_command_identity_does_not_follow_created_junction(tmp_path: Path) -> None:
+    fixture = _manifest(tmp_path)
+    built = build_runtime_boundary_manifest(
+        source_commit=fixture.source_commit,
+        W=fixture.W,
+        J=fixture.J,
+        S=fixture.S,
+        W_sentinel=fixture.W_sentinel,
+        J_sentinel=fixture.J_sentinel,
+        S_sentinel=fixture.S_sentinel,
+        fixtures=fixture.fixtures,
+        probe_python_executable=Path(fixture.probe_python_executable),
+        probe_script_relative_path=fixture.probe_script_relative_path,
+        environment_name_allowlist=fixture.environment_name_allowlist,
+        runtime=fixture.runtime,
+        created_at=fixture.created_at,
+        probe_id=fixture.probe_id,
+    )
+    junction = Path(built.W.resolved_absolute_path) / built.fixtures.p05_junction_path
+    completed = subprocess.run(
+        [
+            os.environ.get("ComSpec", r"C:\Windows\System32\cmd.exe"),
+            "/d",
+            "/s",
+            "/c",
+            "mklink",
+            "/J",
+            str(junction),
+            built.J.resolved_absolute_path,
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    assert completed.returncode == 0
+    try:
+        verify_probe_command_contract(built)
+    finally:
+        os.rmdir(junction)
+
+
+def test_p05_junction_cleanup_does_not_depend_on_target_readability(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probe_path = (
+        Path(__file__).parents[1] / "scripts" / "probe_runtime_boundary.py"
+    ).resolve()
+    spec = importlib.util.spec_from_file_location("runtime_boundary_probe_cleanup", probe_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    junction = tmp_path / "junction"
+    junction.mkdir()
+    target = tmp_path / "unreadable-target" / "sentinel.bin"
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *_args, **_kwargs: type("Completed", (), {"returncode": 0})(),
+    )
+    monkeypatch.setattr(Path, "exists", lambda _self: False)
+
+    observation = module._link_attempt("junction", junction, target)
+
+    assert observation["link_exists_after_create"] is True
+    assert observation["link_exists_after_cleanup"] is False
+    assert not os.path.lexists(junction)
 
 
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
