@@ -39,18 +39,22 @@ from benchmark_runner.runtime_boundary import (
     build_windows_sandbox_provenance,
     build_runtime_boundary_manifest,
     collect_sdk_profile_provenance,
+    effective_policy_failure_reason_codes,
     effective_policy_evidence_from_projection,
     project_effective_policy,
     result_with_recomputed_verdict,
+    runtime_boundary_policy_failure_path,
     runtime_boundary_profile_failure_path,
     sdk_profile_evidence_from_transcript,
     verify_effective_policy,
+    verify_runtime_boundary_policy_failure,
     verify_runtime_boundary_profile_failure,
     verify_runtime_boundary_bundle,
     verify_runtime_boundary_result,
     verify_sdk_profile_provenance,
     verify_probe_command_contract,
     write_runtime_boundary_bundle,
+    write_runtime_boundary_policy_failure,
     write_runtime_boundary_profile_failure,
 )
 
@@ -671,6 +675,58 @@ def test_profile_failure_is_written_beside_uncreated_bundle(tmp_path: Path) -> N
     assert verified.actual_model_turns == 0
     with pytest.raises(RuntimeBoundaryError, match="retry is forbidden"):
         write_runtime_boundary_profile_failure(bundle, manifest, evidence)
+
+
+def test_policy_failure_is_written_beside_uncreated_bundle(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
+    profile = sdk_profile_evidence_from_transcript(
+        frames,
+        W=Path(manifest.W.resolved_absolute_path),
+        resolved_executable_sha256=manifest.runtime.executable_sha256,
+        config_identity_sha256=_sha(manifest.configuration),
+    )
+    passing_projection = runtime_boundary.EffectivePolicyProjection.model_validate(
+        _policy().projection.json_value()
+    )
+    failing_projection = passing_projection.model_copy(update={"windows_sandbox": None})
+    policy = effective_policy_evidence_from_projection(
+        failing_projection,
+        source_response_sha256=ONE,
+    )
+    requirements = EmbeddedJsonEvidence.from_value({"id": "requirements-1", "result": {}})
+    readiness = EmbeddedJsonEvidence.from_value(
+        {"id": "readiness-1", "result": {"status": "ready"}}
+    )
+    bundle = tmp_path / "candidate-bundle"
+
+    failure_path = write_runtime_boundary_policy_failure(
+        bundle,
+        manifest,
+        profile,
+        policy,
+        requirements,
+        readiness,
+    )
+
+    assert failure_path == runtime_boundary_policy_failure_path(bundle)
+    assert failure_path.is_file()
+    assert not bundle.exists()
+    assert effective_policy_failure_reason_codes(policy) == [
+        "WINDOWS_SANDBOX_NOT_ELEVATED"
+    ]
+    verified = verify_runtime_boundary_policy_failure(failure_path, manifest)
+    assert verified.failure_reason_codes == ["WINDOWS_SANDBOX_NOT_ELEVATED"]
+    assert verified.actual_model_turns == 0
+    with pytest.raises(RuntimeBoundaryError, match="retry is forbidden"):
+        write_runtime_boundary_policy_failure(
+            bundle,
+            manifest,
+            profile,
+            policy,
+            requirements,
+            readiness,
+        )
 
 
 def test_effective_policy_projection_is_redacted_and_recomputed() -> None:

@@ -799,6 +799,37 @@ class RuntimeBoundaryProfileFailureArtifact(StrictModel):
         return self
 
 
+class RuntimeBoundaryPolicyFailureArtifact(StrictModel):
+    """Unsealed effective-policy diagnostic kept outside the candidate bundle."""
+
+    schema_version: Literal[1] = 1
+    probe_id: str = Field(pattern=r"^runtime-boundary-[a-z0-9._-]+$")
+    manifest_sha256: Sha256
+    recorded_at: datetime
+    failed_stage: Literal["effective_policy"]
+    failure_reason_codes: list[str] = Field(min_length=1)
+    actual_model_turns: int = Field(ge=0)
+    sdk_profile_provenance: SdkProfileProvenanceObservation
+    effective_policy: EffectivePolicyEvidence
+    config_requirements_response: EmbeddedJsonEvidence
+    readiness_response: EmbeddedJsonEvidence
+
+    _recorded_has_timezone = field_validator("recorded_at")(validate_timestamp)
+
+    @model_validator(mode="after")
+    def failure_is_canonical(self) -> "RuntimeBoundaryPolicyFailureArtifact":
+        if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
+            raise ValueError("failure reason codes must be sorted and unique")
+        if self.actual_model_turns != self.sdk_profile_provenance.actual_model_turns:
+            raise ValueError("failure actual model-turn count mismatch")
+        if not self.sdk_profile_provenance.derived_profile_passed:
+            raise ValueError("policy failure requires passing SDK profile evidence")
+        expected_codes = effective_policy_failure_reason_codes(self.effective_policy)
+        if self.failure_reason_codes != expected_codes:
+            raise ValueError("failure reason codes differ from effective policy evidence")
+        return self
+
+
 class RuntimeBoundaryBundleSeal(StrictModel):
     schema_version: Literal[1] = 1
     probe_id: str
@@ -2295,6 +2326,64 @@ def verify_runtime_boundary_profile_failure(
     return artifact
 
 
+def runtime_boundary_policy_failure_path(bundle_root: Path) -> Path:
+    root = Path(bundle_root)
+    return root.with_name(f"{root.name}.policy-failure.json")
+
+
+def write_runtime_boundary_policy_failure(
+    bundle_root: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+    profile: SdkProfileProvenanceObservation,
+    policy: EffectivePolicyEvidence,
+    requirements: EmbeddedJsonEvidence,
+    readiness: EmbeddedJsonEvidence,
+) -> Path:
+    """Persist the redacted policy surfaces that blocked probe dispatch."""
+
+    if not verify_sdk_profile_provenance(manifest, profile):
+        raise RuntimeBoundaryError("policy failure requires passing SDK profile evidence")
+    failure_reason_codes = effective_policy_failure_reason_codes(policy)
+    if not failure_reason_codes:
+        raise RuntimeBoundaryError("passing effective policy cannot be recorded as failure")
+    path = runtime_boundary_policy_failure_path(bundle_root)
+    if path.exists():
+        raise RuntimeBoundaryError("effective-policy failure artifact already exists; retry is forbidden")
+    artifact = RuntimeBoundaryPolicyFailureArtifact(
+        probe_id=manifest.probe_id,
+        manifest_sha256=sha256_bytes(canonical_json_bytes(manifest)),
+        recorded_at=utc_now(),
+        failed_stage="effective_policy",
+        failure_reason_codes=failure_reason_codes,
+        actual_model_turns=profile.actual_model_turns,
+        sdk_profile_provenance=profile,
+        effective_policy=policy,
+        config_requirements_response=requirements,
+        readiness_response=readiness,
+    )
+    atomic_write(path, canonical_json_bytes(artifact))
+    return path
+
+
+def verify_runtime_boundary_policy_failure(
+    path: Path,
+    manifest: RuntimeBoundaryProbeManifest,
+) -> RuntimeBoundaryPolicyFailureArtifact:
+    artifact = RuntimeBoundaryPolicyFailureArtifact.model_validate_json(Path(path).read_bytes())
+    if artifact.probe_id != manifest.probe_id:
+        raise RuntimeBoundaryError("effective-policy failure probe ID mismatch")
+    if artifact.manifest_sha256 != sha256_bytes(canonical_json_bytes(manifest)):
+        raise RuntimeBoundaryError("effective-policy failure manifest SHA-256 mismatch")
+    if not verify_sdk_profile_provenance(manifest, artifact.sdk_profile_provenance):
+        raise RuntimeBoundaryError("effective-policy failure contains invalid SDK profile evidence")
+    if verify_effective_policy(
+        artifact.effective_policy,
+        configuration=manifest.configuration,
+    ):
+        raise RuntimeBoundaryError("effective-policy failure artifact contains passing evidence")
+    return artifact
+
+
 _SENSITIVE_KEY_PARTS = (
     "api_key",
     "apikey",
@@ -2414,6 +2503,45 @@ def effective_policy_evidence_from_projection(
         ),
         derived_policy_passed=passed,
     )
+
+
+def effective_policy_failure_reason_codes(
+    evidence: EffectivePolicyEvidence,
+) -> list[str]:
+    """Recompute stable reason codes from the embedded effective-policy projection."""
+
+    projection = EffectivePolicyProjection.model_validate(evidence.projection.json_value())
+    expected = effective_policy_evidence_from_projection(
+        projection,
+        source_response_sha256=evidence.source_response_sha256,
+    )
+    for field in (
+        "default_permissions",
+        "permission_profile_id",
+        "windows_sandbox",
+        "legacy_sandbox_mode_present",
+        "legacy_sandbox_workspace_write_present",
+        "derived_policy_passed",
+    ):
+        if getattr(evidence, field) != getattr(expected, field):
+            raise RuntimeBoundaryError(f"effective policy derived field mismatch: {field}")
+
+    codes: list[str] = []
+    if projection.default_permissions != PERMISSION_PROFILE_ID:
+        codes.append("DEFAULT_PERMISSIONS_NOT_WORKSPACE")
+    if projection.permission_profile_id != PERMISSION_PROFILE_ID:
+        codes.append("PERMISSION_PROFILE_NOT_WORKSPACE")
+    if projection.windows_sandbox != WINDOWS_SANDBOX_KIND:
+        codes.append("WINDOWS_SANDBOX_NOT_ELEVATED")
+    if projection.legacy_sandbox_mode_present:
+        codes.append("LEGACY_SANDBOX_MODE_PRESENT")
+    if projection.legacy_sandbox_workspace_write_present:
+        codes.append("LEGACY_SANDBOX_WORKSPACE_WRITE_PRESENT")
+    if not projection.config_source_identities:
+        codes.append("CONFIG_SOURCE_IDENTITY_MISSING")
+    if not projection.managed_source_identities:
+        codes.append("MANAGED_SOURCE_IDENTITY_MISSING")
+    return sorted(codes)
 
 
 def verify_effective_policy(
@@ -2962,7 +3090,18 @@ def execute_runtime_boundary_probe(
         source_environment=source_environment,
     )
     if not verify_effective_policy(policy, configuration=manifest.configuration):
-        raise RuntimeBoundaryError("effective :workspace/elevated policy was not proven")
+        failure_path = write_runtime_boundary_policy_failure(
+            bundle_root,
+            manifest,
+            profile,
+            policy,
+            requirements,
+            readiness,
+        )
+        raise RuntimeBoundaryError(
+            "effective :workspace/elevated policy was not proven; "
+            f"failure evidence: {failure_path}"
+        )
     if _readiness_status(readiness) != "ready":
         raise RuntimeBoundaryError("native Windows sandbox is not ready")
     allowed = _allowed_windows_implementations(requirements)

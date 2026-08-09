@@ -5,8 +5,8 @@
 - 기준 commit: `236afd3c481eebad4d46017f0cd26c1ebb16f6e8`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: Phase B 구현 뒤 최초 model-free 실행에서 profile 증거 수집 오류를 관측해 §3.1을 실제 bundled app-server surface에 맞게 교정
-- 이번 교정 범위: SDK profile handshake와 실패 증거 보존. P01~P08 재실행·model turn·Phase C는 포함하지 않음
+- 현재 상태: 두 번째 model-free 실행에서 SDK profile은 통과했지만 effective policy 판정이 P01 전에 중단되어, 실패 당시의 redacted policy surface를 보존하도록 교정
+- 이번 교정 범위: effective-policy 실패 증거 보존. P01~P08 로직·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -525,7 +525,7 @@ runtime-boundary/files.sha256
 runtime-boundary/bundle-seal.json
 ```
 
-`files.sha256`는 manifest/result의 raw bytes를 정렬된 상대경로로 집계한다. `result.json` 안에는 §3.1 app-server의 방향 결합 전체 transcript가 canonical JSON bytes로 포함되므로 별도 raw transcript 파일은 만들지 않는다. profile 단계가 실패하면 exact bundle 안이 아니라 그 옆의 `<bundle>.profile-failure.json`에 같은 transcript와 재계산 실패 코드를 남기고 중단한다. 이 진단 파일은 candidate bundle이나 통과 증거가 아니다. `bundle-seal.json`은 `probe_id`, file count, aggregate SHA-256과 source commit을 가진다. 기존 `canonical_json_bytes`, `atomic_write`, `sha256_file`을 재사용하며 새 lifecycle이나 mutable state를 만들지 않는다.
+`files.sha256`는 manifest/result의 raw bytes를 정렬된 상대경로로 집계한다. `result.json` 안에는 §3.1 app-server의 방향 결합 전체 transcript가 canonical JSON bytes로 포함되므로 별도 raw transcript 파일은 만들지 않는다. profile 단계가 실패하면 exact bundle 안이 아니라 그 옆의 `<bundle>.profile-failure.json`에 같은 transcript와 재계산 실패 코드를 남기고 중단한다. profile은 통과했지만 effective policy가 실패하면 `<bundle>.policy-failure.json`에 profile transcript, redacted policy projection, `configRequirements/read`, `windowsSandbox/readiness`, 재계산 실패 코드를 남긴다. 두 진단 파일 모두 candidate bundle이나 통과 증거가 아니며 같은 경로를 덮어쓰거나 자동 재시도하지 않는다. `bundle-seal.json`은 `probe_id`, file count, aggregate SHA-256과 source commit을 가진다. 기존 `canonical_json_bytes`, `atomic_write`, `sha256_file`을 재사용하며 새 lifecycle이나 mutable state를 만들지 않는다.
 
 live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`, runtime/configuration identity를 넣는다. create와 각 dispatch 직전에 다음을 다시 확인한다.
 
