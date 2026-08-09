@@ -43,13 +43,6 @@ PINNED_CODEX_VERSION = "0.144.4"
 PINNED_CLI_TARGET = "x86_64-pc-windows-msvc"
 PERMISSION_PROFILE_ID = "runtime-boundary-worker"
 WINDOWS_SANDBOX_KIND = "elevated"
-RUNTIME_BOUNDARY_CONFIG_OVERRIDES = (
-    'default_permissions="runtime-boundary-worker"',
-    'permissions.runtime-boundary-worker.extends=":workspace"',
-    'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
-    "permissions.runtime-boundary-worker.network.enabled=false",
-    'windows.sandbox="elevated"',
-)
 PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list"
 THREAD_STARTED_NOTIFICATION_METHOD = "thread/started"
 EXACT_PROBE_IDS = tuple(f"P{number:02d}" for number in range(1, 9))
@@ -61,6 +54,51 @@ EXACT_BUNDLE_FILES = frozenset(
         "bundle-seal.json",
     }
 )
+
+
+def _toml_basic_string(value: str) -> str:
+    """Return a TOML basic string suitable for one inline-table key or value."""
+
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _runtime_boundary_config_overrides(
+    *,
+    W: Path,
+    J: Path,
+    S: Path,
+) -> tuple[str, ...]:
+    """Build the exact custom profile shared by SDK and CLI surfaces."""
+
+    W_path = Path(W).resolve()
+    J_path = Path(J).resolve()
+    S_path = Path(S).resolve()
+    try:
+        common_parent = Path(os.path.commonpath([W_path, J_path, S_path])).resolve()
+    except ValueError as exc:
+        raise ValueError("W, J and S must share a drive for the permission profile") from exc
+    filesystem_entries = {
+        ":minimal": "read",
+        ":root": "deny",
+        str(common_parent): "deny",
+        str(J_path): "deny",
+        str(S_path): "deny",
+    }
+    filesystem_value = "{" + ",".join(
+        f"{_toml_basic_string(path)}={_toml_basic_string(access)}"
+        for path, access in sorted(filesystem_entries.items())
+    ) + "}"
+    return tuple(
+        sorted(
+            (
+                'default_permissions="runtime-boundary-worker"',
+                'permissions.runtime-boundary-worker.extends=":workspace"',
+                "permissions.runtime-boundary-worker.filesystem=" + filesystem_value,
+                "permissions.runtime-boundary-worker.network.enabled=false",
+                'windows.sandbox="elevated"',
+            )
+        )
+    )
 
 
 class RuntimeBoundaryError(RuntimeError):
@@ -403,7 +441,23 @@ class ConfigurationExpectation(StrictModel):
 
     @model_validator(mode="after")
     def required_overrides_are_present(self) -> "ConfigurationExpectation":
-        if self.config_overrides != list(RUNTIME_BOUNDARY_CONFIG_OVERRIDES):
+        required_static = {
+            'default_permissions="runtime-boundary-worker"',
+            'permissions.runtime-boundary-worker.extends=":workspace"',
+            "permissions.runtime-boundary-worker.network.enabled=false",
+            'windows.sandbox="elevated"',
+        }
+        filesystem_overrides = [
+            value
+            for value in self.config_overrides
+            if value.startswith("permissions.runtime-boundary-worker.filesystem=")
+        ]
+        if (
+            not required_static.issubset(self.config_overrides)
+            or len(filesystem_overrides) != 1
+            or '":minimal"="read"' not in filesystem_overrides[0]
+            or '":root"="deny"' not in filesystem_overrides[0]
+        ):
             raise ValueError(
                 "runtime-boundary profile overrides must be the exact frozen least-privilege set"
             )
@@ -707,6 +761,11 @@ class RuntimeBoundaryProbeManifest(StrictModel):
             for right in paths:
                 if left != right and (left in right.parents or right in left.parents):
                     raise ValueError("W, J and S cannot be parent/child roots")
+        expected_overrides = list(
+            _runtime_boundary_config_overrides(W=paths[0], J=paths[1], S=paths[2])
+        )
+        if self.configuration.config_overrides != expected_overrides:
+            raise ValueError("configuration is not exactly bound to the W/J/S roots")
         return self
 
 
@@ -1463,7 +1522,13 @@ def build_runtime_boundary_manifest(
     configuration = ConfigurationExpectation(
         default_permissions=PERMISSION_PROFILE_ID,
         permission_profile_name=PERMISSION_PROFILE_ID,
-        config_overrides=list(RUNTIME_BOUNDARY_CONFIG_OVERRIDES),
+        config_overrides=list(
+            _runtime_boundary_config_overrides(
+                W=Path(W.resolved_absolute_path),
+                J=Path(J.resolved_absolute_path),
+                S=Path(S.resolved_absolute_path),
+            )
+        ),
         include_managed_config=True,
         legacy_sandbox_settings_present=False,
         sdk_thread_sandbox_argument_omitted=True,
