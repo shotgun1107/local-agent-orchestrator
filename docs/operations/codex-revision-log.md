@@ -1656,3 +1656,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 새 인수 문서는 Phase B Candidate 015와 Pro closure, Phase C model-free 구현·시험 기록, Phase D revision 1 심사와 revision 2 closure 후보를 구분한다. 현재 다음 gate는 ChatGPT Pro revision 2 재심 결과이며, 그 결과와 별도 사용자 승인 전에는 Phase D artifact 구현을 열지 않는다.
 - 회사 첫 세션은 local change·local-only commit 보존, 집 branch ff-only 동기화, 정본 읽기와 인수 보고만 허용한다. 과거 시험 재실행, 내부 하위 에이전트, 파일 수정, main 병합, live/model 작업은 금지한다.
 - 과거 `home-codex-handoff.md`에는 현재 회사 복귀 문서가 운영 절차를 대체한다는 banner만 추가했다. 코드·시험·artifact는 수정하거나 실행하지 않았고 actual model turn은 0회다.
+
+## 집→회사 인수인계 목표를 exact Git tree 동일화로 교정
+
+- 작업일: 2026-08-09. 사용자가 인수인계의 본뜻은 두 PC가 별도 프로젝트 상태를 유지하는 것이 아니라 해당 프로젝트의 모든 Git 관리 파일·디렉터리를 같은 commit/tree로 맞추고 Codex 컨텍스트만 별도로 복원하는 것이라고 명확히 했다.
+- 인수인계 문서와 회사 시작 프롬프트를 revision 2로 다시 작성했다. 회사는 먼저 local change·untracked 작업·local-only commit을 보존하고, fetch 뒤 최신 `origin/main`의 unique commit을 확인한다. main-only commit이 없을 때만 `codex/runtime-boundary-p01` tip으로 ff-only 동기화한다.
+- 동일성 통과 조건은 local/remote commit 일치, tree hash 일치, porcelain status 비어 있음과 remote branch 대비 tracked diff 0이다. `.venv`, cache, OS 설치, Codex 로그인·메모리와 repository 밖 state는 Git 정본이 아니므로 복사 대상에서 제외했다.
+- main-only 작업이나 회사 local-only 작업이 있으면 어느 쪽도 덮지 않고 보고 후 중단한다. 첫 세션은 동일화·문서 읽기·보고만 허용하고 Phase D 구현과 과거 시험 재실행은 계속 금지한다.
+- 이번 교정은 인수인계·프롬프트·revision log 문서뿐이다. 코드·시험·artifact·model turn은 변경하거나 실행하지 않았다.
