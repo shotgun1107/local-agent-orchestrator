@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_14_explicit_controller_root_denies_candidate`
+- 문서 상태: `revision_15_controller_only_ntfs_acl_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `2eff82d8489ae7d6d215f6f8f584b6ae3907b779`
+- 기준 commit: `f7b530f7826075efe417b5e4ade189ae6c25528c`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 열한 번째 model-free 실행은 custom profile과 P01을 통과했지만 P02 J absolute read가 다시 성공해 `NOT_READY`로 중단됨. broad `:root=deny`만으로는 Windows의 narrower read grant에서 J를 잘라내지 못했으며 candidate는 아직 증명되지 않음
-- 이번 교정 범위: 같은 filesystem inline table에 W/J/S 공통 부모, J, S의 resolved absolute path를 exact deny로 추가하고 manifest root identity에 결합한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 열두 번째 model-free 실행도 exact profile path deny와 P01을 통과했지만 P02 J read가 성공해 `NOT_READY`로 중단됨. 상위 폴더에서 상속된 `CodexSandboxUsers` Modify ACE가 J/S에 남아 있어 profile 선언만으로 실제 NTFS read가 제거되지 않았으며 candidate는 아직 증명되지 않음
+- 이번 교정 범위: J/S를 각각 opaque Controller-only parent 아래 만들고 parent와 J/S 양쪽 상속을 제거한 뒤 Controller·SYSTEM·Administrators만 Full Control인 exact protected ACL을 적용·검증한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -132,6 +132,7 @@ roots:
     volume_identity
     owner_sid
     acl_sddl_sha256
+  J, S additionally require exact protected DACL: Controller/SYSTEM/Administrators full control only
   pairwise_parent_child: Literal[False]
   pairwise_reparse_target: Literal[False]
 sentinels:
@@ -264,6 +265,19 @@ manifest 생성 직후의 W ACL을 기준선으로 메모리에 보존한다. SD
 - P02~P08: P01에서 결합된 ACL과 SID가 계속 동일
 
 P01 전에는 기준선 상태 또는 위 exact 전이 상태만 허용한다. P01 종료 뒤 전이가 없거나 추가 ACE SID hash가 P01 restricted SID hash 목록에 없으면 중단한다. 다른 ACE 추가, ACE 제거, J·S 변화, 전이 되돌림은 모두 fail-closed다. 결과 bundle은 초기/활성 ACL hash, DACL control hash, ACE hash multiset, 추가 ACE와 SID, P01 restricted-token 결합 여부를 포함하며 verifier가 전이와 classification hash를 다시 계산한다.
+
+### 3.4 J/S Controller-only NTFS ACL 계약
+
+Permission profile 선언은 필수지만 012까지의 실제 Windows 실행에서는 상위 폴더의 `CodexSandboxUsers` inherited Modify ACE가 J/S에 남아 P02 read가 성공했다. 따라서 root 준비 단계에서 OS ACL 자체를 다음처럼 닫는다.
+
+- J와 S는 base root의 직접 sibling이 아니라 서로 다른 예측 불가능한 private parent 아래 `judge`, `state` leaf로 만든다. P04가 enumerate하는 common parent에는 J basename이 존재하지 않는다.
+- 각 private parent와 J/S leaf에서 ACL inheritance를 제거한다.
+- exact DACL은 Controller TokenUser SID, `SYSTEM(S-1-5-18)`, `BUILTIN\\Administrators(S-1-5-32-544)`의 `OICI Full Control` 세 ACE뿐이다.
+- canonical SDDL DACL control은 `PAI`, ACE multiset은 `SY`, `BA`, Controller SID의 세 explicit allow ACE와 정확히 같아야 한다.
+- J/S root identity는 이 hardening 뒤 캡처한다. 생성 직후와 매 probe 전후에 owner·volume·ACL hash뿐 아니라 위 exact protected ACL 의미도 다시 검사한다.
+- ACL 적용 도구가 실패·timeout·nonzero exit이거나 추가 ACE, inherited ACE, 다른 principal이 남으면 manifest를 만들지 않는다.
+
+W는 이 hardening 대상이 아니다. W는 기존 inherited access에서 시작하고 §3.3의 exact capability ACE 하나만 추가될 수 있다.
 
 ## 4. 공통 command prefix
 
@@ -562,7 +576,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 
 별도 사용자 승인이 난 뒤에도 다음 순서만 허용한다.
 
-1. model-free manifest build
+1. fresh W와 opaque private parent 아래 J/S를 만들고 J/S Controller-only ACL을 적용·검증한 뒤 model-free manifest build
 2. 독립 verifier로 manifest와 bundled executable binding 확인
 3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions="runtime-boundary-worker"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
@@ -580,7 +594,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 - 시스템·Desktop App Codex 사용 금지
 - actual `thread/start` raw response의 `activePermissionProfile.id` provenance와 profile list·request·`thread/started` raw Evidence 재검증 계약 확정
 - effective config/readiness/Controller·probe SID에 의한 elevated 재계산 규칙 확정; `TokenIsElevated` 오판 금지
-- config/profile/managed requirements/W/J/S 초기 identity와 exact W-only ACL transition Schema 확정
+- config/profile/managed requirements, J/S exact protected ACL, W/J/S 초기 identity와 exact W-only ACL transition Schema 확정
 - 8개 probe의 exact argv·예상 결과·discriminated typed observation·재계산 규칙 확정
 - result와 4-file bundle·재검증 조건 확정
 - negative read의 `not_found` 통과 금지

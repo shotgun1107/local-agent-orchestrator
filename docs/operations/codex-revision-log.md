@@ -1590,3 +1590,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 작업일: 2026-08-09. source `2eff82d8489ae7d6d215f6f8f584b6ae3907b779`, pending manifest SHA-256 `86ddd9e9d9b8a099e8ab7c983a7f0b858b927e8abff5a005a1d8dcadc271733d`의 `phaseb-20260809-011`은 custom profile provenance·effective config·elevated readiness와 P01 W positive control·ACL restricted-SID 결합을 통과했다. 그러나 P02 J absolute read가 다시 내용을 노출해 즉시 `NOT_READY`로 중단됐다. P03~P08과 model turn은 0회이고 candidate bundle은 없다.
 - 별도 `config/read`는 active default와 profile이 `runtime-boundary-worker`, `extends=:workspace`, filesystem `:minimal=read`·`:root=deny`, network disabled로 실제 적용됐음을 확인했다. 따라서 011은 설정 누락이 아니라 broad root deny가 Windows의 더 좁은 read grant에서 J를 제거하지 못한 결과다.
 - `phaseb-20260809-011` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존한다. 다음 profile은 같은 inline table에 resolved W/J/S 공통 부모, J, S를 각각 exact deny로 추가한다. Manifest validator가 serialized path와 root identity를 직접 비교하며 다른 J/S로 바꾼 profile은 거부한다. 표적 회귀 15개는 통과했고 새 source·새 root token 전까지 candidate 주장은 금지한다.
+
+## 현실 고난도 Phase B inherited ACL 원인 확정과 J/S hardening
+
+- 작업일: 2026-08-09. source `f7b530f7826075efe417b5e4ade189ae6c25528c`, pending manifest SHA-256 `217a8a90475a075f04e0cc456f22c4eb80e73c4dbde3a6da0c4bd4f5e2248267`의 `phaseb-20260809-012`는 exact common-parent/J/S profile deny와 P01을 통과했지만 P02 J content가 다시 노출돼 `NOT_READY`로 중단됐다. P03~P08과 model turn은 0회이고 candidate bundle은 없다.
+- Read-only `icacls`는 012 J에 Controller·SYSTEM·Administrators뿐 아니라 `CodexSandboxUsers`와 두 sandbox 관련 SID의 inherited `OI/CI Modify` ACE가 있음을 확인했다. Profile의 declarative deny가 active여도 dedicated sandbox user가 이 inherited allow를 통해 읽을 수 있었던 것이 반복 P02 성공의 실제 OS 원인이다.
+- `phaseb-20260809-012` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존한다. 다음 준비 구현은 J/S를 서로 다른 opaque private parent 아래 만들고 parent와 leaf 모두 inheritance를 제거한 뒤 Controller SID, SYSTEM, BUILTIN Administrators의 `OICI Full Control` 세 explicit ACE만 허용한다. W는 기존 ACL과 capability transition 계약을 유지한다.
+- 임시 폴더에서 `icacls /inheritance:r`와 SID 기반 `/grant:r` 문법, canonical `D:PAI`와 exact 세 ACE를 확인한 뒤 임시 폴더를 삭제했다. 실제 helper와 exact ACL 회귀를 포함한 runtime-boundary 표적 시험은 `16 passed`다. 새 source·새 root token에서 P01~P08을 다시 실행하기 전에는 candidate가 아니다.

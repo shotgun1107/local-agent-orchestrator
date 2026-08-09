@@ -1,9 +1,9 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_7_runtime_boundary_controller_roots_denied`
-- 설계 revision: 7
+- 문서 상태: `revision_8_runtime_boundary_controller_acl_hardened`
+- 설계 revision: 8
 - 작성일: 2026-08-09
-- 기준 commit: `2eff82d8489ae7d6d215f6f8f584b6ae3907b779`
+- 기준 commit: `f7b530f7826075efe417b5e4ade189ae6c25528c`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
@@ -23,7 +23,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 011은 custom profile과 P01까지 통과했지만 broad root deny만으로 J read가 닫히지 않아 P02 `NOT_READY`로 종료됐다. Revision 7은 resolved 공통 부모·J·S를 exact deny로 추가하고 그 serialized profile을 manifest root identity에 결합한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했지만 012도 exact profile deny가 active인 상태에서 inherited `CodexSandboxUsers` Modify ACE 때문에 P02 J read가 성공했다. Revision 8은 J/S를 opaque private parent 아래 만들고 OS inheritance를 제거해 Controller·SYSTEM·Administrators 전용 exact NTFS ACL을 적용한다. 새 source·새 root token의 P01~P08 실행 전까지 W/J/S 경계는 여전히 증명되지 않았다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
@@ -452,8 +452,8 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
 ### 7.1 필요한 경계
 
 - `W`: Worker가 읽고 쓸 수 있는 독립 workspace
-- `J`: checker·reference·positive evidence가 있는 Controller 전용 root
-- `S`: Plan·Measurement·seal이 있는 Controller 전용 외부 state root
+- `J`: checker·reference·positive evidence가 있는 Controller 전용 root. Opaque private parent와 J leaf 모두 inheritance를 제거하고 Controller·SYSTEM·Administrators 외 ACE를 허용하지 않음
+- `S`: Plan·Measurement·seal이 있는 Controller 전용 외부 state root. J와 별도 opaque private parent와 같은 exact protected ACL 사용
 
 세 root는 서로의 하위, 상위, symlink, junction 대상이 아니어야 한다. Worker prompt·환경 변수·process argument에는 `J`·`S`의 path나 내용을 넣지 않는다.
 
@@ -469,6 +469,7 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
 - Codex의 `elevated` 구현은 Windows token의 `TokenIsElevated`와 혼동하지 않는다. effective `windows.sandbox=elevated`, `windowsSandbox/readiness=ready`, Controller와 dedicated sandbox user의 TokenUser SID 차이, 모든 probe identity 일치를 typed result로 재계산한다.
 - W positive, J/S absolute·relative·enumeration·link·child·process-input·state read/write의 8개 argv와 64 KiB stream cap·30초 timeout을 manifest에 봉인한다. 결과는 P01~P08 discriminated union이며 enumeration·symlink/junction·child identity·환경/argument match·S read/create/replace를 각각 보존한다.
 - negative read의 `not_found`는 통과가 아니며 OS access denied와 content byte 0을 요구한다.
+- Profile exact deny만 신뢰하지 않는다. J/S의 protected NTFS ACL은 manifest identity 캡처 전 적용하며 생성·각 probe 전후에 exact 세 principal과 inheritance 제거를 다시 확인한다.
 - result는 embedded app-server canonical JSON과 typed probe observation을 포함하는 exact 4-file bundle로 만들고 create·각 dispatch 전 profile·elevated·8개 pass를 작성자와 독립적으로 재계산한다.
 
 허용 결과:
