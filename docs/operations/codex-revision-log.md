@@ -1648,3 +1648,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - revision 2는 I05~I07을 증상과 공개 invariant로 교체하고 Worker-visible surface 전체의 provenance·forbidden fact·random canary 검사를 추가했다. Judge에는 fresh read/write O, W/J runtime/O/S의 operation별 parent/child matrix, J runtime·S의 pre/post root·ACL·tree·file hash 불변을 고정했다. repository의 versioned J source는 frozen Git object에서 별도 opaque protected runtime J로 byte-exact 복사·결합하고 실제 probe/checker는 runtime J만 사용한다.
 - Profile R은 raw path를 authored/generated/golden/history category와 semantic group으로 분해하고 raw 파일 수를 난이도 근거로 쓰지 않는다. R-P08과 I-P10은 machine-readable command/status/claim-evidence 관계만 판정하며 자유문 품질은 점수·triage·route에서 제외한다.
 - 이 변경은 `revision_2_external_rereview_candidate` 문서와 closure 심사 자료뿐이다. snapshot 추출·익명화, fixture/reference/checker, Judge probe, live Plan, SDK thread와 model turn은 만들거나 실행하지 않았고 Phase D artifact는 재심사 전까지 계속 `NO-GO`다.
+
+## 집 로컬에서 회사 로컬로 현재 작업 반환
+
+- 작업일: 2026-08-09. 프로젝트를 원래 주관하던 회사 로컬이 집 작업 branch를 안전하게 다시 받도록 `docs/operations/home-to-company-codex-handoff.md`와 회사용 시작 프롬프트를 작성했다.
+- 완료 작업 기준은 `codex/runtime-boundary-p01`의 `0d0fa852b689bc06e036de50d5b3817ae6d70f00`이다. 작성 전 해당 HEAD와 원격 branch가 일치하고 working tree가 깨끗했으며, 당시 `origin/main` `9804977`의 직계 후손으로 20 commits ahead였다. 인수인계 commit은 그 뒤에 추가한다.
+- 새 인수 문서는 Phase B Candidate 015와 Pro closure, Phase C model-free 구현·시험 기록, Phase D revision 1 심사와 revision 2 closure 후보를 구분한다. 현재 다음 gate는 ChatGPT Pro revision 2 재심 결과이며, 그 결과와 별도 사용자 승인 전에는 Phase D artifact 구현을 열지 않는다.
+- 회사 첫 세션은 local change·local-only commit 보존, 집 branch ff-only 동기화, 정본 읽기와 인수 보고만 허용한다. 과거 시험 재실행, 내부 하위 에이전트, 파일 수정, main 병합, live/model 작업은 금지한다.
+- 과거 `home-codex-handoff.md`에는 현재 회사 복귀 문서가 운영 절차를 대체한다는 banner만 추가했다. 코드·시험·artifact는 수정하거나 실행하지 않았고 actual model turn은 0회다.
