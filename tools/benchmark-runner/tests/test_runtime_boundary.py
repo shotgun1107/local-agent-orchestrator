@@ -622,6 +622,21 @@ def test_manifest_rejects_profile_not_bound_to_controller_roots(tmp_path: Path) 
         RuntimeBoundaryProbeManifest.model_validate(payload)
 
 
+def test_controller_only_directory_hardening_is_exact(tmp_path: Path) -> None:
+    private_root = tmp_path / "controller-only"
+    private_root.mkdir()
+
+    identity = runtime_boundary._harden_controller_only_directory(private_root)
+    verified = runtime_boundary._assert_controller_only_directory_security(
+        private_root,
+        expected_owner_sid=identity.owner_sid,
+    )
+
+    assert verified.identity == identity
+    assert verified.dacl_control == "PAI"
+    assert len(verified.dacl_aces) == 3
+
+
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
     manifest = _manifest(tmp_path)
     frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))

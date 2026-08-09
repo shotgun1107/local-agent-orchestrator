@@ -636,6 +636,75 @@ def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootI
     ).identity
 
 
+def _assert_controller_only_directory_security(
+    path: Path,
+    *,
+    expected_owner_sid: str,
+) -> _WindowsRootSecuritySnapshot:
+    snapshot = _capture_windows_root_security(path, redacted_path_id="controller-only")
+    expected_aces = Counter(
+        (
+            "(A;OICI;FA;;;SY)",
+            "(A;OICI;FA;;;BA)",
+            f"(A;OICI;FA;;;{expected_owner_sid})",
+        )
+    )
+    if (
+        snapshot.identity.owner_sid != expected_owner_sid
+        or snapshot.dacl_control != "PAI"
+        or Counter(snapshot.dacl_aces) != expected_aces
+    ):
+        raise RuntimeBoundaryError(
+            "Controller-only directory does not have the exact protected ACL"
+        )
+    return snapshot
+
+
+def _harden_controller_only_directory(path: Path) -> RootIdentity:
+    """Replace inherited access with Controller, SYSTEM and Administrators full control."""
+
+    target = Path(path).resolve(strict=True)
+    if not target.is_dir():
+        raise RuntimeBoundaryError("Controller-only ACL target is not a directory")
+    initial = _capture_windows_root_security(target, redacted_path_id="controller-only")
+    owner_sid = initial.identity.owner_sid
+    system_root = os.environ.get("SystemRoot")
+    if not system_root:
+        raise RuntimeBoundaryError("SystemRoot is unavailable for icacls resolution")
+    icacls = (Path(system_root) / "System32" / "icacls.exe").resolve(strict=True)
+    commands = (
+        [str(icacls), str(target), "/inheritance:r"],
+        [
+            str(icacls),
+            str(target),
+            "/grant:r",
+            f"*{owner_sid}:(OI)(CI)(F)",
+            "*S-1-5-18:(OI)(CI)(F)",
+            "*S-1-5-32-544:(OI)(CI)(F)",
+        ],
+    )
+    for command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=30,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise RuntimeBoundaryError("failed to apply Controller-only ACL") from exc
+        if completed.returncode != 0:
+            raise RuntimeBoundaryError(
+                f"icacls rejected Controller-only ACL with exit {completed.returncode}"
+            )
+    return _assert_controller_only_directory_security(
+        target,
+        expected_owner_sid=owner_sid,
+    ).identity
+
+
 def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> None:
     roots = (manifest.W, manifest.J, manifest.S)
     actual = tuple(
@@ -647,6 +716,11 @@ def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> N
     )
     if actual != roots:
         raise RuntimeBoundaryError("W/J/S root owner, ACL or volume identity drifted")
+    for root in (manifest.J, manifest.S):
+        _assert_controller_only_directory_security(
+            Path(root.resolved_absolute_path),
+            expected_owner_sid=root.owner_sid,
+        )
     paths = tuple(Path(root.resolved_absolute_path).resolve(strict=True) for root in roots)
     if len(set(paths)) != 3:
         raise RuntimeBoundaryError("W/J/S roots are not distinct")
@@ -1629,13 +1703,19 @@ def prepare_runtime_boundary_roots(
     if not token or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in token):
         raise RuntimeBoundaryError("runtime-boundary run token is not path-safe")
     W_path = root / f"runtime-boundary-w-{token}"
-    J_path = root / f"runtime-boundary-j-{token}"
-    S_path = root / f"runtime-boundary-s-{token}"
-    for path in (W_path, J_path, S_path):
+    J_guard_path = root / f".runtime-boundary-private-{uuid.uuid4().hex}"
+    S_guard_path = root / f".runtime-boundary-private-{uuid.uuid4().hex}"
+    J_path = J_guard_path / "judge"
+    S_path = S_guard_path / "state"
+    for path in (W_path, J_guard_path, S_guard_path):
         if path.exists():
             raise RuntimeBoundaryError(f"runtime-boundary root already exists: {path}")
-    for path in (W_path, J_path, S_path):
-        path.mkdir()
+    W_path.mkdir()
+    for guard, controller_root in ((J_guard_path, J_path), (S_guard_path, S_path)):
+        guard.mkdir()
+        _harden_controller_only_directory(guard)
+        controller_root.mkdir()
+        _harden_controller_only_directory(controller_root)
 
     probe_source = Path(probe_source_path).resolve(strict=True)
     probe_python = Path(probe_python_executable).resolve(strict=True)
