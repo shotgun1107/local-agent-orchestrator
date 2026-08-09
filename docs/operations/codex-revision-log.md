@@ -1618,3 +1618,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - P01~P08 derived result는 정확히 8/8 true이고 failure reason은 없으며 actual model turn은 0회다. Aggregate status는 최초로 `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. Manifest SHA-256은 `9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc`, result SHA-256은 `1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d`, bundle aggregate/files SHA-256은 `326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2`, bundle-seal SHA-256은 `144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13`다.
 - 실행과 다른 새 Python process가 exact 4-file bundle, stored/derived aggregate, P01~P08, frozen command identity와 현재 J/S root identity·exact protected ACL을 다시 열어 모두 통과했다. 이어 Benchmark Runner 전체 회귀 `258 passed in 200.38s`를 확인했다.
 - 001~014의 실패 root와 artifact는 삭제·재사용하지 않고 보존한다. 015 candidate도 수정·재실행하지 않는다. 사람용 결과 보고서는 `docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md`다. 다음 관문은 이 Phase B 후보의 독립 closure이며, 그 전에는 `judge_only_verified`, Phase C, snapshot/checker 구현, live/model usage를 열지 않는다.
+
+## 현실 고난도 Phase B 최종 closure와 Phase C 사용자 승인
+
+- 작업일: 2026-08-09. ChatGPT Pro가 최종 심사 ZIP의 manifest 27개 파일, 선행 심사, 최종 명세, 실제 source/test snapshot, Phase B 결과와 exact four-file bundle을 테스트·SDK·Codex·probe·thread·model turn 없이 읽기 전용으로 심사했다.
+- 최종 판정은 `승인`, P0/P1 각 0건이다. Actual SDK active-profile provenance, elevated 판별, P01~P08 typed Evidence와 독립 pass 재계산은 모두 `closed`로 판정됐다. Candidate 015의 exact executable·source·configuration·permission profile·root/ACL identity 범위에서 `judge_only_verified=YES`다.
+- Phase C model-free 착수는 `GO`로 판정됐고 사용자가 별도로 진행을 승인했다. 허용 범위는 Schema, SS1 Fake Adapter, passive observer, property envelope·common triage 순수 로직과 targeted test다.
+- Phase B 추가 probe·재심사·전체 회귀는 열지 않는다. Phase D snapshot·fixture·reference·checker, Phase E live candidate와 Phase F model turn은 승인되지 않았으며 별도 관문을 유지한다.
+- 심사 원문은 `docs/reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md`에 보존했다.
