@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_7_cli_argv_corrected`
+- 문서 상태: `revision_8_workspace_acl_transition_observed`
 - 작성일: 2026-08-09
-- 기준 commit: `36b868783b3cb959edf4c2aa5960c3898e4f8f0f`
+- 기준 commit: `1b44ad3a48784ecd6d5675703f7371dc13bcc326`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 다섯 번째 model-free 실행에서 확정한 obsolete `windows` token을 pinned CLI usage에 맞춰 frozen argv에서 제거함. 새 source의 Phase B 실행은 아직 하지 않음
-- 이번 교정 범위: `codex sandbox [OPTIONS] [COMMAND]...` exact argv 교정. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 여섯 번째 model-free 실행은 corrected argv를 사용했지만 P01 dispatch 전 W에 추가된 sandbox-user ACL을 root drift로 오판해 중단됨. J·S identity는 유지됐고 Phase B candidate는 아직 증명되지 않음
+- 이번 교정 범위: `codex sandbox [OPTIONS] [COMMAND]...` exact argv 교정과 W ACL transition 관측 기록. P01~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
