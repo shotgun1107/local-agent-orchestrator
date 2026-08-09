@@ -1551,3 +1551,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 실패 artifact의 재계산 코드는 `PROBE_STDOUT_NOT_JSON`, `PROBE_WRAPPER_EXIT_NONZERO`다. stderr는 `CreateProcessAsUserW failed: 2`와 함께 실제 child command가 `windows --cd ... -- C:\Python314\python.exe ...`였음을 보존했다. 즉 Python이나 W/J/S 접근을 시험하기 전에 존재하지 않는 `windows` executable을 spawn하려다 멈췄다.
 - 같은 pinned `codex.exe`의 read-only `sandbox --help`는 실제 usage를 `codex sandbox [OPTIONS] [COMMAND]...`로 표시한다. `sandbox windows --help`는 help subcommand가 아니라 sandbox 안에서 `windows --help` 실행을 시도해 같은 `CreateProcessAsUserW` 오류 2로 실패했다. 따라서 manifest의 `['sandbox', 'windows', ...]` prefix가 현재 pinned CLI 0.144.4와 맞지 않는 obsolete argv임이 확정됐다.
 - `phaseb-20260809-005` W/J/S root, pending manifest와 probe-failure artifact는 삭제·재사용하지 않고 보존했다. 다음 수정은 frozen prefix에서 `windows` token 하나를 제거하고 exact argv 시험·명세를 함께 고친 뒤 새 source commit과 새 root token으로만 실행해야 한다. Phase B와 Phase C는 계속 중단 상태다.
+
+## 현실 고난도 Phase B CLI argv 교정과 W ACL transition 관측
+
+- 작업일: 2026-08-09. commit `1b44ad3a48784ecd6d5675703f7371dc13bcc326`에서 pinned CLI 0.144.4의 실제 usage `codex sandbox [OPTIONS] [COMMAND]...`에 맞춰 frozen prefix의 obsolete `windows` token 하나를 제거했다. exact argv 시험과 runtime-boundary·상위 구현 후보 명세도 함께 고쳤고, 표적 시험 `10 passed`, `py_compile`, `git diff --check`를 통과했다.
+- source `1b44ad3a48784ecd6d5675703f7371dc13bcc326`의 `phaseb-20260809-006`은 SDK profile·effective policy·readiness·requirements·Controller identity를 통과했지만 P01 command spawn 전 `verify_root_identity_contract`에서 중단됐다. 실제 model turn과 P01~P08 dispatch는 모두 0회이며 candidate bundle과 probe-failure artifact는 생성되지 않았다.
+- 독립 read-only 비교에서 J와 S의 owner·ACL·volume은 manifest와 모두 같았고 W도 owner·volume은 같았다. W ACL만 manifest SHA-256 `0b3bcbc9cbec3ca8bba045802b277ad47b0ae9a48890b87f42aec7c22adebe01`에서 `41ffad743c3889293161edc98a20410449402f14df61af3c81f75415235ea032`로 바뀌었다.
+- raw ACL 차이는 W에만 새 non-inherited allow ACE 하나가 추가된 것이다. 이 ACE는 새 SID에 `Modify, Synchronize`와 child object/container inheritance를 부여하며 J·S에는 추가되지 않았다. 이는 `:workspace` 준비가 dedicated sandbox user에게 W 접근만 부여한 정상 transition으로 추정된다. raw SID는 공개 기록에 남기지 않았다.
+- 현재 exact-equality root gate는 안전한 W-only grant와 J/S scope 확장을 구분하지 못한다. 다음 교정은 초기 W ACL을 보존하면서 dispatch 전에는 이 exact W-only ACE delta만 잠정 허용하고, P01 결과의 sandbox process TokenUser SID가 추가 ACE SID와 같을 때만 최종 통과시켜야 한다. J·S owner·ACL·volume은 계속 bit-for-bit 동일해야 하며 다른 delta는 즉시 중단한다.
+- `phaseb-20260809-006` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. 자동 재시도는 하지 않았고 Phase B·Phase C는 계속 중단 상태다.
