@@ -1,0 +1,243 @@
+diff --git a/cli/config_cli.py b/cli/config_cli.py
+index 0db8f23..4f0174b 100644
+--- a/cli/config_cli.py
++++ b/cli/config_cli.py
+@@ -1,5 +1,12 @@
+-"""Implementation target."""
++"""Small programmatic CLI boundary preserving public result meanings."""
++
++from runtime.parser import parse
++from schema.errors import ContractError
+ 
+ 
+ def run(payload):
+-    raise NotImplementedError
++    """Return the stable CLI success or failure envelope for ``payload``."""
++    try:
++        return {"ok": True, "value": parse(payload)}
++    except ContractError as error:
++        return {"ok": False, "error_code": error.code}
+diff --git a/compat/legacy_api.py b/compat/legacy_api.py
+index c00f429..b016d35 100644
+--- a/compat/legacy_api.py
++++ b/compat/legacy_api.py
+@@ -1,5 +1,8 @@
+-"""Implementation target."""
++"""Backward-compatible public loading API."""
++
++from runtime.parser import parse
+ 
+ 
+ def load(payload):
+-    raise NotImplementedError
++    """Load legacy or v2 input into its canonical v2 representation."""
++    return parse(payload)
+diff --git a/compat/roundtrip.py b/compat/roundtrip.py
+index 6a3e4e3..0cf8934 100644
+--- a/compat/roundtrip.py
++++ b/compat/roundtrip.py
+@@ -1,5 +1,9 @@
+-"""Implementation target."""
++"""Backward-compatible parse/serialize round trip."""
++
++from runtime.parser import parse
++from runtime.serializer import serialize
+ 
+ 
+ def roundtrip(payload):
+-    raise NotImplementedError
++    """Return the canonical wire representation for supported input."""
++    return serialize(parse(payload))
+diff --git a/integration/adapter.py b/integration/adapter.py
+index fa2f738..fbf998e 100644
+--- a/integration/adapter.py
++++ b/integration/adapter.py
+@@ -1,5 +1,8 @@
+-"""Implementation target."""
++"""Integration boundary normalization."""
++
++from runtime.parser import parse
+ 
+ 
+ def normalize(payload):
+-    raise NotImplementedError
++    """Normalize either legacy or v2 input for integration consumers."""
++    return parse(payload)
+diff --git a/migration/legacy.py b/migration/legacy.py
+index 758d34f..faa3e14 100644
+--- a/migration/legacy.py
++++ b/migration/legacy.py
+@@ -1,5 +1,19 @@
+-"""Implementation target."""
++"""Normalization for payloads accepted by the legacy API."""
++
++from schema.model import validate
+ 
+ 
+ def normalize_legacy(payload):
+-    raise NotImplementedError
++    """Return a validated canonical v2 payload without changing *payload*.
++
++    Legacy payloads predate the explicit version marker.  Field aliases are
++    deliberately left for :func:`schema.model.validate` so its public
++    collision and unknown-field error behaviour remains the single source of
++    truth.
++    """
++    if not isinstance(payload, dict):
++        return validate(payload)
++
++    candidate = dict(payload)
++    candidate.setdefault("version", 2)
++    return validate(candidate)
+diff --git a/migration/upgrade.py b/migration/upgrade.py
+index 74794d6..5b05659 100644
+--- a/migration/upgrade.py
++++ b/migration/upgrade.py
+@@ -1,5 +1,12 @@
+-"""Implementation target."""
++"""Public payload upgrade entry point."""
++
++from .legacy import normalize_legacy
+ 
+ 
+ def migrate(payload):
+-    raise NotImplementedError
++    """Upgrade either a legacy or v2 payload to the canonical v2 object.
++
++    ``normalize_legacy`` constructs a fresh dictionary before validation,
++    making this operation non-mutating and idempotent.
++    """
++    return normalize_legacy(payload)
+diff --git a/runtime/parser.py b/runtime/parser.py
+index 2c91ebc..d6994be 100644
+--- a/runtime/parser.py
++++ b/runtime/parser.py
+@@ -1,5 +1,13 @@
+-"""Implementation target."""
++"""Parse supported payloads into the canonical v2 representation."""
++
++from migration.upgrade import migrate
+ 
+ 
+ def parse(payload):
+-    raise NotImplementedError
++    """Return a fresh, validated canonical v2 object.
++
++    Parsing accepts both legacy payloads (which omit ``version``) and already
++    versioned payloads.  The migration entry point owns that compatibility
++    policy, so parsing and migration stay idempotent with one validation path.
++    """
++    return migrate(payload)
+diff --git a/runtime/serializer.py b/runtime/serializer.py
+index bf608e9..083e165 100644
+--- a/runtime/serializer.py
++++ b/runtime/serializer.py
+@@ -1,5 +1,12 @@
+-"""Implementation target."""
++"""Serialize canonical payloads using the public field order."""
++
++from schema.model import validate
+ 
+ 
+ def serialize(payload):
+-    raise NotImplementedError
++    """Validate and return the canonical v2 wire representation.
++
++    ``validate`` constructs a new dictionary ordered by the public contract,
++    ensuring serialization neither mutates its input nor leaks aliases.
++    """
++    return validate(payload)
+diff --git a/schema/errors.py b/schema/errors.py
+index 09c34da..61b543d 100644
+--- a/schema/errors.py
++++ b/schema/errors.py
+@@ -1,7 +1,16 @@
+-"""Implementation target."""
++"""Public errors for schema-contract violations."""
+ 
+-ERROR_CODES = {}
++ERROR_CODES = {
++    "missing_field": "MISSING_FIELD",
++    "invalid_mode": "INVALID_MODE",
++    "alias_conflict": "ALIAS_CONFLICT",
++    "unknown_field": "UNKNOWN_FIELD",
++}
+ 
+ 
+ class ContractError(ValueError):
+-    code = "NOT_IMPLEMENTED"
++    """A validation error with the stable public error ``code``."""
++
++    def __init__(self, code, message=None):
++        self.code = code
++        super().__init__(message or code)
+diff --git a/schema/model.py b/schema/model.py
+index 160d8e3..9691c0a 100644
+--- a/schema/model.py
++++ b/schema/model.py
+@@ -1,8 +1,61 @@
+-"""Implementation target."""
++"""Canonical public schema and strict payload validation."""
+ 
+-PUBLIC_FIELDS = ()
+-ALIASES = {}
++from .errors import ContractError, ERROR_CODES
++
++
++PUBLIC_FIELDS = (
++    "endpoint",
++    "max_retries",
++    "timeout_seconds",
++    "mode",
++    "version",
++)
++
++ALIASES = {
++    "url": "endpoint",
++    "retries": "max_retries",
++    "timeout": "timeout_seconds",
++}
++
++
++def _error(name, message):
++    raise ContractError(ERROR_CODES[name], message)
+ 
+ 
+ def validate(payload):
+-    raise NotImplementedError
++    """Return *payload* as a canonical v2 object without coercing values.
++
++    Deprecated aliases are translated only if their canonical counterpart is not
++    supplied.  The returned dictionary always uses the documented field order.
++    """
++    if not isinstance(payload, dict):
++        _error("missing_field", "payload must be an object")
++
++    allowed = set(PUBLIC_FIELDS) | set(ALIASES)
++    for key in payload:
++        if key not in allowed:
++            _error("unknown_field", "unknown field: %s" % key)
++
++    values = dict(payload)
++    for alias, canonical in ALIASES.items():
++        if alias in values:
++            if canonical in values:
++                _error("alias_conflict", "cannot provide both %s and %s" % (alias, canonical))
++            values[canonical] = values.pop(alias)
++
++    for field in PUBLIC_FIELDS:
++        if field not in values:
++            _error("missing_field", "missing field: %s" % field)
++
++    if not isinstance(values["endpoint"], str):
++        _error("missing_field", "endpoint must be a string")
++    for field in ("max_retries", "timeout_seconds"):
++        value = values[field]
++        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
++            _error("missing_field", "%s must be a non-negative integer" % field)
++    if values["mode"] not in ("safe", "fast") or not isinstance(values["mode"], str):
++        _error("invalid_mode", "mode must be 'safe' or 'fast'")
++    if isinstance(values["version"], bool) or not isinstance(values["version"], int) or values["version"] != 2:
++        _error("missing_field", "version must be the integer 2")
++
++    return {field: values[field] for field in PUBLIC_FIELDS}

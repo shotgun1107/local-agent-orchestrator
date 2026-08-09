@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from benchmark_runner.adapter import B1AdapterConfig, B1SequentialAdapter, CellContext
+from benchmark_runner.adapter import (
+    B1AdapterConfig,
+    B1SequentialAdapter,
+    CellContext,
+    _has_repeatable_b1_quality_regression,
+)
 from benchmark_runner.judge import FixtureJudge
 from benchmark_runner.workspace import FixtureRestorer, load_frozen_manifest
 
@@ -116,6 +121,11 @@ def test_b1_fake_adapter_uses_public_cli_then_independent_judge(
         "total_tokens": 15,
     }
     assert evidence.normalized_metrics["b1_session_usage_statuses"] == ["measured"]
+    assert evidence.normalized_metrics["b1_retry_count"] == 0
+    assert evidence.normalized_metrics["b1_resume_count"] == 0
+    assert evidence.normalized_metrics["b1_intermediate_check_changed_result"] is False
+    assert evidence.normalized_metrics["b1_intermediate_check_changed_dispatch"] is False
+    assert evidence.normalized_metrics["b1_repeatable_quality_regression"] is False
     judge = FixtureJudge(Path(sys.executable), _git()).evaluate(
         prepared,
         tmp_path / "judge",
@@ -134,3 +144,22 @@ def test_runner_adapter_has_no_b1_internal_import() -> None:
     ).read_text(encoding="utf-8")
     assert "from orchestrator" not in source
     assert "import orchestrator" not in source
+
+
+def test_repeatable_b1_quality_regression_excludes_runtime_failures() -> None:
+    assert _has_repeatable_b1_quality_regression(
+        [{"attempts": [{"failure_kind": "check_failed"}, {"failure_kind": "check_failed"}]}]
+    )
+    assert not _has_repeatable_b1_quality_regression(
+        [
+            {
+                "attempts": [
+                    {"failure_kind": "transient_runtime"},
+                    {"failure_kind": "transient_runtime"},
+                ]
+            }
+        ]
+    )
+    assert not _has_repeatable_b1_quality_regression(
+        [{"attempts": [{"failure_kind": "check_failed"}, {"failure_kind": None}]}]
+    )

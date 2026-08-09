@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "case_id": "basic-safe",
+      "old_payload": {"url": "https://one.invalid", "retries": 2, "timeout": 30, "mode": "safe"},
+      "new_payload": {"endpoint": "https://one.invalid", "max_retries": 2, "timeout_seconds": 30, "mode": "safe", "version": 2},
+      "canonical": {"endpoint": "https://one.invalid", "max_retries": 2, "timeout_seconds": 30, "mode": "safe", "version": 2},
+      "serialization": {"endpoint": "https://one.invalid", "max_retries": 2, "timeout_seconds": 30, "mode": "safe", "version": 2}
+    },
+    {
+      "case_id": "basic-fast",
+      "old_payload": {"url": "https://two.invalid", "retries": 0, "timeout": 5, "mode": "fast"},
+      "new_payload": {"endpoint": "https://two.invalid", "max_retries": 0, "timeout_seconds": 5, "mode": "fast", "version": 2},
+      "canonical": {"endpoint": "https://two.invalid", "max_retries": 0, "timeout_seconds": 5, "mode": "fast", "version": 2},
+      "serialization": {"endpoint": "https://two.invalid", "max_retries": 0, "timeout_seconds": 5, "mode": "fast", "version": 2}
+    }
+  ],
+  "invalid_cases": [
+    {"case_id": "missing-endpoint", "payload": {"max_retries": 1, "timeout_seconds": 10, "mode": "safe", "version": 2}, "error_code": "MISSING_FIELD"},
+    {"case_id": "invalid-mode", "payload": {"endpoint": "x", "max_retries": 1, "timeout_seconds": 10, "mode": "turbo", "version": 2}, "error_code": "INVALID_MODE"},
+    {"case_id": "alias-collision", "payload": {"url": "x", "endpoint": "y", "retries": 1, "timeout": 10, "mode": "safe"}, "error_code": "ALIAS_CONFLICT"}
+  ]
+}

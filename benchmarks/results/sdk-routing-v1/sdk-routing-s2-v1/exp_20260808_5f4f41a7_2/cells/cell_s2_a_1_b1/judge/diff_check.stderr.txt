@@ -1,0 +1,6 @@
+warning: in the working copy of 'cli/config_cli.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'migration/legacy.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'runtime/parser.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'runtime/serializer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'schema/errors.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'schema/model.py', LF will be replaced by CRLF the next time Git touches it

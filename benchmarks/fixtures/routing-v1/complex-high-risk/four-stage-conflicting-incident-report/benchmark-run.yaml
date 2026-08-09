@@ -1,0 +1,62 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Build the frozen four-stage incident report while preserving every source conflict and uncertainty."
+completion_criteria:
+  - id: RC1
+    text: "All public lineage, conflict, alternative, and report checks pass."
+    satisfied_by_tasks: [I1, I2, I3, I4]
+constraints:
+  - "Modify only the nine declared output files."
+  - "Do not resolve conflicting evidence or invent facts."
+  - "Do not modify public catalog, sources, contracts, or checks."
+assumptions: []
+tasks:
+  - key: I1
+    goal: "Record exact source locators, evidence status, topic coverage, and uncertainties."
+    completion_criteria:
+      - {id: IC1, text: "The evidence contract passes.", check_names: [evidence_contract]}
+    depends_on: []
+    inputs: [{path: "catalog/sources.json"}, {path: "catalog/topics.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "catalog/sources.json", "catalog/topics.json", "sources/source-a.md", "sources/source-b.md", "sources/source-c.md", "sources/source-d.md", "sources/source-e.md", "benchmark_checks/test_evidence_contract.py", "analysis/evidence-ledger.json", "analysis/uncertainties.json"]
+    write_scope: ["analysis/evidence-ledger.json", "analysis/uncertainties.json"]
+    capability_profile: document_read
+    workspace_mode: shared_serial_write
+    check_names: [evidence_contract, diff_check]
+    approval: none
+  - key: I2
+    goal: "Preserve evidence in status-bearing events and exact public conflict groups."
+    completion_criteria:
+      - {id: IC2, text: "The conflict contract passes.", check_names: [conflict_contract]}
+    depends_on: [I1]
+    inputs: [{path: "analysis/evidence-ledger.json"}, {path: "catalog/conflict-groups.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "catalog/conflict-groups.json", "analysis/evidence-ledger.json", "analysis/uncertainties.json", "benchmark_checks/test_conflict_contract.py", "timeline/events.json", "timeline/conflict-groups.json"]
+    write_scope: ["timeline/events.json", "timeline/conflict-groups.json"]
+    capability_profile: document_read
+    workspace_mode: shared_serial_write
+    check_names: [conflict_contract, diff_check]
+    approval: none
+  - key: I3
+    goal: "Connect every conflict and uncertainty to candidate hypotheses and alternatives."
+    completion_criteria:
+      - {id: IC3, text: "The alternative contract passes.", check_names: [alternative_contract]}
+    depends_on: [I1, I2]
+    inputs: [{path: "analysis/uncertainties.json"}, {path: "timeline/conflict-groups.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "analysis/uncertainties.json", "timeline/events.json", "timeline/conflict-groups.json", "benchmark_checks/test_alternative_contract.py", "analysis/hypotheses.json", "analysis/alternative-matrix.json"]
+    write_scope: ["analysis/hypotheses.json", "analysis/alternative-matrix.json"]
+    capability_profile: document_read
+    workspace_mode: shared_serial_write
+    check_names: [alternative_contract, diff_check]
+    approval: none
+  - key: I4
+    goal: "Publish claims, actions, and the grammar-constrained report without status promotion."
+    completion_criteria:
+      - {id: IC4, text: "The report contract passes.", check_names: [report_contract]}
+    depends_on: [I1, I2, I3]
+    inputs: [{path: "analysis/evidence-ledger.json"}, {path: "analysis/uncertainties.json"}, {path: "analysis/alternative-matrix.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "analysis/evidence-ledger.json", "analysis/uncertainties.json", "timeline/events.json", "timeline/conflict-groups.json", "analysis/hypotheses.json", "analysis/alternative-matrix.json", "benchmark_checks/test_report_contract.py", "report/claims.json", "report/action-plan.json", "report/final-report.md"]
+    write_scope: ["report/claims.json", "report/action-plan.json", "report/final-report.md"]
+    capability_profile: document_read
+    workspace_mode: shared_serial_write
+    check_names: [report_contract, diff_check]
+    approval: none

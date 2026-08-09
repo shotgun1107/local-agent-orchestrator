@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import platform
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
@@ -53,6 +54,8 @@ RUNNER_FINGERPRINT_INPUTS = (
     "src/benchmark_runner",
     "schemas",
 )
+
+PostJudgeHook = Callable[[PreparedFixture], dict[str, JsonValue]]
 
 
 def runner_source_sha256() -> str:
@@ -389,7 +392,46 @@ def _measurement(
         "terminal_claim_outcome": evidence.outcome_state,
         "downstream_turn_count": int(metrics.get("turn_count", 0)),
         "model_active_seconds": metrics.get("model_active_seconds"),
+        "protected_files_ok": "runner_judge:check_integrity"
+        not in judge.failed_check_ids,
     }
+    for name in (
+        "b1_retry_count",
+        "b1_resume_count",
+        "b1_intermediate_check_changed_result",
+        "b1_intermediate_check_changed_dispatch",
+        "b1_repeatable_quality_regression",
+        "dual_outcome_status",
+        "first_attempt_outcome",
+        "full_orchestrated_outcome",
+        "attempt_level_cost",
+    ):
+        if name in metrics:
+            metric_value = metrics[name]
+            if name == "full_orchestrated_outcome" and isinstance(
+                metric_value, dict
+            ):
+                metric_value = {
+                    **metric_value,
+                    "check_success": judge.check_success,
+                }
+            values[name] = metric_value
+    posthoc_path = cell_dir / "judge" / "posthoc" / "result.json"
+    if posthoc_path.is_file():
+        try:
+            posthoc = json.loads(posthoc_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError("post-hoc checker result is invalid") from exc
+        if not isinstance(posthoc, dict):
+            raise RuntimeError("post-hoc checker result must be an object")
+        property_status = posthoc.get("property_status")
+        checker_sha256 = posthoc.get("checker_sha256")
+        if property_status not in {"pass", "fail", "checker_error"} or not (
+            isinstance(checker_sha256, str) and len(checker_sha256) == 64
+        ):
+            raise RuntimeError("post-hoc checker result contract differs")
+        values["property_status"] = property_status
+        values["checker_sha256"] = checker_sha256
     if scenario_id is not None:
         values["scenario_id"] = scenario_id
     if "turns" in evidence.raw_payload:
@@ -529,6 +571,7 @@ def _run_sdk_cell(
     benchmark_python: Path,
     git_executable: Path,
     scenario_id: str | None = None,
+    post_judge_hook: PostJudgeHook | None = None,
     live: bool,
 ) -> SdkSealedCellResult:
     """Run one reviewed SDK Cell through the real Judge, Measurement, and seal."""
@@ -639,6 +682,11 @@ def _run_sdk_cell(
     judge_started = time.monotonic()
     judge = FixtureJudge(benchmark_python, git_executable).evaluate(prepared, judge_dir)
     judge_seconds = time.monotonic() - judge_started
+    if post_judge_hook is not None:
+        posthoc = post_judge_hook(prepared)
+        posthoc_dir = judge_dir / "posthoc"
+        posthoc_dir.mkdir(parents=True, exist_ok=False)
+        atomic_write(posthoc_dir / "result.json", canonical_json_bytes(posthoc))
     _redact_judge_evidence(
         cell_dir=cell_dir,
         prepared=prepared,
@@ -707,6 +755,7 @@ def run_sdk_nonlive_cell(
     benchmark_python: Path,
     git_executable: Path,
     scenario_id: str | None = None,
+    post_judge_hook: PostJudgeHook | None = None,
 ) -> SdkSealedCellResult:
     """Run one fake-runtime Cell through the real Judge, Measurement, and seal."""
 
@@ -719,6 +768,7 @@ def run_sdk_nonlive_cell(
         benchmark_python=benchmark_python,
         git_executable=git_executable,
         scenario_id=scenario_id,
+        post_judge_hook=post_judge_hook,
         live=False,
     )
 
@@ -732,6 +782,7 @@ def run_sdk_live_cell(
     adapter: VariantAdapter,
     benchmark_python: Path,
     git_executable: Path,
+    post_judge_hook: PostJudgeHook | None = None,
 ) -> SdkSealedCellResult:
     """Run one ChatGPT-auth pilot Cell and preserve export-safe sealed Evidence."""
 
@@ -743,5 +794,6 @@ def run_sdk_live_cell(
         adapter=adapter,
         benchmark_python=benchmark_python,
         git_executable=git_executable,
+        post_judge_hook=post_judge_hook,
         live=True,
     )

@@ -1,0 +1,14 @@
+schema_version: 1
+policies:
+  b1_safe:
+    max_concurrent_attempts: 1
+    max_attempts_per_task: 2
+    max_resume_per_attempt: 1
+    max_turns_per_run: 6
+    run_timeout_seconds: 5400
+    task_timeout_seconds: 900
+    interrupt_grace_seconds: 15
+    check_timeout_seconds: 120
+    unknown_usage_allowed: true
+    require_clean_worktree: true
+    allow_external_actions: false

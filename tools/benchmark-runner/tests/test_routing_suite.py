@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import sys
@@ -29,7 +30,7 @@ from benchmark_runner.routing_suite import (
     run_next_routing_s1_nonlive_cell,
     verify_routing_s1_nonlive_export,
 )
-from benchmark_runner.runner import verify_sealed_cell
+from benchmark_runner.runner import canonical_json_bytes, verify_sealed_cell
 from benchmark_runner.sdk_baselines import SdkBaselineAdapter, SdkBaselineConfig
 from benchmark_runner.sdk_cells import runner_source_sha256
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript, WorkerContract
@@ -251,7 +252,15 @@ def _b1_fake_fixture(fixture_id: str) -> dict[str, object]:
 def test_routing_manifests_and_generated_schemas_match_contracts(tmp_path: Path) -> None:
     suite = load_routing_suite(SUITE_PATH)
     stage = load_routing_stage(STAGE_PATH)
-    assert suite.design_revision == 2
+    assert suite.design_revision == 4
+    assert [item.stage_id for item in suite.stages] == [
+        "s1-baseline",
+        "s2-intermediate",
+        "s3-complex-high-risk",
+    ]
+    assert suite.live_turn_ceiling_including_pilot == 72
+    assert suite.status == "frozen_before_execution"
+    assert stage.status == "frozen_before_execution"
     assert stage.purpose == "calibration_only"
     assert stage.planned_live_model_turns == 12
     assert [(cell.fixture_id, cell.variant_id) for cell in stage.cells] == [
@@ -277,6 +286,19 @@ def test_routing_manifests_and_generated_schemas_match_contracts(tmp_path: Path)
                 "unexpected": True,
             }
         )
+
+    stage_payload = yaml.safe_load(STAGE_PATH.read_text(encoding="utf-8"))
+    stage_payload["planned_live_model_turns"] = 13
+    with pytest.raises(ValidationError, match="exactly 12"):
+        type(stage).model_validate(stage_payload)
+
+    stage_payload = yaml.safe_load(STAGE_PATH.read_text(encoding="utf-8"))
+    stage_payload["cells"][0], stage_payload["cells"][1] = (
+        stage_payload["cells"][1],
+        stage_payload["cells"][0],
+    )
+    with pytest.raises(ValidationError, match="Cell order"):
+        type(stage).model_validate(stage_payload)
 
 
 def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees() -> None:
@@ -507,6 +529,37 @@ def test_all_eight_model_free_cells_seal_export_and_detect_tampering(
     assert summary["route_decision_issued"] is False
     assert (export_root / "manifests" / "suite.yaml").read_bytes() == SUITE_PATH.read_bytes()
     assert (export_root / "manifests" / "stage.yaml").read_bytes() == STAGE_PATH.read_bytes()
+
+    plan_path = export_root / "execution-plan.json"
+    original_plan = plan_path.read_bytes()
+    plan_payload = json.loads(original_plan)
+    plan_payload["created_at"] = "2026-08-08T00:00:00Z"
+    plan_path.write_bytes(canonical_json_bytes(plan_payload))
+    with pytest.raises(RoutingSuiteError, match="metadata is missing or invalid"):
+        verify_routing_s1_nonlive_export(export_root)
+    plan_path.write_bytes(original_plan)
+
+    provenance_root = tmp_path / "provenance-tamper"
+    shutil.copytree(export_root, provenance_root)
+    measurement_path = (
+        provenance_root
+        / "cells"
+        / plan.cells[0].cell_id
+        / "sealed"
+        / "measurement.json"
+    )
+    measurement_payload = json.loads(measurement_path.read_bytes())
+    measurement_payload["provenance"]["fixture_source_commit"] = "0" * 40
+    measurement_bytes = canonical_json_bytes(measurement_payload)
+    measurement_path.write_bytes(measurement_bytes)
+    seals_path = provenance_root / "seals.json"
+    seals_payload = json.loads(seals_path.read_bytes())
+    seals_payload["entries"][0]["sealed_measurement_sha256"] = hashlib.sha256(
+        measurement_bytes
+    ).hexdigest()
+    seals_path.write_bytes(canonical_json_bytes(seals_payload))
+    with pytest.raises(RoutingSuiteError, match="Measurement provenance differs"):
+        verify_routing_s1_nonlive_export(provenance_root)
 
     first_measurement = export_root / "cells" / plan.cells[0].cell_id / "sealed" / "measurement.json"
     first_measurement.write_bytes(first_measurement.read_bytes() + b" ")

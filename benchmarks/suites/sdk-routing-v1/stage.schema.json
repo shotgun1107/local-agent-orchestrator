@@ -180,7 +180,7 @@
       "title": "FixtureProfileDeclaration",
       "type": "object"
     },
-    "RoutingCellDeclaration": {
+    "RoutingS1CellDeclaration": {
       "additionalProperties": false,
       "properties": {
         "fixture_id": {
@@ -207,121 +207,554 @@
         "fixture_id",
         "variant_id"
       ],
-      "title": "RoutingCellDeclaration",
+      "title": "RoutingS1CellDeclaration",
+      "type": "object"
+    },
+    "RoutingS1StageManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_outcomes": {
+          "items": {
+            "enum": [
+              "CALIBRATION_PASS",
+              "CALIBRATION_STOP",
+              "CALIBRATION_INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Allowed Outcomes",
+          "type": "array"
+        },
+        "baseline_variant": {
+          "const": "c2",
+          "title": "Baseline Variant",
+          "type": "string"
+        },
+        "candidate_variants": {
+          "items": {
+            "const": "b1",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "title": "Candidate Variants",
+          "type": "array"
+        },
+        "cells": {
+          "items": {
+            "$ref": "#/$defs/RoutingS1CellDeclaration"
+          },
+          "minItems": 1,
+          "title": "Cells",
+          "type": "array"
+        },
+        "fixture_manifests": {
+          "items": {
+            "$ref": "#/$defs/FixtureManifestSelection"
+          },
+          "minItems": 1,
+          "title": "Fixture Manifests",
+          "type": "array"
+        },
+        "planned_live_model_turns": {
+          "minimum": 1,
+          "title": "Planned Live Model Turns",
+          "type": "integer"
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/$defs/FixtureProfileDeclaration"
+          },
+          "minItems": 1,
+          "title": "Profiles",
+          "type": "array"
+        },
+        "purpose": {
+          "const": "calibration_only",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "route_decision_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Route Decision Allowed",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "stage_id": {
+          "const": "s1-baseline",
+          "title": "Stage Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "implementation_candidate",
+            "frozen_before_execution"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "variants": {
+          "items": {
+            "enum": [
+              "c2",
+              "b1"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Variants",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "stage_id",
+        "status",
+        "purpose",
+        "fixture_manifests",
+        "variants",
+        "baseline_variant",
+        "candidate_variants",
+        "profiles",
+        "cells",
+        "planned_live_model_turns",
+        "allowed_outcomes"
+      ],
+      "title": "RoutingS1StageManifest",
+      "type": "object"
+    },
+    "RoutingS2CellDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "cell_id": {
+          "pattern": "^cell_s2_[ab]_[12]_(?:c2|b1)$",
+          "title": "Cell Id",
+          "type": "string"
+        },
+        "fixture_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "profile_alias": {
+          "enum": [
+            "a",
+            "b"
+          ],
+          "title": "Profile Alias",
+          "type": "string"
+        },
+        "repetition": {
+          "default": 1,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "variant_id": {
+          "enum": [
+            "c2",
+            "b1"
+          ],
+          "title": "Variant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cell_id",
+        "profile_alias",
+        "fixture_id",
+        "variant_id"
+      ],
+      "title": "RoutingS2CellDeclaration",
+      "type": "object"
+    },
+    "RoutingS2StageManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_outcomes": {
+          "items": {
+            "enum": [
+              "S2_OBSERVATION_READY",
+              "S2_POLICY_READY",
+              "S2_EXPANSION_REQUIRED",
+              "S2_INCONCLUSIVE",
+              "S2_STOP",
+              "S2_INCOMPLETE"
+            ],
+            "type": "string"
+          },
+          "maxItems": 6,
+          "minItems": 6,
+          "title": "Allowed Outcomes",
+          "type": "array"
+        },
+        "b1_retry_resume_reserve_turns": {
+          "const": 3,
+          "title": "B1 Retry Resume Reserve Turns",
+          "type": "integer"
+        },
+        "base_live_model_turns": {
+          "const": 12,
+          "title": "Base Live Model Turns",
+          "type": "integer"
+        },
+        "baseline_variant": {
+          "const": "c2",
+          "title": "Baseline Variant",
+          "type": "string"
+        },
+        "candidate_variants": {
+          "items": {
+            "const": "b1",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "title": "Candidate Variants",
+          "type": "array"
+        },
+        "cells": {
+          "items": {
+            "$ref": "#/$defs/RoutingS2CellDeclaration"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Cells",
+          "type": "array"
+        },
+        "fixture_manifests": {
+          "items": {
+            "$ref": "#/$defs/FixtureManifestSelection"
+          },
+          "minItems": 1,
+          "title": "Fixture Manifests",
+          "type": "array"
+        },
+        "max_actual_live_model_turns": {
+          "const": 15,
+          "title": "Max Actual Live Model Turns",
+          "type": "integer"
+        },
+        "profile_aliases": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "a",
+              "b"
+            ]
+          },
+          "title": "Profile Aliases",
+          "type": "object"
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/$defs/FixtureProfileDeclaration"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Profiles",
+          "type": "array"
+        },
+        "purpose": {
+          "const": "profile_routing",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "route_decision_allowed": {
+          "const": true,
+          "title": "Route Decision Allowed",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "stage_id": {
+          "const": "s2-intermediate",
+          "title": "Stage Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "implementation_candidate",
+            "frozen_before_execution"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "variants": {
+          "items": {
+            "enum": [
+              "c2",
+              "b1"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Variants",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "stage_id",
+        "status",
+        "purpose",
+        "fixture_manifests",
+        "variants",
+        "baseline_variant",
+        "candidate_variants",
+        "profile_aliases",
+        "profiles",
+        "cells",
+        "base_live_model_turns",
+        "b1_retry_resume_reserve_turns",
+        "max_actual_live_model_turns",
+        "route_decision_allowed",
+        "allowed_outcomes"
+      ],
+      "title": "RoutingS2StageManifest",
+      "type": "object"
+    },
+    "RoutingS3CellDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "cell_id": {
+          "pattern": "^cell_s3_[ab]_[12]_(?:c2|b1)$",
+          "title": "Cell Id",
+          "type": "string"
+        },
+        "fixture_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "profile_alias": {
+          "enum": [
+            "a",
+            "b"
+          ],
+          "title": "Profile Alias",
+          "type": "string"
+        },
+        "repetition": {
+          "default": 1,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "variant_id": {
+          "enum": [
+            "c2",
+            "b1"
+          ],
+          "title": "Variant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cell_id",
+        "profile_alias",
+        "fixture_id",
+        "variant_id"
+      ],
+      "title": "RoutingS3CellDeclaration",
+      "type": "object"
+    },
+    "RoutingS3StageManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_outcomes": {
+          "items": {
+            "enum": [
+              "S3_OBSERVATION_READY",
+              "S3_POLICY_READY",
+              "S3_REPLICATION_REQUIRED",
+              "S3_INCONCLUSIVE",
+              "S3_STOP",
+              "S3_INCOMPLETE"
+            ],
+            "type": "string"
+          },
+          "maxItems": 6,
+          "minItems": 6,
+          "title": "Allowed Outcomes",
+          "type": "array"
+        },
+        "b1_retry_resume_reserve_turns": {
+          "const": 4,
+          "title": "B1 Retry Resume Reserve Turns",
+          "type": "integer"
+        },
+        "b1_retry_resume_reserve_turns_per_profile": {
+          "const": 2,
+          "title": "B1 Retry Resume Reserve Turns Per Profile",
+          "type": "integer"
+        },
+        "base_live_model_turns": {
+          "const": 16,
+          "title": "Base Live Model Turns",
+          "type": "integer"
+        },
+        "baseline_variant": {
+          "const": "c2",
+          "title": "Baseline Variant",
+          "type": "string"
+        },
+        "candidate_variants": {
+          "items": {
+            "const": "b1",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "title": "Candidate Variants",
+          "type": "array"
+        },
+        "cells": {
+          "items": {
+            "$ref": "#/$defs/RoutingS3CellDeclaration"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Cells",
+          "type": "array"
+        },
+        "fixture_manifests": {
+          "items": {
+            "$ref": "#/$defs/FixtureManifestSelection"
+          },
+          "minItems": 1,
+          "title": "Fixture Manifests",
+          "type": "array"
+        },
+        "max_actual_live_model_turns": {
+          "const": 20,
+          "title": "Max Actual Live Model Turns",
+          "type": "integer"
+        },
+        "profile_aliases": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "a",
+              "b"
+            ]
+          },
+          "title": "Profile Aliases",
+          "type": "object"
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/$defs/FixtureProfileDeclaration"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Profiles",
+          "type": "array"
+        },
+        "purpose": {
+          "const": "complex_high_risk_routing",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "route_decision_allowed": {
+          "const": true,
+          "title": "Route Decision Allowed",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "stage_id": {
+          "const": "s3-complex-high-risk",
+          "title": "Stage Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "implementation_candidate",
+            "frozen_before_execution"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "variants": {
+          "items": {
+            "enum": [
+              "c2",
+              "b1"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Variants",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "stage_id",
+        "status",
+        "purpose",
+        "fixture_manifests",
+        "variants",
+        "baseline_variant",
+        "candidate_variants",
+        "profile_aliases",
+        "profiles",
+        "cells",
+        "base_live_model_turns",
+        "b1_retry_resume_reserve_turns_per_profile",
+        "b1_retry_resume_reserve_turns",
+        "max_actual_live_model_turns",
+        "route_decision_allowed",
+        "allowed_outcomes"
+      ],
+      "title": "RoutingS3StageManifest",
       "type": "object"
     }
   },
-  "additionalProperties": false,
-  "properties": {
-    "allowed_outcomes": {
-      "items": {
-        "enum": [
-          "CALIBRATION_PASS",
-          "CALIBRATION_STOP",
-          "CALIBRATION_INCONCLUSIVE"
-        ],
-        "type": "string"
-      },
-      "maxItems": 3,
-      "minItems": 3,
-      "title": "Allowed Outcomes",
-      "type": "array"
+  "discriminator": {
+    "mapping": {
+      "s1-baseline": "#/$defs/RoutingS1StageManifest",
+      "s2-intermediate": "#/$defs/RoutingS2StageManifest",
+      "s3-complex-high-risk": "#/$defs/RoutingS3StageManifest"
     },
-    "baseline_variant": {
-      "const": "c2",
-      "title": "Baseline Variant",
-      "type": "string"
-    },
-    "candidate_variants": {
-      "items": {
-        "const": "b1",
-        "type": "string"
-      },
-      "maxItems": 1,
-      "minItems": 1,
-      "title": "Candidate Variants",
-      "type": "array"
-    },
-    "cells": {
-      "items": {
-        "$ref": "#/$defs/RoutingCellDeclaration"
-      },
-      "minItems": 1,
-      "title": "Cells",
-      "type": "array"
-    },
-    "fixture_manifests": {
-      "items": {
-        "$ref": "#/$defs/FixtureManifestSelection"
-      },
-      "minItems": 1,
-      "title": "Fixture Manifests",
-      "type": "array"
-    },
-    "planned_live_model_turns": {
-      "minimum": 1,
-      "title": "Planned Live Model Turns",
-      "type": "integer"
-    },
-    "profiles": {
-      "items": {
-        "$ref": "#/$defs/FixtureProfileDeclaration"
-      },
-      "minItems": 1,
-      "title": "Profiles",
-      "type": "array"
-    },
-    "purpose": {
-      "const": "calibration_only",
-      "title": "Purpose",
-      "type": "string"
-    },
-    "schema_version": {
-      "const": 1,
-      "title": "Schema Version",
-      "type": "integer"
-    },
-    "stage_id": {
-      "const": "s1-baseline",
-      "title": "Stage Id",
-      "type": "string"
-    },
-    "status": {
-      "enum": [
-        "implementation_candidate",
-        "frozen_before_execution"
-      ],
-      "title": "Status",
-      "type": "string"
-    },
-    "variants": {
-      "items": {
-        "enum": [
-          "c2",
-          "b1"
-        ],
-        "type": "string"
-      },
-      "maxItems": 2,
-      "minItems": 2,
-      "title": "Variants",
-      "type": "array"
-    }
+    "propertyName": "stage_id"
   },
-  "required": [
-    "schema_version",
-    "stage_id",
-    "status",
-    "purpose",
-    "fixture_manifests",
-    "variants",
-    "baseline_variant",
-    "candidate_variants",
-    "profiles",
-    "cells",
-    "planned_live_model_turns",
-    "allowed_outcomes"
-  ],
-  "title": "RoutingStageManifest",
-  "type": "object"
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RoutingS1StageManifest"
+    },
+    {
+      "$ref": "#/$defs/RoutingS2StageManifest"
+    },
+    {
+      "$ref": "#/$defs/RoutingS3StageManifest"
+    }
+  ]
 }

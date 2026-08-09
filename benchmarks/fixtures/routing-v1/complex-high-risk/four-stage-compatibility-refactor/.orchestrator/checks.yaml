@@ -1,0 +1,38 @@
+schema_version: 1
+checks:
+  schema_contract:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  migration_contract:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_migration_contract"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  integration_contract:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_integration_contract"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  backward_compatibility:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_backward_compatibility"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  s3_compat_acceptance:
+    kind: command
+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract", "benchmark_checks.test_migration_contract", "benchmark_checks.test_integration_contract", "benchmark_checks.test_backward_compatibility"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  diff_check:
+    kind: command
+    argv: ["git", "diff", "--check"]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
