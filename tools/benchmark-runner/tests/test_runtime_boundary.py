@@ -172,8 +172,7 @@ def _configuration() -> ConfigurationExpectation:
         config_overrides=[
             'default_permissions="runtime-boundary-worker"',
             'permissions.runtime-boundary-worker.extends=":workspace"',
-            'permissions.runtime-boundary-worker.filesystem.":minimal"="read"',
-            'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
+            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
             "permissions.runtime-boundary-worker.network.enabled=false",
             'windows.sandbox="elevated"',
         ],
@@ -588,7 +587,10 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
         assert "--permission-profile" in command.argv
         assert "--sandbox" not in command.argv
         assert 'default_permissions="runtime-boundary-worker"' in command.argv
-        assert 'permissions.runtime-boundary-worker.filesystem.":root"="deny"' in command.argv
+        assert (
+            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}'
+            in command.argv
+        )
         assert 'windows.sandbox="elevated"' in command.argv
     assert built.fixtures.p07_expected_answer_sha256 in built.commands[6].argv
 
@@ -597,8 +599,8 @@ def test_configuration_rejects_weakened_runtime_boundary_profile() -> None:
     payload = _configuration().model_dump(mode="json")
     payload["config_overrides"] = [
         value.replace(
-            'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
-            'permissions.runtime-boundary-worker.filesystem.":root"="read"',
+            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
+            'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="read"}',
         )
         for value in payload["config_overrides"]
     ]

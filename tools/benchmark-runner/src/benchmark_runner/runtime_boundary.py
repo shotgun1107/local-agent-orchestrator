@@ -46,8 +46,7 @@ WINDOWS_SANDBOX_KIND = "elevated"
 RUNTIME_BOUNDARY_CONFIG_OVERRIDES = (
     'default_permissions="runtime-boundary-worker"',
     'permissions.runtime-boundary-worker.extends=":workspace"',
-    'permissions.runtime-boundary-worker.filesystem.":minimal"="read"',
-    'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
+    'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
     "permissions.runtime-boundary-worker.network.enabled=false",
     'windows.sandbox="elevated"',
 )
@@ -393,7 +392,7 @@ class RuntimeIdentity(StrictModel):
 class ConfigurationExpectation(StrictModel):
     default_permissions: Literal["runtime-boundary-worker"]
     permission_profile_name: Literal["runtime-boundary-worker"]
-    config_overrides: list[str] = Field(min_length=6, max_length=6)
+    config_overrides: list[str] = Field(min_length=5, max_length=5)
     include_managed_config: Literal[True]
     legacy_sandbox_settings_present: Literal[False]
     sdk_thread_sandbox_argument_omitted: Literal[True]

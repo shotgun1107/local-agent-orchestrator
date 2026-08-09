@@ -1578,3 +1578,9 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - P02 J absolute read가 Controller-only content를 노출해 Controller가 `P02 disclosed or mutated a Controller-only boundary; NOT_READY`로 즉시 중단했다. P03~P08은 실행하지 않았고 actual model turn은 0회이며 candidate bundle은 생성되지 않았다. 이는 harness 오판이 아니라 built-in `:workspace`가 W 밖 read를 넓게 허용한다는 실제 격리 실패다.
 - `phaseb-20260809-009` W/J/S root와 pending manifest는 삭제·재사용하지 않고 그대로 보존한다. 같은 source·root에서 P02를 재시도하지 않으며 다음 실행은 새 commit·새 root token만 사용한다.
 - 공식 permission-profile 계약에 따라 새 `runtime-boundary-worker` profile은 `:workspace`를 상속하되 exact frozen override로 `:root="deny"`, `:minimal="read"`, network disabled를 적용한다. SDK empty thread와 bundled `codex sandbox`는 같은 profile ID와 같은 6개 override를 사용하고, 추가·누락 override를 Schema에서 거부한다. 이 교정은 모델 호출 없이 새 Phase B root에서 다시 증명하기 전까지 candidate 주장이 아니다.
+
+## 현실 고난도 Phase B custom profile 직렬화 교정
+
+- 작업일: 2026-08-09. source `a640a002707a3fc1aab865dab7803c7552ff3b5b`, pending manifest SHA-256 `ab76634dbc914342944bc8114352a22a86794c672581c00d5ba8287eaae3321b`의 `phaseb-20260809-010`은 SDK app-server initialize 단계에서 중단됐다. failure artifact는 client의 initialize request 1개와 server response 0개를 보존했고, actual model turn과 P01~P08은 모두 0회이며 candidate bundle은 생성되지 않았다.
+- 별도 0-turn app-server 진단의 stderr는 `filesystem path '":minimal"' must be absolute, use '~/...', or start with ':'`를 확정했다. 설계한 access 값이 아니라 CLI dotted override에서 quoted key가 따옴표 포함 literal path로 해석된 직렬화 오류다.
+- `phaseb-20260809-010` W/J/S root, pending manifest와 profile-failure artifact는 삭제·재사용하지 않고 보존한다. Filesystem 두 항목은 exact 단일 override `permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}`로 교정한다. 같은 inline table을 적용한 pinned app-server 별도 initialize는 성공했으며 model turn은 0회였다. 새 source·새 root token의 전체 probe 전까지 candidate 주장은 계속 금지한다.
