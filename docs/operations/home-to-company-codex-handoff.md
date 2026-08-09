@@ -1,240 +1,220 @@
-# 집 로컬 → 회사 로컬 작업 인수인계
+# 집 로컬 → 회사 로컬 동일 상태 인수인계
 
-- 문서 상태: `current_company_resume_handoff`
+- 문서 상태: `current_exact_tree_handoff`
+- revision: 2
 - 작성일: 2026-08-09
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
-- 집 작업 branch: `codex/runtime-boundary-p01`
-- 인수인계 대상: 이 프로젝트를 원래 주관하던 회사 로컬 Codex
-- 완료 작업 기준 commit: `0d0fa852b689bc06e036de50d5b3817ae6d70f00`
-- 기준 commit 제목: `Revise Phase D spec after Pro review`
-- 회사 재개 프롬프트: [집 로컬 Phase D revision 2 인수](../prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md)
-- 인증 정책: ChatGPT 구독 계정만 허용하며 API key 경로는 사용하지 않는다.
+- 전달 branch: `codex/runtime-boundary-p01`
+- 프로젝트 작업 기준 commit: `0d0fa852b689bc06e036de50d5b3817ae6d70f00`
+- 이전 인수 문서 commit: `ffd2b849b0b3bd6c86fbfcc91bc30e3c82fb6b4c`
+- 수신 환경: 이 프로젝트를 원래 주관하던 회사 로컬 Codex
+- 시작 프롬프트: [회사 Codex 동일 상태 재개 프롬프트](../prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md)
 
-> 이 문서는 집 PC에 들어오기 위한 과거 [집 PC 작업 인수인계](./home-codex-handoff.md)의 운영 재개 절차를 대체한다. 그 문서의 프로젝트 정신모델은 참고할 수 있지만 S1/S2 다음 작업과 branch 지시는 현재 상태가 아니다.
+> 인수인계의 목표는 집과 회사가 별도 프로젝트 사본을 유지하는 것이 아니다. **두 PC의 Git 관리 프로젝트 파일·디렉터리를 같은 원격 commit과 tree로 맞추는 것**이다. 서로 달라도 되는 것은 Codex 대화 기록·메모리와 PC별 비정본 실행 환경뿐이다.
 
-## 1. 목적과 권한
+## 1. 무엇이 같아야 하는가
 
-이 문서는 집 로컬에서 진행한 작업을 회사 로컬에 되돌려 주기 위한 인수인계다. 회사 로컬은 새 작업자가 아니라 이 프로젝트의 기존 주관 환경이므로 프로젝트의 기초 설명이나 최초 이해도 심사를 반복하지 않는다.
+회사와 집에서 다음이 같아야 한다.
 
-첫 회사 세션의 목적은 다음 세 가지다.
+- repository origin
+- checked-out branch
+- HEAD commit
+- Git tree hash
+- 모든 tracked 파일과 tracked 디렉터리 구조
+- tracked 문서·설계·코드·시험·artifact bytes
+- clean working tree
 
-1. 회사 clone의 로컬 작업과 local-only commit을 보존한 채 집 작업 branch를 안전하게 받는다.
-2. 집에서 실제로 끝낸 일, 아직 심사 중인 일, 금지된 일을 구분해 사용자에게 보고한다.
-3. 보고 뒤 다음 사용자 지시에서 현재 관문부터 이어간다.
+Git 정본이 아닌 다음 항목은 동일화하지 않는다.
 
-이 인수인계 자체는 Phase D artifact 구현, 테스트 재실행, live 실행 또는 model turn 승인이 아니다.
+- `.venv/`
+- `__pycache__/`, `.pytest_cache/`와 임시 파일
+- OS·Python 설치 위치
+- Codex 로그인 정보와 로컬 설정
+- repository 밖의 실행 state root와 심사용 ZIP
+- Codex의 이전 채팅, 컨텍스트와 메모리
 
-## 2. Git 기준 상태
+이 항목들을 복사해 같게 만드는 것은 인수인계가 아니다. 프로젝트의 정본은 Git commit과 tracked tree다.
 
-집 로컬에서 인수인계 문서를 쓰기 직전에 확인한 상태는 다음과 같다.
+## 2. 현재 전달 정본
 
-- working tree: clean
-- current branch: `codex/runtime-boundary-p01`
-- HEAD와 `origin/codex/runtime-boundary-p01`: `0d0fa852b689bc06e036de50d5b3817ae6d70f00`로 일치
-- 당시 `origin/main`: `9804977bea4c1d4d8eeb0c7ff3f6d1b30a9cad89`
+집에서 수행한 프로젝트 작업은 모두 `codex/runtime-boundary-p01`에 commit·push한다. 회사는 `main` 폴더를 별도로 복사하거나 집 PC 디렉터리를 통째로 옮기지 않고 이 원격 branch tip을 받는다.
+
+이 문서를 다시 만든 직전 원격 상태:
+
+- `origin/codex/runtime-boundary-p01`: `ffd2b849b0b3bd6c86fbfcc91bc30e3c82fb6b4c`
+- `origin/main`: `9804977bea4c1d4d8eeb0c7ff3f6d1b30a9cad89`
 - merge-base: `9804977bea4c1d4d8eeb0c7ff3f6d1b30a9cad89`
-- 완료 작업 기준 branch는 당시 `origin/main`보다 20 commits ahead, main-only commit 0개
+- main-only commits: 0
+- 집 branch-only commits: 21
 
-이 문서를 추가한 인수인계 commit은 `0d0fa85` 뒤에 놓인다. 회사 로컬은 하드코딩된 ahead 수보다 fetch 뒤 원격 branch tip을 정본으로 삼되, `0d0fa85`가 그 tip의 ancestor인지 확인한다.
+이 revision 2 인수 문서를 포함하는 새 commit은 `ffd2b84` 뒤에 추가된다. 따라서 회사는 위 숫자를 고정값으로 사용하지 않고 `git fetch origin` 뒤의 `origin/codex/runtime-boundary-p01` tip을 최종 정본으로 사용한다. 단, `ffd2b84`가 새 tip의 ancestor여야 한다.
 
-회사 로컬의 `main`이나 다른 branch를 첫 세션에서 자동 병합·reset하지 않는다. 집 작업 branch를 먼저 별도 tracking branch로 받아 보고한 뒤 main 반영 여부는 사용자가 결정한다.
+## 3. 왜 최신 main도 먼저 확인하는가
 
-### 2.1 전달 범위와 정본 순서
+회사가 branch를 pull하기 전에 최신 `origin/main`을 확인하는 이유는 회사나 다른 작업자가 집 작업 이후 main에 새 commit을 올렸을 가능성을 놓치지 않기 위해서다.
 
-저장소 안에서 전달할 작업은 이 인수인계 문서와 시작 프롬프트를 포함해 모두 `codex/runtime-boundary-p01`에 commit·push한 상태로 넘긴다. Git 밖의 Pro 재심 ZIP만 예외이며 §5에 별도로 기록한다.
+```powershell
+git fetch origin
+git rev-list --left-right --count origin/main...origin/codex/runtime-boundary-p01
+git log --oneline --left-right --decorate origin/main...origin/codex/runtime-boundary-p01
+```
 
-`origin/main..codex/runtime-boundary-p01`의 주요 변경 범위는 다음과 같다.
+첫 숫자는 main에만 있는 commit 수이고 두 번째 숫자는 집 branch에만 있는 commit 수다.
 
-- Windows·SDK runtime boundary 구현, probe와 표적 시험
-- 현실 고난도 비교의 Phase C Schema·SS1 Fake Adapter·observer·property/triage 구현과 시험
-- Phase B/C 결과와 외부 심사 기록
-- Phase D revision 1/2 명세와 재심 프롬프트
-- 관련 incident와 revision log
+- 첫 숫자가 `0`: 집 branch가 최신 main을 전부 포함한다. 동일화 진행 가능
+- 첫 숫자가 `1` 이상: main에 회사/외부 작업이 추가됐다. 어느 쪽도 덮지 말고 commit 목록을 보고한 뒤 중단
 
-회사 첫 보고는 `git log origin/main..origin/codex/runtime-boundary-p01`과 `git diff --stat`으로 실제 commit/path 범위를 확인하되 코드를 실행하지 않는다.
+main-only 변경이 있는데 집 branch를 그대로 정본으로 강제하면 회사 작업이 사라지고, 반대로 main만 pull하면 집 작업이 빠진다. 이때는 사용자 승인 뒤 별도 통합 작업으로 하나의 새 commit을 만들고 양쪽 PC가 다시 그 commit을 받아야 한다.
 
-정본 우선순위는 Git commit과 tracked bytes → 봉인 artifact·구조화 결과 → 시험·심사 기록 → 운영 문서 → 채팅 요약 순이다. 모델의 완료 문구만으로 승인·통과를 주장하지 않는다.
+## 4. 회사 로컬 동일화 절차
 
-분리된 `개인 AI 개발 전통 체계`의 파일·경로·용어·가치 판단은 이 인수 범위에 포함하지 않았고 회사 로컬도 섞지 않는다.
+### 4.1 회사 작업 보존
 
-## 3. 집 로컬이 이어받았던 지점
+먼저 다음을 확인한다.
 
-현재 `origin/main`은 `9804977`의 `Merge codex/s1-execution-freeze into main`까지 포함한다. 그 뒤 현실 고난도 SS1/B1 비교를 준비하기 위한 Phase B~D 작업은 `codex/runtime-boundary-p01`에서 진행했다.
+```powershell
+git status --short
+git status -sb
+git remote get-url origin
+git branch --show-current
+git rev-parse HEAD
+git stash list
+```
 
-과거 S1/S2/S3 결과를 다시 실행하거나 재채점하지 않았다. 새 계보는 기존 숫자 단계의 `S4`가 아니라 `sdk-routing-realistic-high-difficulty-v1`이며, 단순 문제에서 C2/B1 차이가 작았던 한계를 넘기 위해 실제 고난도 snapshot 두 개에서 `SS1 persistent session`과 B1을 비교하려는 별도 실험이다.
+`origin`은 다음 두 표현 중 하나여야 한다.
 
-## 4. 집 로컬에서 완료한 작업
+- `https://github.com/shotgun1107/local-agent-orchestrator.git`
+- `git@github.com:shotgun1107/local-agent-orchestrator.git`
 
-### 4.1 Phase B — Windows·SDK runtime boundary
+다른 URL이면 같은 이름의 fork나 다른 저장소일 수 있으므로 변경하지 말고 보고한다. `git branch --show-current`가 비어 있으면 detached HEAD다. 이 경우 고유 commit을 잃을 수 있으므로 HEAD를 보고하고 멈춘다. 기존 stash가 있거나 modified, staged, untracked 작업 파일이 하나라도 있어도 reset·clean·checkout·stash·rebase하지 않고 보고 후 멈춘다.
 
-Phase B는 모델을 평가한 시험이 아니라 Worker와 Judge가 사용할 실행 경계를 model-free로 확인한 단계다.
+### 4.2 원격 비교
 
-- 001~014 후보는 profile, argv, ACL, junction cleanup, metadata 의미 문제에서 fail-closed됐다.
-- source `9b29e781136e13b43b1e18f3fe1823bf496bef5c`의 `runtime-boundary-phaseb-20260809-015`가 최초 candidate다.
-- pinned SDK/CLI: `0.144.4 / 0.144.4`
-- custom permission profile: `runtime-boundary-worker`
-- P01~P08 typed Evidence: 8/8 derived true
-- actual model turn: 0
-- 별도 process bundle 재검증 뒤 Benchmark Runner 전체 기록: `258 passed in 200.38s`
-- 결과 기록 commit: `c3c8d2e`
-- ChatGPT Pro closure commit: `b893cd6`
-- Pro 최종 판정: 승인, P0/P1 0건, Candidate 015 exact identity 범위에서 `judge_only_verified=YES`, Phase C `GO`
+로컬 작업 파일이 없을 때 fetch한 뒤 모든 local branch의 local-only commit을 확인한다.
 
-정본:
+```powershell
+git fetch origin
+git log --oneline --branches --not --remotes
+```
 
-- `docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md`
-- `docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md`
-- `docs/reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md`
+두 번째 명령에 commit이 하나라도 나오면 어느 local branch도 이동·병합하지 않고 목록을 보고한 뒤 멈춘다. 출력이 없을 때만 §3의 main/집 branch 비교를 수행한다. `ffd2b84`가 원격 집 branch tip의 ancestor인지도 확인한다.
 
-001~014 실패 artifact와 root는 원인 기록이다. 삭제·재사용·성공 후보로 승격하지 않는다. Candidate 015도 다른 executable, source, configuration, profile 또는 ACL 환경을 자동 인증하지 않는다.
+```powershell
+git merge-base --is-ancestor ffd2b849b0b3bd6c86fbfcc91bc30e3c82fb6b4c `
+  origin/codex/runtime-boundary-p01
+```
 
-### 4.2 Phase C — model-free 비교 계약
+실패하면 예상하지 않은 원격 변경이므로 보고하고 멈춘다.
 
-사용자가 승인한 좁은 범위만 구현했다.
+### 4.3 같은 branch·commit으로 맞추기
 
-- 구현 commit: `cb730b820e1bbc18d4c1813f50b2cb2a2377c7ee`
-- 결과 기록 commit: `0ab4ce1`
-- exact SS1 self-review prompt 교정 commit: `c4df661f608a7580f28738687e1c47100b2e5093`
-- 구현 범위: strict Schema, `SS1PersistentAdapter`, passive observer, property envelope, common safety/triage 순수 로직과 Fake SDK sequence
-- 표적 기록: `33 passed`
-- 영향 회귀 기록: `19 passed, 1 skipped`
-- skip 이유: 현재 시험 환경의 선택 의존성 `openai_codex` 부재
-- actual SDK thread/model turn: 0
+회사에 local `codex/runtime-boundary-p01`이 없으면 원격 tracking branch로 만든다.
 
-정본:
+```powershell
+git switch --track origin/codex/runtime-boundary-p01
+```
 
-- `docs/experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md`
-- `tools/benchmark-runner/src/benchmark_runner/realistic_routing.py`
-- `tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py`
-- `tools/benchmark-runner/tests/test_realistic_routing.py`
-- `tools/benchmark-runner/tests/test_ss1_adapter.py`
+이미 있다면 local-only commit과 divergence가 없는지 확인한 뒤 전환한다.
 
-Phase C 통과는 B1 public hook, stage registry, live Plan, Measurement, seal 또는 실제 비교가 준비됐다는 뜻이 아니다.
+```powershell
+git switch codex/runtime-boundary-p01
+git pull --ff-only origin codex/runtime-boundary-p01
+```
 
-### 4.3 Phase D — snapshot·checker 명세
+### 4.4 동일 상태 검증
 
-Phase D revision 1은 commit `29d62c9`에서 작성했다. 실제 historical window 두 개, 각 8-Task graph, Worker/public/Judge 정보 경계, reference·mutation, property DAG와 Judge filesystem/no-network 계약을 설계했다.
+```powershell
+git rev-parse HEAD
+git rev-parse origin/codex/runtime-boundary-p01
+git rev-parse 'HEAD^{tree}'
+git rev-parse 'origin/codex/runtime-boundary-p01^{tree}'
+git status --porcelain=v1
+git diff --exit-code origin/codex/runtime-boundary-p01 -- .
+```
 
-ChatGPT Pro의 revision 1 읽기 전용 심사는 다음을 판정했다.
+통과 조건:
 
-- 최종: 조건부 승인
-- P0: 0
-- P1: 3
-- P2: 2
-- same-repository independence: accepted
-- Profile I 6-file structure exception: accepted
-- Phase D artifact: `NO-GO`
-- Phase E/F: `NO-GO`
+- local HEAD와 remote branch commit이 동일
+- 두 tree hash가 동일
+- `git status --porcelain=v1` 출력 없음
+- `git diff --exit-code` 성공
 
-P1 3건은 Worker-visible I05~I07에 historical solution이 노출된 점, Judge J/S operation matrix가 부족한 점, repository J source와 protected runtime J를 구분하지 않은 점이다. P2 2건은 Profile R raw 91-file 수의 과장 가능성과 자유문 operator/incident 품질을 결정론적 property로 오해할 가능성이다.
+이 조건이면 Git이 관리하는 프로젝트 파일·디렉터리는 집에서 넘긴 정본과 같다.
 
-revision 2는 commit `0d0fa85`에서 다음 closure 후보를 만들었다.
+## 5. 동일화 뒤 Codex 인수
 
-- I05~I07을 원인·해법이 아니라 증상과 공개 invariant로 교체
-- Worker-visible 전체 surface의 provenance, forbidden fact와 random canary 검사 추가
-- fresh read/write O 확정
-- Judge parent/child의 W/J runtime/O/S operation matrix와 pre/post identity 계약 추가
-- versioned J source를 invocation마다 별도 opaque protected runtime J로 byte-exact 복사·결합
-- Profile R changed path를 authored/generated/golden/history와 semantic group으로 분해
-- R-P08/I-P10을 machine-readable relation으로 한정하고 자유문 품질을 판정에서 제외
+파일을 같게 만든 것만으로 회사 Codex의 기억이 생기지는 않는다. 회사 Codex는 이 문서와 아래 정본을 읽어 집에서 진행한 맥락만 복원한다.
 
-정본:
+1. `docs/operations/home-to-company-codex-handoff.md`
+2. `docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md`
+3. `docs/reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md`
+4. `docs/experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md`
+5. `docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md`
+6. `docs/reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-r1.md`
+7. `docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-sdk-routing-realistic-high-difficulty-phase-d-r2.md`
+8. `docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md`의 현재 상태와 Phase D~F 경계
+9. `docs/operations/codex-revision-log.md`의 Phase B Candidate 015 이후 절
 
-- `docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md` revision 2
-- `docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md` revision 14
-- `docs/reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-r1.md`
-- `docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-sdk-routing-realistic-high-difficulty-phase-d-r2.md`
+과거 `home-codex-handoff.md`의 S1/S2 재개 지시는 역사 기록이며 현재 작업 지시로 사용하지 않는다.
 
-revision 2는 아직 외부 closure 재심사 결과를 받지 않았다. 문서상 closure 후보일 뿐 P1이 공식적으로 닫혔다고 선언하지 않는다.
+## 6. 집에서 완료한 작업 요약
 
-## 5. 집 로컬 외부 파일
+### Phase B
 
-ChatGPT Pro revision 2 재심사용 ZIP은 집 PC에만 만들었고 Git에는 넣지 않았다.
+- Windows·SDK runtime boundary Candidate 015 도달
+- P01~P08 8/8 true, actual model turn 0
+- 별도 bundle verifier와 기록된 Runner 전체 `258 passed`
+- ChatGPT Pro 최종 승인, P0/P1 0, exact identity 범위에서 `judge_only_verified=YES`
 
-- 파일명: `chatgpt-pro-phase-d-r2-rereview-0d0fa85.zip`
-- SHA-256: `c78d07134c088c8e78abb1f885371d882b12893a93ebc33d3e541a2b6c393469`
-- 내부: 29 files, manifest entries 28
+### Phase C
 
-회사 PC에서 이 집 로컬 절대경로를 찾거나 ZIP을 이유 없이 재생성하지 않는다. 재심 결과는 사용자가 채팅이나 별도 파일로 전달한다. 저장소 안에는 재심에 필요한 revision 2 명세, revision 1 심사 원문과 권위 있는 프롬프트가 이미 있다.
+- strict Schema, `SS1PersistentAdapter`, passive observer, property envelope와 common triage model-free 구현
+- 기록된 표적 `33 passed`
+- 영향 회귀 `19 passed, 1 skipped`
+- exact neutral self-review prompt 교정 뒤 표적 `33 passed in 0.23s`
+- 실제 SDK thread와 model turn 0
 
-## 6. 현재 확실히 말할 수 있는 것
+### Phase D
 
-- `codex/runtime-boundary-p01`은 완료 작업 기준으로 `origin/main`의 직계 후손이다.
-- Phase B Candidate 015는 봉인된 exact identity 범위에서 Pro가 `judge_only_verified=YES`로 승인했다.
-- Phase C model-free 구현과 기록된 표적·영향 회귀가 존재한다.
-- Phase D revision 1의 두 source 독립성 판단과 Profile I 구조 예외는 외부 심사에서 accepted됐다.
-- Phase D revision 2는 P1 3건·P2 2건을 겨냥한 문서 closure 후보로 작성됐다.
-- 집에서 Phase B~D 작업 중 실제 model turn은 0회다.
+- revision 1 Pro 심사: P0 0, P1 3, P2 2
+- same-repository independence와 Profile I 6-file 예외 accepted
+- revision 2에서 Worker solution leakage, Judge operation matrix, J source/runtime binding과 P2 2건의 문서 closure 후보 작성
+- revision 2 Pro closure 재심 결과는 아직 미수령
+- snapshot·reference·checker·Judge probe는 구현하지 않음
 
-## 7. 아직 주장할 수 없는 것
+## 7. 현재 다음 gate
 
-- revision 2의 P1 3건이 외부 심사에서 모두 closed됐다는 주장
-- 실제 익명화 snapshot, fixture, reference solution, negative mutation 또는 property checker가 존재한다는 주장
-- Judge용 `realistic-property-judge-v1`과 full operation/no-network 경계가 실제 구현·probe를 통과했다는 주장
-- `CHALLENGE_READY_CANDIDATE`
-- B1 hook, stage registry, live Plan/Cell/Measurement/seal/export 준비 완료
-- SS1 또는 B1의 실제 성능·품질 우위
-- profile route, B1 채택·거부 또는 global default
-- Phase E live와 Phase F model usage 승인
+현재 gate는 ChatGPT Pro의 Phase D revision 2 closure 재심 결과다.
 
-## 8. 현재 다음 관문
+- 결과가 없으면 회사 Codex는 동일화와 인수 상태를 보고하고 결과를 요청한 뒤 멈춘다.
+- 결과가 있으면 P1 3건, P2 2건, 새 P0/P1과 Phase D artifact `GO | NO-GO`를 분류해 보고한다.
+- `GO`여도 별도 사용자 승인 전 Phase D artifact를 구현하지 않는다.
+- Phase E live와 Phase F model turn은 계속 별도 `NO-GO`다.
 
-현재 첫 관문은 ChatGPT Pro의 Phase D revision 2 closure 재심 결과다.
+## 8. 회사 Codex의 첫 보고
 
-재심 결과가 아직 없으면:
+다음을 한 번만 보고한다.
 
-1. 회사 Codex는 이 인수 상태만 보고한다.
-2. 추가 테스트·감사·ZIP 재생성·새 하네스·내부 하위 에이전트를 시작하지 않는다.
-3. 사용자에게 revision 2 Pro 결과를 요청하고 멈춘다.
+- 처음 발견한 회사 branch·HEAD와 로컬 작업 유무
+- fetch 뒤 origin/main과 집 branch의 main-only/branch-only commit 수
+- 최종 local/remote HEAD와 tree hash 일치 여부
+- clean status와 tracked diff 결과
+- Phase B/C/D 현재 상태
+- Pro revision 2 결과 수령 여부
+- 현재 gate와 다음 사용자 승인 항목
 
-재심 결과가 전달되면:
+보고 뒤 자동 구현·테스트·main 병합을 하지 않는다. 사용자 지시를 받은 다음 작업부터 현재 gate를 이어가며 인수 절차를 반복하지 않는다.
 
-1. P1 3건이 각각 `closed | partial | open`인지 확인한다.
-2. P2 2건과 새 P0/P1을 확인한다.
-3. 보고서를 저장소에 보존할지 사용자 지시를 따른다.
-4. Phase D artifact `GO`여도 사용자의 별도 구현 승인을 받기 전에는 구현하지 않는다.
-5. `NO-GO` 또는 남은 P1이면 그 finding만 문서 수준에서 처리하며 범위 밖 구현을 선행하지 않는다.
+## 9. 첫 인수 세션 금지
 
-Phase D artifact 구현이 별도로 승인된 뒤의 범위는 snapshot export·익명화, fixture/reference/checker, 기존 runtime-boundary primitive의 Judge 전용 typed mode와 model-free 검증까지다. Phase E live candidate와 Phase F model turn은 계속 별도 관문이다.
-
-## 9. 회사 로컬 동기화 규칙
-
-회사 clone은 이미 존재한다고 가정한다. 새 clone이나 기초 설치를 반복하지 않는다.
-
-1. 현재 경로, origin, branch, HEAD, `git status --short`, upstream 대비 local-only commit을 먼저 확인한다.
-2. 로컬 변경, untracked 작업 파일 또는 local-only commit이 하나라도 있으면 reset·clean·checkout·stash·rebase로 숨기거나 폐기하지 말고 목록을 보고한 뒤 멈춘다.
-3. 깨끗하고 local-only commit이 없을 때만 `git fetch origin`을 한다.
-4. `origin/codex/runtime-boundary-p01`에 `0d0fa85`가 ancestor인지 확인한다.
-5. 회사에 동명 local branch가 없으면 원격 tracking branch로 만들고, 있으면 divergence가 없는지 확인한 뒤 `--ff-only`로 동기화한다.
-6. 첫 인수 세션에서 `main` 병합·fast-forward·PR·branch 삭제를 하지 않는다.
-7. 동기화 후 branch tip, `origin/main`, merge-base와 ahead/behind를 사용자에게 보고한다.
-
-## 10. 첫 회사 보고 형식
-
-첫 보고에는 다음을 포함한다.
-
-- 회사 clone 경로·origin·처음 발견한 branch/HEAD
-- 로컬 변경·untracked·local-only commit 유무
-- 동기화한 branch와 최종 HEAD
-- `origin/main`과 집 branch의 merge-base·ahead/behind
-- Phase B, Phase C, Phase D revision 1/2를 각각 한 문단으로 요약
-- 실제 확인된 시험/심사 기록과 이번 세션에서 재실행하지 않은 것
-- 현재 정확한 gate
-- 아직 주장할 수 없는 것
-- 전달받지 못한 외부 Pro revision 2 결과 유무
-- 다음에 할 수 있는 일과 사용자 승인이 필요한 일
-
-문서 문장을 길게 복사하지 말고 회사 Codex의 말로 인과관계를 설명한다. 보고 뒤 자동 구현하지 않고 사용자 지시를 기다린다. 다음 세션부터는 이 인수 절차를 다시 반복하지 않는다.
-
-## 11. 첫 세션에서 금지되는 행동
-
-- 과거 Phase B 258개 또는 Phase C 시험 재실행
-- 새 기술 감사나 내부 하위 에이전트 호출
-- Phase D snapshot/reference/checker/Judge probe 구현
-- ZIP 재생성 또는 집 로컬 경로 탐색
-- live Plan, Cell, SDK thread 또는 model turn 실행
-- main 병합·PR·branch 삭제
+- reset·clean·stash·rebase로 회사 작업 숨기기
+- main 또는 집 branch의 unique commit 덮어쓰기
+- 과거 테스트·Phase B probe·독립 verifier 재실행
+- 내부 하위 에이전트 호출
+- 파일 수정·commit·push·PR·main 병합
+- Phase D artifact 구현
+- SDK thread·live Plan·model turn 실행
 - API key 생성·요구·입력·출력
-- 확인하지 않은 결과를 통과했다고 보고
+- 분리된 개인 AI 개발 전통 체계의 파일·경로·용어 혼입
 
-첫 세션은 Git 동기화, 정본 읽기와 인수 보고만 허용한다.
+첫 세션은 프로젝트 동일화, 문서 읽기와 보고까지만 허용한다.
