@@ -35,6 +35,7 @@ from benchmark_runner.runtime_boundary import (
     RuntimeIdentity,
     SentinelSpec,
     WindowsProcessIdentityObservation,
+    WorkspaceAclTransitionObservation,
     Win32CallObservation,
     build_windows_sandbox_provenance,
     build_runtime_boundary_manifest,
@@ -109,6 +110,43 @@ def _process(identity: WindowsProcessIdentityObservation) -> ProbeProcessObserva
         stderr_truncated=False,
         duration_ms=1,
         sandbox_process_identity=identity,
+    )
+
+
+def _workspace_acl_transition(
+    sid: str,
+    *,
+    initial_acl_sha256: str = ZERO,
+) -> WorkspaceAclTransitionObservation:
+    initial_ace = "(A;OICIID;FA;;;SY)"
+    added_ace = f"(A;OICI;0x1301bf;;;{sid})"
+    initial_hash = sha256_bytes(initial_ace.encode("utf-8"))
+    added_hash = sha256_bytes(added_ace.encode("utf-8"))
+    return WorkspaceAclTransitionObservation(
+        selection_method="initial_acl+exact_w_only_ace_delta+p01_token_user_sid",
+        initial_W_acl_sddl_sha256=initial_acl_sha256,
+        active_W_acl_sddl_sha256=ONE,
+        initial_W_dacl_control_sha256=TWO,
+        active_W_dacl_control_sha256=TWO,
+        initial_W_ace_sha256s=[initial_hash],
+        active_W_ace_sha256s=sorted([initial_hash, added_hash]),
+        added_ace_sddl=added_ace,
+        added_ace_sha256=added_hash,
+        added_ace_type="A",
+        added_ace_flags="OICI",
+        added_ace_rights="0x1301bf",
+        added_ace_object_guid="",
+        added_ace_inherit_object_guid="",
+        added_token_user_sid=sid,
+        added_token_user_sid_sha256=sha256_bytes(sid.encode("utf-8")),
+        removed_ace_sha256s=[],
+        W_owner_unchanged=True,
+        W_owner_group_descriptor_unchanged=True,
+        W_volume_unchanged=True,
+        J_identity_unchanged=True,
+        S_identity_unchanged=True,
+        P01_token_user_sid_matches_added_ace=True,
+        derived_transition_passed=True,
     )
 
 
@@ -863,8 +901,8 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         config_identity_sha256=_sha(manifest.configuration),
     )
     policy = _policy()
-    sandbox_identity = _identity("S-1-5-21-sandbox", elevated_raw=0)
-    controller_identity = _identity("S-1-5-21-controller", elevated_raw=1)
+    sandbox_identity = _identity("S-1-5-21-1-2-3-1001", elevated_raw=0)
+    controller_identity = _identity("S-1-5-21-1-2-3-1000", elevated_raw=1)
     probes = _passing_probes(manifest, sandbox_identity)
     requirements = EmbeddedJsonEvidence.from_value(
         {"id": "requirements", "result": {"requirements": None}}
@@ -877,6 +915,10 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         config_requirements_response=requirements,
         readiness_response=readiness,
         controller_process_identity=controller_identity,
+        workspace_acl_transition=_workspace_acl_transition(
+            sandbox_identity.token_user_sid,
+            initial_acl_sha256=manifest.W.acl_sddl_sha256,
+        ),
         probes=probes,
     )
     now = datetime(2026, 8, 9, tzinfo=timezone.utc)
@@ -915,3 +957,45 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
     (bundle / "extra.txt").write_text("not allowed", encoding="utf-8")
     with pytest.raises(RuntimeBoundaryError, match="file set mismatch"):
         verify_runtime_boundary_bundle(bundle)
+
+
+def test_workspace_acl_transition_is_bound_to_exact_p01_sid() -> None:
+    P01 = _identity("S-1-5-21-1-2-3-1001")
+    evidence = _workspace_acl_transition(P01.token_user_sid)
+
+    assert runtime_boundary.verify_workspace_acl_transition(
+        evidence,
+        P01_process_identity=P01,
+    ) is True
+
+    other = _identity("S-1-5-21-1-2-3-1002")
+    with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
+        runtime_boundary.verify_workspace_acl_transition(
+            evidence,
+            P01_process_identity=other,
+        )
+
+
+def test_workspace_acl_transition_rejects_an_extra_ace() -> None:
+    P01 = _identity("S-1-5-21-1-2-3-1001")
+    evidence = _workspace_acl_transition(P01.token_user_sid)
+    forged = evidence.model_copy(
+        update={
+            "active_W_ace_sha256s": sorted(
+                [*evidence.active_W_ace_sha256s, THREE]
+            )
+        }
+    )
+
+    with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
+        runtime_boundary.verify_workspace_acl_transition(
+            forged,
+            P01_process_identity=P01,
+        )
+
+
+def test_workspace_acl_transition_rejects_inherited_grant() -> None:
+    with pytest.raises(RuntimeBoundaryError, match="exact explicit"):
+        runtime_boundary._parse_workspace_acl_ace(
+            "(A;OICIID;0x1301bf;;;S-1-5-21-1-2-3-1001)"
+        )

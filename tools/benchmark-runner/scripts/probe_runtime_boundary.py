@@ -1,7 +1,7 @@
 """Standalone, model-free observations for the Windows runtime-boundary probe.
 
 The controller copies this file into W and invokes it with ``python -P`` inside
-``codex sandbox windows``.  It intentionally imports only the standard library,
+``codex sandbox``.  It intentionally imports only the standard library,
 prints exactly one canonical JSON object, and never interprets benchmark data.
 """
 

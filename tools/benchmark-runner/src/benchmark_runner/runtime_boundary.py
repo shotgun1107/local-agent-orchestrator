@@ -18,6 +18,8 @@ import subprocess
 import threading
 import time
 import uuid
+from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal, Mapping, NoReturn, Sequence
@@ -425,8 +427,47 @@ class RootIdentity(StrictModel):
         return value
 
 
-def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootIdentity:
-    """Capture owner, DACL and volume identity without exporting the raw ACL."""
+@dataclass(frozen=True)
+class _WindowsRootSecuritySnapshot:
+    identity: RootIdentity
+    sddl: str
+    owner_group_sddl_prefix: str
+    dacl_control: str
+    dacl_aces: tuple[str, ...]
+
+
+def _split_sddl_dacl(sddl: str) -> tuple[str, tuple[str, ...]]:
+    marker = sddl.find("D:")
+    if marker < 0:
+        raise RuntimeBoundaryError("Windows root security descriptor has no DACL")
+    dacl = sddl[marker + 2 :]
+    sacl_marker = dacl.find("S:")
+    if sacl_marker >= 0:
+        dacl = dacl[:sacl_marker]
+    first_ace = dacl.find("(")
+    if first_ace < 0:
+        return dacl, ()
+    control = dacl[:first_ace]
+    remainder = dacl[first_ace:]
+    aces: list[str] = []
+    cursor = 0
+    while cursor < len(remainder):
+        if remainder[cursor] != "(":
+            raise RuntimeBoundaryError("Windows DACL is not canonical SDDL")
+        end = remainder.find(")", cursor + 1)
+        if end < 0:
+            raise RuntimeBoundaryError("Windows DACL contains an unterminated ACE")
+        aces.append(remainder[cursor : end + 1])
+        cursor = end + 1
+    return control, tuple(aces)
+
+
+def _capture_windows_root_security(
+    path: Path,
+    *,
+    redacted_path_id: str,
+) -> _WindowsRootSecuritySnapshot:
+    """Capture root identity plus an in-memory ACL used by the transition guard."""
 
     if os.name != "nt":
         raise RuntimeBoundaryError("runtime-boundary root identity is Windows-only")
@@ -510,13 +551,30 @@ def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootI
         len(volume_name),
     ):
         raise _ctypes.WinError(_ctypes.get_last_error())
-    return RootIdentity(
+    identity = RootIdentity(
         redacted_path_id=redacted_path_id,
         resolved_absolute_path=str(resolved),
         volume_identity=volume_name.value,
         owner_sid=owner_sid,
         acl_sddl_sha256=_sha_text(sddl),
     )
+    dacl_control, dacl_aces = _split_sddl_dacl(sddl)
+    return _WindowsRootSecuritySnapshot(
+        identity=identity,
+        sddl=sddl,
+        owner_group_sddl_prefix=sddl[: sddl.find("D:")],
+        dacl_control=dacl_control,
+        dacl_aces=dacl_aces,
+    )
+
+
+def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootIdentity:
+    """Capture owner, DACL and volume identity without exporting the raw ACL."""
+
+    return _capture_windows_root_security(
+        path,
+        redacted_path_id=redacted_path_id,
+    ).identity
 
 
 def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> None:
@@ -725,12 +783,50 @@ class EffectivePolicyEvidence(StrictModel):
     derived_policy_passed: bool
 
 
+class WorkspaceAclTransitionObservation(StrictModel):
+    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_token_user_sid"]
+    initial_W_acl_sddl_sha256: Sha256
+    active_W_acl_sddl_sha256: Sha256
+    initial_W_dacl_control_sha256: Sha256
+    active_W_dacl_control_sha256: Sha256
+    initial_W_ace_sha256s: list[Sha256]
+    active_W_ace_sha256s: list[Sha256]
+    added_ace_sddl: str = Field(min_length=8)
+    added_ace_sha256: Sha256
+    added_ace_type: Literal["A"]
+    added_ace_flags: Literal["OICI"]
+    added_ace_rights: Literal["0x1301bf"]
+    added_ace_object_guid: Literal[""]
+    added_ace_inherit_object_guid: Literal[""]
+    added_token_user_sid: str = Field(pattern=r"^S-1-5-21-(?:[0-9]+-){3}[0-9]+$")
+    added_token_user_sid_sha256: Sha256
+    removed_ace_sha256s: list[Sha256]
+    W_owner_unchanged: Literal[True]
+    W_owner_group_descriptor_unchanged: Literal[True]
+    W_volume_unchanged: Literal[True]
+    J_identity_unchanged: Literal[True]
+    S_identity_unchanged: Literal[True]
+    P01_token_user_sid_matches_added_ace: Literal[True]
+    derived_transition_passed: bool
+
+    @model_validator(mode="after")
+    def acl_hash_lists_are_canonical(self) -> "WorkspaceAclTransitionObservation":
+        if self.initial_W_ace_sha256s != sorted(self.initial_W_ace_sha256s):
+            raise ValueError("initial W ACE hashes must be sorted")
+        if self.active_W_ace_sha256s != sorted(self.active_W_ace_sha256s):
+            raise ValueError("active W ACE hashes must be sorted")
+        if self.removed_ace_sha256s != sorted(self.removed_ace_sha256s):
+            raise ValueError("removed W ACE hashes must be sorted")
+        return self
+
+
 class WindowsSandboxProvenanceObservation(StrictModel):
     selection_method: Literal["effective_config+readiness+token_user_sid"]
     config_requirements_response: EmbeddedJsonEvidence
     readiness_response: EmbeddedJsonEvidence
     controller_process_identity: WindowsProcessIdentityObservation
     P01_process_identity: WindowsProcessIdentityObservation
+    workspace_acl_transition: WorkspaceAclTransitionObservation
     dedicated_user_sid_differs_from_controller: bool
     all_probe_process_identities_equal_P01: bool
     P06_parent_child_identity_equal: bool
@@ -770,6 +866,222 @@ class RuntimeBoundaryProbeResult(StrictModel):
         if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
             raise ValueError("failure reason codes must be sorted and unique")
         return self
+
+
+def _parse_workspace_acl_ace(ace: str) -> tuple[str, str, str, str, str, str]:
+    if not ace.startswith("(") or not ace.endswith(")"):
+        raise RuntimeBoundaryError("workspace ACL transition ACE is not canonical SDDL")
+    fields = tuple(ace[1:-1].split(";"))
+    if len(fields) != 6:
+        raise RuntimeBoundaryError("workspace ACL transition ACE field count differs")
+    ace_type, flags, rights, object_guid, inherit_object_guid, sid = fields
+    if (
+        ace_type != "A"
+        or flags != "OICI"
+        or rights != "0x1301bf"
+        or object_guid
+        or inherit_object_guid
+    ):
+        raise RuntimeBoundaryError(
+            "workspace ACL transition is not the exact explicit Modify/Synchronize grant"
+        )
+    sid_parts = sid.split("-")
+    if (
+        len(sid_parts) != 8
+        or sid_parts[:4] != ["S", "1", "5", "21"]
+        or not all(part.isdecimal() for part in sid_parts[4:])
+    ):
+        raise RuntimeBoundaryError("workspace ACL transition SID is not a local-user SID")
+    return ace_type, flags, rights, object_guid, inherit_object_guid, sid
+
+
+@dataclass(frozen=True)
+class _WorkspaceAclTransitionState:
+    initial: _WindowsRootSecuritySnapshot
+    active: _WindowsRootSecuritySnapshot
+    added_ace_sddl: str
+    added_token_user_sid: str
+
+
+class _WorkspaceAclTransitionGuard:
+    """Allow only Codex's exact W grant while keeping J/S fail-closed."""
+
+    def __init__(
+        self,
+        manifest: RuntimeBoundaryProbeManifest,
+        initial: _WindowsRootSecuritySnapshot,
+    ) -> None:
+        if initial.identity != manifest.W:
+            raise RuntimeBoundaryError("initial W root identity differs from the manifest")
+        self._manifest = manifest
+        self._initial = initial
+        self._transition: _WorkspaceAclTransitionState | None = None
+        self._bound_P01_sid: str | None = None
+
+    @classmethod
+    def capture(cls, manifest: RuntimeBoundaryProbeManifest) -> "_WorkspaceAclTransitionGuard":
+        initial = _capture_windows_root_security(
+            Path(manifest.W.resolved_absolute_path),
+            redacted_path_id=manifest.W.redacted_path_id,
+        )
+        guard = cls(manifest, initial)
+        guard.verify_current(require_transition=False, require_bound=False)
+        return guard
+
+    def _capture_current_transition(self) -> _WorkspaceAclTransitionState | None:
+        for expected in (self._manifest.J, self._manifest.S):
+            actual = capture_windows_root_identity(
+                Path(expected.resolved_absolute_path),
+                redacted_path_id=expected.redacted_path_id,
+            )
+            if actual != expected:
+                raise RuntimeBoundaryError(
+                    f"{expected.redacted_path_id} root owner, ACL or volume identity drifted"
+                )
+
+        active = _capture_windows_root_security(
+            Path(self._manifest.W.resolved_absolute_path),
+            redacted_path_id=self._manifest.W.redacted_path_id,
+        )
+        initial_identity = self._initial.identity
+        active_identity = active.identity
+        if (
+            active_identity.redacted_path_id != initial_identity.redacted_path_id
+            or active_identity.resolved_absolute_path != initial_identity.resolved_absolute_path
+            or active_identity.owner_sid != initial_identity.owner_sid
+            or active_identity.volume_identity != initial_identity.volume_identity
+        ):
+            raise RuntimeBoundaryError("W root path, owner or volume identity drifted")
+        if active_identity.acl_sddl_sha256 == initial_identity.acl_sddl_sha256:
+            if self._transition is not None:
+                raise RuntimeBoundaryError("W workspace ACL transition reverted after observation")
+            return None
+        if active.owner_group_sddl_prefix != self._initial.owner_group_sddl_prefix:
+            raise RuntimeBoundaryError("W owner/group security descriptor changed")
+        if active.dacl_control != self._initial.dacl_control:
+            raise RuntimeBoundaryError("W DACL control flags changed")
+
+        initial_aces = Counter(self._initial.dacl_aces)
+        active_aces = Counter(active.dacl_aces)
+        removed = list((initial_aces - active_aces).elements())
+        added = list((active_aces - initial_aces).elements())
+        if removed or len(added) != 1:
+            raise RuntimeBoundaryError("W ACL change is not exactly one added ACE")
+        *_, added_sid = _parse_workspace_acl_ace(added[0])
+        observed = _WorkspaceAclTransitionState(
+            initial=self._initial,
+            active=active,
+            added_ace_sddl=added[0],
+            added_token_user_sid=added_sid,
+        )
+        if self._transition is not None and observed != self._transition:
+            raise RuntimeBoundaryError("W workspace ACL transition drifted")
+        return observed
+
+    def verify_current(
+        self,
+        *,
+        require_transition: bool,
+        require_bound: bool,
+    ) -> None:
+        observed = self._capture_current_transition()
+        if observed is not None:
+            self._transition = observed
+        if require_transition and self._transition is None:
+            raise RuntimeBoundaryError("required W workspace ACL transition was not observed")
+        if require_bound and self._bound_P01_sid is None:
+            raise RuntimeBoundaryError("W workspace ACL transition is not bound to P01")
+        if (
+            self._transition is not None
+            and self._bound_P01_sid is not None
+            and self._transition.added_token_user_sid != self._bound_P01_sid
+        ):
+            raise RuntimeBoundaryError("W workspace ACL transition SID drifted from P01")
+
+    def bind_P01_identity(self, identity: WindowsProcessIdentityObservation) -> None:
+        if self._transition is None:
+            raise RuntimeBoundaryError("P01 completed without the W workspace ACL transition")
+        if self._transition.added_token_user_sid != identity.token_user_sid:
+            raise RuntimeBoundaryError(
+                "W workspace ACL grant SID differs from the P01 sandbox process SID"
+            )
+        self._bound_P01_sid = identity.token_user_sid
+
+    def evidence(self) -> WorkspaceAclTransitionObservation:
+        if self._transition is None or self._bound_P01_sid is None:
+            raise RuntimeBoundaryError("W workspace ACL transition evidence is incomplete")
+        state = self._transition
+        ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
+            _parse_workspace_acl_ace(state.added_ace_sddl)
+        )
+        return WorkspaceAclTransitionObservation(
+            selection_method="initial_acl+exact_w_only_ace_delta+p01_token_user_sid",
+            initial_W_acl_sddl_sha256=state.initial.identity.acl_sddl_sha256,
+            active_W_acl_sddl_sha256=state.active.identity.acl_sddl_sha256,
+            initial_W_dacl_control_sha256=_sha_text(state.initial.dacl_control),
+            active_W_dacl_control_sha256=_sha_text(state.active.dacl_control),
+            initial_W_ace_sha256s=sorted(_sha_text(value) for value in state.initial.dacl_aces),
+            active_W_ace_sha256s=sorted(_sha_text(value) for value in state.active.dacl_aces),
+            added_ace_sddl=state.added_ace_sddl,
+            added_ace_sha256=_sha_text(state.added_ace_sddl),
+            added_ace_type=ace_type,
+            added_ace_flags=flags,
+            added_ace_rights=rights,
+            added_ace_object_guid=object_guid,
+            added_ace_inherit_object_guid=inherit_object_guid,
+            added_token_user_sid=sid,
+            added_token_user_sid_sha256=_sha_text(sid),
+            removed_ace_sha256s=[],
+            W_owner_unchanged=True,
+            W_owner_group_descriptor_unchanged=True,
+            W_volume_unchanged=True,
+            J_identity_unchanged=True,
+            S_identity_unchanged=True,
+            P01_token_user_sid_matches_added_ace=True,
+            derived_transition_passed=True,
+        )
+
+
+def verify_workspace_acl_transition(
+    evidence: WorkspaceAclTransitionObservation,
+    *,
+    P01_process_identity: WindowsProcessIdentityObservation,
+) -> bool:
+    ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
+        _parse_workspace_acl_ace(evidence.added_ace_sddl)
+    )
+    removed = sorted(
+        (Counter(evidence.initial_W_ace_sha256s) - Counter(evidence.active_W_ace_sha256s)).elements()
+    )
+    added = sorted(
+        (Counter(evidence.active_W_ace_sha256s) - Counter(evidence.initial_W_ace_sha256s)).elements()
+    )
+    passed = all(
+        (
+            evidence.initial_W_acl_sddl_sha256 != evidence.active_W_acl_sddl_sha256,
+            evidence.initial_W_dacl_control_sha256 == evidence.active_W_dacl_control_sha256,
+            removed == evidence.removed_ace_sha256s == [],
+            added == [evidence.added_ace_sha256],
+            evidence.added_ace_sha256 == _sha_text(evidence.added_ace_sddl),
+            evidence.added_ace_type == ace_type,
+            evidence.added_ace_flags == flags,
+            evidence.added_ace_rights == rights,
+            evidence.added_ace_object_guid == object_guid,
+            evidence.added_ace_inherit_object_guid == inherit_object_guid,
+            evidence.added_token_user_sid == sid,
+            evidence.added_token_user_sid_sha256 == _sha_text(sid),
+            P01_process_identity.token_user_sid == sid,
+            evidence.P01_token_user_sid_matches_added_ace,
+            evidence.W_owner_unchanged,
+            evidence.W_owner_group_descriptor_unchanged,
+            evidence.W_volume_unchanged,
+            evidence.J_identity_unchanged,
+            evidence.S_identity_unchanged,
+        )
+    )
+    if evidence.derived_transition_passed != passed:
+        raise RuntimeBoundaryError("workspace ACL transition derived field mismatch")
+    return passed
 
 
 class RuntimeBoundaryProfileFailureArtifact(StrictModel):
@@ -1867,11 +2179,19 @@ def execute_frozen_probe_command(
     *,
     source_environment: Mapping[str, str] | None = None,
     failure_bundle_root: Path | None = None,
+    root_guard: _WorkspaceAclTransitionGuard | None = None,
 ) -> ProbeResult:
     """Execute one frozen probe exactly once; the caller owns sequencing and stop rules."""
 
     verify_pinned_runtime_identity(manifest.runtime)
-    verify_root_identity_contract(manifest)
+    if root_guard is None:
+        verify_root_identity_contract(manifest)
+    else:
+        is_P01 = command.probe_id == "P01"
+        root_guard.verify_current(
+            require_transition=not is_P01,
+            require_bound=not is_P01,
+        )
     verify_probe_command_contract(manifest)
     expected_command = manifest.commands[EXACT_PROBE_IDS.index(command.probe_id)]
     if command != expected_command:
@@ -1905,6 +2225,11 @@ def execute_frozen_probe_command(
         timeout_seconds=manifest.timeout_seconds_per_probe,
         limit=manifest.stdout_limit_bytes,
     )
+    if root_guard is not None:
+        root_guard.verify_current(
+            require_transition=True,
+            require_bound=command.probe_id != "P01",
+        )
     stdout_truncated = stdout_total > manifest.stdout_limit_bytes
     stderr_truncated = stderr_total > manifest.stderr_limit_bytes
     postcondition = _probe_postcondition(manifest, command.probe_id)
@@ -1985,6 +2310,8 @@ def execute_frozen_probe_command(
     identity = WindowsProcessIdentityObservation.model_validate(
         payload.get("sandbox_process_identity")
     )
+    if root_guard is not None and command.probe_id == "P01":
+        root_guard.bind_P01_identity(identity)
     operation_exit_code = payload.get("operation_exit_code")
     if not isinstance(operation_exit_code, int):
         raise RuntimeBoundaryError("runtime-boundary operation exit code is missing")
@@ -2912,6 +3239,7 @@ def _classification_payload(
     readiness: EmbeddedJsonEvidence,
     controller: WindowsProcessIdentityObservation,
     P01: WindowsProcessIdentityObservation,
+    workspace_acl_transition: WorkspaceAclTransitionObservation,
     all_probe_equal: bool,
     P06_child_equal: bool,
 ) -> dict[str, JsonValue]:
@@ -2921,6 +3249,9 @@ def _classification_payload(
         "readiness_sha256": readiness.sha256,
         "controller_identity_sha256": controller.identity_sha256,
         "P01_identity_sha256": P01.identity_sha256,
+        "workspace_acl_transition_sha256": sha256_bytes(
+            canonical_json_bytes(workspace_acl_transition)
+        ),
         "all_probe_process_identities_equal_P01": all_probe_equal,
         "P06_parent_child_identity_equal": P06_child_equal,
     }
@@ -2933,6 +3264,7 @@ def derive_windows_sandbox_kind(
     readiness_response: EmbeddedJsonEvidence,
     controller_process_identity: WindowsProcessIdentityObservation,
     P01_process_identity: WindowsProcessIdentityObservation,
+    workspace_acl_transition: WorkspaceAclTransitionObservation,
     all_probe_process_identities_equal_P01: bool,
     P06_parent_child_identity_equal: bool,
 ) -> tuple[Literal["elevated", "unelevated", "unknown"], bool, str]:
@@ -2944,12 +3276,17 @@ def derive_windows_sandbox_kind(
         controller_process_identity.token_user_sid
         != P01_process_identity.token_user_sid
     )
+    workspace_acl_ok = verify_workspace_acl_transition(
+        workspace_acl_transition,
+        P01_process_identity=P01_process_identity,
+    )
     payload = _classification_payload(
         effective_policy=effective_policy,
         requirements=config_requirements_response,
         readiness=readiness_response,
         controller=controller_process_identity,
         P01=P01_process_identity,
+        workspace_acl_transition=workspace_acl_transition,
         all_probe_equal=all_probe_process_identities_equal_P01,
         P06_child_equal=P06_parent_child_identity_equal,
     )
@@ -2960,6 +3297,7 @@ def derive_windows_sandbox_kind(
             requirements_ok,
             readiness_ok,
             sid_differs,
+            workspace_acl_ok,
             all_probe_process_identities_equal_P01,
             P06_parent_child_identity_equal,
         )
@@ -2982,6 +3320,7 @@ def verify_windows_sandbox_provenance(
         readiness_response=evidence.readiness_response,
         controller_process_identity=evidence.controller_process_identity,
         P01_process_identity=evidence.P01_process_identity,
+        workspace_acl_transition=evidence.workspace_acl_transition,
         all_probe_process_identities_equal_P01=(
             evidence.all_probe_process_identities_equal_P01
         ),
@@ -3009,6 +3348,7 @@ def build_windows_sandbox_provenance(
     config_requirements_response: EmbeddedJsonEvidence,
     readiness_response: EmbeddedJsonEvidence,
     controller_process_identity: WindowsProcessIdentityObservation,
+    workspace_acl_transition: WorkspaceAclTransitionObservation,
     probes: Sequence[ProbeResult],
 ) -> WindowsSandboxProvenanceObservation:
     if tuple(probe.probe_id for probe in probes) != EXACT_PROBE_IDS:
@@ -3033,6 +3373,7 @@ def build_windows_sandbox_provenance(
         readiness_response=readiness_response,
         controller_process_identity=controller_process_identity,
         P01_process_identity=P01_identity,
+        workspace_acl_transition=workspace_acl_transition,
         all_probe_process_identities_equal_P01=all_probe_equal,
         P06_parent_child_identity_equal=P06_equal,
     )
@@ -3042,6 +3383,7 @@ def build_windows_sandbox_provenance(
         readiness_response=readiness_response,
         controller_process_identity=controller_process_identity,
         P01_process_identity=P01_identity,
+        workspace_acl_transition=workspace_acl_transition,
         dedicated_user_sid_differs_from_controller=(
             controller_process_identity.token_user_sid != P01_identity.token_user_sid
         ),
@@ -3232,6 +3574,11 @@ def verify_runtime_boundary_result(
         == P06.process.sandbox_process_identity.identity_sha256
     )
     windows = result.windows_sandbox_provenance
+    if (
+        windows.workspace_acl_transition.initial_W_acl_sddl_sha256
+        != manifest.W.acl_sddl_sha256
+    ):
+        raise RuntimeBoundaryError("workspace ACL transition is not bound to manifest W")
     if windows.P01_process_identity != P01_identity:
         raise RuntimeBoundaryError("Windows provenance P01 identity mismatch")
     if windows.all_probe_process_identities_equal_P01 != all_probe_equal:
@@ -3370,6 +3717,7 @@ def execute_runtime_boundary_probe(
         raise RuntimeBoundaryError("explicit model-free probe approval is required")
     verify_pinned_runtime_identity(manifest.runtime)
     verify_root_identity_contract(manifest)
+    root_guard = _WorkspaceAclTransitionGuard.capture(manifest)
     verify_probe_command_contract(manifest)
     started_at = utc_now()
     profile = collect_sdk_profile_provenance(
@@ -3417,6 +3765,7 @@ def execute_runtime_boundary_probe(
             command,
             source_environment=source_environment,
             failure_bundle_root=bundle_root,
+            root_guard=root_guard,
         )
         probes.append(probe)
         if _has_not_ready_disclosure(probes):
@@ -3424,11 +3773,14 @@ def execute_runtime_boundary_probe(
                 f"{command.probe_id} disclosed or mutated a Controller-only boundary; NOT_READY"
             )
 
+    root_guard.verify_current(require_transition=True, require_bound=True)
+    workspace_acl_transition = root_guard.evidence()
     windows = build_windows_sandbox_provenance(
         effective_policy=policy,
         config_requirements_response=requirements,
         readiness_response=readiness,
         controller_process_identity=controller_identity,
+        workspace_acl_transition=workspace_acl_transition,
         probes=probes,
     )
     provisional = RuntimeBoundaryProbeResult(
