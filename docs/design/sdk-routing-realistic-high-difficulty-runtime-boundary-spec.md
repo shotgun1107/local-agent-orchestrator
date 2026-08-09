@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_17_p08_metadata_nondisclosure_candidate`
+- 문서 상태: `revision_17_runtime_boundary_candidate_verified`
 - 작성일: 2026-08-09
-- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
+- 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 열네 번째 model-free 실행은 P01~P08 전체와 exact 4-file bundle 검증까지 완료했다. P01~P07은 pass, P08은 S의 existing replace target metadata까지 숨겨 `target_exists=false`, hash null을 반환했는데 과거 재계산식이 Worker에게 그 존재·hash 노출을 요구해 false가 됨. aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`
-- 이번 교정 범위: P08 Worker observation은 S target 존재·hash 비공개를 요구하고, 실제 target 존재·불변은 Controller pre/postcondition이 manifest size/hash로 증명하도록 분리한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 열다섯 번째 model-free 실행 `runtime-boundary-phaseb-20260809-015`는 P01~P08 8/8, elevated·active profile·ACL·identity·Controller 전후조건과 exact 4-file bundle 검증을 모두 통과해 `RUNTIME_BOUNDARY_CANDIDATE`다. actual model turn은 0회다
+- 현재 종료선: 별도 process 재검증과 Benchmark Runner 전체 `258 passed`까지 완료했다. 이는 Phase B 후보 증거이며 아직 `judge_only_verified`, Phase C 승인, live/model usage 승인이 아니다
 
 ## 1. 결정
 

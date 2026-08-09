@@ -1,16 +1,16 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_10_runtime_boundary_p08_nondisclosure_corrected`
+- 문서 상태: `revision_10_runtime_boundary_candidate_verified`
 - 설계 revision: 10
 - 작성일: 2026-08-09
-- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
+- 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
 - revision 2 재심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md) — P0 0건, P1 4건 closed·P1-1 partial
 - runtime boundary: [Windows·SDK runtime boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)
-- runtime 교정: Phase B 009에서 확인된 built-in `:workspace`의 J read 허용을 전용 least-privilege profile로 차단
-- 이번 교정의 금지: model turn, Phase C·snapshot·fixture·checker 선행 구현
+- runtime 교정: Phase B 015가 custom profile, J/S protected ACL, P01~P08 8/8과 separate-process bundle 재검증을 통과
+- 현재 금지: 외부 closure 전 `judge_only_verified` 주장, Phase C·snapshot·fixture·checker 선행 구현, model turn
 
 ## 1. 목적과 결론
 
@@ -23,7 +23,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 014는 처음으로 8개 probe와 bundle 검증을 마쳤다. P01~P07은 통과했지만 P08의 강한 S metadata 비공개를 과거 판정식이 실패로 보아 aggregate가 아직 NOT_PROVEN이다. Revision 10은 Worker에게 S target 존재·hash 비공개를 요구하고 실제 불변은 Controller 전후조건에만 맡긴다. 새 source·새 root token의 재실행 전까지 candidate는 아니다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. 이는 Phase B 후보 closure 자료이며 외부 심사 전 `judge_only_verified`나 Phase C 승인으로 확대하지 않는다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
