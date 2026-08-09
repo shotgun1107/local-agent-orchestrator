@@ -281,6 +281,16 @@ def _enumerate(path: Path, forbidden: str) -> dict[str, Any]:
         }
 
 
+def _path_entry_exists(path: Path) -> bool:
+    """Observe a link or junction entry without reading its target."""
+
+    try:
+        os.lstat(path)
+    except OSError:
+        return False
+    return True
+
+
 def _link_attempt(kind: str, link: Path, target: Path) -> dict[str, Any]:
     read_path = link
     try:
@@ -310,26 +320,27 @@ def _link_attempt(kind: str, link: Path, target: Path) -> dict[str, Any]:
     except OSError as exc:
         create_outcome, _ = _outcome(exc)
 
-    exists_after_create = link.exists() or link.is_symlink()
+    exists_after_create = _path_entry_exists(link)
     read = read_observation(read_path) if create_outcome == "success" else {
         "outcome": "not_attempted",
         "bytes_read": 0,
         "content_sha256": None,
         "win32_error": None,
     }
-    try:
-        if link.is_symlink():
-            link.unlink()
-        elif link.exists():
-            os.rmdir(link)
-    except OSError:
-        pass
+    if create_outcome == "success":
+        try:
+            if kind == "symlink":
+                os.unlink(link)
+            else:
+                os.rmdir(link)
+        except OSError:
+            pass
     return {
         "link_kind": kind,
         "create_outcome": create_outcome,
         "link_exists_after_create": exists_after_create,
         "read": read,
-        "link_exists_after_cleanup": link.exists() or link.is_symlink(),
+        "link_exists_after_cleanup": _path_entry_exists(link),
     }
 
 

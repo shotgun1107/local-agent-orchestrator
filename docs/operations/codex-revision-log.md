@@ -1597,3 +1597,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Read-only `icacls`는 012 J에 Controller·SYSTEM·Administrators뿐 아니라 `CodexSandboxUsers`와 두 sandbox 관련 SID의 inherited `OI/CI Modify` ACE가 있음을 확인했다. Profile의 declarative deny가 active여도 dedicated sandbox user가 이 inherited allow를 통해 읽을 수 있었던 것이 반복 P02 성공의 실제 OS 원인이다.
 - `phaseb-20260809-012` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존한다. 다음 준비 구현은 J/S를 서로 다른 opaque private parent 아래 만들고 parent와 leaf 모두 inheritance를 제거한 뒤 Controller SID, SYSTEM, BUILTIN Administrators의 `OICI Full Control` 세 explicit ACE만 허용한다. W는 기존 ACL과 capability transition 계약을 유지한다.
 - 임시 폴더에서 `icacls /inheritance:r`와 SID 기반 `/grant:r` 문법, canonical `D:PAI`와 exact 세 ACE를 확인한 뒤 임시 폴더를 삭제했다. 실제 helper와 exact ACL 회귀를 포함한 runtime-boundary 표적 시험은 `16 passed`다. 새 source·새 root token에서 P01~P08을 다시 실행하기 전에는 candidate가 아니다.
+
+## 현실 고난도 Phase B P05 junction cleanup 교정
+
+- 작업일: 2026-08-09. source `5d9d1a544699af0738cb0f504f3e3e7be4da90d3`, pending manifest SHA-256 `b7871d23cc37ca68bdeb1022fbebdb130995238e63417b5a7a8e11cc892faa08`의 `phaseb-20260809-013`은 J/S protected ACL을 준비·검증하고 P02의 이전 content disclosure를 재발시키지 않은 채 P05까지 진행했다. P05 뒤 P06 dispatch 전 exact command 재검사에서 `P05 argv differs from frozen contract`로 중단됐고 actual model turn과 candidate bundle은 0이다.
+- 보존된 W에는 P05 symlink는 없고 `escape-junction`만 남아 있었다. Junction target J가 unreadable하면 `Path.exists()`도 false가 될 수 있어 기존 cleanup 분기가 `os.rmdir`를 호출하지 않았고, 후속 `_probe_command_argvs()`의 `resolve()`가 남은 junction target을 따라가 frozen literal path와 달라진 것이 직접 원인이다. J content가 노출된 사건은 아니다.
+- `phaseb-20260809-013` W/J/S와 pending manifest, 남은 junction은 진단 증거로 삭제·재사용하지 않는다. P05 fixture argv는 `abspath` 기반 no-follow lexical path로 고정하고, entry 존재는 `os.lstat`, 생성 성공 시 symlink는 `os.unlink`, junction은 `os.rmdir`로 cleanup한다.
+- 실제 junction이 존재해도 command identity가 유지되는 회귀와 target unreadable 상황을 모사해 `Path.exists()`에 의존하지 않고 junction이 제거되는 회귀를 추가했다. Controller-only ACL 회귀를 포함한 표적 시험은 `18 passed`다. 새 source·새 root token 전까지 candidate 주장은 금지한다.

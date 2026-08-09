@@ -1499,6 +1499,8 @@ def _probe_command_argvs(
     drive_root = Path(J_path.anchor).resolve()
     relative_J = os.path.relpath(J_sentinel_path, W_path)
     script = W_path / probe_script_relative_path
+    p05_symlink_path = Path(os.path.abspath(W_path / fixtures.p05_symlink_path))
+    p05_junction_path = Path(os.path.abspath(W_path / fixtures.p05_junction_path))
     prefix = [
         runtime.probe_resolved_executable,
         "sandbox",
@@ -1539,9 +1541,9 @@ def _probe_command_argvs(
         [
             "link-read",
             "--symlink",
-            str((W_path / fixtures.p05_symlink_path).resolve()),
+            str(p05_symlink_path),
             "--junction",
-            str((W_path / fixtures.p05_junction_path).resolve()),
+            str(p05_junction_path),
             "--target",
             str(J_sentinel_path.resolve()),
         ],
