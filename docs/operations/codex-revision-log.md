@@ -1534,3 +1534,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - profile 실패는 이제 재계산된 구체적 reason code와 전체 방향 결합 transcript를 exact 4-file candidate bundle 밖의 `<bundle>.profile-failure.json`에 남긴다. 같은 경로의 자동 재시도와 실패 파일 덮어쓰기는 거부한다.
 - 수정된 profile 계약·허용 거부·thread mismatch/turn 관측·raw collector 호출·failure artifact·기존 bundle 재검증을 포함한 표적 단위시험은 `8 passed`다. 첫 호출은 사용자 프로그램 폴더의 Python 실행을 샌드박스가 막아 시험 수집 전에 종료됐고, 승인된 실행 경계에서 같은 명령을 실행해 통과했다. `py_compile`과 `git diff --check`도 통과했다.
 - 이번 수정에서는 전체 회귀, 실제 SDK handshake 재호출, P01~P08, model turn을 실행하지 않았다. 기존 pending manifest는 source commit이 바뀌므로 새 실행 후보에 사용할 수 없다. 다음 실제 Phase B는 이 수정 commit을 기준으로 새 manifest와 새 root token을 만들고 별도 실행 지시가 있을 때만 한 번 수행한다.
+
+## 현실 고난도 Phase B effective-policy 교정과 P01 중단
+
+- 작업일: 2026-08-09. source `ea4e1db01e2def366a1b7fd133f8e0a22976b2cc`의 `phaseb-20260809-002`는 SDK profile 통과 뒤 effective-policy 관문에서 중단됐다. 당시 구현은 policy 실패 surface를 보존하지 않아 세부 원인을 복구할 수 없었고, actual model turn과 P01~P08 실행은 모두 0회였다.
+- commit `3a74545e013131a86a11885adf182f104dcf4ba9`에서 profile transcript, redacted policy projection, requirements/readiness response와 재계산 reason code를 exact candidate bundle 밖의 `<bundle>.policy-failure.json`에 기록하고 같은 경로 덮어쓰기·자동 재시도를 금지했다. 관련 표적 시험은 `9 passed`다.
+- source `3a74545e013131a86a11885adf182f104dcf4ba9`의 `phaseb-20260809-003`은 같은 관문에서 중단됐지만 새 증거가 `LEGACY_SANDBOX_MODE_PRESENT`, `LEGACY_SANDBOX_WORKSPACE_WRITE_PRESENT`를 확정했다. 동시에 `default_permissions=:workspace`, active profile `:workspace`, `windows.sandbox=elevated`, readiness `ready`, ChatGPT account, turn/start 0회를 확인했다.
+- pinned app-server Schema에서 두 legacy field는 optional이며 값이 없을 때도 top-level config에 `null`로 직렬화될 수 있다. 기존 판정은 key 존재만으로 legacy 사용이라 오판했다. commit `b59a78031bf95f8d0691316ecc8dee1394da67c1`에서 `null`은 미사용, non-null만 실제 legacy 설정으로 차단하도록 좁게 고쳤고, null 허용·non-null 거부 회귀를 포함한 표적 시험 `9 passed`, `py_compile`, `git diff --check`를 통과했다.
+- source `b59a78031bf95f8d0691316ecc8dee1394da67c1`의 `phaseb-20260809-004`는 profile·effective policy·readiness·requirements·Controller identity 관문을 통과하고 P01을 정확히 1회 dispatch했다. 그러나 wrapper stdout이 빈 값 또는 JSON이 아닌 값이어서 `runtime-boundary probe stdout is not one JSON object`로 중단됐다. P02~P08은 실행하지 않았고 actual model turn은 0회이며 candidate bundle은 생성되지 않았다.
+- 현재 P01 failure path는 capped stdout/stderr를 메모리에서 수집하지만 JSON parse 전에 실패하면 이를 artifact로 남기지 않는다. 따라서 004 종료 뒤 wrapper exit code와 stderr 내용을 복구할 수 없으며, sandbox 경계 실패와 wrapper 실행 실패를 아직 구분할 수 없다. 002·003·004 W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. Phase B는 `RUNTIME_BOUNDARY_CANDIDATE`가 아니며 Phase C는 계속 중단 상태다.

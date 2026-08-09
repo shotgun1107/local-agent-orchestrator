@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_3_runtime_observation_corrected`
+- 문서 상태: `revision_4_p01_observation_recorded`
 - 작성일: 2026-08-09
-- 기준 commit: `236afd3c481eebad4d46017f0cd26c1ebb16f6e8`
+- 기준 commit: `b59a78031bf95f8d0691316ecc8dee1394da67c1`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 두 번째 model-free 실행에서 SDK profile은 통과했지만 effective policy 판정이 P01 전에 중단되어, 실패 당시의 redacted policy surface를 보존하도록 교정
-- 이번 교정 범위: effective-policy 실패 증거 보존. P01~P08 로직·model turn·Phase C는 포함하지 않음
+- 현재 상태: 네 번째 model-free 실행은 profile·effective policy·readiness를 통과한 뒤 P01 wrapper가 JSON stdout을 내지 않아 중단됨. Phase B candidate는 아직 증명되지 않음
+- 이번 교정 범위: optional legacy field의 `null` 의미 교정과 P01 중단 관측 기록. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
