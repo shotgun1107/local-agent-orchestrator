@@ -737,6 +737,8 @@ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
             "config": {
                 "default_permissions": ":workspace",
                 "windows": {"sandbox": "elevated"},
+                "sandbox_mode": None,
+                "sandbox_workspace_write": None,
                 "service_token": raw_secret,
             },
             "layers": [
@@ -760,11 +762,40 @@ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
     )
 
     assert raw_secret not in evidence.projection.bytes_value().decode("utf-8")
+    assert projection.legacy_sandbox_mode_present is False
+    assert projection.legacy_sandbox_workspace_write_present is False
     assert verify_effective_policy(evidence, configuration=_configuration()) is True
 
     forged = evidence.model_copy(update={"windows_sandbox": "unelevated"})
     with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
         verify_effective_policy(forged, configuration=_configuration())
+
+    legacy_response = {
+        "id": "config-legacy",
+        "result": {
+            "config": {
+                "default_permissions": ":workspace",
+                "windows": {"sandbox": "elevated"},
+                "sandbox_mode": "workspace-write",
+                "sandbox_workspace_write": {},
+            },
+            "layers": response["result"]["layers"],
+        },
+    }
+    legacy_projection = project_effective_policy(
+        legacy_response,
+        managed_source_identities=[
+            PolicySourceIdentity(kind="managed", version="1", sha256=TWO)
+        ],
+    )
+    legacy_evidence = effective_policy_evidence_from_projection(
+        legacy_projection,
+        source_response_sha256=_sha(legacy_response),
+    )
+    assert effective_policy_failure_reason_codes(legacy_evidence) == [
+        "LEGACY_SANDBOX_MODE_PRESENT",
+        "LEGACY_SANDBOX_WORKSPACE_WRITE_PRESENT",
+    ]
 
 
 def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:

@@ -2463,11 +2463,12 @@ def project_effective_policy(
             else None
         ),
         legacy_sandbox_mode_present=(
-            "sandbox_mode" in config_obj or "sandboxMode" in config_obj
+            config_obj.get("sandbox_mode") is not None
+            or config_obj.get("sandboxMode") is not None
         ),
         legacy_sandbox_workspace_write_present=(
-            "sandbox_workspace_write" in config_obj
-            or "sandboxWorkspaceWrite" in config_obj
+            config_obj.get("sandbox_workspace_write") is not None
+            or config_obj.get("sandboxWorkspaceWrite") is not None
         ),
         config_source_identities=_source_identities(result.get("layers")),
         managed_source_identities=sorted(
