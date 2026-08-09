@@ -1,7 +1,7 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_10_runtime_boundary_candidate_verified`
-- 설계 revision: 10
+- 문서 상태: `revision_11_phase_b_judge_only_verified_phase_c_authorized`
+- 설계 revision: 11
 - 작성일: 2026-08-09
 - 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
@@ -10,7 +10,9 @@
 - revision 2 재심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md) — P0 0건, P1 4건 closed·P1-1 partial
 - runtime boundary: [Windows·SDK runtime boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)
 - runtime 교정: Phase B 015가 custom profile, J/S protected ACL, P01~P08 8/8과 separate-process bundle 재검증을 통과
-- 현재 금지: 외부 closure 전 `judge_only_verified` 주장, Phase C·snapshot·fixture·checker 선행 구현, model turn
+- Phase B 최종 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-runtime-boundary-phaseb-015.md) — P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`
+- 현재 허용: Phase C Schema·SS1 Fake Adapter·passive observer·property/triage 순수 구현과 model-free targeted test
+- 현재 금지: Phase D snapshot·fixture·reference·checker, Phase E live candidate, Phase F model turn
 
 ## 1. 목적과 결론
 
@@ -23,7 +25,7 @@
 
 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
 
-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. 이는 Phase B 후보 closure 자료이며 외부 심사 전 `judge_only_verified`나 Phase C 승인으로 확대하지 않는다.
+Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. ChatGPT Pro의 최종 읽기 전용 심사는 남은 P0/P1 0건, `judge_only_verified=YES`, Phase C `GO`로 판정했고 사용자가 Phase C model-free 구현을 별도로 승인했다. 이 승인은 Phase D snapshot/checker, live Plan 또는 model usage로 확대하지 않는다.
 
 ## 2. 공식 runtime 근거와 주장 한계
 
@@ -523,8 +525,8 @@ Fake SDK·임시 workspace·가짜 Evidence만 사용하며 실제 Codex thread�
 | 단계 | 산출물 | 현재 권한 |
 |---|---|---|
 | A | revision 3와 runtime-boundary revision 2의 P1-1 closure 재심사 | 허용 |
-| B | 승인된 runtime-boundary 명세의 0-model-turn probe 구현·실행 | closure 통과 뒤 별도 사용자 승인 필요 |
-| C | Schema·SS1 Fake Adapter·observer·triage 순수 구현과 targeted 시험 | B 통과와 별도 사용자 승인 필요 |
+| B | 승인된 runtime-boundary 명세의 0-model-turn probe 구현·실행 | **완료 — `judge_only_verified`** |
+| C | Schema·SS1 Fake Adapter·observer·triage 순수 구현과 targeted 시험 | **사용자 승인 — 진행 가능** |
 | D | 실제 snapshot·reference·checker·property DAG 후보 제작 | C 통과와 별도 명세·심사 필요 |
 | E | 0-turn live candidate·Plan·seal 동결 | D 승인과 전체 관련 회귀 필요 |
 | F | model turn 사용 | 별도 사용자 model-usage 승인 필요 |
