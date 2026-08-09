@@ -424,6 +424,120 @@ class RootIdentity(StrictModel):
         return value
 
 
+def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootIdentity:
+    """Capture owner, DACL and volume identity without exporting the raw ACL."""
+
+    if os.name != "nt":
+        raise RuntimeBoundaryError("runtime-boundary root identity is Windows-only")
+    import ctypes as _ctypes
+    from ctypes import wintypes as _wintypes
+
+    resolved = Path(path).resolve(strict=True)
+    if not resolved.is_dir():
+        raise RuntimeBoundaryError(f"runtime-boundary root is not a directory: {resolved}")
+    attributes = resolved.stat().st_file_attributes
+    reparse_flag = getattr(__import__("stat"), "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    if attributes & reparse_flag:
+        raise RuntimeBoundaryError(f"runtime-boundary root is a reparse point: {resolved}")
+
+    kernel32 = _ctypes.WinDLL("kernel32", use_last_error=True)
+    advapi32 = _ctypes.WinDLL("advapi32", use_last_error=True)
+    SE_FILE_OBJECT = 1
+    OWNER_SECURITY_INFORMATION = 0x00000001
+    GROUP_SECURITY_INFORMATION = 0x00000002
+    DACL_SECURITY_INFORMATION = 0x00000004
+    security_information = (
+        OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION
+    )
+
+    owner = _ctypes.c_void_p()
+    descriptor = _ctypes.c_void_p()
+    advapi32.GetNamedSecurityInfoW.argtypes = [
+        _wintypes.LPWSTR,
+        _ctypes.c_int,
+        _wintypes.DWORD,
+        _ctypes.POINTER(_ctypes.c_void_p),
+        _ctypes.c_void_p,
+        _ctypes.c_void_p,
+        _ctypes.c_void_p,
+        _ctypes.POINTER(_ctypes.c_void_p),
+    ]
+    advapi32.GetNamedSecurityInfoW.restype = _wintypes.DWORD
+    status = advapi32.GetNamedSecurityInfoW(
+        str(resolved),
+        SE_FILE_OBJECT,
+        security_information,
+        _ctypes.byref(owner),
+        None,
+        None,
+        None,
+        _ctypes.byref(descriptor),
+    )
+    if status != 0:
+        raise OSError(status, "GetNamedSecurityInfoW failed")
+
+    owner_text = _wintypes.LPWSTR()
+    sddl_text = _wintypes.LPWSTR()
+    try:
+        if not advapi32.ConvertSidToStringSidW(owner, _ctypes.byref(owner_text)):
+            raise _ctypes.WinError(_ctypes.get_last_error())
+        if not advapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+            descriptor,
+            1,
+            security_information,
+            _ctypes.byref(sddl_text),
+            None,
+        ):
+            raise _ctypes.WinError(_ctypes.get_last_error())
+        owner_sid = str(owner_text.value)
+        sddl = str(sddl_text.value)
+    finally:
+        if owner_text:
+            kernel32.LocalFree(owner_text)
+        if sddl_text:
+            kernel32.LocalFree(sddl_text)
+        if descriptor:
+            kernel32.LocalFree(descriptor)
+
+    volume_path = _ctypes.create_unicode_buffer(1024)
+    volume_name = _ctypes.create_unicode_buffer(1024)
+    if not kernel32.GetVolumePathNameW(str(resolved), volume_path, len(volume_path)):
+        raise _ctypes.WinError(_ctypes.get_last_error())
+    if not kernel32.GetVolumeNameForVolumeMountPointW(
+        volume_path.value,
+        volume_name,
+        len(volume_name),
+    ):
+        raise _ctypes.WinError(_ctypes.get_last_error())
+    return RootIdentity(
+        redacted_path_id=redacted_path_id,
+        resolved_absolute_path=str(resolved),
+        volume_identity=volume_name.value,
+        owner_sid=owner_sid,
+        acl_sddl_sha256=_sha_text(sddl),
+    )
+
+
+def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> None:
+    roots = (manifest.W, manifest.J, manifest.S)
+    actual = tuple(
+        capture_windows_root_identity(
+            Path(root.resolved_absolute_path),
+            redacted_path_id=root.redacted_path_id,
+        )
+        for root in roots
+    )
+    if actual != roots:
+        raise RuntimeBoundaryError("W/J/S root owner, ACL or volume identity drifted")
+    paths = tuple(Path(root.resolved_absolute_path).resolve(strict=True) for root in roots)
+    if len(set(paths)) != 3:
+        raise RuntimeBoundaryError("W/J/S roots are not distinct")
+    for left in paths:
+        for right in paths:
+            if left != right and (left in right.parents or right in left.parents):
+                raise RuntimeBoundaryError("W/J/S roots have a parent-child relationship")
+
+
 class SentinelSpec(StrictModel):
     relative_path: str = Field(min_length=1)
     size: int = Field(ge=0)
@@ -970,6 +1084,108 @@ def build_runtime_boundary_manifest(
     )
 
 
+def prepare_runtime_boundary_roots(
+    *,
+    base_root: Path,
+    source_commit: str,
+    probe_source_path: Path,
+    probe_python_executable: Path,
+    run_token: str | None = None,
+    environment_name_allowlist: Sequence[str] = DEFAULT_ENVIRONMENT_NAME_ALLOWLIST,
+) -> tuple[RuntimeBoundaryProbeManifest, Path, Path]:
+    """Create fresh sibling W/J/S roots and a frozen pending manifest.
+
+    Existing paths are never reused or removed.  The returned paths are the final
+    four-file bundle root and the separately frozen pending manifest.
+    """
+
+    root = Path(base_root).resolve(strict=True)
+    if not root.is_dir():
+        raise RuntimeBoundaryError("runtime-boundary base root is not a directory")
+    token = run_token or uuid.uuid4().hex[:12]
+    if not token or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in token):
+        raise RuntimeBoundaryError("runtime-boundary run token is not path-safe")
+    W_path = root / f"runtime-boundary-w-{token}"
+    J_path = root / f"runtime-boundary-j-{token}"
+    S_path = root / f"runtime-boundary-s-{token}"
+    for path in (W_path, J_path, S_path):
+        if path.exists():
+            raise RuntimeBoundaryError(f"runtime-boundary root already exists: {path}")
+    for path in (W_path, J_path, S_path):
+        path.mkdir()
+
+    probe_source = Path(probe_source_path).resolve(strict=True)
+    probe_python = Path(probe_python_executable).resolve(strict=True)
+    probe_relative = ".orchestrator-probe/probe_runtime_boundary.py"
+    probe_target = W_path / probe_relative
+    probe_target.parent.mkdir()
+    atomic_write(probe_target, probe_source.read_bytes())
+
+    W_sentinel_bytes = os.urandom(64)
+    J_sentinel_bytes = os.urandom(64)
+    S_sentinel_bytes = os.urandom(64)
+    expected_answer_bytes = os.urandom(64)
+    replace_source_bytes = os.urandom(64)
+    replace_target_bytes = os.urandom(64)
+    fixture_bytes = {
+        W_path / ".orchestrator-probe/w-sentinel.bin": W_sentinel_bytes,
+        J_path / "j-sentinel.bin": J_sentinel_bytes,
+        J_path / "expected-answer.bin": expected_answer_bytes,
+        S_path / "s-sentinel.bin": S_sentinel_bytes,
+        W_path / ".orchestrator-probe/replace-source.bin": replace_source_bytes,
+        S_path / "replace-target.bin": replace_target_bytes,
+    }
+    for path, data in fixture_bytes.items():
+        atomic_write(path, data)
+
+    W = capture_windows_root_identity(W_path, redacted_path_id="W")
+    J = capture_windows_root_identity(J_path, redacted_path_id="J")
+    S = capture_windows_root_identity(S_path, redacted_path_id="S")
+    manifest = build_runtime_boundary_manifest(
+        source_commit=source_commit,
+        W=W,
+        J=J,
+        S=S,
+        W_sentinel=SentinelSpec(
+            relative_path=".orchestrator-probe/w-sentinel.bin",
+            size=len(W_sentinel_bytes),
+            sha256=sha256_bytes(W_sentinel_bytes),
+        ),
+        J_sentinel=SentinelSpec(
+            relative_path="j-sentinel.bin",
+            size=len(J_sentinel_bytes),
+            sha256=sha256_bytes(J_sentinel_bytes),
+        ),
+        S_sentinel=SentinelSpec(
+            relative_path="s-sentinel.bin",
+            size=len(S_sentinel_bytes),
+            sha256=sha256_bytes(S_sentinel_bytes),
+        ),
+        fixtures=ProbeFixtureSpec(
+            p05_symlink_path=".orchestrator-probe/escape-symlink",
+            p05_junction_path=".orchestrator-probe/escape-junction",
+            p07_expected_answer_sha256=sha256_bytes(expected_answer_bytes),
+            p08_create_target="create-target.bin",
+            p08_replace_source=".orchestrator-probe/replace-source.bin",
+            p08_replace_source_size=len(replace_source_bytes),
+            p08_replace_source_sha256=sha256_bytes(replace_source_bytes),
+            p08_replace_target="replace-target.bin",
+            p08_replace_target_size=len(replace_target_bytes),
+            p08_replace_target_sha256=sha256_bytes(replace_target_bytes),
+        ),
+        probe_python_executable=probe_python,
+        probe_script_relative_path=probe_relative,
+        environment_name_allowlist=environment_name_allowlist,
+        probe_id=f"runtime-boundary-{token}",
+    )
+    verify_root_identity_contract(manifest)
+    verify_probe_command_contract(manifest)
+    pending_manifest_path = S_path / "pending-manifest.json"
+    atomic_write(pending_manifest_path, canonical_json_bytes(manifest))
+    bundle_root = S_path / "runtime-boundary"
+    return manifest, bundle_root, pending_manifest_path
+
+
 def verify_probe_command_contract(manifest: RuntimeBoundaryProbeManifest) -> None:
     expected = _probe_command_argvs(
         runtime=manifest.runtime,
@@ -1458,6 +1674,7 @@ def execute_frozen_probe_command(
     """Execute one frozen probe exactly once; the caller owns sequencing and stop rules."""
 
     verify_pinned_runtime_identity(manifest.runtime)
+    verify_root_identity_contract(manifest)
     verify_probe_command_contract(manifest)
     expected_command = manifest.commands[EXACT_PROBE_IDS.index(command.probe_id)]
     if command != expected_command:
@@ -2556,6 +2773,7 @@ def execute_runtime_boundary_probe(
     if not confirm_model_free_probe:
         raise RuntimeBoundaryError("explicit model-free probe approval is required")
     verify_pinned_runtime_identity(manifest.runtime)
+    verify_root_identity_contract(manifest)
     verify_probe_command_contract(manifest)
     started_at = utc_now()
     profile = collect_sdk_profile_provenance(
