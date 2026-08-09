@@ -784,7 +784,7 @@ class EffectivePolicyEvidence(StrictModel):
 
 
 class WorkspaceAclTransitionObservation(StrictModel):
-    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_capability_sid"]
+    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_restricted_sid"]
     initial_W_acl_sddl_sha256: Sha256
     active_W_acl_sddl_sha256: Sha256
     initial_W_dacl_control_sha256: Sha256
@@ -806,7 +806,7 @@ class WorkspaceAclTransitionObservation(StrictModel):
     W_volume_unchanged: Literal[True]
     J_identity_unchanged: Literal[True]
     S_identity_unchanged: Literal[True]
-    P01_capability_contains_added_ace_sid: Literal[True]
+    P01_restricted_contains_added_ace_sid: Literal[True]
     derived_transition_passed: bool
 
     @model_validator(mode="after")
@@ -996,10 +996,10 @@ class _WorkspaceAclTransitionGuard:
         if self._transition is None:
             raise RuntimeBoundaryError("P01 completed without the W workspace ACL transition")
         added_hash = _sha_text(self._transition.added_capability_sid)
-        if added_hash not in identity.capability_sid_sha256s:
+        if added_hash not in identity.restricted_sid_sha256s:
             raise RuntimeBoundaryError(
-                "W workspace ACL grant SID hash is absent from the P01 capability SID hashes: "
-                f"added={added_hash}, capabilities={identity.capability_sid_sha256s}"
+                "W workspace ACL grant SID hash is absent from the P01 restricted SID hashes: "
+                f"added={added_hash}, restricted={identity.restricted_sid_sha256s}"
             )
         self._bound_P01_identity_sha256 = identity.identity_sha256
 
@@ -1011,7 +1011,7 @@ class _WorkspaceAclTransitionGuard:
             _parse_workspace_acl_ace(state.added_ace_sddl)
         )
         return WorkspaceAclTransitionObservation(
-            selection_method="initial_acl+exact_w_only_ace_delta+p01_capability_sid",
+            selection_method="initial_acl+exact_w_only_ace_delta+p01_restricted_sid",
             initial_W_acl_sddl_sha256=state.initial.identity.acl_sddl_sha256,
             active_W_acl_sddl_sha256=state.active.identity.acl_sddl_sha256,
             initial_W_dacl_control_sha256=_sha_text(state.initial.dacl_control),
@@ -1033,7 +1033,7 @@ class _WorkspaceAclTransitionGuard:
             W_volume_unchanged=True,
             J_identity_unchanged=True,
             S_identity_unchanged=True,
-            P01_capability_contains_added_ace_sid=True,
+            P01_restricted_contains_added_ace_sid=True,
             derived_transition_passed=True,
         )
 
@@ -1066,8 +1066,8 @@ def verify_workspace_acl_transition(
             evidence.added_ace_inherit_object_guid == inherit_object_guid,
             evidence.added_capability_sid == sid,
             evidence.added_capability_sid_sha256 == _sha_text(sid),
-            _sha_text(sid) in P01_process_identity.capability_sid_sha256s,
-            evidence.P01_capability_contains_added_ace_sid,
+            _sha_text(sid) in P01_process_identity.restricted_sid_sha256s,
+            evidence.P01_restricted_contains_added_ace_sid,
             evidence.W_owner_unchanged,
             evidence.W_owner_group_descriptor_unchanged,
             evidence.W_volume_unchanged,
