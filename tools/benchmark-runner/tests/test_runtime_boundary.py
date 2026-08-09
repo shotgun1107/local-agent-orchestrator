@@ -73,7 +73,12 @@ def _sha(value: object) -> str:
     return sha256_bytes(canonical_json_bytes(value))
 
 
-def _identity(sid: str, *, elevated_raw: int = 0) -> WindowsProcessIdentityObservation:
+def _identity(
+    sid: str,
+    *,
+    elevated_raw: int = 0,
+    capability_sid_sha256s: list[str] | None = None,
+) -> WindowsProcessIdentityObservation:
     calls = [
         Win32CallObservation(
             api="GetTokenInformation(TokenUser)",
@@ -88,7 +93,7 @@ def _identity(sid: str, *, elevated_raw: int = 0) -> WindowsProcessIdentityObser
         "token_is_elevated_raw": elevated_raw,
         "token_is_app_container_raw": 0,
         "restricted_sid_sha256s": [],
-        "capability_sid_sha256s": [],
+        "capability_sid_sha256s": sorted(set(capability_sid_sha256s or [])),
         "calls": [item.model_dump(mode="json") for item in calls],
     }
     return WindowsProcessIdentityObservation(
@@ -123,7 +128,7 @@ def _workspace_acl_transition(
     initial_hash = sha256_bytes(initial_ace.encode("utf-8"))
     added_hash = sha256_bytes(added_ace.encode("utf-8"))
     return WorkspaceAclTransitionObservation(
-        selection_method="initial_acl+exact_w_only_ace_delta+p01_token_user_sid",
+        selection_method="initial_acl+exact_w_only_ace_delta+p01_capability_sid",
         initial_W_acl_sddl_sha256=initial_acl_sha256,
         active_W_acl_sddl_sha256=ONE,
         initial_W_dacl_control_sha256=TWO,
@@ -137,15 +142,15 @@ def _workspace_acl_transition(
         added_ace_rights="0x1301bf",
         added_ace_object_guid="",
         added_ace_inherit_object_guid="",
-        added_token_user_sid=sid,
-        added_token_user_sid_sha256=sha256_bytes(sid.encode("utf-8")),
+        added_capability_sid=sid,
+        added_capability_sid_sha256=sha256_bytes(sid.encode("utf-8")),
         removed_ace_sha256s=[],
         W_owner_unchanged=True,
         W_owner_group_descriptor_unchanged=True,
         W_volume_unchanged=True,
         J_identity_unchanged=True,
         S_identity_unchanged=True,
-        P01_token_user_sid_matches_added_ace=True,
+        P01_capability_contains_added_ace_sid=True,
         derived_transition_passed=True,
     )
 
@@ -901,7 +906,13 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         config_identity_sha256=_sha(manifest.configuration),
     )
     policy = _policy()
-    sandbox_identity = _identity("S-1-5-21-1-2-3-1001", elevated_raw=0)
+    capability_sid = "S-1-5-21-10-20-30-1193176752"
+    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
+    sandbox_identity = _identity(
+        "S-1-5-21-1-2-3-1001",
+        elevated_raw=0,
+        capability_sid_sha256s=[capability_hash],
+    )
     controller_identity = _identity("S-1-5-21-1-2-3-1000", elevated_raw=1)
     probes = _passing_probes(manifest, sandbox_identity)
     requirements = EmbeddedJsonEvidence.from_value(
@@ -916,7 +927,7 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         readiness_response=readiness,
         controller_process_identity=controller_identity,
         workspace_acl_transition=_workspace_acl_transition(
-            sandbox_identity.token_user_sid,
+            capability_sid,
             initial_acl_sha256=manifest.W.acl_sddl_sha256,
         ),
         probes=probes,
@@ -959,9 +970,14 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
         verify_runtime_boundary_bundle(bundle)
 
 
-def test_workspace_acl_transition_is_bound_to_exact_p01_sid() -> None:
-    P01 = _identity("S-1-5-21-1-2-3-1001")
-    evidence = _workspace_acl_transition(P01.token_user_sid)
+def test_workspace_acl_transition_is_bound_to_exact_p01_capability_sid() -> None:
+    capability_sid = "S-1-5-21-10-20-30-1193176752"
+    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
+    P01 = _identity(
+        "S-1-5-21-1-2-3-1001",
+        capability_sid_sha256s=[capability_hash],
+    )
+    evidence = _workspace_acl_transition(capability_sid)
 
     assert runtime_boundary.verify_workspace_acl_transition(
         evidence,
@@ -977,8 +993,13 @@ def test_workspace_acl_transition_is_bound_to_exact_p01_sid() -> None:
 
 
 def test_workspace_acl_transition_rejects_an_extra_ace() -> None:
-    P01 = _identity("S-1-5-21-1-2-3-1001")
-    evidence = _workspace_acl_transition(P01.token_user_sid)
+    capability_sid = "S-1-5-21-10-20-30-1193176752"
+    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
+    P01 = _identity(
+        "S-1-5-21-1-2-3-1001",
+        capability_sid_sha256s=[capability_hash],
+    )
+    evidence = _workspace_acl_transition(capability_sid)
     forged = evidence.model_copy(
         update={
             "active_W_ace_sha256s": sorted(

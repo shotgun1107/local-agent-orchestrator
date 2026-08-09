@@ -784,7 +784,7 @@ class EffectivePolicyEvidence(StrictModel):
 
 
 class WorkspaceAclTransitionObservation(StrictModel):
-    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_token_user_sid"]
+    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_capability_sid"]
     initial_W_acl_sddl_sha256: Sha256
     active_W_acl_sddl_sha256: Sha256
     initial_W_dacl_control_sha256: Sha256
@@ -798,15 +798,15 @@ class WorkspaceAclTransitionObservation(StrictModel):
     added_ace_rights: Literal["0x1301bf"]
     added_ace_object_guid: Literal[""]
     added_ace_inherit_object_guid: Literal[""]
-    added_token_user_sid: str = Field(pattern=r"^S-1-5-21-(?:[0-9]+-){3}[0-9]+$")
-    added_token_user_sid_sha256: Sha256
+    added_capability_sid: str = Field(pattern=r"^S-1-5-21-(?:[0-9]+-){3}[0-9]+$")
+    added_capability_sid_sha256: Sha256
     removed_ace_sha256s: list[Sha256]
     W_owner_unchanged: Literal[True]
     W_owner_group_descriptor_unchanged: Literal[True]
     W_volume_unchanged: Literal[True]
     J_identity_unchanged: Literal[True]
     S_identity_unchanged: Literal[True]
-    P01_token_user_sid_matches_added_ace: Literal[True]
+    P01_capability_contains_added_ace_sid: Literal[True]
     derived_transition_passed: bool
 
     @model_validator(mode="after")
@@ -891,7 +891,7 @@ def _parse_workspace_acl_ace(ace: str) -> tuple[str, str, str, str, str, str]:
         or sid_parts[:4] != ["S", "1", "5", "21"]
         or not all(part.isdecimal() for part in sid_parts[4:])
     ):
-        raise RuntimeBoundaryError("workspace ACL transition SID is not a local-user SID")
+        raise RuntimeBoundaryError("workspace ACL transition SID has an unexpected shape")
     return ace_type, flags, rights, object_guid, inherit_object_guid, sid
 
 
@@ -900,7 +900,7 @@ class _WorkspaceAclTransitionState:
     initial: _WindowsRootSecuritySnapshot
     active: _WindowsRootSecuritySnapshot
     added_ace_sddl: str
-    added_token_user_sid: str
+    added_capability_sid: str
 
 
 class _WorkspaceAclTransitionGuard:
@@ -916,7 +916,7 @@ class _WorkspaceAclTransitionGuard:
         self._manifest = manifest
         self._initial = initial
         self._transition: _WorkspaceAclTransitionState | None = None
-        self._bound_P01_sid: str | None = None
+        self._bound_P01_identity_sha256: str | None = None
 
     @classmethod
     def capture(cls, manifest: RuntimeBoundaryProbeManifest) -> "_WorkspaceAclTransitionGuard":
@@ -972,7 +972,7 @@ class _WorkspaceAclTransitionGuard:
             initial=self._initial,
             active=active,
             added_ace_sddl=added[0],
-            added_token_user_sid=added_sid,
+            added_capability_sid=added_sid,
         )
         if self._transition is not None and observed != self._transition:
             raise RuntimeBoundaryError("W workspace ACL transition drifted")
@@ -989,33 +989,29 @@ class _WorkspaceAclTransitionGuard:
             self._transition = observed
         if require_transition and self._transition is None:
             raise RuntimeBoundaryError("required W workspace ACL transition was not observed")
-        if require_bound and self._bound_P01_sid is None:
+        if require_bound and self._bound_P01_identity_sha256 is None:
             raise RuntimeBoundaryError("W workspace ACL transition is not bound to P01")
-        if (
-            self._transition is not None
-            and self._bound_P01_sid is not None
-            and self._transition.added_token_user_sid != self._bound_P01_sid
-        ):
-            raise RuntimeBoundaryError("W workspace ACL transition SID drifted from P01")
 
     def bind_P01_identity(self, identity: WindowsProcessIdentityObservation) -> None:
         if self._transition is None:
             raise RuntimeBoundaryError("P01 completed without the W workspace ACL transition")
-        if self._transition.added_token_user_sid != identity.token_user_sid:
+        added_hash = _sha_text(self._transition.added_capability_sid)
+        if added_hash not in identity.capability_sid_sha256s:
             raise RuntimeBoundaryError(
-                "W workspace ACL grant SID differs from the P01 sandbox process SID"
+                "W workspace ACL grant SID hash is absent from the P01 capability SID hashes: "
+                f"added={added_hash}, capabilities={identity.capability_sid_sha256s}"
             )
-        self._bound_P01_sid = identity.token_user_sid
+        self._bound_P01_identity_sha256 = identity.identity_sha256
 
     def evidence(self) -> WorkspaceAclTransitionObservation:
-        if self._transition is None or self._bound_P01_sid is None:
+        if self._transition is None or self._bound_P01_identity_sha256 is None:
             raise RuntimeBoundaryError("W workspace ACL transition evidence is incomplete")
         state = self._transition
         ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
             _parse_workspace_acl_ace(state.added_ace_sddl)
         )
         return WorkspaceAclTransitionObservation(
-            selection_method="initial_acl+exact_w_only_ace_delta+p01_token_user_sid",
+            selection_method="initial_acl+exact_w_only_ace_delta+p01_capability_sid",
             initial_W_acl_sddl_sha256=state.initial.identity.acl_sddl_sha256,
             active_W_acl_sddl_sha256=state.active.identity.acl_sddl_sha256,
             initial_W_dacl_control_sha256=_sha_text(state.initial.dacl_control),
@@ -1029,15 +1025,15 @@ class _WorkspaceAclTransitionGuard:
             added_ace_rights=rights,
             added_ace_object_guid=object_guid,
             added_ace_inherit_object_guid=inherit_object_guid,
-            added_token_user_sid=sid,
-            added_token_user_sid_sha256=_sha_text(sid),
+            added_capability_sid=sid,
+            added_capability_sid_sha256=_sha_text(sid),
             removed_ace_sha256s=[],
             W_owner_unchanged=True,
             W_owner_group_descriptor_unchanged=True,
             W_volume_unchanged=True,
             J_identity_unchanged=True,
             S_identity_unchanged=True,
-            P01_token_user_sid_matches_added_ace=True,
+            P01_capability_contains_added_ace_sid=True,
             derived_transition_passed=True,
         )
 
@@ -1068,10 +1064,10 @@ def verify_workspace_acl_transition(
             evidence.added_ace_rights == rights,
             evidence.added_ace_object_guid == object_guid,
             evidence.added_ace_inherit_object_guid == inherit_object_guid,
-            evidence.added_token_user_sid == sid,
-            evidence.added_token_user_sid_sha256 == _sha_text(sid),
-            P01_process_identity.token_user_sid == sid,
-            evidence.P01_token_user_sid_matches_added_ace,
+            evidence.added_capability_sid == sid,
+            evidence.added_capability_sid_sha256 == _sha_text(sid),
+            _sha_text(sid) in P01_process_identity.capability_sid_sha256s,
+            evidence.P01_capability_contains_added_ace_sid,
             evidence.W_owner_unchanged,
             evidence.W_owner_group_descriptor_unchanged,
             evidence.W_volume_unchanged,

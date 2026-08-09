@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_9_workspace_acl_transition_candidate`
+- 문서 상태: `revision_10_workspace_capability_acl_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `12af2f1bd01e92f3e2919000993c4add298fef37`
+- 기준 commit: `b93ce1b1e5e970d5d64e2ad44f15c54f7b643051`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 여섯 번째 model-free 실행에서 관측된 W 전용 ACL grant를 정상 전이와 임의 scope 확장으로 구분하는 실행 후보를 구현함. 새 Phase B 실행 전이므로 candidate는 아직 증명되지 않음
-- 이번 교정 범위: 초기 ACL 기준선, exact W-only ACE delta, P01 TokenUser SID 결합, J·S exact identity 유지와 model-free 회귀. 새 P01~P08 실행·model turn·Phase C는 포함하지 않음
+- 현재 상태: 일곱 번째 model-free 실행은 P01 JSON 수집까지 진행했지만 W grant SID를 P01 TokenUser와 직접 비교한 잘못된 결합에서 중단됨. 설치된 runtime은 별도 capability SID를 process에 전달하므로 candidate는 아직 증명되지 않음
+- 이번 교정 범위: 초기 ACL 기준선, exact W-only ACE delta, 추가 ACE SID hash와 P01 capability SID hash 결합, J·S exact identity 유지와 model-free 회귀. 새 P01~P08 실행·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -218,7 +218,7 @@ verifier는 embedded transcript에서 모든 derived field와 실패 코드를 �
 3. `configRequirements/read`가 requirements를 반환하면 `allowedWindowsSandboxImplementations`에 `elevated`가 포함돼야 한다. null은 그대로 기록하되 금지 증거로 보지 않는다.
 4. Controller와 sandbox 안 P01 process가 Win32 `GetCurrentProcess` → `OpenProcessToken(TOKEN_QUERY)` → `GetTokenInformation(TokenUser)`로 얻은 SID를 각각 기록하며 서로 달라야 한다. 공식 계약상 elevated는 dedicated lower-privilege sandbox user, unelevated는 현재 사용자에서 파생한 restricted token을 사용한다.
 5. P01~P08의 sandbox process token-user SID와 canonical process identity hash가 P01과 같고, P06 child도 P06 parent와 같아야 한다.
-6. SDK 준비 뒤 W에 추가된 ACL은 explicit allow ACE 정확히 1개여야 하며, `OICI`, `Modify+Synchronize(0x1301bf)`, object GUID 없음으로 고정한다. 그 ACE의 SID는 P01 TokenUser SID와 같아야 한다. J·S identity와 W owner·group·volume·DACL control은 바뀌면 안 된다.
+6. SDK 준비 뒤 W에 추가된 ACL은 explicit allow ACE 정확히 1개여야 하며, `OICI`, `Modify+Synchronize(0x1301bf)`, object GUID 없음으로 고정한다. 그 ACE의 SID hash는 P01 token의 `capability_sid_sha256s`에 정확히 포함돼야 한다. TokenUser SID 직접 일치는 요구하지 않는다. J·S identity와 W owner·group·volume·DACL control은 바뀌면 안 된다.
 
 `WindowsProcessIdentityObservation`은 `token_user_sid`, `integrity_level_sid`, `token_is_elevated_raw`(진단 전용), `token_is_app_container_raw`, 정렬된 `restricted_sid_sha256s`, 정렬된 `capability_sid_sha256s`, 각 Win32 call의 return code·`GetLastError`, 그리고 위 field의 canonical SHA-256을 저장한다. verifier가 canonical hash와 SID 비교를 다시 계산한다.
 
@@ -260,10 +260,10 @@ manifest 생성 직후의 W ACL을 기준선으로 메모리에 보존한다. SD
 - 추가 ACE: `A;OICI;0x1301bf`, object/inherit object GUID 없음, inherited flag 없음
 - W path·owner·group descriptor·volume·DACL control flag: 기준선과 동일
 - J·S path·owner·ACL·volume: manifest와 정확히 동일
-- P01: 추가 ACE의 SID와 실제 sandbox process TokenUser SID가 동일
+- P01: 추가 ACE의 SID hash가 실제 sandbox process capability SID hash 목록에 포함
 - P02~P08: P01에서 결합된 ACL과 SID가 계속 동일
 
-P01 전에는 기준선 상태 또는 위 exact 전이 상태만 허용한다. P01 종료 뒤 전이가 없거나 SID를 결합할 수 없으면 중단한다. 다른 ACE 추가, ACE 제거, J·S 변화, 전이 되돌림은 모두 fail-closed다. 결과 bundle은 초기/활성 ACL hash, DACL control hash, ACE hash multiset, 추가 ACE와 SID, P01 결합 여부를 포함하며 verifier가 전이와 classification hash를 다시 계산한다.
+P01 전에는 기준선 상태 또는 위 exact 전이 상태만 허용한다. P01 종료 뒤 전이가 없거나 추가 ACE SID hash가 P01 capability SID hash 목록에 없으면 중단한다. 다른 ACE 추가, ACE 제거, J·S 변화, 전이 되돌림은 모두 fail-closed다. 결과 bundle은 초기/활성 ACL hash, DACL control hash, ACE hash multiset, 추가 ACE와 SID, P01 capability 결합 여부를 포함하며 verifier가 전이와 classification hash를 다시 계산한다.
 
 ## 4. 공통 command prefix
 
@@ -565,7 +565,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions=":workspace"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
 5. Controller Win32 token observation과 준비 뒤 W/J/S ACL transition 수집
-6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회; P01 SID와 W 추가 ACE를 결합한 뒤에만 P02 진행
+6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회; P01 capability SID와 W 추가 ACE를 결합한 뒤에만 P02 진행
 7. strict typed 결과와 4-file bundle 생성
 8. 독립 verifier로 embedded JSON·elevated classification·8개 derived result·exact file set·aggregate 재계산
 9. 보고 후 중단
