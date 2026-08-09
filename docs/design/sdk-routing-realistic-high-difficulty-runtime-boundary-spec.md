@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_12_workspace_only_profile_candidate`
+- 문서 상태: `revision_13_inline_profile_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `b9de58ed8436309b88990c36b8a370f6d9f62b37`
+- 기준 commit: `a640a002707a3fc1aab865dab7803c7552ff3b5b`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 아홉 번째 model-free 실행은 P01과 ACL restricted-SID 결합을 통과했지만 built-in `:workspace`가 J absolute read를 허용해 P02에서 즉시 `NOT_READY`로 중단됨. candidate는 아직 증명되지 않음
-- 이번 교정 범위: `:workspace`를 직접 쓰지 않고 이를 상속한 전용 `runtime-boundary-worker` profile에 `:root=deny`, `:minimal=read`, network disabled를 동결해 W만 다시 허용한다. model turn·Phase C는 포함하지 않음
+- 현재 상태: 열 번째 model-free 실행은 custom profile의 filesystem dotted override가 quoted key를 literal path로 해석해 app-server initialize 전에 중단됨. actual model turn과 P01~P08은 0회이며 candidate는 아직 증명되지 않음
+- 이번 교정 범위: `:root=deny`와 `:minimal=read`를 하나의 TOML inline table override로 직렬화한다. 별도 initialize에서 pinned 0.144.4 parse 성공을 확인했지만 새 P01~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -31,7 +31,7 @@ Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `code
 - native Windows elevated sandbox는 unelevated fallback보다 강하며 기본 후보로 사용해야 한다: <https://developers.openai.com/codex/windows/windows-sandbox>
 - permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않는다. Custom profile은 `:workspace`를 상속하고 `:root="deny"`로 나머지 filesystem read를 제거한 뒤 `:minimal="read"`만 복원할 수 있으며, native Windows의 split deny-read는 elevated backend가 필요하다: <https://learn.chatgpt.com/codex/permissions>
 
-이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions="runtime-boundary-worker"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 같은 default를 명시한다. `codex sandbox`도 같은 custom profile과 exact 6개 override를 사용한다. Profile은 `:workspace`를 상속해 W write를 유지하되 `:root=deny`, `:minimal=read`, network disabled로 W 밖의 일반 read를 제거한다. override 추가·누락, active legacy `sandbox_mode`·`sandbox_workspace_write`, CLI `--sandbox`는 모두 결합 무효다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
+이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions="runtime-boundary-worker"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 같은 default를 명시한다. `codex sandbox`도 같은 custom profile과 exact 5개 override를 사용한다. Profile은 `:workspace`를 상속해 W write를 유지하되 filesystem inline table `{":minimal"="read",":root"="deny"}`와 network disabled로 W 밖의 일반 read를 제거한다. override 추가·누락, active legacy `sandbox_mode`·`sandbox_workspace_write`, CLI `--sandbox`는 모두 결합 무효다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
 
 ## 2. 구현 책임과 금지
 
@@ -85,7 +85,7 @@ runtime:
 configuration:
   default_permissions: Literal[runtime-boundary-worker]
   permission_profile_name: Literal[runtime-boundary-worker]
-  config_overrides[6]: exact sorted set
+  config_overrides[5]: exact sorted set
   effective_config_sha256
   config_sources[{kind, redacted_path_id, sha256}]
   managed_requirement_sources[{redacted_path_id, sha256}]
@@ -278,8 +278,7 @@ manifest의 모든 command는 shell 문자열이 아니라 argv 배열로 봉인
   "--include-managed-config",
   "--config", "default_permissions=\"runtime-boundary-worker\"",
   "--config", "permissions.runtime-boundary-worker.extends=\":workspace\"",
-  "--config", "permissions.runtime-boundary-worker.filesystem.\":minimal\"=\"read\"",
-  "--config", "permissions.runtime-boundary-worker.filesystem.\":root\"=\"deny\"",
+  "--config", "permissions.runtime-boundary-worker.filesystem={\":minimal\"=\"read\",\":root\"=\"deny\"}",
   "--config", "permissions.runtime-boundary-worker.network.enabled=false",
   "--config", "windows.sandbox=\"elevated\"",
   "--",

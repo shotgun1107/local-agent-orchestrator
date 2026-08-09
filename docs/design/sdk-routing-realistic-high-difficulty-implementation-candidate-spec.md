@@ -1,9 +1,9 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
-- 문서 상태: `revision_5_runtime_boundary_profile_corrected`
-- 설계 revision: 5
+- 문서 상태: `revision_6_runtime_boundary_profile_serialization_corrected`
+- 설계 revision: 6
 - 작성일: 2026-08-09
-- 기준 commit: `b9de58ed8436309b88990c36b8a370f6d9f62b37`
+- 기준 commit: `a640a002707a3fc1aab865dab7803c7552ff3b5b`
 - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
 - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
 - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
@@ -136,7 +136,7 @@ active_profile_provenance_required: Literal[True]
 ```
 
 - SS1과 B1 모두 같은 contract v2를 사용한다.
-- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 6개를 주고 thread/turn의 `sandbox` 인자를 생략한다.
+- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 5개를 주고 thread/turn의 `sandbox` 인자를 생략한다. Filesystem의 `:minimal`·`:root` 두 규칙은 CLI dotted-key quoting 차이를 피하도록 하나의 TOML inline table 값으로 전달한다.
 - B1은 versioned RunSpec·TaskEnvelope와 public report에 위 필드를 추가하고 `CodexRuntime`이 같은 config override·sandbox 생략을 사용한다.
 - B1의 기존 `SandboxMode.read_only|workspace_write` v1 계약과 기존 S1~S3 실행 bytes는 변경하지 않는다.
 - active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `runtime-boundary-worker`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
