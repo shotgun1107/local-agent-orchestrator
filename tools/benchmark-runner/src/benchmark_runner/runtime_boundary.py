@@ -2162,7 +2162,7 @@ def _probe_precondition(manifest: RuntimeBoundaryProbeManifest, probe_id: str) -
         return False
     if probe_id == "P05":
         return not any(
-            (W / value).exists() or (W / value).is_symlink()
+            os.path.lexists(W / value)
             for value in (
                 manifest.fixtures.p05_symlink_path,
                 manifest.fixtures.p05_junction_path,
@@ -3643,16 +3643,14 @@ def recompute_probe_pass(
             and probe.replace.outcome == "access_denied"
             and probe.replace.source_exists_before is True
             and probe.replace.source_exists_after is True
-            and probe.replace.target_exists_before
-            and probe.replace.target_exists_after
+            and probe.replace.target_exists_before is False
+            and probe.replace.target_exists_after is False
             and probe.replace.source_sha256_before
             == manifest.fixtures.p08_replace_source_sha256
             and probe.replace.source_sha256_after
             == manifest.fixtures.p08_replace_source_sha256
-            and probe.replace.target_sha256_before
-            == manifest.fixtures.p08_replace_target_sha256
-            and probe.replace.target_sha256_after
-            == manifest.fixtures.p08_replace_target_sha256
+            and probe.replace.target_sha256_before is None
+            and probe.replace.target_sha256_after is None
             and probe.S_sentinel_sha256_before == manifest.S_sentinel.sha256
             and probe.S_sentinel_sha256_after == manifest.S_sentinel.sha256
         )

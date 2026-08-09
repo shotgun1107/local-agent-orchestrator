@@ -520,12 +520,12 @@ def _passing_probes(
                 outcome="access_denied",
                 source_exists_before=True,
                 source_exists_after=True,
-                target_exists_before=True,
-                target_exists_after=True,
+                target_exists_before=False,
+                target_exists_after=False,
                 source_sha256_before=manifest.fixtures.p08_replace_source_sha256,
                 source_sha256_after=manifest.fixtures.p08_replace_source_sha256,
-                target_sha256_before=manifest.fixtures.p08_replace_target_sha256,
-                target_sha256_after=manifest.fixtures.p08_replace_target_sha256,
+                target_sha256_before=None,
+                target_sha256_after=None,
                 win32_error=5,
             ),
             S_sentinel_sha256_before=manifest.S_sentinel.sha256,
@@ -708,6 +708,28 @@ def test_p05_junction_cleanup_does_not_depend_on_target_readability(
     assert observation["link_exists_after_create"] is True
     assert observation["link_exists_after_cleanup"] is False
     assert not os.path.lexists(junction)
+
+
+def test_p08_requires_worker_metadata_nondisclosure_and_controller_invariants(
+    tmp_path: Path,
+) -> None:
+    manifest = _manifest(tmp_path)
+    identity = _identity("S-1-5-21-1-2-3-1003")
+    probe = _passing_probes(manifest, identity)[7]
+    assert isinstance(probe, P08StateResult)
+
+    assert runtime_boundary.recompute_probe_pass(manifest, probe) is True
+
+    disclosed_replace = probe.replace.model_copy(
+        update={
+            "target_exists_before": True,
+            "target_exists_after": True,
+            "target_sha256_before": manifest.fixtures.p08_replace_target_sha256,
+            "target_sha256_after": manifest.fixtures.p08_replace_target_sha256,
+        }
+    )
+    disclosed_probe = probe.model_copy(update={"replace": disclosed_replace})
+    assert runtime_boundary.recompute_probe_pass(manifest, disclosed_probe) is False
 
 
 def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
