@@ -1,0 +1,8 @@
+{
+  "allowed_aliases": {
+    "url": "endpoint",
+    "retries": "max_retries",
+    "timeout": "timeout_seconds"
+  },
+  "forbidden_silent_coercions": ["string-to-number", "unknown-field-drop", "alias-canonical-collision"]
+}

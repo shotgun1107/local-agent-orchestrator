@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260807-005",
+  "title": "S1 동결 상태를 집행할 live 실행 경로가 없음",
+  "status": "resolved",
+  "stage": "sdk-routing-suite-v1",
+  "category": "implementation",
+  "discovered_at": "2026-08-07T11:20:21Z",
+  "resolved_at": "2026-08-07T12:29:48Z",
+  "discovered_by": "집 Codex와 내부 하위 에이전트의 실행 전 동결 감사",
+  "symptom": "suite와 stage Schema는 frozen_before_execution을 허용하지만 Runner에는 model-free Plan과 Fake 실행 경로만 있어 live 후보를 안전하게 동결할 수 없다",
+  "reproduction": [
+    "routing_suite.py의 Plan track과 공개 함수를 설계 17절 및 21.2절과 대조한다"
+  ],
+  "evidence": [
+    {
+      "kind": "review-finding",
+      "detail": "live create run-next status export preflight 경로가 없고 manifest status와 12-turn 계약도 live dispatch에서 집행되지 않는다"
+    }
+  ],
+  "root_cause": "S1 model-free runner를 먼저 검증한 뒤 live 경로를 별도 단계로 미뤘지만 frozen manifest를 실제 SDK dispatch와 결합하는 전용 controller, 비용 상한, durable dispatch claim 및 partial stop export 계약이 아직 구현되지 않았다",
+  "considered_options": [
+    {
+      "option": "기존 model-free 명령에 live 반복 실행을 추가",
+      "decision": "rejected",
+      "reason": "검증용 Fake 경로와 유료 SDK 호출 경계를 섞고 명시적 Cell별 승인을 보장하기 어렵다"
+    },
+    {
+      "option": "독립 S1 live controller와 0-turn freeze bundle을 추가",
+      "decision": "adopted",
+      "reason": "동결과 실제 Cell 실행을 분리하고 매 호출 승인, 정확한 한 Cell 실행, stop/export 계약을 fail-closed로 집행할 수 있다"
+    }
+  ],
+  "resolution": "별도 clean checkout과 별도 프로세스에서 Plan을 재빌드하는 create, 매번 명시적 승인을 요구해 정확히 한 Cell만 실행하는 run-next, 전체 Measurement 계약을 확인하는 status, terminal partial stop을 보존하는 export와 독립 verifier를 구현했다. Python, Git, SDK runtime, B1 source와 command, manifest, controller, runtime profile 및 12-turn 절대 상한을 봉인하고 API key 환경은 거부한다",
+  "affected_files": [
+    ".gitattributes",
+    "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
+    "benchmarks/suites/sdk-routing-v1/suite.yaml",
+    "stages/b1-sequential/src/orchestrator/cli.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
+    "tools/benchmark-runner/scripts/run_r6_nonlive_regression.py",
+    "tools/benchmark-runner/scripts/run_sdk_routing_s1.py",
+    "tools/benchmark-runner/src/benchmark_runner/adapter.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+    "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py",
+    "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_live.py",
+    "tools/benchmark-runner/tests/test_routing_suite.py",
+    "tools/benchmark-runner/tests/test_b1_adapter.py",
+    "stages/b1-sequential/tests/integration/test_orchestrator.py::test_run_level_max_turn_override_blocks_before_extra_dispatch"
+  ],
+  "verification": [
+    "S1 표적 시험 39 passed",
+    "B1 전체 74 passed",
+    "Benchmark Runner 전체 203 passed",
+    "검증 과정 actual model turn 0회"
+  ],
+  "remaining_risks": [
+    "실제 S1 live Cell 결과와 WinError 5 재발 여부는 실행 후보 동결 뒤 별도 사용자 승인 실행에서만 확인한다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/design/sdk-routing-suite-v1-design.md",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+  ]
+}

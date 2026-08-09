@@ -66,6 +66,20 @@ class VariantAdapter(Protocol):
     def run(self, context: CellContext) -> VariantEvidence: ...
 
 
+def _has_repeatable_b1_quality_regression(tasks: list[dict[str, JsonValue]]) -> bool:
+    """Return true only for repeated deterministic check failures, not runtime failures."""
+
+    return any(
+        isinstance(task.get("attempts"), list)
+        and len(task["attempts"]) >= 2
+        and all(
+            isinstance(attempt, dict) and attempt.get("failure_kind") == "check_failed"
+            for attempt in task["attempts"]
+        )
+        for task in tasks
+    )
+
+
 class FakeAdapter:
     def __init__(self, outcome: Literal["completed", "failed"] = "completed") -> None:
         self._outcome = outcome
@@ -558,6 +572,9 @@ class B1AdapterConfig:
     run_spec: Path
     state_root: Path
     schema_root: Path
+    python_path: Path | None = None
+    invocation_cwd: Path | None = None
+    max_model_turns: int | None = None
     runtime: Literal["fake", "codex"] = "fake"
     fake_fixture: Path | None = None
     timeout_seconds: float = 300.0
@@ -610,6 +627,12 @@ class B1SequentialAdapter:
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
         environment["PYTHONUTF8"] = "1"
         environment["PYTHONIOENCODING"] = "utf-8"
+        if self.config.python_path is not None:
+            # Bind ``python -m orchestrator`` to the frozen B1 source tree.  The
+            # parent Runner's import path is not inherited reliably by the
+            # subprocess, and inheriting an ambient PYTHONPATH could select a
+            # different installed B1 package.
+            environment["PYTHONPATH"] = str(self.config.python_path.resolve())
         if self.config.runtime == "fake":
             for name in API_KEY_ENV_NAMES:
                 environment.pop(name, None)
@@ -629,6 +652,11 @@ class B1SequentialAdapter:
                     stdout=stdout_file,
                     stderr=stderr_file,
                     env=self._environment(),
+                    cwd=(
+                        str(self.config.invocation_cwd.resolve())
+                        if self.config.invocation_cwd is not None
+                        else None
+                    ),
                     shell=False,
                     **popen_options,
                 )
@@ -812,6 +840,8 @@ class B1SequentialAdapter:
             "--runtime",
             self.config.runtime,
         ]
+        if self.config.max_model_turns is not None:
+            start_arguments.extend(["--max-turns", str(self.config.max_model_turns)])
         if self.config.runtime == "fake":
             assert self.config.fake_fixture is not None
             start_arguments.extend(["--fake-fixture", str(self.config.fake_fixture.resolve())])
@@ -920,6 +950,55 @@ class B1SequentialAdapter:
             "b1_report_usage_status": usage_status,
             "b1_session_usage_statuses": status["session_usage_statuses"],
         }
+        task_attempts = [attempt for task in report["tasks"] for attempt in task["attempts"]]
+        check_failed_attempts = [
+            attempt for attempt in task_attempts if attempt.get("failure_kind") == "check_failed"
+        ]
+        repeatable_failure = _has_repeatable_b1_quality_regression(report["tasks"])
+        normalized_metrics.update(
+            {
+                "b1_retry_count": sum(
+                    max(len(task["attempts"]) - 1, 0) for task in report["tasks"]
+                ),
+                "b1_resume_count": sum(
+                    int(attempt["resume_count"]) for attempt in task_attempts
+                ),
+                "b1_intermediate_check_changed_result": bool(check_failed_attempts),
+                "b1_intermediate_check_changed_dispatch": any(
+                    attempt.get("failure_kind") == "check_failed"
+                    for task in report["tasks"]
+                    for attempt in task["attempts"][:-1]
+                ),
+                "b1_repeatable_quality_regression": repeatable_failure,
+            }
+        )
+        extra_turns = (
+            normalized_metrics["b1_retry_count"]
+            + normalized_metrics["b1_resume_count"]
+        )
+        normalized_metrics["dual_outcome_status"] = (
+            "reported" if extra_turns > 0 else "not_applicable"
+        )
+        normalized_metrics["attempt_level_cost"] = "not_available"
+        if extra_turns > 0:
+            normalized_metrics["first_attempt_outcome"] = [
+                {
+                    "task_key": task["key"],
+                    "state": task["attempts"][0]["state"],
+                    "failure_kind": task["attempts"][0]["failure_kind"],
+                }
+                for task in report["tasks"]
+            ]
+            normalized_metrics["full_orchestrated_outcome"] = {
+                "state": outcome,
+                "failure_kind": failure_kind,
+                "check_success": None,
+                "turn_count": metrics["turns"],
+                "token_usage_status": (
+                    "measured" if measured_token_usage is not None else "unknown"
+                ),
+                "token_usage": measured_token_usage,
+            }
         model_active_seconds = metrics.get("model_active_seconds")
         if isinstance(model_active_seconds, (int, float)) and not isinstance(
             model_active_seconds, bool

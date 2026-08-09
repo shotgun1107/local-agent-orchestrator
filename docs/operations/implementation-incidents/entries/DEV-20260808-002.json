@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260808-002",
+  "title": "S2 reverse Plan retained unselected fixture identity",
+  "status": "resolved",
+  "stage": "sdk-routing-suite-v1",
+  "category": "implementation",
+  "discovered_at": "2026-08-08T09:13:00Z",
+  "resolved_at": "2026-08-08T09:20:00Z",
+  "discovered_by": "first S2 reverse zero-turn freeze create",
+  "symptom": "create built a two-Cell reverse candidate but fail-closed preflight verification rejected its fixture semantics set",
+  "reproduction": [
+    "freeze the incident-only reverse Plan from source commit 88b199f and verify the generated bundle"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "verify_routing_s1_live_freeze raised S1 live freeze preflight evidence differs before any model turn"
+    }
+  ],
+  "root_cause": "The reverse builder replaced the Cell list but retained both initial Plan fixture identities, while preflight correctly emitted task semantics only for the selected incident profile.",
+  "considered_options": [
+    {
+      "option": "weaken preflight set equality",
+      "decision": "rejected",
+      "reason": "would allow unrelated or omitted fixture semantics"
+    },
+    {
+      "option": "restrict reverse Plan fixtures to the approved expansion profile",
+      "decision": "adopted",
+      "reason": "makes Plan scope match its two Cells"
+    }
+  ],
+  "resolution": "Filtered reverse Plan fixture identities to the selected profile and made freeze identity verification accept that strict stage-manifest subset.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+    "tools/benchmark-runner/tests/test_routing_s2.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_reverse_live_plan_is_one_bound_c2_then_b1_pair"
+  ],
+  "verification": [
+    "S2 targeted regression 17 passed; final reverse create verified with 2 PLANNED Cells and 0 model turns"
+  ],
+  "remaining_risks": [
+    "The rejected partial artifact and external state were removed after exact-path verification; they were never execution candidates."
+  ],
+  "related_commits": [
+    "faecb246ec442b79d375ad4ebd51a230dca11c1e"
+  ],
+  "source_references": [
+    "benchmarks/artifacts/sdk-routing-s2-reverse-faecb24-r3",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+  ]
+}

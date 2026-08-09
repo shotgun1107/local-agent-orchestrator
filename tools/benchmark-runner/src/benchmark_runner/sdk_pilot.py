@@ -173,6 +173,8 @@ def _adapter(
     cell: PlannedCell,
     workspace: Path,
     benchmark_python: Path,
+    max_model_turns: int | None = None,
+    b1_timeout_seconds: float = 2_000,
 ):
     if cell.variant_id in {"c0", "c1", "c2"}:
         return SdkBaselineAdapter(
@@ -186,13 +188,16 @@ def _adapter(
     if cell.variant_id == "b1":
         return B1SequentialAdapter(
             B1AdapterConfig(
-                command_prefix=(str(benchmark_python), "-m", "orchestrator"),
+                command_prefix=(str(benchmark_python), "-P", "-m", "orchestrator"),
                 project=workspace,
                 run_spec=workspace / "benchmark-run.yaml",
                 state_root=experiment_dir / "cells" / cell.cell_id / "variant-state",
                 schema_root=repository_root / "stages" / "b1-sequential" / "schemas" / "v1",
+                python_path=repository_root / "stages" / "b1-sequential" / "src",
+                invocation_cwd=repository_root / "stages" / "b1-sequential" / "src",
+                max_model_turns=max_model_turns,
                 runtime="codex",
-                timeout_seconds=2_000,
+                timeout_seconds=b1_timeout_seconds,
             )
         )
     raise RuntimeError(f"unsupported pilot variant: {cell.variant_id}")

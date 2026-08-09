@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260807-006",
+  "title": "S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음",
+  "status": "resolved",
+  "stage": "sdk-routing-suite-v1",
+  "category": "implementation",
+  "discovered_at": "2026-08-07T11:20:21Z",
+  "resolved_at": "2026-08-07T12:29:48Z",
+  "discovered_by": "집 Codex와 내부 하위 에이전트의 봉인 경로 감사",
+  "symptom": "독립 verifier가 Execution Plan fingerprint를 재계산하지 않고 Measurement 전체 identity와 provenance를 Plan에 대조하지 않는다",
+  "reproduction": [
+    "export된 execution-plan.json의 created_at 또는 Measurement provenance를 바꾼 뒤 내부 seal을 갱신해 verifier 경계를 검토한다"
+  ],
+  "evidence": [
+    {
+      "kind": "review-finding",
+      "detail": "기존 verifier는 Measurement cell_id와 manifest hash 일부만 확인하고 canonical Plan integrity와 fixture variant provenance 전체를 확인하지 않는다"
+    }
+  ],
+  "root_cause": "초기 S1 verifier가 aggregate file seal과 일부 식별자만 확인하고 canonical Plan fingerprint, 전체 Measurement identity, fixture와 variant provenance 및 environment/resource 계약을 서로 독립된 불변식으로 재구성하지 않았다",
+  "considered_options": [
+    {
+      "option": "기존 aggregate seal 일치만 신뢰",
+      "decision": "rejected",
+      "reason": "공격자나 구현 오류가 payload와 내부 seal을 함께 바꾸면 의미 계약의 변조를 찾지 못한다"
+    },
+    {
+      "option": "Plan과 Measurement 의미 계약을 verifier가 독립 재구성",
+      "decision": "adopted",
+      "reason": "파일 무결성과 실행 의미를 별도로 검증하고 둘 중 하나의 변조도 거부한다"
+    }
+  ],
+  "resolution": "model-free와 live verifier가 assert_plan_integrity를 호출하고 각 Cell의 전체 MeasurementIdentity와 manifest, fixture commit/tree, Runner version, Variant version/SHA provenance를 Plan에서 재구성해 대조하도록 강화했다. live status도 예산이나 calibration 결과를 계산하기 전에 같은 environment, resource, token, B1 control metric 계약을 검증하며 freeze/export의 정확한 파일 집합과 raw Plan SHA를 교차 봉인한다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+    "tools/benchmark-runner/tests/test_routing_live.py",
+    "tools/benchmark-runner/tests/test_routing_suite.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_live.py::test_freeze_bundle_is_self_contained_and_plan_tampering_is_rejected",
+    "tools/benchmark-runner/tests/test_routing_live.py::test_live_measurement_contract_rejects_surface_and_turn_tampering",
+    "tools/benchmark-runner/tests/test_routing_suite.py::test_model_free_export_verifier_rejects_plan_and_measurement_identity_tampering"
+  ],
+  "verification": [
+    "S1 표적 시험 39 passed",
+    "Benchmark Runner 전체 203 passed",
+    "검증 과정 actual model turn 0회"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/src/benchmark_runner/plan.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+  ]
+}

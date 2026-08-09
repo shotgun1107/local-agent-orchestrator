@@ -1,0 +1,52 @@
+diff --git a/src/config.py b/src/config.py
+index 4c5efef..c61466d 100644
+--- a/src/config.py
++++ b/src/config.py
+@@ -3,8 +3,22 @@ from __future__ import annotations
+ from collections.abc import Mapping
+ from typing import Any
+ 
++from .normalization import normalize_key
++
++
++_ALLOWED_KEYS = {"timeout_seconds", "max_retries"}
++
+ 
+ def parse_config(raw: Mapping[str, Any]) -> dict[str, Any]:
+-    """Return a detached config mapping; validation is added by the benchmark task."""
++    """Normalize and validate configuration keys without changing ``raw``."""
++
++    parsed: dict[str, Any] = {}
++    for key, value in raw.items():
++        normalized_key = normalize_key(key)
++        if normalized_key not in _ALLOWED_KEYS:
++            raise ValueError(f"unknown configuration key: {normalized_key}")
++        if normalized_key in parsed:
++            raise ValueError(f"duplicate configuration key: {normalized_key}")
++        parsed[normalized_key] = value
+ 
+-    return dict(raw)
++    return parsed
+diff --git a/src/normalization.py b/src/normalization.py
+new file mode 100644
+index 0000000..2ae89c2
+--- /dev/null
++++ b/src/normalization.py
+@@ -0,0 +1,17 @@
++from __future__ import annotations
++
++
++def normalize_key(value: str) -> str:
++    """Normalize a configuration key to its canonical spelling.
++
++    Keys must be non-empty strings.  Their surrounding whitespace is removed,
++    letters are lowercased, and hyphens are converted to underscores.
++    """
++    if not isinstance(value, str):
++        raise ValueError("key must be a non-empty string")
++
++    normalized = value.strip().lower().replace("-", "_")
++    if not normalized:
++        raise ValueError("key must be a non-empty string")
++
++    return normalized

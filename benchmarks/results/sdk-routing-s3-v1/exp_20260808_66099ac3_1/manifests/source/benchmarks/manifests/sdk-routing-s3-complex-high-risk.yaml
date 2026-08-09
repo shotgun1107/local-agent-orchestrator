@@ -1,0 +1,48 @@
+schema_version: 1
+status: frozen_before_execution
+frozen_at: "2026-08-08"
+fixtures:
+  - id: four-stage-compatibility-refactor
+    path: benchmarks/fixtures/routing-v1/complex-high-risk/four-stage-compatibility-refactor
+    commit: e87437d28c729255c5f9ec0bf187707f566f45d9
+    git_tree: 3ebf4077fa72a60d89f65245b82abfcbe090374e
+    success_check: s3_compat_acceptance
+  - id: four-stage-conflicting-incident-report
+    path: benchmarks/fixtures/routing-v1/complex-high-risk/four-stage-conflicting-incident-report
+    commit: e87437d28c729255c5f9ec0bf187707f566f45d9
+    git_tree: 80e5423d44d3df47a45da5cd8d6c6e33163a38e5
+    success_check: s3_incident_acceptance
+variants: [c2, b1]
+repetitions: 1
+model:
+  allowed: gpt-5.6-terra
+  auth_method: chatgpt
+budgets:
+  base_live_model_turns: 16
+  b1_retry_resume_reserve_turns_per_profile: 2
+  b1_retry_resume_reserve_turns: 4
+  max_actual_live_model_turns: 20
+  max_attempts_per_task: 2
+  task_timeout_seconds: 900
+  check_timeout_seconds: 120
+  run_timeout_seconds: 5400
+  cell_wall_clock_seconds: 5700
+  stop_on_unexplained_infrastructure_failure: true
+human_intervention:
+  all_variants: not_applicable_automated_sdk_track
+  count_rule: not_applicable
+metrics:
+  - check_success
+  - property_status
+  - model_active_seconds
+  - wall_clock_seconds
+  - session_count
+  - turn_count
+  - attempt_count
+  - token_usage_when_measured
+  - scope_and_evidence_integrity
+  - b1_control_effect
+  - b1_first_and_full_outcome_when_retried
+  - task_check_and_property_failure_signature
+unknown_usage_rule: record_unknown_and_do_not_impute_zero
+failure_rule: preserve_terminal_pairs_and_stop_on_global_integrity_or_budget_failure

@@ -1,0 +1,1 @@
+{"actions":[{"action_id":"ACT1","action_type":"verify","reference_ids":["U1"]},{"action_id":"ACT2","action_type":"mitigate","reference_ids":["E6"]}]}

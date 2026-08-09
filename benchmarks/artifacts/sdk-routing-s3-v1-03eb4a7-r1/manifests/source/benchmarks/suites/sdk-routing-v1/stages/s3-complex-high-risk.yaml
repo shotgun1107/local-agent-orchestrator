@@ -1,0 +1,63 @@
+schema_version: 1
+stage_id: s3-complex-high-risk
+status: frozen_before_execution
+purpose: complex_high_risk_routing
+fixture_manifests:
+  - path: benchmarks/manifests/sdk-routing-s3-complex-high-risk.yaml
+    fixture_ids: [four-stage-compatibility-refactor, four-stage-conflicting-incident-report]
+variants: [c2, b1]
+baseline_variant: c2
+candidate_variants: [b1]
+profile_aliases:
+  a: four-stage-compatibility-refactor
+  b: four-stage-conflicting-incident-report
+profiles:
+  - fixture_id: four-stage-compatibility-refactor
+    complexity:
+      task_count: 4
+      dependency_depth: 4
+      dependency_edges: 6
+      max_fan_in: 3
+      worker_read_files: 15
+      worker_read_bytes: 3933
+      expected_write_files: {minimum: 10, maximum: 10}
+      write_modules: 6
+      check_count: 8
+      handoff_kind: declared_multiple
+      scope_overlap: partial
+      verification_kind: post_hoc_property
+      failure_profile: compatibility_risk
+      solution_ambiguity: high
+  - fixture_id: four-stage-conflicting-incident-report
+    complexity:
+      task_count: 4
+      dependency_depth: 4
+      dependency_edges: 6
+      max_fan_in: 3
+      worker_read_files: 19
+      worker_read_bytes: 2283
+      expected_write_files: {minimum: 9, maximum: 9}
+      write_modules: 3
+      check_count: 8
+      handoff_kind: declared_multiple
+      scope_overlap: disjoint
+      verification_kind: post_hoc_property
+      failure_profile: omission_risk
+      solution_ambiguity: high
+cells:
+  - {cell_id: cell_s3_a_1_c2, profile_alias: a, fixture_id: four-stage-compatibility-refactor, variant_id: c2}
+  - {cell_id: cell_s3_a_1_b1, profile_alias: a, fixture_id: four-stage-compatibility-refactor, variant_id: b1}
+  - {cell_id: cell_s3_b_1_b1, profile_alias: b, fixture_id: four-stage-conflicting-incident-report, variant_id: b1}
+  - {cell_id: cell_s3_b_1_c2, profile_alias: b, fixture_id: four-stage-conflicting-incident-report, variant_id: c2}
+base_live_model_turns: 16
+b1_retry_resume_reserve_turns_per_profile: 2
+b1_retry_resume_reserve_turns: 4
+max_actual_live_model_turns: 20
+route_decision_allowed: true
+allowed_outcomes:
+  - S3_OBSERVATION_READY
+  - S3_POLICY_READY
+  - S3_REPLICATION_REQUIRED
+  - S3_INCONCLUSIVE
+  - S3_STOP
+  - S3_INCOMPLETE

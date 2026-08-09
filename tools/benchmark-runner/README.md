@@ -191,7 +191,7 @@ frozen Git tree, and delegates Plan construction and sealed Cell execution to th
 existing SDK-controlled Runner helpers.
 
 S1 is a calibration stage only. Its eight-Cell order and twelve-turn live budget
-are fixed by `stages/s1-baseline.yaml`, but the current vertical slice uses only
+are fixed by `stages/s1-baseline.yaml`. The model-free validation path uses only
 `FakeSdkRuntime`; it does not call a model and cannot issue a route decision.
 
 The model-free gate can execute all eight Cells through the existing C2 and B1
@@ -206,3 +206,181 @@ Regenerate the public contracts with Python 3.12:
 & .\stages\b1-sequential\.venv\Scripts\python.exe `
   .\tools\benchmark-runner\scripts\export_routing_schemas.py
 ```
+
+### S1 live execution freeze
+
+`scripts/run_sdk_routing_s1.py` is the separate fail-closed live controller. Its
+`create` command requires a clean committed source tree, the frozen suite and stage
+manifests, a passing zero-turn regression record for the same source commit, the
+pinned SDK and ChatGPT subscription authentication. It rebuilds the Plan in a
+separate clean checkout and process, independently recalculates the Runner, B1,
+suite, stage, and fixture-manifest identities, preflights all eight C2/B1 Cells
+without a model turn, verifies Task semantics parity, and writes a self-contained
+pre-execution freeze artifact.
+
+`run-next` executes exactly one Cell and requires `--confirm-model-usage` on every
+invocation. It reopens the freeze seal, source hashes, manifests, runtime profile,
+B1 command/Schema boundary and every predecessor Cell seal before dispatch. It
+never loops over live Cells. A durable dispatch claim prevents implicit retry even
+if both Cell-state and stop-record writes fail. The controller and B1 subprocess
+use safe-path mode, exact source roots, and a hash-bound Python, Git, SDK,
+runtime-profile, and controller environment. Absolute executable paths stay in
+external state; only their path hashes enter the Git artifact.
+
+```powershell
+$python = '.\stages\b1-sequential\.venv\Scripts\python.exe'
+$state = '<external-short-state-root>'
+$artifact = '.\benchmarks\artifacts\sdk-routing-v1-<source-commit>-r1'
+$regression = '<zero-turn-regression-record.json>'
+Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py create `
+  --state-root $state `
+  --artifact-root $artifact `
+  --regression-record $regression `
+  --revision 1
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py verify-freeze `
+  --artifact-root $artifact
+
+# A later, separately approved step runs at most one Cell:
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py run-next `
+  --state-root $state `
+  --confirm-model-usage
+```
+
+After all eight Cells are sealed—or immediately after a terminal safety stop—
+`status` deterministically emits one of
+`CALIBRATION_PASS`, `CALIBRATION_STOP`, or `CALIBRATION_INCONCLUSIVE`. Live export
+preserves partial stop Evidence when needed, reopens the complete freeze bundle and
+every sealed Measurement and Evidence hash, and always records
+`route_decision_issued=false`; S1 cannot emit profile `ROUTE_*` or B1 adoption.
+
+The frozen candidate was executed on 2026-08-08 as
+`exp_20260807_d1e9fdb8_1`. All eight Cells completed, passed the Judge, and were
+sealed in the planned order using twelve actual model turns. The terminal state is
+`CALIBRATION_PASS` with `route_decision_issued=false`. The 108-file export is at
+`benchmarks/results/sdk-routing-v1/exp_20260807_d1e9fdb8_1/`; its aggregate SHA-256
+is `ad19ff77f108d0de298fd319253f69b96713810bb2fff6cbd79bedfcfa2cc3a8`.
+See `docs/experiments/sdk-routing-s1-live-result.md` for the bounded comparison.
+
+### S2 intermediate execution freeze
+
+S2 reuses the same Plan, fixture restoration, SDK Cell, Judge, Measurement, seal,
+status, and live-controller path. The existing
+`scripts/run_sdk_routing_s1.py` accepts `--stage s2-intermediate`; there is no
+second S2 controller or state machine.
+
+The initial S2 Plan contains four three-Task Cells and protects twelve initial
+turns before allocating an independent three-turn B1 retry/resume reserve. Its
+absolute initial ceiling is fifteen model turns. Each Cell runs the common Judge
+and then the fixture-specific post-hoc property checker before Measurement and
+seal. The exported `routing-policy-v1.json` is derived only from sealed identities,
+Judge/property results, resource limits, and B1 control metrics. A single successful
+pair can record an observation or request a separately approved reverse pair, but
+cannot establish a global B1 default.
+
+The source-bound revision 2 execution candidate is frozen at
+`benchmarks/artifacts/sdk-routing-s2-v1-56c9133-r2/`. It binds source commit
+`56c91334fb32c4699d11ef80769831f14a0431d6`, Experiment
+`exp_20260808_5f4f41a7_2`, Plan fingerprint
+`5f4f41a7fe53f29e13095b7992f3ed24ef7ed8af6d0e4e02f16213ce29ecf373`,
+and freeze SHA-256
+`24c7d4a96d993ccaffdc81c70da878d7c172375e0d71e7e8a617a53daadae980`.
+At freeze time all four Cells were `PLANNED`, with zero sealed Cells and zero
+actual model turns. The candidate must not be recreated; its later live execution
+required a separate user approval covering the four-Cell Plan and its fifteen-turn
+absolute ceiling.
+
+The approved initial Plan subsequently completed all four Cells with twelve actual
+turns and no B1 retry/resume use. Config migration passed for both Variants. The
+incident-analysis C2 Cell passed, while B1 failed post-hoc properties `INC-P1` and
+`INC-P3` after its public Judge passed. The terminal state is
+`S2_EXPANSION_REQUIRED`; no route or global B1 default was issued. The verified
+63-file export is at
+`benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_5f4f41a7_2/`
+with aggregate SHA-256
+`5577d8bf54352a9b9930331e3c99d1af761d85211b197ebb9c959cee6de83d55`.
+See `docs/experiments/sdk-routing-s2-live-result.md` for the bounded interpretation.
+
+When that verified initial export reports `S2_EXPANSION_REQUIRED`, the same controller
+can freeze one separately approved opposite-order profile pair. The reverse Plan is
+cryptographically bound to the tracked initial export, contains only that pair, and
+has its own six-turn base plus three-turn B1 retry/resume reserve. It does not recreate
+or mutate the initial Plan.
+
+```powershell
+$initial = '.\benchmarks\results\sdk-routing-v1\sdk-routing-s2-v1\exp_20260808_5f4f41a7_2'
+
+& $python -P tools/benchmark-runner/scripts/run_sdk_routing_s1.py create `
+  --stage s2-intermediate `
+  --state-root '<new-external-short-state-root>' `
+  --artifact-root '.\benchmarks\artifacts\sdk-routing-s2-reverse-<source-commit>-r3' `
+  --regression-record '<source-bound-zero-turn-regression-record.json>' `
+  --initial-export-root $initial `
+  --expansion-profile three-stage-incident-analysis `
+  --revision 3
+```
+
+After the reverse candidate is committed and its model-use ceiling is approved,
+`run-next` is invoked once per Cell exactly as for the initial Plan. Status and export
+combine the sealed initial and reverse observations for policy derivation while
+counting the reverse Plan's nine-turn ceiling independently. A reverse export embeds
+the complete verified initial export so it remains independently verifiable.
+
+The approved incident reverse pair later completed C2→B1 with six actual turns and
+three reserve turns unused. Both public Judges passed, but C2 failed post-hoc `INC-P2`
+and B1 failed `INC-P1`. The combined stage is `S2_POLICY_READY`, the incident profile
+is `ROUTING_INCONCLUSIVE`, and no route or global B1 default was issued. The verified
+102-file combined export is at
+`benchmarks/results/sdk-routing-v1/sdk-routing-s2-v1/exp_20260808_e2f0a870_3/`
+with aggregate SHA-256
+`df682d5a13945bc8cc9ef0b3a468800112c720fada89eca2f10bd6b46ae72bc8`.
+See `docs/experiments/sdk-routing-s2-reverse-live-result.md`.
+
+### S3 complex/high-risk execution freeze
+
+S3 reuses the same stage-generic Plan, fixture restoration, SDK runtime, C2/B1
+Adapters, Judge, Measurement, seal, status, and export path. It adds two frozen
+four-Task profiles and public post-hoc property checks; it does not add another
+controller or state machine.
+
+The initial Plan contains four Cells in the frozen order compatibility C2→B1,
+incident B1→C2. Four base turns per Cell protect sixteen turns. Each profile owns
+an independent two-turn B1 retry/resume reserve, so the absolute initial ceiling is
+twenty model turns. A profile can request one separately approved opposite-order
+pair only after `S3_REPLICATION_REQUIRED`; that reverse Plan has its own eight-turn
+base and ten-turn absolute ceiling. No reserve is borrowed across profiles or Plans.
+
+The source-bound execution candidate is frozen at
+`benchmarks/artifacts/sdk-routing-s3-v1-03eb4a7-r1/`. It binds source commit
+`03eb4a772893130cd3d1000b12fe8a20e0e3643a`, Experiment
+`exp_20260808_66099ac3_1`, Plan fingerprint
+`66099ac3aa51e8184a8e0bec4ff86db722f891f0765bf2d74f602aaf761117e2`,
+and freeze SHA-256
+`d574323a86002dd93d18313e33afd3fee121a3a8ffe025c232cde44d20c3559d`.
+At freeze time all four Cells were `PLANNED`, with zero sealed Cells and zero
+actual model turns. The candidate must not be recreated or executed until the user
+separately approves the exact four-Cell order and twenty-turn ceiling.
+
+The source-bound model-free record contains S0 9 passed, B1 retry contracts 3
+passed, B1 full 74 passed, Runner full 239 passed, and S3 post-hoc/policy 19
+passed. Create also recorded an identical Plan build from a separate clean checkout
+and process, a sixteen-character resolved state root, maximum 114-character actual
+path probes, ChatGPT authentication, no API-key environment names, and zero model
+turns. See `docs/experiments/sdk-routing-s3-implementation-freeze.md`.
+
+The approved initial Plan later completed all four Cells with sixteen actual turns;
+the four profile-local reserve turns were unused. Compatibility C2 and B1 both
+passed, producing `C2_SUFFICIENT_OBSERVED_SINGLE_PAIR`. Incident C2 and B1 both
+passed the public Judge but failed the same HCI-P1 through HCI-P6 post-hoc set after
+their final-report headings violated the exact grammar. Because both Variants failed
+the same profile and B1 used no retry/resume or control effect, the incident result
+is `ROUTING_INCONCLUSIVE` and the stage is `S3_INCONCLUSIVE`. No route, replication,
+or global B1 default was issued.
+
+The verified 63-file export is at
+`benchmarks/results/sdk-routing-s3-v1/exp_20260808_66099ac3_1/` with aggregate
+SHA-256 `16fcfddf337dc0b9244b99c816c4026414798543490e47f0194b33887b06adce`.
+The frozen termination rule forbids an opposite-order pair, further synthetic
+repetition, or S4 for this result. See `docs/experiments/sdk-routing-s3-live-result.md`.

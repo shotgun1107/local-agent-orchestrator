@@ -1,0 +1,210 @@
+diff --git a/cli/config_cli.py b/cli/config_cli.py
+index 3b4b2c1..a761d7a 100644
+--- a/cli/config_cli.py
++++ b/cli/config_cli.py
+@@ -1 +1,21 @@
+-raise NotImplementedError("implement cli.config_cli.main")
++"""Command-line entry point for canonical configuration conversion."""
++
++from __future__ import annotations
++
++import json
++from collections.abc import Sequence
++from pathlib import Path
++
++from runtime.parser import parse
++from runtime.serializer import serialize
++
++
++def main(argv: Sequence[str]) -> int:
++    """Read one JSON configuration file and write its canonical v2 form."""
++    try:
++        payload = Path(argv[0]).read_text(encoding="utf-8")
++        print(serialize(parse(payload)))
++        return 0
++    except ValueError as exc:
++        print(json.dumps({"error": {"kind": type(exc).__name__}}, separators=(",", ":")))
++        return 2
+diff --git a/migration/legacy.py b/migration/legacy.py
+index 85791b1..2a17b2a 100644
+--- a/migration/legacy.py
++++ b/migration/legacy.py
+@@ -1 +1,30 @@
+-raise NotImplementedError("implement migration.legacy.migrate")
++"""Migration of legacy version 1 configurations to version 2."""
++
++from __future__ import annotations
++
++from collections.abc import Mapping
++
++from schema.model import validate
++
++
++def migrate(mapping: Mapping[str, object]) -> dict[str, object]:
++    """Return a validated version 2 copy of *mapping*.
++
++    Version 1 field names are translated to their version 2 counterparts;
++    version 2 mappings are simply normalized and copied.  Validation always
++    constructs new dictionaries, so the caller's mapping is never mutated.
++    """
++    validated = validate(mapping)
++    if validated["version"] == 2:
++        return validated
++
++    migrated = {
++        "version": 2,
++        "timeout_seconds": validated.get("timeout"),
++        "max_retries": validated.get("retries"),
++    }
++    if "endpoint" in validated:
++        migrated["endpoint"] = validated["endpoint"]
++    # Preserve omitted optional legacy values rather than adding null values.
++    migrated = {key: value for key, value in migrated.items() if value is not None}
++    return validate(migrated)
+diff --git a/runtime/parser.py b/runtime/parser.py
+index 4fed194..d359dea 100644
+--- a/runtime/parser.py
++++ b/runtime/parser.py
+@@ -1 +1,21 @@
+-raise NotImplementedError("implement runtime.parser.parse")
++"""Payload parsing for versioned configurations."""
++
++from __future__ import annotations
++
++import json
++from collections.abc import Mapping
++
++from migration.legacy import migrate
++from schema.errors import InvalidTypeError
++
++
++def parse(payload: Mapping[str, object] | str) -> dict[str, object]:
++    """Parse a mapping or JSON object string into validated version 2 config."""
++    if isinstance(payload, str):
++        try:
++            payload = json.loads(payload)
++        except (TypeError, json.JSONDecodeError) as exc:
++            raise InvalidTypeError("payload must be a JSON object") from exc
++    if not isinstance(payload, Mapping):
++        raise InvalidTypeError("payload must be a mapping or JSON object")
++    return migrate(payload)
+diff --git a/runtime/serializer.py b/runtime/serializer.py
+index 9f5ed1f..e6d28db 100644
+--- a/runtime/serializer.py
++++ b/runtime/serializer.py
+@@ -1 +1,23 @@
+-raise NotImplementedError("implement runtime.serializer.serialize")
++"""Canonical JSON serialization for versioned configurations."""
++
++from __future__ import annotations
++
++import json
++from collections.abc import Mapping
++
++from .parser import parse
++
++
++def serialize(mapping: Mapping[str, object]) -> str:
++    """Return *mapping* as canonical, validated version 2 JSON.
++
++    Parsing first applies the public validation and legacy-migration rules.
++    ``ensure_ascii=False`` keeps the JSON text in its UTF-8 form, while the
++    remaining options establish its unique wire representation.
++    """
++    return json.dumps(
++        parse(mapping),
++        ensure_ascii=False,
++        sort_keys=True,
++        separators=(",", ":"),
++    )
+diff --git a/schema/errors.py b/schema/errors.py
+index 4c1c571..aa58b60 100644
+--- a/schema/errors.py
++++ b/schema/errors.py
+@@ -1 +1,19 @@
+-raise NotImplementedError("implement the four public config error classes")
++"""Public exceptions raised when a configuration violates its contract."""
++
++from __future__ import annotations
++
++
++class UnknownVersionError(ValueError):
++    """Raised when ``version`` is not a supported configuration version."""
++
++
++class DuplicateKeyError(ValueError):
++    """Raised when two supplied keys have the same normalized spelling."""
++
++
++class UnknownKeyError(ValueError):
++    """Raised when a key is not part of the selected version's contract."""
++
++
++class InvalidTypeError(ValueError):
++    """Raised when a typed configuration value has an invalid type."""
+diff --git a/schema/model.py b/schema/model.py
+index c191087..7ab197c 100644
+--- a/schema/model.py
++++ b/schema/model.py
+@@ -1 +1,60 @@
+-raise NotImplementedError("implement schema.model.validate")
++"""Validation for the public versioned configuration format."""
++
++from __future__ import annotations
++
++from collections.abc import Mapping
++
++from .errors import DuplicateKeyError, InvalidTypeError, UnknownKeyError, UnknownVersionError
++
++
++_V1_KEYS = frozenset(("version", "timeout", "retries", "endpoint"))
++_V2_KEYS = frozenset(("version", "timeout_seconds", "max_retries", "endpoint"))
++
++
++def _normalize_key(key: object) -> str:
++    """Return the contract spelling for a user-provided key."""
++    if not isinstance(key, str):
++        return str(key).strip().lower().replace("-", "_")
++    return key.strip().lower().replace("-", "_")
++
++
++def _is_integer(value: object) -> bool:
++    # ``bool`` is an ``int`` subclass, but is not a configuration integer.
++    return isinstance(value, int) and not isinstance(value, bool)
++
++
++def validate(mapping: Mapping[str, object]) -> dict[str, object]:
++    """Validate *mapping* as a v1 or v2 configuration and return a new mapping.
++
++    Keys are canonicalized by trimming, lower-casing, and treating hyphens as
++    underscores.  The input mapping is never modified.
++    """
++    if not isinstance(mapping, Mapping):
++        raise InvalidTypeError("configuration must be a mapping")
++
++    normalized: dict[str, object] = {}
++    for key, value in mapping.items():
++        normalized_key = _normalize_key(key)
++        if normalized_key in normalized:
++            raise DuplicateKeyError("duplicate configuration key: " + normalized_key)
++        normalized[normalized_key] = value
++
++    version = normalized.get("version")
++    if not _is_integer(version):
++        raise InvalidTypeError("version must be an integer")
++    if version not in (1, 2):
++        raise UnknownVersionError("unsupported configuration version: " + str(version))
++
++    allowed = _V1_KEYS if version == 1 else _V2_KEYS
++    for key in normalized:
++        if key not in allowed:
++            raise UnknownKeyError("unknown configuration key: " + key)
++
++    numeric_keys = ("timeout", "retries") if version == 1 else ("timeout_seconds", "max_retries")
++    for key in numeric_keys:
++        if key in normalized and not _is_integer(normalized[key]):
++            raise InvalidTypeError(key + " must be an integer")
++    if "endpoint" in normalized and not isinstance(normalized["endpoint"], str):
++        raise InvalidTypeError("endpoint must be a string")
++
++    return dict(normalized)

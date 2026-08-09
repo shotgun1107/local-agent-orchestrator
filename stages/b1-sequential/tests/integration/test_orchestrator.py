@@ -54,6 +54,28 @@ def test_shared_write_is_verified_and_two_tasks_are_sequential(tmp_path: Path, p
     assert (root / "src" / "generated.txt").read_text(encoding="utf-8") == "generated\n"
 
 
+def test_run_level_turn_override_blocks_before_dispatching_past_budget(
+    tmp_path: Path, project_factory
+) -> None:
+    root = project_factory()
+    state = tmp_path / "state"
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        runtime_kind="fake",
+        max_turns_override=1,
+    )
+    try:
+        run_id = orchestrator.start(make_spec(tasks=2))
+    finally:
+        orchestrator.close()
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    assert snapshot["run"]["state"] == "BLOCKED"
+    assert snapshot["run"]["turns_used"] == 1
+    assert [task["state"] for task in snapshot["tasks"]] == ["SUCCEEDED", "READY"]
+
+
 def test_worker_completed_claim_cannot_override_failed_check(tmp_path: Path, project_factory) -> None:
     root = project_factory(check_fails=True)
     _, snapshot = execute(root, tmp_path / "state", make_spec())

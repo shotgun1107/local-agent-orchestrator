@@ -1,0 +1,55 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Produce the frozen three-stage incident analysis artifacts."
+completion_criteria:
+  - id: RC1
+    text: "All public structure checks pass."
+    satisfied_by_tasks: [T1, T2, T3]
+constraints:
+  - "Modify only the seven declared output files."
+  - "Preserve conflicts and uncertainty; do not pick an unsupported truth."
+assumptions: []
+tasks:
+  - key: T1
+    goal: "Create the evidence ledger and uncertainty register from the protected sources and public topic catalog."
+    completion_criteria:
+      - id: TC1
+        text: "The ledger structure check passes."
+        check_names: [ledger_structure]
+    depends_on: []
+    inputs: [{path: "sources/source-a.md"}, {path: "sources/source-b.md"}, {path: "sources/source-c.md"}, {path: "catalog/topics.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "sources/source-a.md", "sources/source-b.md", "sources/source-c.md", "catalog/topics.json", "benchmark_checks/test_ledger_structure.py", "analysis/evidence-ledger.json", "analysis/uncertainties.json"]
+    write_scope: ["analysis/evidence-ledger.json", "analysis/uncertainties.json"]
+    capability_profile: document_change
+    workspace_mode: shared_serial_write
+    check_names: [ledger_structure, diff_check]
+    approval: none
+  - key: T2
+    goal: "Build a timeline and explicit hypotheses using only the evidence and uncertainty IDs from T1."
+    completion_criteria:
+      - id: TC2
+        text: "The timeline structure check passes."
+        check_names: [timeline_structure]
+    depends_on: [T1]
+    inputs: [{path: "analysis/evidence-ledger.json"}, {path: "analysis/uncertainties.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "analysis/evidence-ledger.json", "analysis/uncertainties.json", "benchmark_checks/test_timeline_structure.py", "timeline/events.json", "timeline/hypotheses.json"]
+    write_scope: ["timeline/events.json", "timeline/hypotheses.json"]
+    capability_profile: document_change
+    workspace_mode: shared_serial_write
+    check_names: [timeline_structure, diff_check]
+    approval: none
+  - key: T3
+    goal: "Create the claim index, action plan, and grammar-constrained final report from prior task outputs."
+    completion_criteria:
+      - id: TC3
+        text: "The report structure check passes."
+        check_names: [report_structure]
+    depends_on: [T2]
+    inputs: [{path: "analysis/evidence-ledger.json"}, {path: "analysis/uncertainties.json"}, {path: "timeline/events.json"}, {path: "timeline/hypotheses.json"}]
+    read_scope: ["README.md", "spec/report-contract.md", "analysis/evidence-ledger.json", "analysis/uncertainties.json", "timeline/events.json", "timeline/hypotheses.json", "benchmark_checks/test_report_structure.py", "report/final-report.md", "report/claims.json", "report/action-plan.json"]
+    write_scope: ["report/final-report.md", "report/claims.json", "report/action-plan.json"]
+    capability_profile: document_change
+    workspace_mode: shared_serial_write
+    check_names: [report_structure, diff_check]
+    approval: none

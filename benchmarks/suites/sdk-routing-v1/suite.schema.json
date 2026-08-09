@@ -8,7 +8,11 @@
           "type": "string"
         },
         "stage_id": {
-          "const": "s1-baseline",
+          "enum": [
+            "s1-baseline",
+            "s2-intermediate",
+            "s3-complex-high-risk"
+          ],
           "title": "Stage Id",
           "type": "string"
         }
@@ -34,12 +38,22 @@
       "type": "string"
     },
     "design_revision": {
-      "const": 2,
+      "enum": [
+        2,
+        3,
+        4
+      ],
       "title": "Design Revision",
       "type": "integer"
     },
     "live_turn_ceiling_including_pilot": {
-      "const": 31,
+      "enum": [
+        31,
+        34,
+        43,
+        52,
+        72
+      ],
       "title": "Live Turn Ceiling Including Pilot",
       "type": "integer"
     },

@@ -1,0 +1,55 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Implement the frozen three-stage config migration contract."
+completion_criteria:
+  - id: RC1
+    text: "All public structure and integration checks pass."
+    satisfied_by_tasks: [T1, T2, T3]
+constraints:
+  - "Modify only the six declared implementation files."
+  - "Do not modify protected fixture contracts or checks."
+assumptions: []
+tasks:
+  - key: T1
+    goal: "Implement the v1/v2 schema validator and the four public error classes exactly as spec/config-contract.md defines."
+    completion_criteria:
+      - id: TC1
+        text: "The schema contract check passes."
+        check_names: [schema_contract]
+    depends_on: []
+    inputs: [{path: "spec/config-contract.md"}, {path: "inputs/current.json"}]
+    read_scope: ["README.md", "spec/config-contract.md", "inputs/current.json", "benchmark_checks/test_schema_contract.py", "schema/model.py", "schema/errors.py"]
+    write_scope: ["schema/model.py", "schema/errors.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [schema_contract, diff_check]
+    approval: none
+  - key: T2
+    goal: "Implement idempotent legacy migration and parsing without mutating caller mappings."
+    completion_criteria:
+      - id: TC2
+        text: "The migration and parse check passes."
+        check_names: [migration_parse]
+    depends_on: [T1]
+    inputs: [{path: "schema/model.py"}, {path: "schema/errors.py"}, {path: "inputs/legacy.json"}, {path: "inputs/current.json"}]
+    read_scope: ["README.md", "spec/config-contract.md", "inputs/legacy.json", "inputs/current.json", "benchmark_checks/test_migration_parse.py", "schema/model.py", "schema/errors.py", "migration/legacy.py", "runtime/parser.py"]
+    write_scope: ["migration/legacy.py", "runtime/parser.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [migration_parse, diff_check]
+    approval: none
+  - key: T3
+    goal: "Implement canonical serialization and the public CLI while preserving all previous contracts."
+    completion_criteria:
+      - id: TC3
+        text: "The integration check passes."
+        check_names: [integration_smoke]
+    depends_on: [T2]
+    inputs: [{path: "schema/model.py"}, {path: "schema/errors.py"}, {path: "migration/legacy.py"}, {path: "runtime/parser.py"}]
+    read_scope: ["README.md", "spec/config-contract.md", "inputs/current.json", "benchmark_checks/test_integration.py", "schema/model.py", "schema/errors.py", "migration/legacy.py", "runtime/parser.py", "runtime/serializer.py", "cli/config_cli.py"]
+    write_scope: ["runtime/serializer.py", "cli/config_cli.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [integration_smoke, diff_check]
+    approval: none

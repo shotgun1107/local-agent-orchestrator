@@ -1,0 +1,13 @@
+{
+  "evidence": [
+    {"evidence_id":"E1","source_id":"S-A","topic_id":"T1","status":"confirmed","locator":{"line_start":1,"line_end":1},"exact_excerpt":"Deployment began at 09:00 UTC.","canonical_claim_text":"Deployment began at 09:00 UTC."},
+    {"evidence_id":"E2","source_id":"S-B","topic_id":"T1","status":"confirmed","locator":{"line_start":1,"line_end":1},"exact_excerpt":"The release log records deployment at 09:00 UTC.","canonical_claim_text":"The release log records deployment at 09:00 UTC."},
+    {"evidence_id":"E3","source_id":"S-A","topic_id":"T2","status":"conflicting","locator":{"line_start":2,"line_end":2},"exact_excerpt":"The cache error rate increased after deployment.","canonical_claim_text":"The cache error rate increased after deployment."},
+    {"evidence_id":"E4","source_id":"S-C","topic_id":"T2","status":"conflicting","locator":{"line_start":1,"line_end":1},"exact_excerpt":"Cache error rate was unchanged during the first ten minutes.","canonical_claim_text":"Cache error rate was unchanged during the first ten minutes."},
+    {"evidence_id":"E5","source_id":"S-D","topic_id":"T2","status":"conflicting","locator":{"line_start":1,"line_end":1},"exact_excerpt":"Cache errors briefly decreased immediately after deployment.","canonical_claim_text":"Cache errors briefly decreased immediately after deployment."},
+    {"evidence_id":"E6","source_id":"S-B","topic_id":"T3","status":"uncertain","locator":{"line_start":2,"line_end":2},"exact_excerpt":"The rollout flag state was not captured.","canonical_claim_text":"The rollout flag state was not captured."},
+    {"evidence_id":"E7","source_id":"S-E","topic_id":"T3","status":"uncertain","locator":{"line_start":1,"line_end":1},"exact_excerpt":"The rollout flag audit record is unavailable.","canonical_claim_text":"The rollout flag audit record is unavailable."},
+    {"evidence_id":"E8","source_id":"S-C","topic_id":"T4","status":"confirmed","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Requests in region east returned elevated errors.","canonical_claim_text":"Requests in region east returned elevated errors."},
+    {"evidence_id":"E9","source_id":"S-D","topic_id":"T4","status":"confirmed","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Region east accounted for most affected requests.","canonical_claim_text":"Region east accounted for most affected requests."}
+  ]
+}
