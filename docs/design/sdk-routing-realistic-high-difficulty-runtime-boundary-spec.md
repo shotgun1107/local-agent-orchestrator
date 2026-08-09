@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_8_workspace_acl_transition_observed`
+- 문서 상태: `revision_9_workspace_acl_transition_candidate`
 - 작성일: 2026-08-09
-- 기준 commit: `1b44ad3a48784ecd6d5675703f7371dc13bcc326`
+- 기준 commit: `12af2f1bd01e92f3e2919000993c4add298fef37`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 여섯 번째 model-free 실행은 corrected argv를 사용했지만 P01 dispatch 전 W에 추가된 sandbox-user ACL을 root drift로 오판해 중단됨. J·S identity는 유지됐고 Phase B candidate는 아직 증명되지 않음
-- 이번 교정 범위: `codex sandbox [OPTIONS] [COMMAND]...` exact argv 교정과 W ACL transition 관측 기록. P01~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 여섯 번째 model-free 실행에서 관측된 W 전용 ACL grant를 정상 전이와 임의 scope 확장으로 구분하는 실행 후보를 구현함. 새 Phase B 실행 전이므로 candidate는 아직 증명되지 않음
+- 이번 교정 범위: 초기 ACL 기준선, exact W-only ACE delta, P01 TokenUser SID 결합, J·S exact identity 유지와 model-free 회귀. 새 P01~P08 실행·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
@@ -218,6 +218,7 @@ verifier는 embedded transcript에서 모든 derived field와 실패 코드를 �
 3. `configRequirements/read`가 requirements를 반환하면 `allowedWindowsSandboxImplementations`에 `elevated`가 포함돼야 한다. null은 그대로 기록하되 금지 증거로 보지 않는다.
 4. Controller와 sandbox 안 P01 process가 Win32 `GetCurrentProcess` → `OpenProcessToken(TOKEN_QUERY)` → `GetTokenInformation(TokenUser)`로 얻은 SID를 각각 기록하며 서로 달라야 한다. 공식 계약상 elevated는 dedicated lower-privilege sandbox user, unelevated는 현재 사용자에서 파생한 restricted token을 사용한다.
 5. P01~P08의 sandbox process token-user SID와 canonical process identity hash가 P01과 같고, P06 child도 P06 parent와 같아야 한다.
+6. SDK 준비 뒤 W에 추가된 ACL은 explicit allow ACE 정확히 1개여야 하며, `OICI`, `Modify+Synchronize(0x1301bf)`, object GUID 없음으로 고정한다. 그 ACE의 SID는 P01 TokenUser SID와 같아야 한다. J·S identity와 W owner·group·volume·DACL control은 바뀌면 안 된다.
 
 `WindowsProcessIdentityObservation`은 `token_user_sid`, `integrity_level_sid`, `token_is_elevated_raw`(진단 전용), `token_is_app_container_raw`, 정렬된 `restricted_sid_sha256s`, 정렬된 `capability_sid_sha256s`, 각 Win32 call의 return code·`GetLastError`, 그리고 위 field의 canonical SHA-256을 저장한다. verifier가 canonical hash와 SID 비교를 다시 계산한다.
 
@@ -238,6 +239,7 @@ readiness_response_sha256
 readiness_status_raw: str | null
 controller_process_identity: WindowsProcessIdentityObservation
 P01_process_identity: WindowsProcessIdentityObservation
+workspace_acl_transition: WorkspaceAclTransitionObservation
 dedicated_user_sid_differs_from_controller: bool
 all_probe_process_identities_equal_P01: bool
 P06_parent_child_identity_equal: bool
@@ -248,7 +250,20 @@ derived_elevation_passed: bool
 
 verifier는 두 embedded app-server response, effective config와 process identity의 canonical bytes를 다시 hash한다. requirements가 null이면 `allowed_implementations_raw=null`이어야 하며, non-null이면 embedded response에서 그대로 추출되고 `elevated`를 포함해야 한다. stored `observed_kind`와 `derived_elevation_passed`가 §3.2 알고리즘의 재계산값과 다르면 Schema failure다.
 
-1~5가 모두 맞을 때만 `observed_kind=elevated`다. explicit config가 `unelevated`이거나 successful probe의 token-user SID가 Controller와 같으면 `unelevated`, 그 밖의 누락·API 실패·불일치는 `unknown`이다. `unelevated|unknown`은 항상 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
+1~6이 모두 맞을 때만 `observed_kind=elevated`다. explicit config가 `unelevated`이거나 successful probe의 token-user SID가 Controller와 같으면 `unelevated`, 그 밖의 누락·API 실패·불일치는 `unknown`이다. `unelevated|unknown`은 항상 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
+
+### 3.3 W ACL transition 계약
+
+manifest 생성 직후의 W ACL을 기준선으로 메모리에 보존한다. SDK profile 준비 전에는 W·J·S 모두 manifest identity와 정확히 같아야 한다. 준비 뒤에는 다음 전이만 허용한다.
+
+- W: 기존 ACE 제거·수정 없이 explicit allow ACE 정확히 1개 추가
+- 추가 ACE: `A;OICI;0x1301bf`, object/inherit object GUID 없음, inherited flag 없음
+- W path·owner·group descriptor·volume·DACL control flag: 기준선과 동일
+- J·S path·owner·ACL·volume: manifest와 정확히 동일
+- P01: 추가 ACE의 SID와 실제 sandbox process TokenUser SID가 동일
+- P02~P08: P01에서 결합된 ACL과 SID가 계속 동일
+
+P01 전에는 기준선 상태 또는 위 exact 전이 상태만 허용한다. P01 종료 뒤 전이가 없거나 SID를 결합할 수 없으면 중단한다. 다른 ACE 추가, ACE 제거, J·S 변화, 전이 되돌림은 모두 fail-closed다. 결과 bundle은 초기/활성 ACL hash, DACL control hash, ACE hash multiset, 추가 ACE와 SID, P01 결합 여부를 포함하며 verifier가 전이와 classification hash를 다시 계산한다.
 
 ## 4. 공통 command prefix
 
@@ -534,9 +549,9 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 3. SDK·CLI package metadata hash
 4. embedded profile list·thread/start request/response·`thread/started`를 다시 parse해 actual `:workspace` profile·approval·cwd·sandbox key 부재·thread ID binding 확인
 5. effective config·`:workspace` permission profile·managed requirements identity와 legacy sandbox 부재
-6. `windowsSandbox/readiness`, effective `windows.sandbox`, Controller/probe token-user SID로 elevated classification 재계산
+6. `windowsSandbox/readiness`, effective `windows.sandbox`, Controller/probe token-user SID와 W ACL transition으로 elevated classification 재계산
 7. P01~P08 strict union, exact order와 operation-specific observation에서 각 `derived_passed` 재계산
-8. W/J/S resolved root·volume·ACL identity
+8. 초기 W/J/S resolved root·volume·ACL identity와 W-only ACL transition·P01 SID 결합
 9. probe script·Python identity
 
 하나라도 달라지면 probe 자동 재실행이 아니라 `RUNTIME_BOUNDARY_DRIFT`로 중단한다. 새 probe는 새 manifest·bundle·외부 심사 대상이다.
@@ -549,8 +564,8 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 2. 독립 verifier로 manifest와 bundled executable binding 확인
 3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions=":workspace"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
-5. Controller Win32 token observation 수집
-6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회
+5. Controller Win32 token observation과 준비 뒤 W/J/S ACL transition 수집
+6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회; P01 SID와 W 추가 ACE를 결합한 뒤에만 P02 진행
 7. strict typed 결과와 4-file bundle 생성
 8. 독립 verifier로 embedded JSON·elevated classification·8개 derived result·exact file set·aggregate 재계산
 9. 보고 후 중단
@@ -563,7 +578,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 - 시스템·Desktop App Codex 사용 금지
 - actual `thread/start` raw response의 `activePermissionProfile.id` provenance와 profile list·request·`thread/started` raw Evidence 재검증 계약 확정
 - effective config/readiness/Controller·probe SID에 의한 elevated 재계산 규칙 확정; `TokenIsElevated` 오판 금지
-- config/profile/managed requirements/W/J/S/ACL identity Schema 확정
+- config/profile/managed requirements/W/J/S 초기 identity와 exact W-only ACL transition Schema 확정
 - 8개 probe의 exact argv·예상 결과·discriminated typed observation·재계산 규칙 확정
 - result와 4-file bundle·재검증 조건 확정
 - negative read의 `not_found` 통과 금지
