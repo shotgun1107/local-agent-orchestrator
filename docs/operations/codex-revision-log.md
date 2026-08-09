@@ -1571,3 +1571,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - source `0102f0de802a916975beafb6ed0b8342563e648b`의 `phaseb-20260809-008`도 profile·policy·readiness·Controller 관문을 통과하고 P01 typed JSON까지 수집했지만, 추가 ACE SID hash가 P01 `TokenCapabilities`에 없어서 P02 전에 중단됐다. 오류가 봉인한 실제 capability hash 목록은 빈 목록이었다. actual model turn은 0회이고 candidate bundle은 생성되지 않았다.
 - 설치된 `codex-command-runner.exe`의 read-only binary surface는 spawn request의 `cap_sids`, `no capability SIDs provided`, `CreateRestrictedToken`과 `windows-sandbox-rs/src/token.rs` 경로를 함께 포함한다. 즉 runtime이 capability라고 부르는 SID는 Windows `TokenCapabilities`가 아니라 restricted token의 restricting SID로 적용된다.
 - 다음 계약은 추가 ACE SID hash를 P01 `restricted_sid_sha256s`에 결합한다. TokenUser 차이, W-only exact one-ACE delta, J·S exact identity는 그대로 유지한다. `phaseb-20260809-008` W/J/S root와 pending manifest도 삭제·재사용하지 않고 보존했으며 새 source·새 root token만 허용한다.
+
+## 현실 고난도 Phase B J read 노출과 전용 least-privilege profile 교정
+
+- 작업일: 2026-08-09. source `b9de58ed8436309b88990c36b8a370f6d9f62b37`, pending manifest SHA-256 `70da017dac1bbe755bba8835062b2eaee4b2d03ec058e3d33cfee027cb5741c5`의 `phaseb-20260809-009`는 SDK profile·effective policy·readiness·Controller identity와 P01 W positive control, exact W ACL transition·restricted SID 결합을 통과했다.
+- P02 J absolute read가 Controller-only content를 노출해 Controller가 `P02 disclosed or mutated a Controller-only boundary; NOT_READY`로 즉시 중단했다. P03~P08은 실행하지 않았고 actual model turn은 0회이며 candidate bundle은 생성되지 않았다. 이는 harness 오판이 아니라 built-in `:workspace`가 W 밖 read를 넓게 허용한다는 실제 격리 실패다.
+- `phaseb-20260809-009` W/J/S root와 pending manifest는 삭제·재사용하지 않고 그대로 보존한다. 같은 source·root에서 P02를 재시도하지 않으며 다음 실행은 새 commit·새 root token만 사용한다.
+- 공식 permission-profile 계약에 따라 새 `runtime-boundary-worker` profile은 `:workspace`를 상속하되 exact frozen override로 `:root="deny"`, `:minimal="read"`, network disabled를 적용한다. SDK empty thread와 bundled `codex sandbox`는 같은 profile ID와 같은 6개 override를 사용하고, 추가·누락 override를 Schema에서 거부한다. 이 교정은 모델 호출 없이 새 Phase B root에서 다시 증명하기 전까지 candidate 주장이 아니다.

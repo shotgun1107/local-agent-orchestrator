@@ -41,8 +41,16 @@ PINNED_SDK_DISTRIBUTION = "openai-codex"
 PINNED_CLI_DISTRIBUTION = "openai-codex-cli-bin"
 PINNED_CODEX_VERSION = "0.144.4"
 PINNED_CLI_TARGET = "x86_64-pc-windows-msvc"
-PERMISSION_PROFILE_ID = ":workspace"
+PERMISSION_PROFILE_ID = "runtime-boundary-worker"
 WINDOWS_SANDBOX_KIND = "elevated"
+RUNTIME_BOUNDARY_CONFIG_OVERRIDES = (
+    'default_permissions="runtime-boundary-worker"',
+    'permissions.runtime-boundary-worker.extends=":workspace"',
+    'permissions.runtime-boundary-worker.filesystem.":minimal"="read"',
+    'permissions.runtime-boundary-worker.filesystem.":root"="deny"',
+    "permissions.runtime-boundary-worker.network.enabled=false",
+    'windows.sandbox="elevated"',
+)
 PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list"
 THREAD_STARTED_NOTIFICATION_METHOD = "thread/started"
 EXACT_PROBE_IDS = tuple(f"P{number:02d}" for number in range(1, 9))
@@ -383,9 +391,9 @@ class RuntimeIdentity(StrictModel):
 
 
 class ConfigurationExpectation(StrictModel):
-    default_permissions: Literal[":workspace"]
-    permission_profile_name: Literal[":workspace"]
-    config_overrides: list[str] = Field(min_length=2)
+    default_permissions: Literal["runtime-boundary-worker"]
+    permission_profile_name: Literal["runtime-boundary-worker"]
+    config_overrides: list[str] = Field(min_length=6, max_length=6)
     include_managed_config: Literal[True]
     legacy_sandbox_settings_present: Literal[False]
     sdk_thread_sandbox_argument_omitted: Literal[True]
@@ -396,12 +404,10 @@ class ConfigurationExpectation(StrictModel):
 
     @model_validator(mode="after")
     def required_overrides_are_present(self) -> "ConfigurationExpectation":
-        required = {
-            'default_permissions=":workspace"',
-            'windows.sandbox="elevated"',
-        }
-        if not required.issubset(self.config_overrides):
-            raise ValueError("required profile and Windows sandbox overrides are missing")
+        if self.config_overrides != list(RUNTIME_BOUNDARY_CONFIG_OVERRIDES):
+            raise ValueError(
+                "runtime-boundary profile overrides must be the exact frozen least-privilege set"
+            )
         override_keys = {
             value.split("=", 1)[0].strip().lower() for value in self.config_overrides
         }
@@ -715,8 +721,8 @@ class SdkProfileProvenanceObservation(StrictModel):
     config_identity_sha256: Sha256
     initialize_experimental_api: bool
     permission_profile_list_request_count: int = Field(ge=0)
-    workspace_permission_profile_match_count: int = Field(ge=0)
-    workspace_permission_profile_allowed: bool
+    selected_permission_profile_match_count: int = Field(ge=0)
+    selected_permission_profile_allowed: bool
     thread_start_request_count: int = Field(ge=0)
     thread_started_notification_count: int = Field(ge=0)
     turn_start_request_count: int = Field(ge=0)
@@ -1367,7 +1373,7 @@ def _probe_command_argvs(
         "--cd",
         str(W_path),
         "--permission-profile",
-        PERMISSION_PROFILE_ID,
+        configuration.permission_profile_name,
         "--include-managed-config",
     ]
     for override in configuration.config_overrides:
@@ -1458,12 +1464,7 @@ def build_runtime_boundary_manifest(
     configuration = ConfigurationExpectation(
         default_permissions=PERMISSION_PROFILE_ID,
         permission_profile_name=PERMISSION_PROFILE_ID,
-        config_overrides=sorted(
-            [
-                'default_permissions=":workspace"',
-                'windows.sandbox="elevated"',
-            ]
-        ),
+        config_overrides=list(RUNTIME_BOUNDARY_CONFIG_OVERRIDES),
         include_managed_config=True,
         legacy_sandbox_settings_present=False,
         sdk_thread_sandbox_argument_omitted=True,
@@ -1892,8 +1893,10 @@ def collect_sdk_profile_provenance(
             {
                 "cwd": manifest.W.resolved_absolute_path,
                 "approvalPolicy": manifest.configuration.approval_policy_wire_value,
-                "config": {"default_permissions": PERMISSION_PROFILE_ID},
-                "permissions": PERMISSION_PROFILE_ID,
+                "config": {
+                    "default_permissions": manifest.configuration.default_permissions
+                },
+                "permissions": manifest.configuration.permission_profile_name,
                 "ephemeral": True,
             },
         )
@@ -2585,7 +2588,7 @@ def derive_sdk_profile_provenance(
         "permissionProfile/list response",
     )
     profile_data = profile_list_result.get("data")
-    workspace_profile_matches = (
+    selected_profile_matches = (
         [
             item
             for item in profile_data
@@ -2594,9 +2597,9 @@ def derive_sdk_profile_provenance(
         if isinstance(profile_data, list)
         else []
     )
-    workspace_profile_allowed = (
-        len(workspace_profile_matches) == 1
-        and workspace_profile_matches[0].get("allowed") is True
+    selected_profile_allowed = (
+        len(selected_profile_matches) == 1
+        and selected_profile_matches[0].get("allowed") is True
     )
 
     thread_params: dict[str, JsonValue] = {}
@@ -2677,8 +2680,8 @@ def derive_sdk_profile_provenance(
         ("CHATGPT_ACCOUNT_NOT_PROVEN", account_type == "chatgpt"),
         ("PERMISSION_PROFILE_LIST_REQUEST_COUNT", len(profile_list_requests) == 1),
         ("PERMISSION_PROFILE_LIST_RESPONSE_NOT_PROVEN", profile_list_response_ok),
-        ("WORKSPACE_PROFILE_NOT_UNIQUE", len(workspace_profile_matches) == 1),
-        ("WORKSPACE_PROFILE_NOT_ALLOWED", workspace_profile_allowed),
+        ("SELECTED_PROFILE_NOT_UNIQUE", len(selected_profile_matches) == 1),
+        ("SELECTED_PROFILE_NOT_ALLOWED", selected_profile_allowed),
         ("THREAD_START_REQUEST_COUNT", len(thread_requests) == 1),
         (
             "THREAD_START_RESPONSE_NOT_PROVEN",
@@ -2713,8 +2716,8 @@ def derive_sdk_profile_provenance(
         "account_type_raw": account_type,
         "initialize_experimental_api": initialize_experimental,
         "permission_profile_list_request_count": len(profile_list_requests),
-        "workspace_permission_profile_match_count": len(workspace_profile_matches),
-        "workspace_permission_profile_allowed": workspace_profile_allowed,
+        "selected_permission_profile_match_count": len(selected_profile_matches),
+        "selected_permission_profile_allowed": selected_profile_allowed,
         "thread_start_request_count": len(thread_requests),
         "thread_started_notification_count": len(thread_started_notifications),
         "turn_start_request_count": len(turn_requests),
@@ -3152,9 +3155,9 @@ def effective_policy_failure_reason_codes(
 
     codes: list[str] = []
     if projection.default_permissions != PERMISSION_PROFILE_ID:
-        codes.append("DEFAULT_PERMISSIONS_NOT_WORKSPACE")
+        codes.append("DEFAULT_PERMISSIONS_NOT_RUNTIME_BOUNDARY_PROFILE")
     if projection.permission_profile_id != PERMISSION_PROFILE_ID:
-        codes.append("PERMISSION_PROFILE_NOT_WORKSPACE")
+        codes.append("PERMISSION_PROFILE_NOT_RUNTIME_BOUNDARY_PROFILE")
     if projection.windows_sandbox != WINDOWS_SANDBOX_KIND:
         codes.append("WINDOWS_SANDBOX_NOT_ELEVATED")
     if projection.legacy_sandbox_mode_present:
@@ -3727,7 +3730,7 @@ def execute_runtime_boundary_probe(
             profile,
         )
         raise RuntimeBoundaryError(
-            "SDK :workspace profile provenance was not proven; "
+            "SDK runtime-boundary-worker profile provenance was not proven; "
             f"failure evidence: {failure_path}"
         )
     policy, requirements, readiness = collect_effective_policy_surfaces(
@@ -3744,7 +3747,7 @@ def execute_runtime_boundary_probe(
             readiness,
         )
         raise RuntimeBoundaryError(
-            "effective :workspace/elevated policy was not proven; "
+            "effective runtime-boundary-worker/elevated policy was not proven; "
             f"failure evidence: {failure_path}"
         )
     if _readiness_status(readiness) != "ready":
