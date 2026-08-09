@@ -1,13 +1,14 @@
 # 현실 고난도 비교 — Phase D snapshot·checker 후보 명세
 
-- 문서 상태: `revision_1_external_review_candidate`
-- 설계 revision: 1
+- 문서 상태: `revision_2_external_rereview_candidate`
+- 설계 revision: 2
 - 작성일: 2026-08-09
 - Phase C 기준 commit: `c4df661f608a7580f28738687e1c47100b2e5093`
 - 상위 비교 명세: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
-- 구현 경계 명세: [현실 고난도 구현 후보 명세 revision 13](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
+- 구현 경계 명세: [현실 고난도 구현 후보 명세 revision 14](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - Phase C 결과: [Phase C model-free 구현 결과](../experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md)
-- 현재 권한: 이 문서와 읽기 전용 심사 자료 작성만 허용
+- revision 1 외부 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-r1.md) — P0 0건, P1 3건, P2 2건
+- 현재 권한: revision 2 문서와 읽기 전용 closure 심사 자료 작성만 허용
 - 현재 금지: snapshot 추출·익명화, fixture/reference/checker 구현, Judge probe, live Plan, model turn
 
 ## 1. 목적
@@ -101,10 +102,24 @@ Correct issues you can substantiate and return the same ResultEnvelope schema.
 - 실제 base commit: `dbd84422a315b8bc34d0fc2583862f5add8c7c44`
 - 실제 reference commit: `56c91334fb32c4699d11ef80769831f14a0431d6`
 - 실제 역사: S1 전용 routing 경로를 S2까지 확장하면서 기존 S1 Plan·Measurement·seal·export 의미를 유지한 작업
-- 실제 diff 규모: 91 files, 5,675 insertions, 261 deletions
+- 실제 raw Git diff 규모: 91 files, 5,675 insertions, 261 deletions
 - 주요 영역: suite/manifest, 두 fixture, routing Plan/runtime, post-hoc policy, tests, 운영 문서
 
 이 challenge가 묻는 것은 “파일을 많이 만들 수 있는가”가 아니라, 초기 stage 계약을 이후 Plan·runtime·policy·export까지 일관되게 전달하면서 기존 stage의 bytes와 의미를 보존할 수 있는가다.
+
+raw 91-file 수치는 challenge 구조 자격이나 예상 변경 파일 수의 근거로 직접 사용하지 않는다. Phase D artifact build는 `r-change-composition.json`을 만들고 모든 changed path를 다음 중 정확히 하나로 분류한다.
+
+- `authored_source`
+- `authored_test`
+- `authored_spec_or_operator_contract`
+- `generated_schema_or_manifest`
+- `golden_or_export_mirror`
+- `historical_result_or_evidence`
+- `out_of_scope`
+
+각 record는 `path`, `category`, `semantic_group_id`, `canonical_source_paths[]`, `producer_or_derivation`, `counted_for_structure`를 가진다. generated 파일과 golden/export mirror는 그 원본 authored relation과 별도로 세지 않으며 `counted_for_structure=false`다. 같은 의미 관계의 source·generated·golden 사본은 `semantic_group_id` 하나로 묶고 한 번만 센다.
+
+구조 자격은 raw 91-file 수가 아니라 중복 제거된 authored semantic group과 실제 다중 산출물 관계로 판정한다. 이 분리 뒤 상위 명세의 변경 규모·영역 요건을 충족하지 못하면 raw 파일 수로 보충하지 않고 명시적 구조 예외 심사 또는 `CHALLENGE_NOT_READY`를 요구한다.
 
 #### Worker snapshot 구성 계획
 
@@ -173,7 +188,8 @@ Phase D 구현은 원본 workspace를 직접 수정·실행하지 않는다.
 - anonymization mapping hash
 - W tree aggregate hash
 - reference patch hash
-- J bundle aggregate hash
+- versioned J source bundle aggregate hash
+- protected runtime J binding hash
 
 원본과 익명 snapshot 사이의 동등성을 사람이 설명하는 문서만으로 통과시키지 않는다. 정해진 public·property 검사를 base/reference 양쪽에 재생해 결과를 봉인한다.
 
@@ -206,14 +222,72 @@ Phase D 구현은 원본 workspace를 직접 수정·실행하지 않는다.
 | `I02` | I01 | 실제 SDK active profile provenance와 legacy argument 부재 결합 | runtime profile evidence |
 | `I03` | I01,I02 | frozen command argv와 effective config 재계산 | command/config contract |
 | `I04` | I01,I03 | W ACL identity와 capability transition 교정 | W boundary |
-| `I05` | I01,I04 | inherited ACE를 제거한 Controller-only J/S 경계 | J/S boundary |
-| `I06` | I03,I05 | symlink·junction escape, unreadable target cleanup과 lexical argv 안정화 | link boundary |
-| `I07` | I02,I05 | P08 metadata nondisclosure와 typed result 의미 교정 | state evidence |
+| `I05` | I01,I04 | 공개 접근 관측에서 W의 허용 동작은 유지되지만 보호된 J/S에 대한 Worker read/write 결과 또는 실행 전후 보호 root identity가 계약과 어긋나는 증상을 분석하고, 공개 경계 불변식을 모두 만족하도록 교정한다. | J/S boundary evidence |
+| `I06` | I03,I05 | 동일 보호 대상을 가리키는 직접 경로와 W 내부 link/path 변형이 서로 다른 접근 결과를 내거나 실행 뒤 임시 경로 상태·frozen command identity가 달라지는 증상을 분석하고, 모든 공개 case가 같은 접근 차단과 실행 후 상태 불변식을 만족하도록 교정한다. | link/path boundary evidence |
+| `I07` | I02,I05 | 차단된 state 작업의 public typed observation과 Controller가 독립적으로 확인한 실행 전후조건이 서로 어긋나는 증상을 분석하고, 공개 state-access 계약과 verifier 재계산이 일치하도록 교정한다. | state boundary evidence |
 | `I08` | I01,I06,I07 | P01~P08 재계산·exact bundle·회귀·incident report 결합 | verified candidate evidence |
 
 - 최장 의존 깊이: 7
 - fan-in Task: I03, I04, I05, I06, I07, I08
 - profile provenance나 ACL 판단 오류가 후속 probe·bundle 결론 전체로 전파되는 실제 경로를 가진다.
+
+### 5.3 Profile I Worker-visible goal 경계
+
+I05~I07의 Worker-visible goal과 completion criteria는 증상과 공개 불변식만 제공한다. 다음 구현·원인 표현은 TaskEnvelope, W 문서, developer-visible 검사, Controller Check stdout/stderr와 B1 feedback에 넣지 않는다.
+
+- inherited ACE 제거 또는 inheritance flag의 정답 상태
+- 특정 ACL 수정 순서나 exact API
+- unreadable-target cleanup의 정답 구현
+- no-follow, `lexists` 또는 그와 동등한 reference 구현 선택
+- lexical argv가 reference fix라는 결론
+- P08 metadata nondisclosure의 reference field 변환
+- reference diff, 015 final bundle, 이후 root-cause 설명
+- hidden property ID, expected derived pass와 expected answer
+
+Worker에게 공개할 수 있는 것은 다음 invariant뿐이다.
+
+- W의 선언된 positive read/write는 유지된다.
+- J/S에 대한 Worker read/write는 공개 probe 전체에서 성공하지 않는다.
+- 직접 경로와 공개 link/path 변형은 같은 보호 결과를 가져야 한다.
+- 실행 전후 보호 root identity와 공개 frozen command identity가 변하지 않는다.
+- 차단된 state operation의 public result는 공개 Schema가 허용한 필드와 값 범위를 넘지 않는다.
+- stored result와 독립 verifier 재계산이 일치해야 한다.
+
+J/S는 논리 이름으로만 공개한다. runtime absolute path, private-parent basename, sentinel 이름·내용, raw SID와 runtime identity는 Worker packet에 넣지 않는다.
+
+### 5.4 Worker information-boundary 검증
+
+각 snapshot은 다음 두 J-only 파일을 가진다.
+
+- `worker-information-boundary.json`
+- `solution-leakage-catalog.json`
+
+`worker-information-boundary.json`은 모든 Worker-visible Task goal, completion criteria, declared input, W file, public check command·stdout/stderr Schema와 B1 feedback template의 path/hash/provenance를 열거한다. 허용 provenance는 `base_snapshot`, `public_requirement`, `public_observation`뿐이다. reference commit·patch, final bundle, hidden checker 또는 이후 incident 결론에서 유래한 byte가 하나라도 있으면 challenge를 거부한다.
+
+`solution-leakage-catalog.json`은 task별로 다음을 가진다.
+
+- `fact_id`
+- `task_ids[]`
+- `source_evidence_sha256`
+- `forbidden_normalized_literals[]`
+- `forbidden_structured_keys[]`
+- `reference_only_hashes[]`
+
+검증기는 UTF-8 decode, Unicode NFC, LF, slash와 case normalization 뒤 다음 전체 표면을 검사한다.
+
+- W의 모든 text·JSON·YAML
+- Task goal과 completion criteria
+- declared input metadata
+- developer-visible check stdout/stderr
+- Controller Check stdout/stderr
+- canonical `feedback_json`
+- 최종 B1 feedback prompt
+
+frozen base snapshot과 당시 public observation에 원래 존재한 byte는 그 exact path/hash와 선행 provenance를 독립적으로 증명할 때만 그대로 보존할 수 있다. 이를 이후 reference 결론으로 요약·강조·재배치할 수 없다. Task goal·completion criteria·public check output·feedback에는 승인된 exact goal bytes와 public invariant만 예외다. 이 조건 밖의 forbidden literal, hidden key, reference-only hash 또는 J-derived provenance가 발견되면 redaction 후 계속하지 않고 `CHALLENGE_INVALID`로 중단한다.
+
+Controller Check 결과가 solution fact를 포함하면 그 결과를 B1에 보내지 않는다. SS1에는 Controller Check 결과 자체를 보내지 않는다.
+
+직접 복사 경로를 검증하기 위해 J-only reference, checker, expected result와 final bundle에 실행별 random canary를 넣은 fixture를 만들고, W·TaskEnvelope·public check output·feedback 어디에도 canary가 나타나지 않아야 한다.
 
 ## 6. 세 검사 계층
 
@@ -232,9 +306,9 @@ Phase D 구현은 원본 workspace를 직접 수정·실행하지 않는다.
 
 ### 6.3 judge-only property
 
-- terminal 이후 Controller-only J에서만 실행한다.
+- terminal 이후 protected runtime J에서만 실행한다.
 - Variant ID, 실행 순서, thread 수, B1 retry 여부를 checker 입력에서 제거한다.
-- 입력은 W final tree hash, fixture ID, property catalog/DAG/checker identity뿐이다.
+- 입력은 W final tree hash, fixture ID, property catalog/DAG/checker identity와 검증된 J source/runtime binding hash뿐이다.
 - checker는 점수 하나가 아니라 Phase C `PropertyEvaluationEnvelope`를 반환한다.
 - 결정론적 검사만 사용하고 LLM rater는 `not_applicable`로 고정한다.
 
@@ -278,6 +352,33 @@ Phase D 구현은 원본 workspace를 직접 수정·실행하지 않는다.
 - exception, timeout, Schema 오류, stdout/stderr truncation, checker의 W mutation은 top-level `checker_error`
 - parser 하나의 오류를 모든 semantic property의 `fail`로 복제하지 않는다.
 
+### 7.4 구조화된 계약만의 결정론 평가
+
+`R-P08-OPERATOR-CONTRACT`는 자유문서의 문체·설명 품질·완전성을 평가하지 않는다. 다음 machine-readable relation만 평가한다.
+
+- command ID와 argv
+- precondition
+- allowed success exit code
+- failure exit-code/reason-code mapping
+- allowed source/terminal state
+- stop condition과 downstream-dispatch 허용 여부
+- 구현 symbol·public Schema reference
+
+정본은 `operator-contract.json`이다. 문서에 표시되는 명령·상태 표는 이 정본에서 결정론적으로 생성되거나 byte-identical하게 대조한다. 그 밖의 자유문 prose는 property pass/fail, severity, triage 또는 route 근거에 사용하지 않는다.
+
+`I-P10-EVIDENCE-CLAIM-ALIGNMENT`도 자연어 원인 설명의 품질을 평가하지 않는다. 정본은 다음 strict record의 `incident-claims.json`이다.
+
+- `claim_id`
+- `status: confirmed | excluded | unknown`
+- `reason_code`
+- `evidence_ids[]`
+- `observation_sha256s[]`
+- `contradiction_ids[]`
+
+checker는 ID 존재, 정렬·중복, evidence status, contradiction 관계와 사전 등록된 claim/evidence transition table만 검사한다. evidence가 허용하지 않는 `confirmed`·`excluded` 승격은 실패다. Markdown incident report의 자유문은 구조화 claim ID 참조 유효성만 검사하며 서술 품질·설득력·문체는 평가하지 않는다.
+
+두 property 모두 LLM rater는 `not_applicable`이며 자유문 판정은 critical/major 결과나 route에 들어가지 않는다.
+
 ## 8. Information dependency map
 
 각 property는 다음 strict record를 가진다.
@@ -303,14 +404,19 @@ Profile R은 public spec·legacy tests·existing serializer/Plan code를, Profil
 
 ## 9. Reference·positive evidence
 
-각 J bundle에는 다음 exact 파일을 둔다.
+각 versioned J source bundle에는 다음 exact 파일을 둔다.
 
 ```text
 challenge-eligibility.json
+r-change-composition.json
 property-catalog.json
 prerequisite-dag.json
 information-dependency-map.json
+worker-information-boundary.json
+solution-leakage-catalog.json
 checker/check_properties.py
+operator-contract.json
+incident-claims.json
 reference.patch
 negative-mutations/*.patch
 evidence/pristine.json
@@ -334,22 +440,71 @@ Phase D 후보가 되려면:
 - R: cross-stage ID 허용, reserve 이전, verifier의 stage binding 제거, source YAML line-ending drift, 별도 lifecycle 복제
 - I: legacy sandbox 동시 전달, inherited J/S ACE 유지, `Path.exists()` 기반 junction cleanup, S metadata 공개 요구, stored pass 신뢰, environment sentinel 노출
 
+R-P08 mutation은 argv, exit-code map, state 또는 stop-condition의 구조화 관계만 변경한다. I-P10 mutation은 evidence ID, observation hash, status transition 또는 contradiction 관계만 변경한다. 자유문 표현만 바꾼 mutation은 property failure 표본으로 사용하지 않는다.
+
 mutation은 Phase D 구현 중 목표 property 외 failure가 생기면 checker를 느슨하게 바꾸지 않고 mutation 또는 property prerequisite 설계를 수정한다.
 
 ## 10. Judge filesystem·network 경계
 
 ### 10.1 논리 root
 
-- W: final Worker workspace, Judge는 read-only
-- J: checker·catalog·DAG·reference·positive evidence, Judge는 read-only
-- O: Judge result 전용, write 가능
+- W: final Worker workspace. Worker 실행 중에는 Task scope에 따른 read/write를 허용하고, Judge 실행 중에는 frozen read-only다.
+- J source: repository에 versioned된 checker·catalog·DAG·reference·positive evidence source bundle. runtime root가 아니다.
+- J runtime: 매 checker invocation마다 J source에서 byte-exact 복사하는 별도 opaque protected root. Judge는 exact allowlist read/execute만 가능하다.
+- O: checker invocation마다 새로 만드는 opaque empty runtime root. Judge에 exact read/write를 허용한다.
 - S: Plan·state·seal, Judge 접근 금지
+
+O는 재사용하지 않는다. 시작 시 file count 0과 empty-tree hash를 Controller가 확인하고, 종료 후 허용된 exact output 파일 외 항목이 있으면 `checker_error`다. write-only O는 현재 permission surface에서 독립 증명하지 않으며 revision 2는 fresh per-invocation read/write O를 정본으로 사용한다.
+
+W, J runtime, O, S와 각각의 opaque parent는 서로 다른 root여야 하며 상하위·reparse·junction 관계를 가질 수 없다. 허용 leaf까지의 traverse 이외에 parent listing, sibling discovery, root rename/delete 또는 ACL 변경은 허용하지 않는다.
+
+### 10.1.1 Versioned J source bundle과 protected runtime J
+
+repository의 versioned J source bundle 경로는 다음과 같다.
+
+```text
+benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/<snapshot-id>/
+```
+
+이 경로는 재현 가능한 Controller source artifact이며 runtime J가 아니다. Worker-readable root 또는 Judge read root로 사용하지 않는다.
+
+각 checker invocation 전에 Controller는 다음 순서로 runtime J를 만든다.
+
+1. frozen source commit의 Git object/tree에서 versioned J source bundle을 기존 safe extraction 경로로 읽는다. ambient working tree를 복사하지 않는다.
+2. repository 밖의 별도 opaque private parent 아래, 이전에 존재하지 않던 새 runtime J root를 만든다.
+3. private parent와 runtime J에 Phase B에서 증명한 Controller-only protected ACL을 적용하고 검증한다.
+4. normalized relative file set을 byte-exact 복사한다.
+5. symlink, junction, reparse point, gitlink, ADS, case-fold 중복, `..`, 누락·추가 파일을 거부한다.
+6. source와 runtime 각각의 정렬된 path·type·size·SHA-256 manifest와 aggregate를 계산한다.
+7. 두 file set과 모든 raw byte가 같은지 별도 계산으로 검증한다.
+8. 일치한 runtime J만 Judge profile의 J read root로 사용한다.
+
+binding record는 다음을 포함한다.
+
+- `source_commit`
+- `j_source_tree_oid`
+- `j_source_bundle_manifest_sha256`
+- `j_source_bundle_aggregate_sha256`
+- `j_runtime_bundle_aggregate_sha256`
+- `j_copy_manifest_sha256`
+- `source_runtime_relative_paths_equal`
+- `source_runtime_bytes_equal`
+- `runtime_j_root_identity_sha256`
+- `runtime_j_parent_identity_sha256`
+- `runtime_j_acl_sha256`
+- `j_source_runtime_binding_sha256`
+
+마지막 hash는 앞선 필드의 canonical JSON hash다. source/runtime aggregate, relative path set 또는 raw byte가 다르면 dispatch 전에 `CHALLENGE_NOT_READY`로 중단한다.
+
+filesystem·network typed probe와 실제 property checker는 항상 protected runtime J를 대상으로 실행한다. repository의 J source path를 probe하거나 fallback J로 사용하는 경로는 금지한다. J source checkout은 Judge 허용 root에 포함하지 않고, 그 absolute path를 Judge 환경변수·process argument 또는 Worker 표면에 넣지 않는다. runtime J의 위치는 frozen Controller invocation으로 Judge에만 전달하고 binding record에 결합한다. runtime J의 absolute path와 basename은 Worker prompt, W, Worker 환경변수와 process argument에 넣지 않는다.
+
+reference replay는 Controller가 별도 disposable W에 적용한다. reference bytes 자체를 live W나 Worker prompt에 넣지 않는다.
 
 ### 10.2 runtime 계약 후보
 
 - permission profile ID: `realistic-property-judge-v1`
 - `:root=deny`, `:minimal=read`
-- exact W/J read, exact O write, S deny
+- exact W/J runtime read, fresh O read/write, S deny
 - network disabled
 - approval `deny_all`
 - legacy sandbox argument omitted
@@ -360,7 +515,38 @@ mutation은 Phase D 구현 중 목표 property 외 failure가 생기면 checker�
 
 이 profile이 실제 Codex/Windows permission surface로 표현 가능한지는 외부 심사와 Phase D model-free probe가 증명해야 한다. 이름만 만들고 통과시키지 않는다.
 
-### 10.3 no-network proof
+### 10.3 filesystem operation matrix
+
+Controller는 존재하는 read/write/delete/replace sentinel과 존재하지 않는 create target을 준비하고, Judge parent와 그 child process에서 같은 typed operation matrix를 각각 한 번 실행한다.
+
+| root | operation | expected |
+|---|---|---|
+| W | enumerate/read | success, frozen bytes 일치 |
+| W | create/write/replace/delete | access denied, mutation 0 |
+| J runtime | exact allowlisted enumerate/read/execute | success, frozen bytes 일치 |
+| J runtime | create/write/replace/delete | access denied, mutation 0 |
+| O fresh | enumerate/create/write/read/replace/delete | success, O 밖 mutation 0 |
+| S | enumerate/read/create/write/replace/delete | access denied, disclosed entry/content bytes 0 |
+
+negative operation에서 `not_found`와 timeout은 합격이 아니다. Controller가 target 또는 create parent의 존재를 직전·직후 확인한 상태에서 OS access-denied 계열, disclosed content/entry bytes 0과 mutation 0을 요구한다. `..`, normalized path, drive/common-parent enumeration, symlink·junction·hardlink·ADS 변형도 같은 matrix를 만족해야 한다.
+
+parent와 child는 각 operation의 normalized result class, content/disclosure bytes, mutation result와 effective sandbox identity가 같아야 한다. 다르면 `CHALLENGE_NOT_READY`다. child는 parent와 같은 TokenUser와 restricted SID를 가져야 하고 detached child는 기존 Judge process-group 회수 계약에 따라 실패한다.
+
+Controller는 matrix 실행 전후에 W, J runtime, O와 S의 다음 identity를 다시 계산한다.
+
+- resolved root와 opaque parent identity
+- volume GUID/serial과 file identity
+- reparse tag 부재
+- owner와 protected ACL/DACL control hash
+- 정렬된 relative path set
+- 각 file size·SHA-256
+- aggregate tree SHA-256
+
+J runtime 또는 S의 pre/post root·parent·ACL·tree·file hash가 하나라도 다르면 `checker_error + EVALUATION_FAILURE`다. W는 Judge 실행 전 frozen final tree와 실행 후 tree가 byte-identical해야 한다. O는 root·parent·volume/file identity, ACL과 reparse 상태가 pre/post 동일해야 하며, empty precondition 뒤 exact output allowlist만 남아야 한다. 임시 파일, reparse point, hardlink 또는 추가 파일이 있으면 `checker_error`다.
+
+Judge 실행 중 S는 불변이다. Judge 종료와 위 검증이 끝난 뒤에만 Controller가 O의 canonical result를 기존 atomic-write 경로로 S에 가져온다.
+
+### 10.4 no-network proof
 
 Controller가 loopback one-shot listener를 준비하고 endpoint identity를 pending manifest에 기록한다. Judge와 그 child process가 같은 endpoint에 연결을 시도한다.
 
@@ -370,7 +556,7 @@ Controller가 loopback one-shot listener를 준비하고 endpoint identity를 pe
 - Judge나 child가 연결되면 즉시 `checker_error + EVALUATION_FAILURE`
 - network probe 자체가 불안정하거나 error class를 분류할 수 없으면 `CHALLENGE_NOT_READY`
 
-W/J positive read, O positive write, W write denial, S read denial, child-process 동일 경계도 같은 typed probe에 포함한다.
+filesystem matrix, no-network와 process identity는 새 Controller나 새 probe script를 만들지 않고 기존 `runtime_boundary.py`와 `probe_runtime_boundary.py`의 Judge 전용 typed mode로 검증한다. 기존 Phase B v1 artifact·Schema와 Candidate 015 verifier 의미는 변경하지 않는다.
 
 ## 11. 구현 파일 책임 후보
 
@@ -384,8 +570,8 @@ W/J positive read, O positive write, W write denial, S read denial, child-proces
   - J bundle/hash, isolated subprocess, no-network proof와 envelope 결합
 - 새 W fixture root
   - `benchmarks/fixtures/routing-realistic-high-difficulty-v1/{realistic-compat-migration-001,realistic-incident-repair-001}`
-- 새 J root
-  - `benchmarks/judge-only/sdk-routing-realistic-high-difficulty-v1/<snapshot-id>/`
+- 새 versioned J source bundle
+  - `benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/<snapshot-id>/`
 - 표적 tests
   - `test_realistic_phase_d_fixtures.py`
   - `test_realistic_property_checker.py`
@@ -398,16 +584,28 @@ W/J positive read, O positive write, W write denial, S read denial, child-proces
 1. source commit/tree와 allowlist에서 W를 byte-identical하게 두 번 재구성
 2. anonymization secret scan과 raw ID/path 부재
 3. Task graph 8개, depth 7, fan-in과 실제 predecessor artifact 사용 검증
-4. W에 J/S path·checker·reference·expected answer 부재
+4. W에 J/S path·checker·reference·expected answer 부재와 Worker information-boundary/leakage catalog 검증
 5. pristine 표적 failure
 6. reference positive replay 전체 pass
 7. property별 representative mutation과 prerequisite isolation
 8. catalog/DAG exact ID·order·cycle·unknown ID 거부
 9. SS1/B1 label·실행 순서·Check history를 제거한 같은 W 입력의 checker bytes/hash parity
 10. checker exception·timeout·Schema·truncation·workspace mutation 분리
-11. Judge W/J read, O write positive control과 W write·S read negative control
-12. Judge/child network negative control, auth 환경 부재, interpreter/source/dependency drift 거부
-13. 별도 process에서 bundle·self-hash 재검산
+11. raw diff의 모든 path가 정확히 한 composition category에 속하고 같은 semantic group을 둘 이상 세지 않음
+12. generated/golden mirror가 canonical source와 hash·생성 관계로 연결되고, 이를 제외한 집계로도 선언한 구조가 성립
+13. forbidden mechanism을 I05/I06/I07 goal에 넣으면 거부하고 승인 exact goal의 증상·public invariant는 통과
+14. reference hash를 declared input에 넣거나 hidden property ID·expected answer를 public check stdout/stderr에 넣으면 feedback 전에 거부
+15. J canary를 W·TaskEnvelope·public check output·feedback에 복사하면 거부
+16. frozen source J와 protected runtime J의 exact path·type·size·raw byte·aggregate binding과 runtime-J-only 사용
+17. Judge W read positive와 W create/write/replace/delete negative
+18. Judge J runtime read/execute positive와 create/write/replace/delete negative
+19. fresh O의 empty precondition, exact read/write positive와 unexpected output 거부
+20. S enumerate/read/create/write/replace/delete negative
+21. 모든 filesystem operation의 Judge parent/child result와 sandbox identity parity
+22. W/J runtime/S pre/post root·parent·ACL·tree·file hash 불변과 O root·parent·ACL identity 불변
+23. Judge/child loopback permission denial, auth 환경 부재, accepted connection 0과 interpreter/source/dependency drift 거부
+24. R-P08와 I-P10이 구조화 relation만 판정하고 자유문 변화는 failure로 세지 않음
+25. 별도 process에서 bundle·self-hash 재검산
 
 표적 묶음은 한 번 실행한다. 제품 실패가 있으면 해당 실패 묶음만 수정 후 다시 실행하고, 무관한 전체 suite·Phase B probe·외부 심사를 반복하지 않는다. 실제 model turn은 항상 0이다.
 
@@ -417,6 +615,7 @@ W/J positive read, O positive write, W write denial, S read denial, child-proces
 
 - `CHALLENGE_READY_CANDIDATE`: 두 snapshot과 J bundle이 모든 Phase D model-free 조건 통과
 - `CHALLENGE_NOT_READY`: source/evidence/reference/property/Judge proof 중 하나라도 미완료
+- `CHALLENGE_INVALID`: hidden solution, forbidden provenance 또는 J canary가 Worker-visible surface에 노출
 - `PHASE_D_BLOCKED_SOURCE`: 실제 원시 snapshot 또는 독립성 요건 미충족
 
 Phase D 결과는 live 준비 후보일 뿐이다. `CHALLENGE_READY_CANDIDATE` 뒤에도 별도 외부 artifact 심사와 사용자 Phase E 승인이 없으면 Plan·Cell·seal을 만들지 않는다.
@@ -432,33 +631,42 @@ Phase D 결과는 live 준비 후보일 뿐이다. `CHALLENGE_READY_CANDIDATE` �
 - Judge profile 표현 불가 또는 network/access proof 불명확
 - actual model turn 발생
 
-## 14. 외부 심사 질문
+## 14. revision 2 closure 재심사 질문
 
-1. 두 historical window가 실제 작업이며 장난감 fixture가 아닌가?
-2. 같은 저장소의 비중첩 시점 두 개가 상위 명세의 독립 출처 요건을 충족하는가?
-3. Profile I의 6-file source diff가 8개 probe·다중 Evidence를 근거로 구조 예외를 받을 수 있는가?
-4. Task 8개와 dependency graph가 의미 분할이며 padding이 아닌가?
-5. Worker 정보만으로 모든 critical/major property를 해결할 수 있는가?
-6. public/controller/judge-only 경계가 B1에 hidden answer를 주지 않는가?
-7. property DAG가 parser/setup 오류를 무관 모델 실패로 확장하지 않는가?
-8. reference·pristine·mutation replay가 해결 가능성과 checker 독립성을 증명하는가?
-9. `realistic-property-judge-v1`과 loopback negative control이 OS-level no-network 증거로 구현 가능한가?
-10. 기존 Runner primitive를 재사용하고 S3 하네스를 복제하지 않는가?
-11. Phase D 구현 범위가 Phase E integration이나 model usage로 새지 않는가?
-12. P0/P1 0건이면 Phase D artifact 제작을 시작해도 되는가?
+revision 1 심사에서 same-repository independence와 Profile I의 6-file 구조 예외는 이미 수용됐다. revision 2 재심사는 이를 다시 열지 않고 다음 closure만 판정한다.
+
+1. I05~I07의 Worker-visible goal이 증상과 공개 invariant만 제공하며 historical 원인·reference fix를 노출하지 않는가?
+2. provenance catalog, forbidden literal/key/hash 검사와 random canary가 W·TaskEnvelope·public check·B1 feedback 전체를 fail-closed로 닫는가?
+3. Judge parent와 child가 W/J runtime/O/S에 대해 요구된 read·enumerate·create·write·replace·delete matrix를 같은 identity로 만족하는가?
+4. J runtime과 S의 실행 전후 root·parent·ACL·tree·file identity 불변, W frozen bytes와 O exact output을 검증하는가?
+5. versioned J source와 external protected runtime J가 byte-exact binding되고 실제 probe/checker가 runtime J만 사용하는가?
+6. Profile R raw 91-file 수를 generated/golden/history와 authored semantic group으로 분리해 구조 난이도를 과장하지 않는가?
+7. R-P08과 I-P10이 구조화 relation만 판정하고 자유문 품질을 점수·triage·route에 사용하지 않는가?
+8. 새 P0/P1이 없으면 Phase D artifact 제작을 시작해도 되는가?
 
 ## 15. 외부 심사 통과 조건
 
 외부 심사는 다음을 분리해 판정한다.
 
 - 최종: `승인 | 조건부 승인 | 재작성 필요`
-- same-repository independence: `accepted | rejected`
-- Profile I structure exception: `accepted | rejected`
-- snapshot provenance/anonymization: `closed | partial | open`
-- Task graph/difficulty: `closed | partial | open`
-- information boundary/reference/property DAG: `closed | partial | open`
-- Judge filesystem/no-network: `closed | partial | open`
+- P1-1 Worker solution leakage: `closed | partial | open`
+- P1-2 Judge operation matrix: `closed | partial | open`
+- P1-3 J source/runtime binding: `closed | partial | open`
+- P2-1 Profile R change composition: `accepted | needs_followup`
+- P2-2 structured-only deterministic properties: `accepted | needs_followup`
 - 새 P0/P1/P2
 - Phase D artifact 제작: `GO | NO-GO`
 
 `GO`여도 사용자의 별도 진행 승인 전에는 구현하지 않는다. Phase E·F는 계속 `NO-GO`다.
+
+## 16. Revision 1 외부 심사 반영표
+
+| finding | revision 2 closure 후보 |
+|---|---|
+| P1-1 I05~I07 solution leakage | §5.2 goal을 증상·공개 불변식으로 교체하고 §5.3~§5.4 exact Worker projection, forbidden-source provenance, canary와 negative leak test 추가 |
+| P1-2 Judge operation matrix 불완전 | §10에서 fresh read/write O를 확정하고 J write 계열, S enumerate/read/write 계열, parent/child parity와 J/S pre/post identity·tree 불변 추가 |
+| P1-3 repository J와 runtime J 혼동 | versioned `judge-source` bundle과 별도 opaque protected runtime J를 분리하고 byte-exact copy·aggregate binding, runtime-J-only probe를 요구 |
+| P2-1 R raw 91-file 과장 가능성 | authored/generated/golden/history composition과 semantic-group 중복 제거 집계 추가 |
+| P2-2 자유문 property의 비결정성 | R-P08과 I-P10을 machine-readable command/status/claim-evidence 관계로 제한하고 자유문 품질을 평가에서 제외 |
+
+이 표는 closure **주장**이 아니라 재심사 대상의 위치를 가리킨다. 외부 재심사 전까지 문서 상태는 `revision_2_external_rereview_candidate`이고 Phase D artifact 제작은 `NO-GO`다.

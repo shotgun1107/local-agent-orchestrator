@@ -1640,3 +1640,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 교정 뒤 Phase C 표적 시험은 `33 passed in 0.23s`, actual model turn은 0회다. 전체 회귀와 Phase B probe는 반복하지 않았다.
 - Phase D는 artifact를 바로 만드는 단계가 아니라 별도 snapshot/checker 명세와 외부 심사를 먼저 통과해야 한다. revision 1 후보는 실제 historical window 두 개, 각 8-Task graph, 공개/Controller/judge-only 경계, reference·mutation positive evidence, property DAG와 OS-level Judge no-network proof를 고정한다.
 - 두 후보가 같은 저장소의 다른 시점이라는 독립성 문제와 Profile I의 6-file 구조 예외는 외부 심사의 명시적 `accepted`를 요구한다. 하나라도 rejected이면 Phase D artifact 제작은 `NO-GO`다. snapshot·fixture·reference·checker·Judge probe·live Plan·model turn은 이번 작업에서 만들거나 실행하지 않았다.
+
+## Phase D revision 1 외부 심사와 revision 2 closure 후보
+
+- 작업일: 2026-08-09. ChatGPT Pro는 Phase D revision 1 패키지를 읽기 전용으로 심사해 same-repository independence와 Profile I의 6-file 구조 예외를 수용했지만 최종 `조건부 승인`, P0 0건, P1 3건, P2 2건, Phase D artifact `NO-GO`로 판정했다.
+- P1은 Profile I의 I05~I07 goal이 historical solution을 노출한 점, Judge access matrix가 J write 계열·S 전체 접근·parent/child parity·pre/post identity를 닫지 못한 점, repository의 J bundle과 실제 protected runtime J를 구분하지 않은 점이다. P2는 Profile R raw 91-file 수에 generated/golden/history가 섞인 점과 R-P08/I-P10이 자유문 품질 판정으로 넓어질 수 있는 점이다.
+- revision 2는 I05~I07을 증상과 공개 invariant로 교체하고 Worker-visible surface 전체의 provenance·forbidden fact·random canary 검사를 추가했다. Judge에는 fresh read/write O, W/J runtime/O/S의 operation별 parent/child matrix, J runtime·S의 pre/post root·ACL·tree·file hash 불변을 고정했다. repository의 versioned J source는 frozen Git object에서 별도 opaque protected runtime J로 byte-exact 복사·결합하고 실제 probe/checker는 runtime J만 사용한다.
+- Profile R은 raw path를 authored/generated/golden/history category와 semantic group으로 분해하고 raw 파일 수를 난이도 근거로 쓰지 않는다. R-P08과 I-P10은 machine-readable command/status/claim-evidence 관계만 판정하며 자유문 품질은 점수·triage·route에서 제외한다.
+- 이 변경은 `revision_2_external_rereview_candidate` 문서와 closure 심사 자료뿐이다. snapshot 추출·익명화, fixture/reference/checker, Judge probe, live Plan, SDK thread와 model turn은 만들거나 실행하지 않았고 Phase D artifact는 재심사 전까지 계속 `NO-GO`다.
