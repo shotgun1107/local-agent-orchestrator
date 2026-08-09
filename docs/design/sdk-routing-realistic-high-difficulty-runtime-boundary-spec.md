@@ -1,12 +1,12 @@
 # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
 
-- 문서 상태: `revision_5_probe_failure_capture`
+- 문서 상태: `revision_6_p01_cli_argv_diagnosed`
 - 작성일: 2026-08-09
-- 기준 commit: `b59a78031bf95f8d0691316ecc8dee1394da67c1`
+- 기준 commit: `d8f2ac1d257a2ae2f1ed459253e9d3bc3bfb9908`
 - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
 - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
-- 현재 상태: 네 번째 model-free 실행은 profile·effective policy·readiness를 통과한 뒤 P01 wrapper가 JSON stdout을 내지 않아 중단됨. Phase B candidate는 아직 증명되지 않음
-- 이번 교정 범위: P01 dispatch의 capped stdout/stderr·exit code 실패 증거 보존. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
+- 현재 상태: 다섯 번째 model-free 실행에서 P01 실패 증거를 확보해 frozen argv의 obsolete `windows` token이 실제 child command로 해석된 원인을 확정함. Phase B candidate는 아직 증명되지 않음
+- 이번 교정 범위: P01 dispatch의 capped stdout/stderr·exit code 실패 증거 보존과 CLI argv 원인 기록. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
 
 ## 1. 결정
 
