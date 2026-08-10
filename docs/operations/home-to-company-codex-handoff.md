@@ -1,6 +1,8 @@
 # 집 로컬 → 회사 로컬 동일 상태 인수인계
 
-- 문서 상태: `current_exact_tree_handoff`
+> 상태: 2026-08-09 집→회사 인수에 사용한 역사 문서다. 2026-08-10 회사 작업을 집으로 돌려보내는 현재 절차는 [회사 로컬 → 집 로컬 인수인계](./company-to-home-codex-handoff.md)를 따른다.
+
+- 문서 상태: `historical_home_to_company_handoff`
 - revision: 2
 - 작성일: 2026-08-09
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`

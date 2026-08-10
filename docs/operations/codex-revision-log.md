@@ -1763,3 +1763,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - generated schema·golden mirror·historical record는 `counted_for_structure=false`로 두고, golden은 대응 reference fixture source와 같은 `semantic_group_id`로 결합했다. 중복 제거 뒤 실제 구조 집계는 64개 semantic group이다. 상태는 `COMPOSITION_CANDIDATE`이며 W snapshot·Task·checker ready를 주장하지 않는다.
 - 재현 가능한 generator `build_profile_r_change_composition.py`와 검증 테스트를 추가했다. 테스트는 exact Git diff 91개와 1:1 path coverage, category 허용값, counted group 유일성, golden→canonical source 관계와 category count를 검사한다.
 - 표적 결과는 `4 passed in 0.28s`, `git diff --check` 통과다. model·SDK·Codex·sandbox 호출은 0회다. 다음 작업은 집 PC 원본 동기화이며, 그 전에는 Profile R W snapshot과 Profile I를 확장하지 않는다.
+
+## 회사→집 exact-tree 인수인계와 P001~P015 원본 보호 절차
+
+- 작업일: 2026-08-10. 회사 기능 기준 commit `712ce8a13b86685f17696da93a42701bdc220f49`, tree `e978f80e16bbb126ba415f72c970cbd984bc8c3c`에서 집 PC로 작업을 돌려보내는 방향별 인수 문서와 시작 프롬프트를 작성했다.
+- 인수 문서는 집 branch를 원격 tip과 ff-only로 맞추기 전에 dirty·untracked·ignored 자료, stash와 local-only commit을 먼저 보존하도록 한다. 집에 있는 P001~P015가 ignored 또는 repository 밖 raw일 수 있으므로 `reset`, `clean`, `stash`, 강제 checkout을 금지했다.
+- P001~P015는 첫 세션에 바로 GitHub로 올리지 않는다. ordinal별 존재·run ID·파일 수·byte 수·manifest/hash와 민감정보 포함 여부를 읽기 전용으로 확인한 뒤 공개 가능 artifact, 별도 암호화가 필요한 Controller/Judge raw, 복사 금지 secret으로 분류해 사용자 승인을 받는다.
+- 현재 경로는 원래 Phase D revision 2다. reconstructed replay R3는 부활시키지 않으며, Profile R은 source intake·91-path composition까지만 완료됐다. Profile I는 원본 인수 뒤 시작하고 main 병합도 원본 무결성 확인 뒤 검토한다.
+- 이번 작업은 문서와 프롬프트 갱신뿐이다. 테스트·probe·SDK·Codex·model turn과 P001~P015 접근은 실행하지 않았다.
