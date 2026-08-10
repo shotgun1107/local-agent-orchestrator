@@ -1781,3 +1781,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 접근 가능한 P001~P012 raw에는 SID·절대경로·인증 환경 metadata가 있고 P015에는 thread ID도 있다. 실제 secret value pattern은 발견하지 못했지만 P013/P014는 검사하지 못했다. raw를 공개 Git에 넣지 않고 민감값을 제거한 `benchmarks/artifacts/runtime-boundary-phaseb-source-inventory-v1/inventory.json`과 운영 보고서만 추가했다.
 - 이 inventory는 원본 소실 오판을 막는 source-provenance 영수증이다. 같은 저장소에 reference가 존재하는 것은 승인된 same-repository independence와 모순되지 않지만, Profile I W에는 raw·reference·후속 원인 결론을 투영하지 않고 Phase D Worker/Judge 정보 경계와 누출 검사를 유지한다.
 - 이번 후속은 inventory와 인수 상태 문서만 수정했다. P001~P015 원본 이동·수정·재실행, 테스트·probe·SDK·Codex·model turn은 0회다. 다음 gate는 P013/P014의 ACL 비변경 read-only inventory와 승인된 익명화 import다.
+
+## 집 inventory 뒤 회사 로컬로 작업 반환
+
+- 작업일: 2026-08-10. 사용자가 오늘 집 작업을 종료하고 원래 프로젝트를 주관한 회사 로컬에서 다시 이어가기로 했다. 현재 방향을 집→회사로 전환해 `home-to-company-codex-handoff.md` revision 3과 전용 회사 시작 프롬프트를 작성했다.
+- 최소 포함 commit은 P001~P015 inventory를 Git 정본화한 `70a9a8adea7b7c492847f181c3901317332c9147`이다. 이 인수 문서를 포함하는 최종 원격 tip은 그 후손으로 전달하며 회사는 fetch 뒤 latest tip과 exact tree를 사용한다.
+- 회사 첫 세션은 dirty·stash·local-only·main-only 보존 게이트, ff-only 동기화, local/remote commit·tree 확인과 inventory 이해 보고만 수행한다. 집의 raw hash 계산을 반복하거나 reconstructed replay R3, Profile R/I 구현, 테스트·probe·model을 선행하지 않는다.
+- 다음 gate는 P013/P014 protected raw의 ACL 비변경 read-only inventory와 raw/익명화 projection import 경계에 대한 사용자 승인이다. Phase E/F와 main 병합은 계속 열지 않는다.
+- 과거 회사→집 handoff와 양방향 시작 프롬프트에는 역사 표식을 추가했다. 이번 작업은 문서뿐이며 raw·코드·시험·artifact 의미와 model turn을 변경하지 않았다.

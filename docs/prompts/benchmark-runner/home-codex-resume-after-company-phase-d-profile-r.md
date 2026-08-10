@@ -1,5 +1,7 @@
 # 집 Codex 동기화·원본 인수 시작 프롬프트
 
+> 상태: 실행 완료한 역사 프롬프트. 현재 방향은 집→회사이며 [회사 Codex 집 inventory 인수 프롬프트](./company-codex-resume-after-home-phaseb-inventory.md)를 사용한다.
+
 아래를 집 PC의 새 Codex 세션 첫 메시지로 그대로 사용한다.
 
 ```text

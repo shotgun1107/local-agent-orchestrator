@@ -1,5 +1,7 @@
 # 회사 Codex 시작 프롬프트 — 집과 동일한 프로젝트 상태로 맞추기
 
+> 상태: 역사 프롬프트. 현재 회사 복귀에는 [집 P001~P015 inventory 인수 프롬프트](./company-codex-resume-after-home-phaseb-inventory.md)를 사용한다.
+
 회사 PC에서 기존 `local-agent-orchestrator` 폴더를 Codex로 연 뒤 아래 블록 전체를 붙여넣는다.
 
 ```text
