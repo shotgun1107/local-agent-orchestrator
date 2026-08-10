@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "profile": "R",
+  "status": "SOURCE_VERIFIED_COMPOSITION_PENDING",
+  "source_authority": "git_object_database",
+  "base_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
+  "base_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
+  "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
+  "reference_tree": "a5fdbbc856776acb522b22975f74a48ffce41a34",
+  "base_is_ancestor_of_reference": true,
+  "diff_canonicalization": "utf8-lf-lines-v1",
+  "changed_path_count": 91,
+  "insertions": 5675,
+  "deletions": 261,
+  "name_status_sha256": "da3838669ac75a51cebf0dca41342e6f1b2105d17463693ffddc36bd07593e1b",
+  "numstat_sha256": "c230e830269c5a1ed2eea7b7341a919e29798ceffc639e62f2371373a9873788"
+}
