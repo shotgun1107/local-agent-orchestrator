@@ -1664,3 +1664,95 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 동일성 통과 조건은 local/remote commit 일치, tree hash 일치, porcelain status 비어 있음과 remote branch 대비 tracked diff 0이다. `.venv`, cache, OS 설치, Codex 로그인·메모리와 repository 밖 state는 Git 정본이 아니므로 복사 대상에서 제외했다.
 - main-only 작업이나 회사 local-only 작업이 있으면 어느 쪽도 덮지 않고 보고 후 중단한다. 첫 세션은 동일화·문서 읽기·보고만 허용하고 Phase D 구현과 과거 시험 재실행은 계속 금지한다.
 - 이번 교정은 인수인계·프롬프트·revision log 문서뿐이다. 코드·시험·artifact·model turn은 변경하거나 실행하지 않았다.
+
+## Phase D revision 2 closure 재심사 통과와 사용자 artifact 구현 승인
+
+- 결과 수령일: 2026-08-10. ChatGPT Pro의 revision 2 closure 재심사는 최종 `승인`, revision 1 P1 3/3 `closed`, P2 2/2 `accepted`, 신규 P0/P1/P2 0건으로 판정했다. same-repository independence와 Profile I 6-file 예외의 `accepted`도 유지됐다.
+- Phase D artifact 설계 관문은 `GO`다. Phase E live와 Phase F model turn은 계속 `NO-GO`이며 ChatGPT 구독 인증만 허용되고 API key는 허용되지 않는다.
+- 외부 심사는 package source commit `0d0fa852b689bc06e036de50d5b3817ae6d70f00`의 28-file manifest를 28/28 일치로 확인했지만 `.git`이 없어 commit과 ancestry를 독립 검증하지 않았다. 회사 저장소에서 `0d0fa852...`가 현재 HEAD의 조상이고 두 historical base/reference 관계가 각각 유효하며, revision 2 prompt·revision 1 review·revision 2 spec의 LF-normalized SHA-256이 보고서와 일치함을 별도로 확인했다.
+- 외부 심사는 테스트·Git·Python·SDK·Codex command·probe·thread·model turn을 실행하지 않은 읽기 전용 심사다. 원문은 `docs/reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-phase-d-r2.md`에 336줄·LF SHA-256 `5fbb69d66c05b52c06722a72c232f407975ce069ff76b7211f03793b7d372b64`로 보존했다.
+- 사용자의 `ㄱㄱ` 지시는 Phase D 명세 §11~§12의 model-free artifact 구현에 대한 별도 승인으로 해석했다. 이 승인은 source gate 실패를 우회하거나 누락된 원시 증거를 추정·대체할 권한, Phase E/F 권한으로 확대되지 않는다.
+
+## Phase D artifact source gate 중단
+
+- 작업일: 2026-08-10. 구현의 첫 gate로 두 historical Git window와 Profile I 원시 `001~014` 실패 artifact의 가용성을 읽기 전용으로 점검했다. Profile R과 I의 base/reference commit은 모두 존재하고 ancestry가 유효하며 diff 규모도 각각 명세의 91 files·5,675 insertions·261 deletions, 6 files·1,997 insertions·216 deletions와 일치했다.
+- Profile I의 원시 pending manifest, profile/policy/probe failure artifact, 보존 W/J/S root와 014 bundle은 현재 Git objects·working tree·사용자 Documents·Local Temp·`AppData/Local/local-agent-orchestrator`의 알려진 보존 위치에서 발견되지 않았다. exact run ID와 기록된 manifest hash 검색에서 revision log 요약과 Candidate 015 결과·심사만 확인됐다.
+- Phase D 명세 §3.2는 원시 `001~014` artifact가 없거나 committed record와 hash로 결합할 수 없으면 문서 요약으로 재구성하지 말고 `CHALLENGE_NOT_READY`로 닫도록 한다. §13의 즉시 중단 규칙에 따라 phase-level 결과를 `PHASE_D_BLOCKED_SOURCE`, 원인 `PROFILE_I_RAW_EVIDENCE_ABSENT`로 기록했다.
+- source gate 뒤 W snapshot·익명화·Task/J bundle·reference·mutation·checker·Judge filesystem/no-network probe·artifact seal·Phase D target/전체 회귀를 만들거나 실행하지 않았다. actual model turn은 0회다.
+- 해제 방법은 집 PC 또는 백업의 원시 `001~014` 증거를 원본 hash와 함께 회수해 read-only inventory를 통과시키거나, 자료를 회수할 수 없으면 Profile I를 다른 실제 snapshot으로 교체한 새 revision을 심사받는 것이다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-d-source-audit-result.md`에 기록했다.
+- 사용자가 추가로 제공한 세 선행 심사 답변은 각각 manifest `25/25`, `38/38`, `39/39`가 일치한 설계·Schema 심사였으며 원시 Phase B artifact를 포함하지 않았다. 최종 승인 답변의 27-file package에는 Candidate 015 exact four-file bundle만 있었고 `001~014` 실패 bytes는 없었다. 따라서 심사 계보와 015 closure는 보강됐지만 `PROFILE_I_RAW_EVIDENCE_ABSENT` 차단은 유지된다.
+- 추가 전수 감사에서 origin의 fetch refspec이 모든 head를 포함함을 확인하고 GitHub API의 branch cursor를 끝까지 조회했다. 원격은 `main`과 `codex/*` 5개, 총 6개 branch뿐이었다. 이들이 도달하는 unique commit 118개와 path object 2,656개, 유일한 PR head, tag·Release·조회 시점 보존 Actions artifact·LFS·submodule, local unreachable commit 2개·tree 211개·blob 97개를 filename·run ID·known hash로 검색했지만 raw Phase B artifact는 없었다. 과거 Actions artifact가 만료·삭제됐거나 알려지지 않은 외부 저장소에 있었을 가능성까지 부재로 단정하지는 않는다.
+
+## Phase D historical reconstructed replay revision 3 후보
+
+- 작업일: 2026-08-10. 사용자는 확인 가능한 현재 GitHub/Git 보존 표면과 알려진 로컬 보존 위치를 전수 확인한 뒤 원본이 없으면 다시 구축하도록 승인했다. 재구축을 원본 복원으로 오표기하지 않고, 당시 source commit `001~015`를 새로 동결한 같은 현재 환경에서 각각 한 번 실행해 새 관측을 만드는 별도 `historical_reconstructed_replay_v1` 계보로 정의했다.
+- 기존 `realistic-incident-repair-001`의 `PHASE_D_BLOCKED_SOURCE`, 원인 `PROFILE_I_RAW_EVIDENCE_ABSENT`와 `CHALLENGE_NOT_READY`는 유지한다. 새 snapshot ID 후보는 `realistic-incident-repair-replay-001`이며 Candidate 015의 기존 `judge_only_verified` closure를 대체·재인증하지 않는다.
+- 15개 source commit과 tree hash, 기록된 terminal gate와 당시 native writer surface를 전수 대조했다. 모든 source는 Git에 존재하지만 `001~013` 중 상당수는 해당 terminal gate용 writer가 없어 그대로 재실행해도 pending manifest만 남는다. historical source를 고치지 않고 별도 supervisor가 process 경계에서 exit·exception, capped stream과 생성 artifact inventory를 봉인하도록 설계했다.
+- revision 3 후보는 reconstructed environment identity, exact `001→015` 순서, ordinal당 1회, outcome-driven retry·subset·permission 변경 금지, append-only raw/public artifact 분리, J-only historical claim ledger와 deterministic projection을 요구한다. 실행 결과는 execution 상태와 `MATCHED | DIVERGED | NOT_COMPARABLE` 역사 비교를 별도 축으로 보존한다.
+- `REPLAY_COMPLETE`는 challenge ready가 아니다. replay 뒤에도 공개 projection만으로 I01~I08을 해결할 수 있는지, 같은 환경의 015 positive reference, leakage·mutation·property·Judge 경계를 별도 source-qualification 외부 심사로 다시 판정해야 한다.
+- 새 source evidence class는 승인된 revision 2의 전제를 바꾸므로 외부 심사 전에는 harness와 probe를 구현·실행하지 않는다. 심사 후보 문서는 `docs/design/sdk-routing-realistic-high-difficulty-phase-d-reconstructed-replay-spec.md`, 프롬프트는 `docs/prompts/benchmark-runner/chatgpt-pro-review-prompt-sdk-routing-realistic-high-difficulty-phase-d-reconstructed-replay-r3.md`다. 이번 작업의 actual model turn, runtime-boundary probe와 app-server 호출은 0회다.
+- 자체 다중 관점 감사에서 plan hash의 batch-path 순환, 민감 경로 plain hash, batch/ordinal process identity 혼합, 무한 filesystem 감시, deny-one no-model guard, replication durability와 실행 dependency bytes 미봉인 문제를 찾았다. Revision 3 후보는 host-only preimage/full environment identity 분리, raw-only key 기반 HMAC projection, exact `MonitoredHostSurface`, app-server method·subprocess argv allowlist, `turn_start_attempt_count > 0` invalidation, primary·replication 각각의 raw/J/W·restore 관문, Python stdlib·extension·third-party distribution file-set hash로 이를 닫았다.
+- 외부 심사용 package는 `benchmarks/.local-r6/phase-d-replay-r3-pro-review-20260810-094448.zip`에 만들었다. ZIP은 Git 추적 대상이 아니며 136개 manifest payload를 압축 해제 후 전수 재검증해 누락·hash mismatch·extra 0건을 확인했다. ZIP SHA-256은 `23f50bbc5355147d3a6d071ce8ff13c9a2659323e929eb82d17c1b9957fc9557`, 크기는 2,381,708 bytes다. Package에는 historical source 15세트, claim-provenance log snapshot, SDK write 경계 발췌와 설계 문서만 있고 replay plan·harness·실행 artifact는 없다.
+- Package 생성·검증에서도 historical source, probe, SDK, app-server, sandbox와 model turn을 실행하지 않았다. 실제 harness 구현과 15-ordinal batch는 외부 revision 3 심사 및 별도 사용자 승인 전 `NO-GO`다.
+
+## Phase D reconstructed replay R3 조건부 심사와 closure 후보
+
+- 작업일: 2026-08-10. ChatGPT Pro는 revision 3 package의 manifest 136/136과 source matrix를 읽기 전용으로 대조하고 lineage 분리를 accepted로 유지했지만, 최종 `조건부 승인`, `P0 0 / P1 2 / P2 2 / P3 0`, replay 설계와 harness 구현 `NO-GO`로 판정했다. 원문은 `docs/reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-reconstructed-replay-r3.md`, 298줄·raw SHA-256 `70063571875ff556dd6ff12a0fc5ea188c70ddfe2e0c7ae21758ead8f0b21574`로 보존했다.
+- `R3-P1-01`은 15개 source와 SDK 0.144.4를 다시 정적으로 대조해 profile/policy 두 connection, ordinal 001과 002~015의 차이, request·notification·response 방향, ordered legal prefix, successful count, request ID correlation을 고정했다. Outgoing 위반은 `_write_message` dispatch 전, incoming 위반은 `_read_message` 수신 뒤 invalidation하며 server request용 client response만 전송 전에 차단한다.
+- `R3-P1-02`는 존재하지 않는 전역 subprocess pre-dispatch 주장을 삭제했다. Process를 Supervisor direct, Controller-side, top-level sandbox, sandbox descendant 네 종류로 분리하고 app-server·outer Codex·ordinal 013~015 `icacls.exe`에는 sandbox containment을 주장하지 않는다. P01~P08 top-level probe Python과 P05/P06을 누락 없이 기록하고 P05/P06은 `predispatch_enforced=false`와 제한된 관측 범위를 유지한다.
+- `R3-P2-01`은 기존 6개 source를 `review_source_subset`으로 재명명하고, 15/15 commit에 공통인 9-file first-party execution closure를 별도 manifest로 고정했다. Nonliteral dynamic probe는 `archive probe blob → W/.orchestrator-probe/probe_runtime_boundary.py`의 source/destination byte parity와 static dataflow로 분리했다. `R3-P2-02`는 frozen subject deadline을 `OBSERVED + SUBJECT_DEADLINE_EXCEEDED`로 보존하고 process-control·I/O·seal 실패만 구체적 infrastructure error로 분류했다.
+- 자체 병렬 재검토에서 최초 수정본의 incoming request pre-read 표현, policy connection start failure 분류, Controller process의 sandbox 오분류, P01~P08 top-level probe 누락과 dynamic probe alias 공백을 찾고 고쳤다. 최종 문서상 재검토는 네 finding 모두 `CLOSED`, 새 P0/P1 0건이다. 이는 외부 closure를 대신하지 않는다.
+- Closure candidate 명세는 628줄·raw SHA-256 `a3e91511ecb35ccd1e56797696779907ae1bc60c0fef197a231b5ba97c4376af`, 정적 boundary inventory는 207줄·raw SHA-256 `e741118e15b60bbf2ab69aee5acc13399154970a695fad65096103adaa15152c`, 집중 재심사 프롬프트는 99줄·raw SHA-256 `a5b77585b1d49f66fc22770278d8026011996c0d1bfb8643db25ab98f493d55a`다.
+- 새 외부 심사 package는 `benchmarks/.local-r6/phase-d-replay-r3-closure-review-20260810-123500.zip`이다. ZIP 크기는 1,676,439 bytes, SHA-256은 `c6497e3604ac4f2c3e816702cb66b8230d094ab9353e368873873a0d9c7e8e36`다. 압축 해제 뒤 manifest payload 209개를 독립 재계산해 missing·mismatch·extra 0건, ordinal별 closure manifest 9줄과 review subset 6줄 15/15, legacy `SOURCE-ALLOWLIST.sha256` 0개를 확인했다. Manifest SHA-256은 `655920db31b9dad57b9df69a2ea0cee458e975c66dae755a063a7c3f25c9c01f`다.
+- 이어 15개 commit/tree, 두 source manifest의 총 225행, 각 raw file hash·Git blob ID와 matrix aggregate를 독립 대조해 오류 0건을 확인했다. Package 생성 첫 시도는 회사 PowerShell의 .NET에 `Path.GetRelativePath`가 없어 source 추출 뒤 manifest 작성에서 중단됐다. Source·probe를 실행한 오류가 아니며, package root 하위 prefix 검증과 substring 방식으로 바꿔 새 manifest를 처음부터 생성·검산했다.
+- 이번 closure 작업에서 historical subject import, test, app-server, Codex command, sandbox probe, thread, model turn은 0회다. Replay harness와 실제 15-ordinal batch는 ChatGPT Pro closure와 별도 사용자 승인 전 계속 `NO-GO`다. Profile I source 채택, Phase E/F와 API key는 계속 금지다.
+
+## Phase D reconstructed replay R3 closure 승인
+
+- 결과 수령일: 2026-08-10. ChatGPT Pro는 closure package manifest 209/209, 15개 source matrix, ordinal별 6-file review subset과 9-file execution closure를 읽기 전용으로 대조했다. 최종 판정은 `승인`, 이전 네 finding 모두 `CLOSED`, 신규 `P0 0 / P1 0 / P2 0`이다.
+- Reconstructed replay 설계와 model-free harness 구현은 `GO`다. 실제 15-ordinal batch, Profile I source 채택, Phase E live와 Phase F model turn은 계속 `NO-GO`다.
+- 외부 심사는 historical source·테스트·SDK·Codex·app-server·sandbox·probe·thread·model turn을 실행하지 않았다. 원문은 `docs/reviews/benchmark-runner/chatgpt-pro-closure-review-sdk-routing-realistic-high-difficulty-phase-d-reconstructed-replay-r3.md`에 보존했다.
+- 사용자의 후속 `ㄱㄱ`는 승인된 model-free harness 구현만 허용한 것으로 해석했다. Production adapter, 외부 storage write, 실제 replay batch와 model turn 권한으로 확대하지 않았다.
+
+## Phase D reconstructed replay model-free harness 구현
+
+- 작업일: 2026-08-10. 새 `replay_plan.py`, `replay_protocol.py`, `replay_supervisor.py`, `replay_harness.py`, `replay_artifacts.py`와 대응 테스트를 구현했다. 기존 runtime-boundary, probe, SDK routing·live registry 파일은 수정하지 않았다.
+- Plan은 exact 15 ordinal·9-file execution closure·dynamic probe alias·환경 및 dependency identity를 고정한다. Protocol은 profile/policy connection의 방향·순서·correlation과 typed session ledger를 재계산하며 `turn/start`를 base writer 전에 차단한다. Supervisor는 4-process taxonomy, subject deadline과 infrastructure failure, one-pass bounded stream을 분리한다.
+- Harness는 plan·protocol·supervisor 결과를 exact `001→015` one-shot으로 결합하고 verifier token이 있는 `BatchReadout`만 발행한다. Native transcript count는 canonical frame bytes에서 다시 계산하며 직접 만든 outcome·readout은 거부한다.
+- Artifact는 raw/J/W 분리, native file inventory, deterministic projection, ordinal/batch seal, fake durability restore와 fake write-once external anchor를 구현했다. 실제 provider·network·production crypto는 없다.
+- 교차 감사에서 기존 `raw_ordinal_seal_sha256`가 실제 raw directory seal이 아니라 Supervisor evidence seal이라는 의미 혼동과, raw JSON에서 self-authored harness input을 재구성할 수 있는 경로를 발견했다. 이를 `supervisor evidence seal → harness preseal → raw ordinal seal → verifier-produced combined input → external input-set anchor` 순서로 분리했다. Raw 내부 파일은 자기 디렉터리의 최종 seal을 포함하지 않는다.
+- 최종화는 tokenized readout, raw binding과 실제 file hash, actual ordinal anchor, exact 15 input-set, fake durability primary·backup fresh restore, raw에서 독립 재생성한 J/W와 외부 anchor를 모두 최종 시점에 다시 확인한다. 요약 상태 함수만으로 `REPLAY_COMPLETE`를 만들 수 없다.
+- Phase D 표적 회귀는 `154 passed in 34.17s`, B1 전체는 `74 passed in 20.16s`다. Benchmark Runner 전체는 `444 passed, 1 failed in 288.40s`이며 유일한 실패는 기존 Windows `core.autocrlf=true` checkout의 `stage.schema.json`·`suite.schema.json` raw CRLF와 생성 LF bytes의 비교다. 두 파일의 Git-filtered blob은 HEAD와 일치하고 frozen schema/test는 수정하지 않았다.
+- 다섯 source·다섯 test `py_compile`, trailing whitespace 검사와 `git diff --check`를 통과했다. 실제 Git subject, subprocess, SDK, Codex, app-server, sandbox, probe, thread, model turn, 외부 upload는 0회다.
+- 상세 구현·검증·미확인과 다음 관문은 `docs/operations/phase-d-reconstructed-replay-model-free-implementation-report.md`에 기록했다. 다음 단계는 현재 diff의 독립 코드 심사다. 그 뒤에도 production adapter/storage profile은 새 revision·외부 심사·별도 사용자 승인이 필요하며 실제 batch와 Phase E/F는 계속 닫혀 있다.
+
+## Phase D ordinal 015 실제 non-evidence smoke
+
+- 작업일: 2026-08-10. 추가 adversarial 방어 확장을 중단하고 실제 연결을 확인하기 위해 exact source commit `9b29e781136e13b43b1e18f3fe1823bf496bef5c`, tree `e60358524b274c5194bc6cbe76b262167b9451a2`의 ordinal 015를 disposable root에서 실행하는 단일 smoke 스크립트를 추가했다.
+- Python `3.12.10`, SDK/CLI `0.144.4`, bundled executable SHA-256 `51398051c2332b6afe08dc3b9dbb4056085c197f35ca57a307ee303d450cada5`, ChatGPT OAuth를 사용했다. API-key 환경 이름은 없었다. 스크립트는 exact 9-file Git object closure를 추출하고 Python `-I` child에서 historical `prepare_runtime_boundary_roots()`와 `execute_runtime_boundary_probe(confirm_model_free_probe=True)`를 호출한다.
+- 첫 실행 `smoke-015-20260810-073143-210ae8e3`은 base root에 CodexSandboxUsers Read만 상속돼 첫 sandbox 준비가 group Modify와 restricted SID Modify 두 ACE를 추가하면서 historical one-ACE 계약에서 중단됐다. 기존 root는 보존하고 새 disposable historical-state parent에만 expected workspace Modify baseline을 부여하도록 어댑터를 교정했다.
+- 교정 뒤 새 root `smoke-015-20260810-073524-6b9b956a`와 `smoke-015-20260810-073802-b783e694`는 app-server profile/policy와 W ACL 관문을 통과하고 실제 P01 sandbox process까지 실행했지만, 최초 probe 결과에 `payload`가 없어 historical parser의 `runtime-boundary operation payload must be a JSON object`에서 동일하게 중단됐다. P02~P08은 실행하지 않았다.
+- 실행 2의 실패 root에서 exact P01 command를 진단용으로 다시 호출하면 `operation_exit_code=0`으로 성공했다. 이 retry는 one-shot 계약에 사용할 수 없어 smoke 성공이나 evidence로 승격하지 않았다. Historical parser는 최초 failure JSON의 `error_type`·message hash를 raw artifact로 보존하지 못하므로 정확한 내부 원인은 미확인이다.
+- 현재 판정은 `EXECUTED_WITH_SUBJECT_FAILURE`, 정식 15-ordinal batch `NO-GO`다. 실제 Git 추출과 app-server·Windows sandbox 연결은 확인됐지만 current fresh-root one-shot에서 Candidate 015는 재현되지 않았다. 세 실패 root는 삭제·재사용하지 않는다. 상세 결과는 `docs/experiments/phase-d-reconstructed-replay-ordinal-015-smoke-result.md`에 기록했다.
+
+## Phase D ordinal 015 최초 P01 raw capture
+
+- 작업일: 2026-08-10. `run_reconstructed_replay_smoke.py`에 진단용 `capture-first-p01` 모드를 추가했다. profile·policy·readiness 뒤 P01만 정확히 한 번 실행하며, historical parser 전에 stdout/stderr를 별도 로컬 파일로 보존한다. P02~P08과 retry는 실행하지 않는다.
+- 새 root `capture-p01-015-20260810-074828-594c51fd`의 최초 P01은 wrapper/operation exit code `0/0`, payload 존재, pre/postcondition 통과, actual model turns `0`으로 성공했다. stdout은 2,191 bytes SHA-256 `86812a4d08603273b238f19d839cd1f22a4508e4891a472e8722bf8297c761d7`, stderr는 0 bytes였다.
+- child wrapper가 정상 `SystemExit(0)`을 `BaseException`으로 잡아 부모 summary만 `FAILED`로 기록한 종료 처리 오류를 발견했고 `Exception`만 잡도록 수정했다. 기존 capture root와 summary는 수정·재사용하지 않았다.
+- 별도 새 root `smoke-015-20260810-074938-2321f55a`에서 전체 P01~P08 smoke를 한 번 실행했으나 historical parser의 `runtime-boundary operation payload must be a JSON object`에서 다시 중단됐다. full mode는 개별 raw를 parser 전에 보존하지 않아 정확한 실패 probe는 미확인이다. retry하지 않았다.
+- 결론: P01 최초 호출 실패는 항상 재현되는 현상이 아니다. 그러나 ordinal 015 전체 one-shot은 아직 성공하지 않았으므로 정식 15-ordinal batch는 계속 `NO-GO`다. 실제 model turn은 capture에서 0으로 직접 확인했다.
+
+## Phase D reconstructed replay 우회 폐기와 정본 복귀
+
+- 작업일: 2026-08-10. 사용자가 집 PC에 원본 Phase B `P001~P015` 자료가 모두 존재하며 다음 동기화 때 제공할 예정임을 확인했다. 따라서 `PROFILE_I_RAW_EVIDENCE_ABSENT`는 원본 부재가 아니라 현재 PC의 일시적 미동기화 상태로 재분류했다.
+- 원본이 영구 소실됐다는 가정 아래 만든 historical reconstructed replay R3 명세·심사·구현·테스트·smoke 스크립트와 결과 문서, 로컬 review package와 AppData smoke root를 제거했다. 이 계보의 `REPLAY_COMPLETE`나 source qualification은 더 이상 프로젝트 경로로 사용하지 않는다.
+- 원래 Phase D revision 2 정본, ChatGPT Pro 재심 결과, Candidate 015 closure와 Phase B/C 구현은 보존했다. 개발 과정에서 확인한 교훈은 “원본 가용성을 사용자에게 먼저 확인하고, 복원 우회에는 시간 제한을 둔다”는 절차로만 유지한다.
+- 다음 작업은 원본 동기화를 기다리며 독립적으로 가능한 Profile R artifact 제작부터 진행한다. Profile I artifact는 집 PC의 P001~P015를 받은 뒤 raw hash·run lineage를 확인하고 원래 revision 2 명세로 만든다. Phase E/F와 actual model turn은 계속 `NO-GO`다.
+
+## Phase D Profile R source intake
+
+- 작업일: 2026-08-10. 원래 revision 2 명세의 Profile R `realistic-compat-migration-001` artifact 제작을 시작했다. base `dbd84422a315b8bc34d0fc2583862f5add8c7c44`와 reference `56c91334fb32c4699d11ef80769831f14a0431d6`의 commit/tree/ancestry를 Git object에서 확인했다.
+- `source-intake.json`에 base/reference tree, 91개 changed path, 5,675 insertions, 261 deletions과 LF-normalized name-status/numstat SHA-256을 고정했다. 상태는 `SOURCE_VERIFIED_COMPOSITION_PENDING`이며 snapshot·checker·challenge ready를 주장하지 않는다.
+- 새 표적 테스트는 Git이 계산한 tree·ancestry·diff counts·hash를 manifest와 직접 대조한다. `test_realistic_phase_d_fixtures.py` 결과는 `2 passed in 0.23s`, `git diff --check`는 통과했다. model·SDK·Codex·sandbox 호출은 0회다.
+- 다음 작업은 91개 changed path를 명세의 7개 composition category와 중복 제거 semantic group으로 분류하는 `r-change-composition.json` 작성이다. Profile I는 P001~P015 원본 동기화 전까지 착수하지 않는다.
