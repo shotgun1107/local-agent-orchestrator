@@ -1,6 +1,8 @@
 # 회사 로컬 → 집 로컬 인수인계
 
-- 문서 상태: `current_company_to_home_handoff`
+> 상태: 2026-08-10 회사→집 인수에 사용한 역사 문서다. 집 inventory 뒤 회사로 다시 반환하는 현재 절차는 [집 로컬 → 회사 로컬 인수인계](./home-to-company-codex-handoff.md)를 따른다.
+
+- 문서 상태: `historical_company_to_home_handoff`
 - revision: 1
 - 작성일: 2026-08-10
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`

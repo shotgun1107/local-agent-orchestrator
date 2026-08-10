@@ -76,14 +76,15 @@ docs/
 - [S3 revision 2 Claude 집중 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-routing-s3-complex-high-risk-spec.md) — 실행 완료. 1차 P0/P1과 수용한 P2 closure만 확인한 read-only 정본
 - [S3 재심사 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-rereview.md) — 새 Claude 세션에서 closure 재심사 정본을 호출하는 짧은 복붙 입력
 - [현실 고난도 Phase D revision 2 Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-sdk-routing-realistic-high-difficulty-phase-d-r2.md) — P1 3건·P2 2건 closure 전용 읽기 정본
-- [회사 Codex 집 작업 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md) — 집 branch를 보존·동기화하고 현재 gate를 보고하는 첫 세션 입력
+- [회사 Codex 집 inventory 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phaseb-inventory.md) — 최신 branch를 ff-only로 받고 P001~P015 inventory와 현재 gate를 인수하는 첫 세션 입력
+- [과거 회사 Codex 집 작업 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md) — 2026-08-09 집→회사 인수에 사용한 역사 입력
 
 ### `operations/`
 
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [Phase B P001~P015 집 원본 inventory](./operations/phase-b-p001-p015-source-inventory.md) — raw를 공개하지 않고 존재·크기·hash·민감도와 P013/P014 미확인을 고정한 정본
-- [집 로컬 → 회사 로컬 작업 인수인계](./operations/home-to-company-codex-handoff.md) — 현재 branch·Phase B~D 상태와 회사 복귀 절차
+- [집 로컬 → 회사 로컬 현재 작업 인수인계](./operations/home-to-company-codex-handoff.md) — P001~P015 inventory 뒤 최신 branch·상태와 회사 복귀 절차
 - [과거 집 PC 진입 인수인계](./operations/home-codex-handoff.md) — 프로젝트 정신모델 참고용 역사 문서; 현재 재개 지시로 사용하지 않음
 - [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
 
