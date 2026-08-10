@@ -1756,3 +1756,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `source-intake.json`에 base/reference tree, 91개 changed path, 5,675 insertions, 261 deletions과 LF-normalized name-status/numstat SHA-256을 고정했다. 상태는 `SOURCE_VERIFIED_COMPOSITION_PENDING`이며 snapshot·checker·challenge ready를 주장하지 않는다.
 - 새 표적 테스트는 Git이 계산한 tree·ancestry·diff counts·hash를 manifest와 직접 대조한다. `test_realistic_phase_d_fixtures.py` 결과는 `2 passed in 0.23s`, `git diff --check`는 통과했다. model·SDK·Codex·sandbox 호출은 0회다.
 - 다음 작업은 91개 changed path를 명세의 7개 composition category와 중복 제거 semantic group으로 분류하는 `r-change-composition.json` 작성이다. Profile I는 P001~P015 원본 동기화 전까지 착수하지 않는다.
+
+## Phase D Profile R change composition 후보
+
+- 작업일: 2026-08-10. Profile R base/reference의 91개 changed path를 `r-change-composition.json`에 전수 분류했다. 결과는 authored source 21, authored test 11, authored spec/operator contract 32, generated schema 2, golden mirror 17, historical result/evidence 8개다.
+- generated schema·golden mirror·historical record는 `counted_for_structure=false`로 두고, golden은 대응 reference fixture source와 같은 `semantic_group_id`로 결합했다. 중복 제거 뒤 실제 구조 집계는 64개 semantic group이다. 상태는 `COMPOSITION_CANDIDATE`이며 W snapshot·Task·checker ready를 주장하지 않는다.
+- 재현 가능한 generator `build_profile_r_change_composition.py`와 검증 테스트를 추가했다. 테스트는 exact Git diff 91개와 1:1 path coverage, category 허용값, counted group 유일성, golden→canonical source 관계와 category count를 검사한다.
+- 표적 결과는 `4 passed in 0.28s`, `git diff --check` 통과다. model·SDK·Codex·sandbox 호출은 0회다. 다음 작업은 집 PC 원본 동기화이며, 그 전에는 Profile R W snapshot과 Profile I를 확장하지 않는다.
