@@ -1771,3 +1771,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - P001~P015는 첫 세션에 바로 GitHub로 올리지 않는다. ordinal별 존재·run ID·파일 수·byte 수·manifest/hash와 민감정보 포함 여부를 읽기 전용으로 확인한 뒤 공개 가능 artifact, 별도 암호화가 필요한 Controller/Judge raw, 복사 금지 secret으로 분류해 사용자 승인을 받는다.
 - 현재 경로는 원래 Phase D revision 2다. reconstructed replay R3는 부활시키지 않으며, Profile R은 source intake·91-path composition까지만 완료됐다. Profile I는 원본 인수 뒤 시작하고 main 병합도 원본 무결성 확인 뒤 검토한다.
 - 이번 작업은 문서와 프롬프트 갱신뿐이다. 테스트·probe·SDK·Codex·model turn과 P001~P015 접근은 실행하지 않았다.
+
+## 집 P001~P015 원본 inventory의 Git 정본화
+
+- 작업일: 2026-08-10. 집 `codex/runtime-boundary-p01`을 회사 인수 commit `fde51c18590261b9073d22f44a9eb4f3f437b59b`과 ff-only로 맞추고 local/remote HEAD·tree·clean status·remote diff 일치를 확인했다.
+- 저장소 밖 보존 root에서 P001~P015 명명 W root 15개를 모두 확인했다. P001~P012는 W/J/S에 접근해 ordinal마다 pending manifest가 참조하는 7개 파일의 hash·크기 7/7 일치를 확인했다. 이는 partial hash 검증이며 pending manifest를 sealed run으로 승격하지 않는다.
+- protected private root는 6개다. P015 J/S가 서로 다른 2개 private root 아래 존재하는 것은 verified bundle manifest로 결합했지만, 남은 4개를 P013/P014 J/S에 ordinal별로 매핑하고 내용을 읽는 일은 ACL을 바꾸지 않고 수행할 수 없어 미확인으로 유지했다.
+- P015 exact four-file bundle은 payload 2/2, files manifest/seal 결합을 통과했다. 심사 추출본과 ZIP은 각각 package manifest 27/27이 일치했다. 따라서 ordinal 기준 partial-or-better hash verified 13개, protected-unverified 2개, fully sealed verified 1개다.
+- 접근 가능한 P001~P012 raw에는 SID·절대경로·인증 환경 metadata가 있고 P015에는 thread ID도 있다. 실제 secret value pattern은 발견하지 못했지만 P013/P014는 검사하지 못했다. raw를 공개 Git에 넣지 않고 민감값을 제거한 `benchmarks/artifacts/runtime-boundary-phaseb-source-inventory-v1/inventory.json`과 운영 보고서만 추가했다.
+- 이 inventory는 원본 소실 오판을 막는 source-provenance 영수증이다. 같은 저장소에 reference가 존재하는 것은 승인된 same-repository independence와 모순되지 않지만, Profile I W에는 raw·reference·후속 원인 결론을 투영하지 않고 Phase D Worker/Judge 정보 경계와 누출 검사를 유지한다.
+- 이번 후속은 inventory와 인수 상태 문서만 수정했다. P001~P015 원본 이동·수정·재실행, 테스트·probe·SDK·Codex·model turn은 0회다. 다음 gate는 P013/P014의 ACL 비변경 read-only inventory와 승인된 익명화 import다.

@@ -11,6 +11,8 @@
 
 > 이 문서가 추가된 최종 인수인계 commit은 위 기능 기준 commit의 후손이다. 집에서는 특정 문서 안에 자기 자신의 commit을 적으려 하지 말고, `git fetch` 뒤 `origin/codex/runtime-boundary-p01`의 최신 tip을 정본으로 사용한다. 단, 그 tip에 기능 기준 commit `712ce8a...`가 반드시 포함돼야 한다.
 
+> 2026-08-10 집 후속: 동기화 뒤 P001~P015 존재와 hash 상태를 [공개 inventory](./phase-b-p001-p015-source-inventory.md)와 `benchmarks/artifacts/runtime-boundary-phaseb-source-inventory-v1/inventory.json`에 기록했다. P001~P012는 pending manifest 참조 7개가 모두 일치하고 P015 exact bundle은 검증됐다. P013/P014 protected raw는 아직 미확인이다. raw SID·경로·thread ID는 Git에 넣지 않았다.
+
 ## 1. 인수인계의 목표
 
 목표는 회사와 집에서 별도 프로젝트를 운영하는 것이 아니다. **Git이 관리하는 프로젝트 파일은 같은 remote branch, commit, tree로 맞추고**, 집에만 남아 있는 Phase B 원본 `P001~P015`를 잃지 않은 채 다음 Phase D 작업으로 넘기는 것이다.
@@ -121,7 +123,7 @@ generated·golden·historical 자료는 구조 난이도에서 중복 집계하�
 | Phase D revision 2 | Pro 재심 승인, artifact 제작 `GO` |
 | Profile R source | intake와 change composition 완료 |
 | Profile R artifact | W snapshot·Task·checker 미완료 |
-| Profile I source | 집의 P001~P015 인수 전까지 회사에서 보류 |
+| Profile I source | 집 inventory 완료: P001~P012 partial verified, P013/P014 protected-unverified, P015 sealed bundle verified |
 | reconstructed replay R3 | 폐기, 현재 경로로 부활시키지 않음 |
 | Phase E live | `NO-GO` |
 | Phase F model turn | `NO-GO` |
