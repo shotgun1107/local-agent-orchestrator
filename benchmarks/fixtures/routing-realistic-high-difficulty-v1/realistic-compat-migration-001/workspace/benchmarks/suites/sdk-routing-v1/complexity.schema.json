@@ -1,0 +1,140 @@
+{
+  "$defs": {
+    "ExpectedWriteFiles": {
+      "additionalProperties": false,
+      "properties": {
+        "maximum": {
+          "minimum": 0,
+          "title": "Maximum",
+          "type": "integer"
+        },
+        "minimum": {
+          "minimum": 0,
+          "title": "Minimum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "title": "ExpectedWriteFiles",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "check_count": {
+      "minimum": 0,
+      "title": "Check Count",
+      "type": "integer"
+    },
+    "dependency_depth": {
+      "minimum": 1,
+      "title": "Dependency Depth",
+      "type": "integer"
+    },
+    "dependency_edges": {
+      "minimum": 0,
+      "title": "Dependency Edges",
+      "type": "integer"
+    },
+    "expected_write_files": {
+      "$ref": "#/$defs/ExpectedWriteFiles"
+    },
+    "failure_profile": {
+      "enum": [
+        "normal",
+        "omission_risk",
+        "compatibility_risk",
+        "injected"
+      ],
+      "title": "Failure Profile",
+      "type": "string"
+    },
+    "handoff_kind": {
+      "enum": [
+        "none",
+        "filesystem_implicit",
+        "declared_single",
+        "declared_multiple"
+      ],
+      "title": "Handoff Kind",
+      "type": "string"
+    },
+    "max_fan_in": {
+      "minimum": 0,
+      "title": "Max Fan In",
+      "type": "integer"
+    },
+    "scope_overlap": {
+      "enum": [
+        "not_applicable",
+        "disjoint",
+        "partial",
+        "shared"
+      ],
+      "title": "Scope Overlap",
+      "type": "string"
+    },
+    "solution_ambiguity": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Solution Ambiguity",
+      "type": "string"
+    },
+    "task_count": {
+      "minimum": 1,
+      "title": "Task Count",
+      "type": "integer"
+    },
+    "verification_kind": {
+      "enum": [
+        "public_to_worker",
+        "post_hoc_property",
+        "judge_only_verified",
+        "judge_only_unverified",
+        "partial",
+        "human"
+      ],
+      "title": "Verification Kind",
+      "type": "string"
+    },
+    "worker_read_bytes": {
+      "minimum": 0,
+      "title": "Worker Read Bytes",
+      "type": "integer"
+    },
+    "worker_read_files": {
+      "minimum": 0,
+      "title": "Worker Read Files",
+      "type": "integer"
+    },
+    "write_modules": {
+      "minimum": 1,
+      "title": "Write Modules",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "task_count",
+    "dependency_depth",
+    "dependency_edges",
+    "max_fan_in",
+    "worker_read_files",
+    "worker_read_bytes",
+    "expected_write_files",
+    "write_modules",
+    "check_count",
+    "handoff_kind",
+    "scope_overlap",
+    "verification_kind",
+    "failure_profile",
+    "solution_ambiguity"
+  ],
+  "title": "FixtureComplexity",
+  "type": "object"
+}

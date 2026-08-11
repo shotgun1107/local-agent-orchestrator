@@ -1,0 +1,497 @@
+{
+  "$defs": {
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "size",
+        "sha256"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "MeasurementEffort": {
+      "additionalProperties": false,
+      "properties": {
+        "judge_seconds": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "manual_copy_or_relay_count_excluding_start": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "manual_copy_or_relay_count_including_start": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "manual_recovery_count": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "manual_recovery_seconds": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "startup_action_count": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "total_wall_clock_seconds": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "variant_execution_seconds": {
+          "$ref": "#/$defs/MetricValue"
+        }
+      },
+      "required": [
+        "variant_execution_seconds",
+        "judge_seconds",
+        "total_wall_clock_seconds",
+        "startup_action_count",
+        "manual_copy_or_relay_count_excluding_start",
+        "manual_copy_or_relay_count_including_start",
+        "manual_recovery_count",
+        "manual_recovery_seconds"
+      ],
+      "title": "MeasurementEffort",
+      "type": "object"
+    },
+    "MeasurementEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_mode": {
+          "title": "Approval Mode",
+          "type": "string"
+        },
+        "auth_method": {
+          "title": "Auth Method",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "model_control": {
+          "title": "Model Control",
+          "type": "string"
+        },
+        "os": {
+          "title": "Os",
+          "type": "string"
+        },
+        "python_version": {
+          "title": "Python Version",
+          "type": "string"
+        },
+        "reasoning_control": {
+          "title": "Reasoning Control",
+          "type": "string"
+        },
+        "reasoning_effort": {
+          "title": "Reasoning Effort",
+          "type": "string"
+        },
+        "surface_kind": {
+          "title": "Surface Kind",
+          "type": "string"
+        },
+        "treatment_control": {
+          "enum": [
+            "full",
+            "partial",
+            "not_applicable"
+          ],
+          "title": "Treatment Control",
+          "type": "string"
+        }
+      },
+      "required": [
+        "os",
+        "python_version",
+        "model",
+        "auth_method",
+        "reasoning_effort",
+        "surface_kind",
+        "approval_mode",
+        "model_control",
+        "reasoning_control",
+        "treatment_control"
+      ],
+      "title": "MeasurementEnvironment",
+      "type": "object"
+    },
+    "MeasurementIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "title": "Block Id",
+          "type": "string"
+        },
+        "cell_id": {
+          "title": "Cell Id",
+          "type": "string"
+        },
+        "execution_ordinal": {
+          "minimum": 1,
+          "title": "Execution Ordinal",
+          "type": "integer"
+        },
+        "experiment_id": {
+          "title": "Experiment Id",
+          "type": "string"
+        },
+        "fixture_id": {
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "repetition": {
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "variant_id": {
+          "title": "Variant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "block_id",
+        "cell_id",
+        "fixture_id",
+        "repetition",
+        "variant_id",
+        "execution_ordinal"
+      ],
+      "title": "MeasurementIdentity",
+      "type": "object"
+    },
+    "MeasurementIntegrity": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_hashes_ok": {
+          "title": "Evidence Hashes Ok",
+          "type": "boolean"
+        },
+        "scope_ok": {
+          "title": "Scope Ok",
+          "type": "boolean"
+        },
+        "secret_findings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Secret Findings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "scope_ok",
+        "evidence_hashes_ok",
+        "secret_findings"
+      ],
+      "title": "MeasurementIntegrity",
+      "type": "object"
+    },
+    "MeasurementOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "check_success": {
+          "title": "Check Success",
+          "type": "boolean"
+        },
+        "failure_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Kind"
+        },
+        "state": {
+          "enum": [
+            "completed",
+            "failed",
+            "blocked",
+            "interrupted",
+            "timed_out",
+            "infrastructure_error"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "check_success"
+      ],
+      "title": "MeasurementOutcome",
+      "type": "object"
+    },
+    "MeasurementProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "fixture_source_commit": {
+          "title": "Fixture Source Commit",
+          "type": "string"
+        },
+        "fixture_tree_after": {
+          "title": "Fixture Tree After",
+          "type": "string"
+        },
+        "fixture_tree_before": {
+          "title": "Fixture Tree Before",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "runner_commit": {
+          "title": "Runner Commit",
+          "type": "string"
+        },
+        "variant_artifact_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Variant Artifact Sha256",
+          "type": "string"
+        },
+        "variant_version": {
+          "title": "Variant Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifest_sha256",
+        "fixture_source_commit",
+        "fixture_tree_before",
+        "fixture_tree_after",
+        "runner_commit",
+        "variant_version",
+        "variant_artifact_sha256"
+      ],
+      "title": "MeasurementProvenance",
+      "type": "object"
+    },
+    "MeasurementQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "errors_found_by_automatic_checks": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "human_errors_after_pass": {
+          "$ref": "#/$defs/MetricValue"
+        }
+      },
+      "required": [
+        "errors_found_by_automatic_checks",
+        "human_errors_after_pass"
+      ],
+      "title": "MeasurementQuality",
+      "type": "object"
+    },
+    "MeasurementResource": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_count": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "session_count": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "token_usage": {
+          "$ref": "#/$defs/MetricValue"
+        },
+        "turn_count": {
+          "$ref": "#/$defs/MetricValue"
+        }
+      },
+      "required": [
+        "session_count",
+        "turn_count",
+        "attempt_count",
+        "token_usage"
+      ],
+      "title": "MeasurementResource",
+      "type": "object"
+    },
+    "MetricStatus": {
+      "enum": [
+        "measured",
+        "derived",
+        "unknown",
+        "not_applicable"
+      ],
+      "title": "MetricStatus",
+      "type": "string"
+    },
+    "MetricValue": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Ref"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "status": {
+          "$ref": "#/$defs/MetricStatus"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "status",
+        "unit"
+      ],
+      "title": "MetricValue",
+      "type": "object"
+    },
+    "VariantMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "values": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Values",
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_id",
+        "values"
+      ],
+      "title": "VariantMetrics",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "effort": {
+      "$ref": "#/$defs/MeasurementEffort"
+    },
+    "environment": {
+      "$ref": "#/$defs/MeasurementEnvironment"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "identity": {
+      "$ref": "#/$defs/MeasurementIdentity"
+    },
+    "integrity": {
+      "$ref": "#/$defs/MeasurementIntegrity"
+    },
+    "kind": {
+      "const": "measurement",
+      "default": "measurement",
+      "title": "Kind",
+      "type": "string"
+    },
+    "outcome": {
+      "$ref": "#/$defs/MeasurementOutcome"
+    },
+    "producer": {
+      "const": "lao-bench/0.1.0",
+      "default": "lao-bench/0.1.0",
+      "title": "Producer",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/MeasurementProvenance"
+    },
+    "quality": {
+      "$ref": "#/$defs/MeasurementQuality"
+    },
+    "resource": {
+      "$ref": "#/$defs/MeasurementResource"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "variant_metrics": {
+      "$ref": "#/$defs/VariantMetrics"
+    }
+  },
+  "required": [
+    "created_at",
+    "identity",
+    "provenance",
+    "environment",
+    "outcome",
+    "effort",
+    "resource",
+    "quality",
+    "integrity",
+    "evidence",
+    "variant_metrics"
+  ],
+  "title": "Measurement",
+  "type": "object"
+}

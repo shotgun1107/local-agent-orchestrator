@@ -1,0 +1,293 @@
+{
+  "$defs": {
+    "ArtifactIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "version",
+        "sha256"
+      ],
+      "title": "ArtifactIdentity",
+      "type": "object"
+    },
+    "FixtureIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "fixture_id": {
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "git_tree": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Git Tree",
+          "type": "string"
+        },
+        "source_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "title": "Source Commit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fixture_id",
+        "source_commit",
+        "git_tree"
+      ],
+      "title": "FixtureIdentity",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PlanSupplement": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "source"
+      ],
+      "title": "PlanSupplement",
+      "type": "object"
+    },
+    "PlannedCell": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "pattern": "^block_[a-z0-9._-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "cell_id": {
+          "pattern": "^cell_[a-z0-9._-]+$",
+          "title": "Cell Id",
+          "type": "string"
+        },
+        "execution_ordinal": {
+          "minimum": 1,
+          "title": "Execution Ordinal",
+          "type": "integer"
+        },
+        "fixture_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "repetition": {
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "variant_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Variant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cell_id",
+        "block_id",
+        "fixture_id",
+        "repetition",
+        "variant_id",
+        "execution_ordinal"
+      ],
+      "title": "PlannedCell",
+      "type": "object"
+    },
+    "SourceManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "SourceManifest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "baseline_variant": {
+      "minLength": 1,
+      "title": "Baseline Variant",
+      "type": "string"
+    },
+    "candidate_variants": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Candidate Variants",
+      "type": "array"
+    },
+    "cells": {
+      "items": {
+        "$ref": "#/$defs/PlannedCell"
+      },
+      "minItems": 1,
+      "title": "Cells",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "decision_policy": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Decision Policy",
+      "type": "object"
+    },
+    "environment_fingerprint": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Environment Fingerprint",
+      "type": "object"
+    },
+    "experiment_id": {
+      "pattern": "^exp_[0-9]{8}_[0-9a-f]{8}_[1-9][0-9]*$",
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "fixtures": {
+      "items": {
+        "$ref": "#/$defs/FixtureIdentity"
+      },
+      "minItems": 1,
+      "title": "Fixtures",
+      "type": "array"
+    },
+    "kind": {
+      "const": "execution_plan",
+      "default": "execution_plan",
+      "title": "Kind",
+      "type": "string"
+    },
+    "plan_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plan Fingerprint",
+      "type": "string"
+    },
+    "plan_supplemented": {
+      "items": {
+        "$ref": "#/$defs/PlanSupplement"
+      },
+      "title": "Plan Supplemented",
+      "type": "array"
+    },
+    "primary_metrics": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Primary Metrics",
+      "type": "array"
+    },
+    "producer": {
+      "const": "lao-bench/0.1.0",
+      "default": "lao-bench/0.1.0",
+      "title": "Producer",
+      "type": "string"
+    },
+    "reasoning_control": {
+      "minLength": 1,
+      "title": "Reasoning Control",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "runner": {
+      "$ref": "#/$defs/ArtifactIdentity"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    },
+    "source_manifest": {
+      "$ref": "#/$defs/SourceManifest"
+    },
+    "variants": {
+      "items": {
+        "$ref": "#/$defs/ArtifactIdentity"
+      },
+      "minItems": 1,
+      "title": "Variants",
+      "type": "array"
+    }
+  },
+  "required": [
+    "created_at",
+    "experiment_id",
+    "plan_fingerprint",
+    "revision",
+    "source_manifest",
+    "runner",
+    "variants",
+    "fixtures",
+    "cells",
+    "seed",
+    "baseline_variant",
+    "candidate_variants",
+    "primary_metrics",
+    "decision_policy",
+    "reasoning_control",
+    "plan_supplemented",
+    "environment_fingerprint"
+  ],
+  "title": "ExecutionPlan",
+  "type": "object"
+}

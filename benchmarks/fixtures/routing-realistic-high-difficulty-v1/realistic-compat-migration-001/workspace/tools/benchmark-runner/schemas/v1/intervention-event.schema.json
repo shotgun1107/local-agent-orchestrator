@@ -1,0 +1,108 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "enum": [
+        "user",
+        "runner"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "cell_id": {
+      "pattern": "^cell_[a-z0-9._-]+$",
+      "title": "Cell Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "duration_seconds": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duration Seconds"
+    },
+    "event_id": {
+      "pattern": "^evt_[a-z0-9._-]+$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "intervention_kind": {
+      "enum": [
+        "initial_prompt_copy",
+        "b1_start",
+        "additional_prompt",
+        "correction",
+        "manual_retry",
+        "recovery_start",
+        "recovery_end",
+        "session_replacement",
+        "status_observation",
+        "abort"
+      ],
+      "title": "Intervention Kind",
+      "type": "string"
+    },
+    "kind": {
+      "const": "intervention_event",
+      "default": "intervention_event",
+      "title": "Kind",
+      "type": "string"
+    },
+    "monotonic_offset_seconds": {
+      "minimum": 0,
+      "title": "Monotonic Offset Seconds",
+      "type": "number"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "producer": {
+      "const": "lao-bench/0.1.0",
+      "default": "lao-bench/0.1.0",
+      "title": "Producer",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "required": [
+    "created_at",
+    "event_id",
+    "cell_id",
+    "timestamp",
+    "monotonic_offset_seconds",
+    "intervention_kind",
+    "actor"
+  ],
+  "title": "InterventionEvent",
+  "type": "object"
+}

@@ -1,0 +1,41 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "키 정규화 모듈을 구현한 뒤 설정 파서에 연결한다."
+completion_criteria:
+  - id: RC1
+    text: "단계별 검사와 최종 acceptance test가 통과한다."
+    satisfied_by_tasks: [T1, T2]
+constraints:
+  - "benchmark_checks/와 .orchestrator/checks.yaml은 수정하지 않는다."
+  - "각 Task는 자신의 write_scope만 수정한다."
+assumptions: []
+tasks:
+  - key: T1
+    goal: "src/normalization.py에 normalize_key(value)를 구현한다. 문자열 앞뒤 공백 제거, 소문자화, 하이픈의 밑줄 변환을 수행하고 빈 문자열과 문자열이 아닌 값은 ValueError로 거부한다."
+    completion_criteria:
+      - id: TC1
+        text: "stage1 검사가 통과한다."
+        check_names: [stage1]
+    depends_on: []
+    inputs: []
+    read_scope: ["README.md", "benchmark_checks/**", "src/**"]
+    write_scope: ["src/normalization.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [stage1, diff_check]
+    approval: none
+  - key: T2
+    goal: "src/config.py의 parse_config(raw)를 T1의 normalize_key로 키를 정규화하도록 수정한다. 허용 키는 timeout_seconds와 max_retries뿐이며, 정규화 뒤 알 수 없는 키와 중복 키는 ValueError로 거부한다. 입력 mapping은 변경하지 않고 새 dict를 반환한다."
+    completion_criteria:
+      - id: TC2
+        text: "acceptance 검사가 통과한다."
+        check_names: [acceptance]
+    depends_on: [T1]
+    inputs: []
+    read_scope: ["README.md", "benchmark_checks/**", "src/**"]
+    write_scope: ["src/config.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [acceptance, diff_check]
+    approval: none

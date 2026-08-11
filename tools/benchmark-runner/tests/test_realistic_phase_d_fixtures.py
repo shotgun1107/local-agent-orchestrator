@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -16,6 +19,24 @@ INTAKE_PATH = (
     / "source-intake.json"
 )
 COMPOSITION_PATH = INTAKE_PATH.with_name("r-change-composition.json")
+ALLOWLIST_PATH = INTAKE_PATH.with_name("worker-source-allowlist.json")
+WORKER_ROOT = INTAKE_PATH.with_name("workspace")
+WORKER_MANIFEST_PATH = INTAKE_PATH.with_name("worker-snapshot-manifest.json")
+ANONYMIZATION_MAP_PATH = (
+    REPOSITORY
+    / "benchmarks"
+    / "judge-source"
+    / "sdk-routing-realistic-high-difficulty-v1"
+    / "realistic-compat-migration-001"
+    / "anonymization-map.json"
+)
+SNAPSHOT_BUILDER_PATH = (
+    REPOSITORY
+    / "tools"
+    / "benchmark-runner"
+    / "scripts"
+    / "build_profile_r_worker_snapshot.py"
+)
 ALLOWED_COMPOSITION_CATEGORIES = {
     "authored_source",
     "authored_test",
@@ -79,7 +100,7 @@ def test_profile_r_source_intake_does_not_claim_challenge_ready() -> None:
     assert intake["snapshot_id"] == "realistic-compat-migration-001"
     assert intake["profile"] == "R"
     assert intake["source_authority"] == "git_object_database"
-    assert intake["status"] == "SOURCE_VERIFIED_COMPOSITION_PENDING"
+    assert intake["status"] == "SOURCE_VERIFIED_COMPOSITION_CANDIDATE"
 
 
 def test_profile_r_change_composition_covers_every_changed_path_once() -> None:
@@ -146,3 +167,63 @@ def test_profile_r_change_composition_deduplicates_derived_content() -> None:
         category_counts[category] = category_counts.get(category, 0) + 1
     assert composition["category_counts"] == dict(sorted(category_counts.items()))
     assert composition["status"] == "COMPOSITION_CANDIDATE"
+
+
+def _load_snapshot_builder():
+    spec = importlib.util.spec_from_file_location(
+        "profile_r_snapshot_builder", SNAPSHOT_BUILDER_PATH
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _workspace_files(root: Path) -> list[Path]:
+    return sorted(
+        (path for path in root.rglob("*") if path.is_file()),
+        key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
+    )
+
+
+def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_literals() -> None:
+    manifest = json.loads(WORKER_MANIFEST_PATH.read_text(encoding="utf-8"))
+    mapping = json.loads(ANONYMIZATION_MAP_PATH.read_text(encoding="utf-8"))
+    allowlist = json.loads(ALLOWLIST_PATH.read_text(encoding="utf-8"))
+    files = _workspace_files(WORKER_ROOT)
+    relative_paths = [path.relative_to(WORKER_ROOT).as_posix() for path in files]
+
+    assert manifest["status"] == "ANONYMIZED_BASE_SNAPSHOT_CANDIDATE"
+    assert manifest["challenge_ready"] is False
+    assert manifest["file_count"] == allowlist["expected_file_count"] == len(files) == 99
+    assert relative_paths == [record["path"] for record in manifest["files"]]
+    for path, record in zip(files, manifest["files"], strict=True):
+        payload = path.read_bytes()
+        assert len(payload) == record["worker_size"]
+        assert hashlib.sha256(payload).hexdigest() == record["worker_sha256"]
+        for literal in mapping["forbidden_worker_literals"]:
+            assert literal.encode("utf-8") not in payload
+        for pattern in mapping["forbidden_worker_regexes"]:
+            assert re.search(pattern.encode("ascii"), payload) is None
+
+
+def test_profile_r_worker_snapshot_rebuild_is_byte_identical(tmp_path: Path) -> None:
+    builder = _load_snapshot_builder()
+    output_a = tmp_path / "a" / "workspace"
+    manifest_a = tmp_path / "a" / "manifest.json"
+    output_b = tmp_path / "b" / "workspace"
+    manifest_b = tmp_path / "b" / "manifest.json"
+
+    built_a = builder.build_snapshot(REPOSITORY, output_a, manifest_a)
+    built_b = builder.build_snapshot(REPOSITORY, output_b, manifest_b)
+
+    assert manifest_a.read_bytes() == manifest_b.read_bytes() == WORKER_MANIFEST_PATH.read_bytes()
+    assert built_a["worker_tree_aggregate_sha256"] == built_b["worker_tree_aggregate_sha256"]
+    assert [path.relative_to(output_a).as_posix() for path in _workspace_files(output_a)] == [
+        path.relative_to(output_b).as_posix() for path in _workspace_files(output_b)
+    ]
+    for path_a, path_b in zip(
+        _workspace_files(output_a), _workspace_files(output_b), strict=True
+    ):
+        assert path_a.read_bytes() == path_b.read_bytes()
