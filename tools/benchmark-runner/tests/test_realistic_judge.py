@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from benchmark_runner.realistic_judge import (
     RealisticJudgeError,
     TreeFileRecord,
     TreeFingerprint,
+    _git_prefix_records,
     _judge_config_overrides,
     fingerprint_tree,
     verification_codes,
@@ -178,6 +180,25 @@ def test_tree_fingerprint_is_deterministic_and_rejects_symlink(tmp_path: Path) -
         pytest.skip("symlink creation is unavailable")
     with pytest.raises(RealisticJudgeError, match="non-regular"):
         fingerprint_tree(tmp_path)
+
+
+def test_frozen_git_prefix_records_are_loaded_from_exact_commit() -> None:
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    tree_oid, records = _git_prefix_records(
+        REPOSITORY_ROOT,
+        commit,
+        "benchmarks/fixtures/routing-realistic-high-difficulty-v1/"
+        "realistic-compat-migration-001/workspace",
+    )
+    assert len(tree_oid) == 40
+    assert records
+    assert all(len(blob_oid) == 40 and payload for _, blob_oid, payload in records)
 
 
 def test_probe_output_root_matrix_is_fresh_and_cleaned(tmp_path: Path) -> None:
