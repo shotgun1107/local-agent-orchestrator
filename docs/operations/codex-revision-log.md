@@ -1827,3 +1827,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Judge source bundle에는 기존 표준 라이브러리 probe의 byte-exact 복사본 1개가 추가됐다. manifest 제외 32 files, payload aggregate SHA-256 `5bc46cd27b6e0ef9dae01920c9f5552905cbe6cfb1ea6cf0879e0a9734dee0ed`, bundle manifest SHA-256 `80e173d4ac75d55c7082b87408d701361e3ec422f7de19b101e80115e0ff6561`다. checker 내부 pytest 임시 파일은 fresh O 아래에서만 생성·정리되도록 고정했다.
 - 표적 검증은 `19 passed, 1 skipped in 11.78s`다. skip은 현재 Windows 계정에서 test용 symlink 생성 권한이 없어 발생했다. 전체 Runner 회귀는 `309 passed, 1 skipped, 1 failed in 277.28s`였고, 유일한 실패는 기존 SDK Cell 테스트의 임시 `cell-state.json` 교체에서 발생한 Windows `WinError 5`였다. 실패 테스트만 재실행한 결과 `1 passed in 8.33s`로 통과해 Judge 변경과 무관한 일시적 파일 잠금으로 분리했다. 전체 회귀는 반복하지 않았다.
 - 현재 코드는 `JUDGE_RUNTIME_BOUNDARY_CANDIDATE`를 실제로 만들 수 있는 실행 진입점까지 준비됐지만 아직 Git object로 동결되지 않았으므로 `codex sandbox` 경계 시험은 실행하지 않았다. 다음 순서는 이 변경분을 commit한 뒤 exact commit에서 W/J를 추출해 model-free Judge 시험을 1회 실행하는 것이다. 실제 Worker 실행, Phase E live, Phase F model turn과 `challenge_ready=true` 전환은 계속 `NO-GO`다.
+
+## Phase D Profile R Judge 경계 실제 실행
+
+- 작업일: 2026-08-11. 실행 가능성 수정분을 commit `3cbdcb47d34412abd6a7ecc75956610795ec0a52`로 동결한 뒤 새 one-shot root에서 Profile R Judge 경계를 1회 실행했다. run ID는 `profile-r-judge-candidate-20260811-3cbdcb4-1`, 최종 판정은 `CHALLENGE_INVALID`, model turn은 0이다.
+- W/J read-only, fresh O read/write와 종료 뒤 empty, S 전면 access denied, W/J/S 무변경은 확인됐다. Probe는 exit 0으로 typed 결과를 반환했고 Checker도 pristine W의 등록 property 실패를 exit 1 canonical JSON으로 반환했다. 이 Checker 실패는 사전 등록 negative control과 일치한다.
+- 실패 verification code는 `COMMON_PARENT_ENUMERATION_NOT_DENIED`, `DRIVE_ROOT_ENUMERATION_NOT_DENIED`, `LOOPBACK_CONNECTION_ACCEPTED`, `LOOPBACK_NOT_PERMISSION_DENIED`, `PARENT_CHILD_MATRIX_MISMATCH`, `SYMLINK_CREATE_NOT_SUCCESS` 여섯 개다. 특히 `network.enabled=false` profile에서도 parent·child가 Controller loopback listener에 접속해 accepted connection count가 2였다.
+- 이 결과를 통과로 완화하거나 같은 조건에서 반복하지 않는다. 현재 Windows Codex 0.144.4 permission profile만으로 동결 명세의 no-network Judge 경계를 증명하지 못했으므로 Profile R은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, `challenge_ready=false`에 머문다. 실제 Worker, Phase E/F와 model turn은 계속 `NO-GO`다.
+- 다음 관문은 loopback까지 차단하는 별도 OS 격리 경계를 채택할지, 아니면 Judge를 신뢰된 로컬 검사기로 재분류해 명세·주장 범위를 낮출지에 대한 사용자 결정이다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-judge-boundary-result.md`에 기록했다.
