@@ -55,4 +55,6 @@ source gate 통과는 Phase D challenge 완성을 뜻하지 않는다. Worker pr
 property checker, mutation evidence, Docker qualification은 아직 만들거나 실행하지
 않았다. SS1/B1 Worker, SDK thread, Codex model turn도 실행하지 않았다.
 
-다음 관문은 `PROFILE_I_WORKER_PROJECTION_AND_LEAKAGE_REVIEW`다.
+후속 작업에서 `PROFILE_I_WORKER_PROJECTION_AND_LEAKAGE_REVIEW`를 통과했다.
+현재 다음 관문은 versioned J source bundle, reference replay, property checker와
+negative mutation 제작이다.

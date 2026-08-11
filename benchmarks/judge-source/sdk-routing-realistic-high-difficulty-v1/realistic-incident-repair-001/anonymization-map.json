@@ -1,0 +1,41 @@
+{
+  "forbidden_overlay_literals": [
+    "RUNTIME_BOUNDARY_CANDIDATE",
+    "P015",
+    "harden_controller_only_directory",
+    "inheritance:r",
+    "lexical argv",
+    "metadata nondisclosure",
+    "no-follow",
+    "reference.patch"
+  ],
+  "forbidden_overlay_structured_keys": [
+    "candidate_ordinal",
+    "correction_class",
+    "expected_answer",
+    "expected_derived_passed",
+    "reference_commit",
+    "successor_ordinal"
+  ],
+  "forbidden_worker_regexes": [
+    "C:[\\\\/]Users[\\\\/]",
+    "S-1-[0-9-]{8,}",
+    "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+  ],
+  "normalization": "utf8-nfc-lf-slash-casefold-v1",
+  "replacements": [
+    {
+      "id": "repository-name",
+      "replacement_utf8": "orchestration-fixture",
+      "source_utf8": "local-agent-orchestrator"
+    },
+    {
+      "id": "historical-year",
+      "replacement_utf8": "2099",
+      "source_utf8": "2026"
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "status": "CONTROLLER_ONLY_MAPPING_CANDIDATE"
+}

@@ -1,0 +1,277 @@
+{
+  "anonymization_mapping_sha256": "e85c42824dec60492a4f80b05aea1dfec3a78994a9f213f49a23eec43375b961",
+  "base_file_count": 10,
+  "challenge_ready": false,
+  "file_count": 20,
+  "files": [
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": ".orchestrator/checks.yaml",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/.orchestrator/checks.yaml",
+      "source_sha256": "fd5e618625bd31242ab4ce796f16ba9b88c0966170dad596052d5ad5eedc7d56",
+      "source_size": 1380,
+      "worker_sha256": "fd5e618625bd31242ab4ce796f16ba9b88c0966170dad596052d5ad5eedc7d56",
+      "worker_size": 1380
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "README.md",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/README.md",
+      "source_sha256": "a70fdaad4bc65fe83d466536bb3ca8de460b6a3605f6aa8b3e1714e5a36ccf3d",
+      "source_size": 559,
+      "worker_sha256": "a70fdaad4bc65fe83d466536bb3ca8de460b6a3605f6aa8b3e1714e5a36ccf3d",
+      "worker_size": 559
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmark-run.yaml",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/benchmark-run.yaml",
+      "source_sha256": "8f7450d1993544dd5ffa66b30f286cc92a1635a0ef8567f111e8fd62c8ade4a1",
+      "source_size": 9564,
+      "worker_sha256": "8f7450d1993544dd5ffa66b30f286cc92a1635a0ef8567f111e8fd62c8ade4a1",
+      "worker_size": 9564
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmark_checks/check_profile_i.py",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/benchmark_checks/check_profile_i.py",
+      "source_sha256": "c31bea688b912e116ea75d8d5986f7d223c3a932d132c37f86bc77bd1279c8c7",
+      "source_size": 12739,
+      "worker_sha256": "c31bea688b912e116ea75d8d5986f7d223c3a932d132c37f86bc77bd1279c8c7",
+      "worker_size": 12739
+    },
+    {
+      "mapping_ids": [
+        "document-commit-identities",
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "29ad808edb51c64bf80ccdc750f8295b14f802e3",
+      "source_path": null,
+      "source_sha256": "6680b719bae3de4548073b4891cc69f5da014f521640cd80ca2088dd23e48a6c",
+      "source_size": 36432,
+      "worker_sha256": "e7e5bea97dab798d19923c7d934a35b6a079cd9fecf5e863129619b7c96ba293",
+      "worker_size": 36432
+    },
+    {
+      "mapping_ids": [
+        "document-commit-identities",
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "9b8506d728fa936dc7fe8aaa9de8b0c8c23b0e1b",
+      "source_path": null,
+      "source_sha256": "e7439f5ab406727dd3b0b46d750a793f250a0e6eeb42660e746ebaccc2970dfe",
+      "source_size": 29125,
+      "worker_sha256": "2a037f5fff4dea3118219eeadd5156f6c3e989782cfa2b008a6edff39f8172b3",
+      "worker_size": 29125
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/evidence/public-observations.json",
+      "provenance": "public_observation",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-incident-repair-001/public-observation-projection.json",
+      "source_sha256": "4f084d25d007e51dc99a03ebfecbb84a13812f8b2aacd3e8af1deea8ac4d326f",
+      "source_size": 4846,
+      "worker_sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c",
+      "worker_size": 8992
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/requirements/boundary-contract.md",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/profile-i/requirements/boundary-contract.md",
+      "source_sha256": "43c1d95b98ff4d99c0f5e6abe16c99707b0fa6f7ccf8a93db5e524333f1c61ff",
+      "source_size": 1857,
+      "worker_sha256": "43c1d95b98ff4d99c0f5e6abe16c99707b0fa6f7ccf8a93db5e524333f1c61ff",
+      "worker_size": 1857
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/requirements/evidence-ledger.schema.json",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/profile-i/requirements/evidence-ledger.schema.json",
+      "source_sha256": "6236210ac6322c78263f62cc0acee8e4cdaaad7337ed53a04a90268332ff74d3",
+      "source_size": 1019,
+      "worker_sha256": "6236210ac6322c78263f62cc0acee8e4cdaaad7337ed53a04a90268332ff74d3",
+      "worker_size": 1019
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/work/evidence-ledger.json",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/profile-i/work/evidence-ledger.json",
+      "source_sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4",
+      "source_size": 2019,
+      "worker_sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4",
+      "worker_size": 2019
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/work/incident-claims.json",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/profile-i/work/incident-claims.json",
+      "source_sha256": "4d972026e949813141677eec36ad4d646c440afd81507fe52402d94c8970c58d",
+      "source_size": 42,
+      "worker_sha256": "4d972026e949813141677eec36ad4d646c440afd81507fe52402d94c8970c58d",
+      "worker_size": 42
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "profile-i/work/task-contracts.json",
+      "provenance": "public_requirement",
+      "source_blob_oid": null,
+      "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-public-overlay/profile-i/work/task-contracts.json",
+      "source_sha256": "599bd58c59155f94347b491443b9e8ebec4ce7bcc53bca05dc3022eed5a15aab",
+      "source_size": 897,
+      "worker_sha256": "599bd58c59155f94347b491443b9e8ebec4ce7bcc53bca05dc3022eed5a15aab",
+      "worker_size": 897
+    },
+    {
+      "mapping_ids": [
+        "document-commit-identities",
+        "historical-year",
+        "repository-name"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/README.md",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "a0254999f1343254aca6d9d5c5169154a982c750",
+      "source_path": null,
+      "source_sha256": "85ab4e0afe0ab603f58b830850bcdfaf9e55a75e1e3f61254cd6799291e7d1d5",
+      "source_size": 25376,
+      "worker_sha256": "3e98babbb84f135a2be5fae6dd759e680ff3de0dc6a821c1339e7b4d3c80baf8",
+      "worker_size": 25370
+    },
+    {
+      "mapping_ids": [
+        "repository-name"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/pyproject.toml",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "36669792088ccdc77ada896fdd6607b4500b9c6e",
+      "source_path": null,
+      "source_sha256": "83c094bb9982f63a9b00152b44987ce60408096d7b582e46c9a6bd3adf4fdaa6",
+      "source_size": 732,
+      "worker_sha256": "2c5ef7adbfebe82d1fb5b7107b43e23cf188ed9b65bbf666b58f3e1dd7c05e60",
+      "worker_size": 726
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "b3e1cc844ebc1fc5e98a10777e471ec3a9b5d6b4",
+      "source_path": null,
+      "source_sha256": "b3d374e479c70397a5668080c6ed5da7b87d2d7eb0badc2a89e4fb572958fcc7",
+      "source_size": 18803,
+      "worker_sha256": "b3d374e479c70397a5668080c6ed5da7b87d2d7eb0badc2a89e4fb572958fcc7",
+      "worker_size": 18803
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/__init__.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "1f001f9e3982d9d12004ff020a66191f1063abb9",
+      "source_path": null,
+      "source_sha256": "f07f57b00af54f5cf5e4ae02d385bdf06ed8d18ec4f811a7229d68e0c6a75226",
+      "source_size": 80,
+      "worker_sha256": "f07f57b00af54f5cf5e4ae02d385bdf06ed8d18ec4f811a7229d68e0c6a75226",
+      "worker_size": 80
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/contract.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "e81854b110270e7031f769512feb9e39ed03d5bc",
+      "source_path": null,
+      "source_sha256": "4a6834190ae88e5accfbe45d5a40dd7ebf6c08f342856581e8d889e94bafc47f",
+      "source_size": 14401,
+      "worker_sha256": "4a6834190ae88e5accfbe45d5a40dd7ebf6c08f342856581e8d889e94bafc47f",
+      "worker_size": 14401
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/runner.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "797f2e4dee3c8591394a5a52f552c4540ee3cfe4",
+      "source_path": null,
+      "source_sha256": "8048ab45aee271b285f2110502ef21b019870ffc105403b0958e28d12ae963bf",
+      "source_size": 185956,
+      "worker_sha256": "8048ab45aee271b285f2110502ef21b019870ffc105403b0958e28d12ae963bf",
+      "worker_size": 185956
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "53b48f417630e4a661dced7d8a73b0d2604e166c",
+      "source_path": null,
+      "source_sha256": "da3dd934401e08c89426a6fd4239b248b4185d00280e6717afd53e5c41e0ba6b",
+      "source_size": 114113,
+      "worker_sha256": "da3dd934401e08c89426a6fd4239b248b4185d00280e6717afd53e5c41e0ba6b",
+      "worker_size": 114113
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "source_blob_oid": "e55829842178b6ed8675ef74867c7bec5d80db32",
+      "source_path": null,
+      "source_sha256": "447fb11dfd82af41793e95a33bfc9ec0c9ef40973c0388f4aff55ae9a9004e40",
+      "source_size": 22552,
+      "worker_sha256": "5967c42f30dee4c1bef067af55d549ff1510f38a08bc198d46b76206ea5e25b5",
+      "worker_size": 22552
+    }
+  ],
+  "forbidden_worker_hits": 0,
+  "profile": "I",
+  "public_observation_file_count": 1,
+  "public_overlay_file_count": 9,
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "solution_leakage_catalog_sha256": "7a2250fc5d580c1bf6230c6baa09d9a30780b8e3c0073a7d3fcf85a98a1d9ac2",
+  "source_allowlist_sha256": "050f78dc3fd54406cc13643ee184506de5ca89626936b4b80f9f21c8b5fc5352",
+  "source_authority": "git_object_database_and_verified_raw_projection",
+  "source_commit": "5fe78aa5c6a357c08682684a258b41e7d84c4dbc",
+  "source_gate_sha256": "3642dcbf5609cceddd3fd144d3a09587d60b6857a814326a90119ec67d42218f",
+  "source_tree": "1b8293fe979fabcbc863320fa014e5bb7cd1c193",
+  "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
+  "worker_total_bytes": 486626,
+  "worker_tree_aggregate_sha256": "870e1f2eda2a047d59e8a7f736aa3c8f513113989758c71ca73d2b262a25df31"
+}

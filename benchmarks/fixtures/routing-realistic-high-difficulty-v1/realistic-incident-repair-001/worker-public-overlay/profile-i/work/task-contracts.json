@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tasks": {
+    "I02": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I03": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I04": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I05": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I06": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I07": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []},
+    "I08": {"changed_paths": [], "completed": false, "evidence_ids": [], "implementation_symbols": [], "test_names": []}
+  }
+}

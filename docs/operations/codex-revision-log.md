@@ -1873,3 +1873,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최초 revision 2는 집 P001~P015를 보존만 하고 Git에 넣지 않도록 막아 Profile I source gate를 계속 차단하는 오류가 있었다. 사용자의 의도는 원본을 익명화해 숨기는 것이 아니라 Git 정본에 byte 그대로 올리고, Worker runtime에서 해당 source root를 제외해 시험 정보 경계를 지키는 것이었다.
 - repository가 `PUBLIC`임을 확인했고 사용자는 SID·절대경로·thread ID·실행 metadata를 포함한 P001~P015 원본 공개 push를 명시적으로 승인했다. 실제 credential 후보가 발견될 때만 public push를 중단하며, raw를 임의 수정·익명화하지 않는다.
 - revision 3은 clean-context 일회용 독립 AI가 원본을 읽기 전용으로 대조·copy·hash 검증하고, 현재 Codex는 raw 내용을 보지 않은 채 exact import root만 `git add -f`, commit, push하도록 고쳤다. raw import가 완료돼야 Profile I model-free artifact 작업을 재개한다.
+
+## Profile I source gate와 Worker projection 완료
+
+- 작업일: 2026-08-11. byte-exact import된 P001~P015 171개 raw file을 source index·files manifest와 다시 대조하고, P001~P014 실패 계보와 P015 candidate를 source commit·revision evidence·typed failure/result artifact에 결합했다. source gate 표적 시험은 6 passed다.
+- 기준 commit의 Git object 10개, public requirement overlay 9개와 P001~P014 public observation projection 1개를 결합해 20-file W snapshot을 만들었다. W tree aggregate SHA-256은 `870e1f2eda2a047d59e8a7f736aa3c8f513113989758c71ca73d2b262a25df31`이다.
+- I01~I08은 동결 dependency graph, 같은 public goal·criteria·input·scope와 보호 path를 사용한다. public Check는 Worker가 선택한 symbol·regression·changed path·evidence declaration만 확인하고 exact reference 구현 이름이나 hidden property를 요구하지 않는다.
+- `worker-information-boundary.json`은 모든 W file·Task·Check·feedback surface의 hash/provenance/cap을 열거한다. leakage catalog는 source evidence와 final reference-only hash를 결합하며 W에서 P015, correction lineage, J/S raw, SID·절대경로·thread·sentinel과 reference identity를 발견하지 않았다.
+- source gate와 Worker projection 결합 표적 시험은 `14 passed in 2.95s`다. pristine W의 I01~I08 public Check는 의도대로 8/8 nonzero이며 actual model turn은 0회다.
+- 상태는 `ANONYMIZED_WORKER_TASK_PACK_CANDIDATE`, `WORKER_INFORMATION_BOUNDARY_VERIFIED`, `challenge_ready=false`다. 다음 관문은 Profile I J source bundle, reference replay, deterministic property checker와 negative mutation이며 Docker qualification, 실제 Worker와 Phase E/F model turn은 아직 열지 않는다.

@@ -1,0 +1,19 @@
+{
+  "records": [
+    {"contradiction_ids": [], "observation_id": "O001", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O002", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O003", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O004", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O005", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O006", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O007", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O008", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O009", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O010", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O011", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O012", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O013", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"},
+    {"contradiction_ids": [], "observation_id": "O014", "observation_sha256s": [], "reason_code": "UNCLASSIFIED", "status": "unclassified"}
+  ],
+  "schema_version": 1
+}
