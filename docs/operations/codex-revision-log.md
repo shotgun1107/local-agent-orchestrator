@@ -1867,3 +1867,9 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 전달 branch는 `codex/phase-d-artifacts`이며 최소 포함 qualification commit은 `0112c20e6c59b1555ac444836b608af1e773d936`이다. 집은 fetch 뒤 이 commit을 포함한 원격 latest tip과 exact tree로 맞춘다. 기존 `codex/runtime-boundary-p01`이나 main에 병합하지 않는다.
 - Git에는 코드·Dockerfile·dependency lock·시험·익명화 qualification projection이 포함된다. 회사 raw root `C:\lao-r\profile-r-docker-matrix-r5`, local Docker image와 집 P001~P015 원본은 Git 비정본이므로 자동 동기화된다고 주장하지 않는다.
 - 같은 집 Codex 작업에 전달할 시작 프롬프트는 dirty·stash·local-only·ignored raw 충돌을 먼저 확인하고, 정상 동기화 뒤 Profile R `SS1 → B1` 최초 pair 실행계획 후보만 작성하도록 갱신했다. 실제 Worker·SDK thread·model turn, Docker qualification 반복과 main 병합은 별도 사용자 승인 전 금지한다.
+
+### P001~P015 원본 전달 지시 교정
+
+- 최초 revision 2는 집 P001~P015를 보존만 하고 Git에 넣지 않도록 막아 Profile I source gate를 계속 차단하는 오류가 있었다. 사용자의 의도는 원본을 익명화해 숨기는 것이 아니라 Git 정본에 byte 그대로 올리고, Worker runtime에서 해당 source root를 제외해 시험 정보 경계를 지키는 것이었다.
+- repository가 `PUBLIC`임을 확인했고 사용자는 SID·절대경로·thread ID·실행 metadata를 포함한 P001~P015 원본 공개 push를 명시적으로 승인했다. 실제 credential 후보가 발견될 때만 public push를 중단하며, raw를 임의 수정·익명화하지 않는다.
+- revision 3은 clean-context 일회용 독립 AI가 원본을 읽기 전용으로 대조·copy·hash 검증하고, 현재 Codex는 raw 내용을 보지 않은 채 exact import root만 `git add -f`, commit, push하도록 고쳤다. raw import가 완료돼야 Profile I model-free artifact 작업을 재개한다.
