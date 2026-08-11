@@ -21,7 +21,9 @@ from pydantic import Field, model_validator
 
 from benchmark_runner.contract import Sha256, StrictModel, utc_now, validate_timestamp
 from benchmark_runner.realistic_docker_judge import (
+    DOCKER_JUDGE_DOCKERFILE_SHA256,
     DOCKER_JUDGE_IMAGE,
+    DOCKER_JUDGE_REQUIREMENTS_SHA256,
     DockerJudgeManifest,
     DockerJudgeResult,
     build_docker_controller_environment,
@@ -111,6 +113,8 @@ class DockerJudgeMatrixManifest(StrictModel):
     created_at: datetime
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     image_reference: Literal[DOCKER_JUDGE_IMAGE] = DOCKER_JUDGE_IMAGE
+    image_dockerfile_sha256: Literal[DOCKER_JUDGE_DOCKERFILE_SHA256] = DOCKER_JUDGE_DOCKERFILE_SHA256
+    image_requirements_sha256: Literal[DOCKER_JUDGE_REQUIREMENTS_SHA256] = DOCKER_JUDGE_REQUIREMENTS_SHA256
     docker_executable_sha256: Sha256
     model_turns: Literal[0] = 0
     variants: list[MatrixVariantPlan] = Field(min_length=9, max_length=9)

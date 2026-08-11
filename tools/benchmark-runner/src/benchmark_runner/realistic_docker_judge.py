@@ -37,8 +37,11 @@ from benchmark_runner.runner import atomic_write, canonical_json_bytes, sha256_b
 
 
 DOCKER_JUDGE_IMAGE = (
-    "python@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36"
+    "local-agent-orchestrator/profile-r-judge@sha256:"
+    "a83a8768656a730b0840879b9279cb653e047700442393da076b8b86889c36f1"
 )
+DOCKER_JUDGE_DOCKERFILE_SHA256 = "12777328f4ff03d6e6726ab065d9cadf9aa6a4a4aa45f22d1df1e753de0c485c"
+DOCKER_JUDGE_REQUIREMENTS_SHA256 = "0fe996a5674c46d85b217d8579c10d4b1d24a801de01b11d9814cf095b7dc07b"
 DOCKER_CONTROLLER_ENVIRONMENT_ALLOWLIST = frozenset(
     {
         "APPDATA",
@@ -106,6 +109,8 @@ class DockerJudgeManifest(StrictModel):
     docker_executable: str = Field(min_length=3)
     docker_executable_sha256: Sha256
     image_reference: Literal[DOCKER_JUDGE_IMAGE] = DOCKER_JUDGE_IMAGE
+    image_dockerfile_sha256: Literal[DOCKER_JUDGE_DOCKERFILE_SHA256] = DOCKER_JUDGE_DOCKERFILE_SHA256
+    image_requirements_sha256: Literal[DOCKER_JUDGE_REQUIREMENTS_SHA256] = DOCKER_JUDGE_REQUIREMENTS_SHA256
     container_name: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,119}$")
     network_mode: Literal["none"] = "none"
     root_filesystem_read_only: Literal[True] = True
