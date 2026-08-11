@@ -360,7 +360,7 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert eligibility["judge_runtime_boundary_verified"] is False
     assert eligibility["challenge_ready"] is False
     records = manifest["files"]
-    assert manifest["file_count_excluding_manifest"] == len(records) == 31
+    assert manifest["file_count_excluding_manifest"] == len(records) == 32
     for record in records:
         payload = (JUDGE_SOURCE_ROOT / record["path"]).read_bytes()
         assert len(payload) == record["size"]

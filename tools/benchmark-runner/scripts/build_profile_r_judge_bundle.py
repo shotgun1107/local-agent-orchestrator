@@ -20,6 +20,8 @@ REFERENCE_COMMIT = "56c91334fb32c4699d11ef80769831f14a0431d6"
 PROFILE_ROOT = Path("benchmarks/fixtures/routing-realistic-high-difficulty-v1") / SNAPSHOT_ID
 JUDGE_ROOT = Path("benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1") / SNAPSHOT_ID
 CHECKER_RELATIVE = Path("checker/check_properties.py")
+PROBE_SOURCE_RELATIVE = Path("tools/benchmark-runner/scripts/probe_runtime_boundary.py")
+PROBE_RELATIVE = Path("checker/probe_runtime_boundary.py")
 
 
 def canonical_json(value: object) -> bytes:
@@ -375,7 +377,7 @@ def build(repository: Path) -> dict[str, object]:
         "challenge-eligibility.json", "r-change-composition.json", "property-catalog.json",
         "prerequisite-dag.json", "information-dependency-map.json", "worker-information-boundary.json",
         "solution-leakage-catalog.json", "operator-contract.json", "incident-claims.json",
-        "reference.patch", "bundle-manifest.json",
+        "reference.patch", "bundle-manifest.json", PROBE_RELATIVE.as_posix(),
     }
     generated_prefixes = ("negative-mutations/", "evidence/")
     for path in list(judge_root.rglob("*")):
@@ -387,6 +389,12 @@ def build(repository: Path) -> dict[str, object]:
     for directory in sorted((item for item in judge_root.rglob("*") if item.is_dir()), reverse=True):
         if directory != judge_root and not any(directory.iterdir()):
             directory.rmdir()
+
+    write_bytes(
+        judge_root,
+        PROBE_RELATIVE.as_posix(),
+        (repository / PROBE_SOURCE_RELATIVE).read_bytes(),
+    )
 
     mapping = load_json(judge_root / "anonymization-map.json")
     composition = load_json(profile_root / "r-change-composition.json")

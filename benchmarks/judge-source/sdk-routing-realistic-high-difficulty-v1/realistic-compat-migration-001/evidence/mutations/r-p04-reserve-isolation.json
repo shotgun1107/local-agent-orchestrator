@@ -3,8 +3,8 @@
   "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
   "cell_id": "r-p04-reserve-isolation",
   "checker_run_status": "completed",
-  "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
-  "envelope_sha256": "0c37438a6ec4897f2bdee560859ac0df98d9ab5e30c507118b80390c01ef1b63",
+  "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+  "envelope_sha256": "cbcef909285e3841a0dfaaac822ba43f215f23fa93be243ffa7761caf924bab8",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -30,7 +30,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
       "evidence_refs": [
         {
@@ -57,7 +57,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -84,7 +84,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -105,7 +105,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
       "evidence_refs": [
         {
@@ -126,7 +126,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -145,7 +145,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
       "evidence_refs": [
         {
@@ -167,7 +167,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "Generated routing bytes remain reproducible under the frozen LF checkout policy.",
       "evidence_refs": [
         {
@@ -200,7 +200,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
       "description": "The structured command, state, failure, and stop relations match the public operator surface.",
       "evidence_refs": [
         {
