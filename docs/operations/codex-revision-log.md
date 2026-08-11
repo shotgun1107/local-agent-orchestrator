@@ -1860,3 +1860,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최종 source commit `5146ee0ba4ab9ff69f181ca9a13d20d7fb7e96a0`, Judge image digest `fc6b0d42...93fbf98`로 batch `profile-r-docker-matrix-r5`를 184.8초 실행했다. Reference는 8/8 pass, mutation 8개는 각 사전 등록 목표 실패 패턴과 일치해 9/9 matched, W/J 무변경, O empty, container 잔여 없음, model turn 0이었다.
 - 독립 verifier 재실행 결과는 `CHALLENGE_READY True 9`다. manifest SHA-256은 `a58d9761...79f363`, result는 `b25c7ad4...546ce4`, seal은 `56c1d214...e553bb`다. 민감 경로를 제외한 projection은 `benchmarks/artifacts/profile-r-docker-judge-qualification-v1/qualification.json`에 보존했다.
 - Profile R 상태를 `PROFILE_R_CHALLENGE_READY`, `challenge_ready=true`로 판정한다. 이는 challenge artifact의 실험 사용 가능성만 뜻하며 SS1/B1 우위는 아직 미검증이다. 실제 Worker·SDK·model turn은 0회이며 다음 Phase 실행에는 별도 계획과 사용자 승인이 필요하다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-qualification-result.md`에 기록했다.
+
+## Profile R qualification 뒤 회사→집 작업 반환
+
+- 작업일: 2026-08-11. 회사에서 완료한 Profile R W·J bundle, Windows Judge 경계 실패, Docker 우회와 최종 9종 qualification을 집의 기존 Codex 작업으로 넘기기 위해 `company-to-home-codex-handoff.md`를 revision 2 현재 정본으로 갱신했다.
+- 전달 branch는 `codex/phase-d-artifacts`이며 최소 포함 qualification commit은 `0112c20e6c59b1555ac444836b608af1e773d936`이다. 집은 fetch 뒤 이 commit을 포함한 원격 latest tip과 exact tree로 맞춘다. 기존 `codex/runtime-boundary-p01`이나 main에 병합하지 않는다.
+- Git에는 코드·Dockerfile·dependency lock·시험·익명화 qualification projection이 포함된다. 회사 raw root `C:\lao-r\profile-r-docker-matrix-r5`, local Docker image와 집 P001~P015 원본은 Git 비정본이므로 자동 동기화된다고 주장하지 않는다.
+- 같은 집 Codex 작업에 전달할 시작 프롬프트는 dirty·stash·local-only·ignored raw 충돌을 먼저 확인하고, 정상 동기화 뒤 Profile R `SS1 → B1` 최초 pair 실행계획 후보만 작성하도록 갱신했다. 실제 Worker·SDK thread·model turn, Docker qualification 반복과 main 병합은 별도 사용자 승인 전 금지한다.
