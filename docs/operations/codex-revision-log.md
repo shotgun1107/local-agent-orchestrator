@@ -1843,3 +1843,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 같은 격리에서 현재 stdlib-only Checker가 Linux에서 실행됐다. pristine W는 exit 1 typed 결과로 `R-P02-STAGE-DISCRIMINATOR`, `R-P05-LIFECYCLE-REUSE`를 실패 처리했고 총 property 8개, `workspace_mutated=false`였다. 기존 Windows 실행의 negative control과 의미상 일치한다.
 - Docker CLI 설치 뒤 engine이 꺼져 있어 Desktop을 시작했다. 잘못된 W 경로 1회는 container 전에 중단됐고, inline Python quote가 제거된 1회는 checker 시작 전 문법 오류로 끝났다. 최종 시험은 stdin 전달과 새 root를 사용해 전 항목을 다시 수행했다. 실패 준비 시도는 통과 근거로 세지 않았다.
 - 판정은 `DOCKER_JUDGE_PREFLIGHT_PASSED`다. 아직 Docker backend, image recipe, timeout·kill·seal·Runner 통합과 Windows 전용 검사 분리는 미구현이므로 `challenge_ready=false`, Phase E/F와 model turn `NO-GO`를 유지한다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-preflight.md`에 기록했다.
+
+## Phase D Profile R Docker Judge backend와 결과 분류
+
+- 작업일: 2026-08-11. 사전검증된 Docker 격리를 재사용하는 고정 실행 backend를 commit `8bb3418a6aea41c078252cf75f984fb85386fd92`로 구현했다. W/J read-only, O read/write, S 미노출, network none, read-only root, capability 제거, no-new-privileges, 비root 사용자, resource limit과 digest 고정 image를 manifest 및 verifier 계약으로 고정했다.
+- Docker 시작 실패, timeout, 강제 cleanup 실패, 예상 밖 exit, checker payload 손상, 출력 제한, W/J 변경과 O 잔여를 별도 status/reason code로 분류하고 stdout·stderr·process·manifest·result를 보존한다. result verifier는 manifest binding, self hash와 판정을 독립 재계산한다.
+- 단위시험은 `11 passed in 0.49s`, 기존 Judge 및 Phase D fixture와 합친 표적 회귀는 `33 passed, 1 skipped in 19.23s`, Python compile과 `git diff --check`는 통과했다. skip은 기존 Windows symlink 권한 제한이다.
+- exact commit에서 만든 pristine W/J로 run `profile-r-judge-candidate-20260811-8bb3418-1`을 실제 실행했다. 컨테이너 exit 1을 runtime 장애가 아닌 `CHECKS_FAILED`로 회수했고, 실패 property는 사전 등록된 `R-P02-STAGE-DISCRIMINATOR`, `R-P05-LIFECYCLE-REUSE`였다. W/J는 실행 전후 동일하고 O는 비었으며 `workspace_mutated=false`, timeout false, 종료 뒤 container 잔여 없음, model turn 0이다.
+- 현재 Docker Judge 고정 실행과 결과 회수·분류는 구현됐지만 reference positive control과 negative mutation 8개를 Docker backend에서 전수 실행하지 않았다. 따라서 Profile R은 `challenge_ready=false`, Phase E/F와 model turn은 `NO-GO`를 유지한다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-backend-result.md`에 기록했다.
