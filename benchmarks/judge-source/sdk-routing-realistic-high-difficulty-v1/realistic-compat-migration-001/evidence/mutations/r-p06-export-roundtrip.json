@@ -3,8 +3,8 @@
   "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
   "cell_id": "r-p06-export-roundtrip",
   "checker_run_status": "completed",
-  "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
-  "envelope_sha256": "9c6a583904c950dfc7cb282f94cc4f43543e17d98bd040c605d95ee67593dc5b",
+  "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+  "envelope_sha256": "96bcf4f695f15c82dabba4814d7f2e85546f953c30e6f0c9022fb3a7a890df36",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -30,7 +30,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
       "evidence_refs": [
         {
@@ -57,7 +57,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -84,7 +84,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -105,7 +105,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
       "evidence_refs": [
         {
@@ -126,7 +126,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -145,7 +145,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
       "evidence_refs": [
         {
@@ -167,7 +167,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -179,7 +179,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [

@@ -331,20 +331,20 @@ def _extract_git_prefix(repository: Path, commit: str, prefix: str, destination:
 
 def _judge_config_overrides(*, W: Path, J: Path, O: Path, S: Path) -> tuple[str, ...]:
     roots = [Path(value).resolve() for value in (W, J, O, S)]
-    common_parent = Path(os.path.commonpath(roots)).resolve()
     filesystem_entries = {
         ":minimal": "read",
         ":root": "deny",
-        str(common_parent): "deny",
         str(roots[0]): "read",
         str(roots[1]): "read",
         str(roots[2]): "write",
         str(roots[3]): "deny",
     }
-    filesystem_value = "{" + ",".join(
+    filesystem_parts = [
         f"{_toml_basic_string(path)}={_toml_basic_string(access)}"
         for path, access in sorted(filesystem_entries.items())
-    ) + "}"
+    ]
+    filesystem_parts.append('":workspace_roots"={"."="write"}')
+    filesystem_value = "{" + ",".join(filesystem_parts) + "}"
     return tuple(
         sorted(
             (
@@ -352,6 +352,8 @@ def _judge_config_overrides(*, W: Path, J: Path, O: Path, S: Path) -> tuple[str,
                 f'permissions.{PROFILE_ID}.extends=":workspace"',
                 f"permissions.{PROFILE_ID}.filesystem={filesystem_value}",
                 f"permissions.{PROFILE_ID}.network.enabled=false",
+                f"permissions.{PROFILE_ID}.workspace_roots="
+                + "{" + f"{_toml_basic_string(str(roots[2]))}=true" + "}",
                 'windows.sandbox="elevated"',
             )
         )
@@ -509,7 +511,6 @@ def _sandbox_prefix(
         str(cwd.resolve()),
         "--permission-profile",
         PROFILE_ID,
-        "--include-managed-config",
     ]
     for override in overrides:
         values.extend(["--config", override])
@@ -616,6 +617,26 @@ def _stream_record(raw: tuple[int, bytes, int, str, bytes, int, str, int], limit
         stderr_truncated=raw[5] > limit,
         duration_ms=raw[7],
     )
+
+
+def _persist_process_capture(
+    run_root: Path,
+    label: str,
+    raw: tuple[int, bytes, int, str, bytes, int, str, int],
+    limit: int,
+) -> StreamRecord:
+    """Preserve capped raw streams before any higher-level decoding can fail."""
+
+    if label not in {"probe", "checker"}:
+        raise RealisticJudgeError("unknown Judge process capture label")
+    record = _stream_record(raw, limit)
+    atomic_write(run_root / f"{label}.stdout.bin", raw[1])
+    atomic_write(run_root / f"{label}.stderr.bin", raw[4])
+    atomic_write(
+        run_root / f"{label}-process.json",
+        canonical_json_bytes(record),
+    )
+    return record
 
 
 def _decode_single_json(stdout: bytes, total: int, limit: int, label: str) -> dict[str, Any]:
@@ -777,7 +798,10 @@ def execute_realistic_judge_boundary(
         {
             "TEMP": str(prepared.O),
             "TMP": str(prepared.O),
-            "USERPROFILE": str(prepared.O),
+            # Codex 0.144.4 deliberately removes a writable root that is exactly
+            # USERPROFILE.  Keep the synthetic profile opaque while leaving O as
+            # a distinct writable child of the one-shot run root.
+            "USERPROFILE": str(prepared.run_root),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
@@ -805,6 +829,12 @@ def execute_realistic_judge_boundary(
             timeout_seconds=timeout_seconds,
             limit=stdout_limit_bytes,
         )
+        probe_record = _persist_process_capture(
+            prepared.run_root,
+            "probe",
+            probe_raw,
+            stdout_limit_bytes,
+        )
         probe_wrapper = _decode_single_json(
             probe_raw[1], probe_raw[2], stdout_limit_bytes, "Judge boundary probe"
         )
@@ -826,6 +856,12 @@ def execute_realistic_judge_boundary(
             environment=environment,
             timeout_seconds=timeout_seconds,
             limit=stdout_limit_bytes,
+        )
+        checker_record = _persist_process_capture(
+            prepared.run_root,
+            "checker",
+            checker_raw,
+            stdout_limit_bytes,
         )
         checker_payload: dict[str, Any] | None
         try:
@@ -868,8 +904,8 @@ def execute_realistic_judge_boundary(
         "completed_at": utc_now(),
         "status": status,
         "manifest_sha256": manifest_sha,
-        "probe_process": _stream_record(probe_raw, stdout_limit_bytes).model_dump(mode="json"),
-        "checker_process": _stream_record(checker_raw, stdout_limit_bytes).model_dump(mode="json"),
+        "probe_process": probe_record.model_dump(mode="json"),
+        "checker_process": checker_record.model_dump(mode="json"),
         "probe_payload": probe_wrapper,
         "checker_payload": checker_payload,
         "listener_ready": True,
@@ -880,9 +916,15 @@ def execute_realistic_judge_boundary(
         "S_after": S_after.model_dump(mode="json"),
         "verification_codes": codes,
     }
+    draft = JudgeBoundaryResult.model_construct(
+        **values,
+        result_sha256="0" * 64,
+    )
     result = JudgeBoundaryResult(
         **values,
-        result_sha256=sha256_bytes(canonical_json_bytes(values)),
+        result_sha256=sha256_bytes(
+            canonical_json_bytes(draft.model_dump(mode="json", exclude={"result_sha256"}))
+        ),
     )
     atomic_write(prepared.run_root / "judge-boundary-result.json", canonical_json_bytes(result))
     return manifest, result

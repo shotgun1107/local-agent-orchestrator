@@ -83,6 +83,132 @@ def _outcome(
     }
 
 
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return _sha256(payload)
+
+
+def _evaluate_checks(
+    *,
+    catalog: dict[str, Any],
+    dag: dict[str, Any],
+    workspace: Path,
+    experiment_id: str,
+    cell_id: str,
+    checker_sha256: str,
+    workspace_before_sha256: str,
+    workspace_after_sha256: str,
+) -> dict[str, object]:
+    definitions = catalog.get("properties")
+    dag_entries = dag.get("properties")
+    if not isinstance(definitions, list) or not isinstance(dag_entries, list):
+        raise ValueError("property catalog or prerequisite DAG is invalid")
+    expected_dag = [
+        {
+            "property_id": item["property_id"],
+            "prerequisite_ids": item["prerequisite_ids"],
+        }
+        for item in definitions
+    ]
+    if dag_entries != expected_dag:
+        raise ValueError("property catalog and prerequisite DAG differ")
+    ordered_ids = [str(item["property_id"]) for item in definitions]
+    if ordered_ids != sorted(set(ordered_ids)) or set(CHECKERS) != set(ordered_ids):
+        raise ValueError("property catalog order or checker set differs")
+    by_id = {str(item["property_id"]): item for item in definitions}
+    results: dict[str, dict[str, object]] = {}
+
+    def evaluate(property_id: str) -> dict[str, object]:
+        if property_id in results:
+            return results[property_id]
+        definition = by_id[property_id]
+        prerequisites = [str(value) for value in definition["prerequisite_ids"]]
+        if prerequisites != sorted(set(prerequisites)) or any(
+            value not in by_id for value in prerequisites
+        ):
+            raise ValueError("property prerequisite set is invalid")
+        prerequisite_results = [evaluate(value) for value in prerequisites]
+        if any(value["status"] != "pass" for value in prerequisite_results):
+            result = {
+                "property_id": property_id,
+                "status": "blocked_by_prerequisite",
+                "severity": definition["severity"],
+                "reason_code": "PREREQUISITE_NOT_PASSED",
+                "description": "A prerequisite property did not pass.",
+                "evidence_refs": [],
+                "prerequisite_ids": prerequisites,
+                "checker_sha256": checker_sha256,
+            }
+        else:
+            try:
+                outcome = CHECKERS[property_id](workspace, catalog)
+            except Exception:
+                outcome = {
+                    "status": "checker_error",
+                    "reason_code": "CHECKER_EXCEPTION",
+                    "description": "The property checker raised an exception.",
+                    "evidence_refs": [],
+                }
+            result = {
+                "property_id": property_id,
+                "status": outcome["status"],
+                "severity": definition["severity"],
+                "reason_code": outcome["reason_code"],
+                "description": outcome["description"],
+                "evidence_refs": outcome["evidence_refs"],
+                "prerequisite_ids": prerequisites,
+                "checker_sha256": checker_sha256,
+            }
+        results[property_id] = result
+        return result
+
+    ordered_results = [evaluate(property_id) for property_id in ordered_ids]
+    statuses = {str(item["status"]) for item in ordered_results}
+    aggregate_status = (
+        "checker_error"
+        if "checker_error" in statuses
+        else "fail"
+        if statuses.intersection({"fail", "blocked_by_prerequisite"})
+        else "pass"
+    )
+    process = {
+        "exit_code": 0,
+        "timed_out": False,
+        "stdout_size": 0,
+        "stdout_sha256": _sha256(b""),
+        "stdout_truncated": False,
+        "stderr_size": 0,
+        "stderr_sha256": _sha256(b""),
+        "stderr_truncated": False,
+    }
+    payload: dict[str, object] = {
+        "schema_version": 1,
+        "experiment_id": experiment_id,
+        "cell_id": cell_id,
+        "fixture_id": "realistic-compat-migration-001",
+        "catalog_sha256": _canonical_sha256(
+            [
+                {"property_id": item["property_id"], "severity": item["severity"]}
+                for item in definitions
+            ]
+        ),
+        "prerequisite_dag_sha256": _canonical_sha256(expected_dag),
+        "checker_sha256": checker_sha256,
+        "ordered_property_ids": ordered_ids,
+        "checker_run_status": "completed",
+        "aggregate_status": aggregate_status,
+        "process": process,
+        "workspace_before_sha256": workspace_before_sha256,
+        "workspace_after_sha256": workspace_after_sha256,
+        "workspace_mutated": workspace_before_sha256 != workspace_after_sha256,
+        "properties": ordered_results,
+    }
+    payload["envelope_sha256"] = _canonical_sha256(payload)
+    return payload
+
+
 def _run_pytest(root: Path, *nodeids: str, timeout_seconds: float = 240.0) -> bool:
     environment = {
         name: os.environ[name]
@@ -347,45 +473,18 @@ def evaluate_workspace(workspace: Path, *, experiment_id: str, cell_id: str) -> 
     workspace = workspace.resolve(strict=True)
     catalog = _load_json(CATALOG_PATH)
     dag = _load_json(DAG_PATH)
-    from benchmark_runner.realistic_routing import (
-        CheckerProcessObservation,
-        PropertyDefinition,
-        evaluate_property_checks,
-        property_catalog_sha256,
-        property_prerequisite_dag_sha256,
-    )
-
-    definitions = [PropertyDefinition.model_validate(item) for item in catalog["properties"]]
-    if dag.get("properties") != [
-        {"property_id": item.property_id, "prerequisite_ids": item.prerequisite_ids}
-        for item in definitions
-    ]:
-        raise ValueError("property catalog and prerequisite DAG differ")
     before = _workspace_sha256(workspace)
     checker_sha = _sha256(Path(__file__).read_bytes())
-    outcome = evaluate_property_checks(
-            experiment_id=experiment_id,
-            cell_id=cell_id,
-            fixture_id="realistic-compat-migration-001",
-            definitions=definitions,
-            checkers={key: (lambda key=key: CHECKERS[key](workspace, catalog)) for key in CHECKERS},
-            checker_sha256=checker_sha,
-            process=CheckerProcessObservation(
-                exit_code=0,
-                timed_out=False,
-                stdout_size=0,
-                stdout_sha256=_sha256(b""),
-                stdout_truncated=False,
-                stderr_size=0,
-                stderr_sha256=_sha256(b""),
-                stderr_truncated=False,
-            ),
-            workspace_before_sha256=before,
-            workspace_after_sha256=_workspace_sha256(workspace),
-            expected_catalog_sha256=property_catalog_sha256(definitions),
-            expected_prerequisite_dag_sha256=property_prerequisite_dag_sha256(definitions),
+    return _evaluate_checks(
+        catalog=catalog,
+        dag=dag,
+        workspace=workspace,
+        experiment_id=experiment_id,
+        cell_id=cell_id,
+        checker_sha256=checker_sha,
+        workspace_before_sha256=before,
+        workspace_after_sha256=_workspace_sha256(workspace),
     )
-    return outcome.model_dump(mode="json")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -13,67 +13,67 @@
     },
     {
       "path": "checker/check_properties.py",
-      "sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
-      "size": 15214
+      "sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "size": 18855
     },
     {
       "path": "checker/probe_runtime_boundary.py",
-      "sha256": "2b40f42b53b5cc727d8498f7237e05e33cfb68fe5c681d0652d48e3cb07d6257",
-      "size": 28462
+      "sha256": "e56b3cb621ed2840671744e9d4c2c0033de5fd87526a8f5034e71433bb48d9be",
+      "size": 28678
     },
     {
       "path": "evidence/anonymization-review.md",
-      "sha256": "b204ff83f1dfda1f4a0ebe847cb2f7e741ea5e16759c7ecfdc5b9c80961754ed",
+      "sha256": "8d7ea07a3cd5b266c8e3bc67ba8e2e4781ae84f2e83af5f3b83460dad98aff9c",
       "size": 402
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "ff2eca1daed7c746927f058ae9ba63b4c1dc5099fa98aad4154628fc57585ca7",
+      "sha256": "cc58f97c1f7d09866a98761680c1cbc7293ae646aad4aa0e28600b316300c20b",
       "size": 9234
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "51e97b2c8dcfd26993b2164d3f2ffa068b255086e4d8fb5033eba1dfa0c2ebf6",
+      "sha256": "51826b7a9deb8359f1af2e523ab040c8e33a24383e7d8abd4b3ea49762a426c0",
       "size": 6766
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "10864203889082e54398824e4c922cd1c58fb7e2c52f5592a4063c116364f93a",
+      "sha256": "ded1e94786369cdfc8dd57e2c5aa118225b46ee9274d583611c9a7422d518960",
       "size": 7170
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "6e125d6a92629b126489af303dfbb6f46ab20129e3532db6caa54fd2ef2c7f88",
+      "sha256": "441b82a3f963eb4bbd1b7b5e386ebbf14c47020763b44f8f5680c33ae6bfc2d9",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "1e87c3f67b97992f40d73a9a233b1a70c80c514fbd588909675c5686b40acd71",
+      "sha256": "9340074ef41440b570bcef1bd0004427b94728b42124c2530477436d9a2165cb",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "2c3308ff89e8f531f32499b7140d34c0fb4fc2e8a5c61954e95d7109b6549285",
+      "sha256": "c9607166689878373778ff8631ea7dae9b30cc095d081e46036ea11cc9ea9026",
       "size": 7953
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "25105fb19182034445ec67155bba57c4bd399a9e87f07ac532727f4aabb476b8",
+      "sha256": "0467e979dda89858b699b534fa26dae07928cd2ab24a5f4d65357750ad10b2f9",
       "size": 9231
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "772bf9d65d0c4b4ac69b7f01f616cc171e4db56e09890d828c0bbd4481d58574",
+      "sha256": "68f4330d49fd7855e45d2716d4b37ff3f524d82d04ba5cff5f5e53cc3e5eb373",
       "size": 9239
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "c3f5e0bd6a5239d226b9426400b7bb49bbe25a48775804333aa0c73aa323dd87",
+      "sha256": "abbfe5dc41a8325b1278576eef2ee293856f313e1580ad5951fbe9f48cc27563",
       "size": 6396
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "57af07e81e2c7b012f84c1d4aab0b224221d1a3a46319b6abb8d6fe5b7e885c4",
+      "sha256": "eb5d9abd383e0be9df165768ade3a645cef20f6b4ba3c8262aa957cac2a7079f",
       "size": 9227
     },
     {
@@ -162,7 +162,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "5bc46cd27b6e0ef9dae01920c9f5552905cbe6cfb1ea6cf0879e0a9734dee0ed",
+  "payload_aggregate_sha256": "d9f318662f3501cc8ff3a46eb0e898efad6d67275ba1c39ac22b4558fe7a2707",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,
