@@ -18,6 +18,7 @@ PROFILE_ROOT = (
     / SNAPSHOT_ID
 )
 ALLOWLIST_PATH = PROFILE_ROOT / "worker-source-allowlist.json"
+OVERLAY_ROOT = PROFILE_ROOT / "worker-public-overlay"
 MAPPING_PATH = (
     Path("benchmarks")
     / "judge-source"
@@ -99,6 +100,36 @@ def _source_entries(
     return sorted(entries, key=lambda item: item["path"].encode("utf-8"))
 
 
+def _overlay_entries(repository: Path) -> list[dict[str, str | None]]:
+    overlay_root = repository / OVERLAY_ROOT
+    if not overlay_root.is_dir() or overlay_root.is_symlink():
+        raise RuntimeError("public Worker overlay is missing or unsafe")
+    entries: list[dict[str, str | None]] = []
+    casefolded: set[str] = set()
+    for source in overlay_root.rglob("*"):
+        if source.is_symlink():
+            raise RuntimeError(f"public overlay symlink is forbidden: {source}")
+        if not source.is_file():
+            continue
+        relative = source.relative_to(overlay_root).as_posix()
+        _safe_relative_path(relative)
+        folded = relative.casefold()
+        if folded in casefolded:
+            raise RuntimeError(f"public overlay case-fold collision: {relative}")
+        casefolded.add(folded)
+        entries.append(
+            {
+                "path": relative,
+                "mode": "100644",
+                "object_id": None,
+                "source_path": (OVERLAY_ROOT / PurePosixPath(relative)).as_posix(),
+            }
+        )
+    if not entries:
+        raise RuntimeError("public Worker overlay is empty")
+    return sorted(entries, key=lambda item: str(item["path"]).encode("utf-8"))
+
+
 def _apply_mapping(source: bytes, replacements: list[dict[str, str]]) -> tuple[bytes, list[str]]:
     result = source
     applied: list[str] = []
@@ -142,9 +173,19 @@ def build_snapshot(
     ).decode("ascii").strip()
     prefixes = [str(value) for value in allowlist["include_prefixes"]]
     replacements = list(mapping["replacements"])
-    entries = _source_entries(repository, source_commit, prefixes)
-    if len(entries) != int(allowlist["expected_file_count"]):
+    base_entries = _source_entries(repository, source_commit, prefixes)
+    if len(base_entries) != int(allowlist["expected_file_count"]):
         raise RuntimeError("source allowlist file count changed")
+    overlay_entries = _overlay_entries(repository)
+    base_paths = {str(item["path"]).casefold() for item in base_entries}
+    overlay_paths = {str(item["path"]).casefold() for item in overlay_entries}
+    collisions = base_paths & overlay_paths
+    if collisions:
+        raise RuntimeError(f"public overlay collides with base snapshot: {sorted(collisions)}")
+    entries: list[dict[str, str | None]] = [
+        {**entry, "source_path": None} for entry in base_entries
+    ] + overlay_entries
+    entries.sort(key=lambda item: str(item["path"]).encode("utf-8"))
     if output_root.exists() or manifest_path.exists():
         raise RuntimeError("snapshot output already exists")
 
@@ -153,8 +194,14 @@ def build_snapshot(
     try:
         for entry in entries:
             path = str(entry["path"])
-            source = _git_bytes(repository, "cat-file", "blob", str(entry["object_id"]))
-            worker, applied = _apply_mapping(source, replacements)
+            if entry["object_id"] is None:
+                source = (repository / str(entry["source_path"])).read_bytes()
+                worker, applied = source, []
+                provenance = "public_requirement"
+            else:
+                source = _git_bytes(repository, "cat-file", "blob", str(entry["object_id"]))
+                worker, applied = _apply_mapping(source, replacements)
+                provenance = "base_snapshot"
             destination = output_root.joinpath(*PurePosixPath(path).parts)
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(worker)
@@ -163,6 +210,8 @@ def build_snapshot(
                     "path": path,
                     "mode": entry["mode"],
                     "source_blob_oid": entry["object_id"],
+                    "source_path": entry["source_path"],
+                    "provenance": provenance,
                     "source_size": len(source),
                     "source_sha256": _sha256(source),
                     "worker_size": len(worker),
@@ -197,13 +246,15 @@ def build_snapshot(
             "schema_version": 1,
             "snapshot_id": SNAPSHOT_ID,
             "profile": "R",
-            "status": "ANONYMIZED_BASE_SNAPSHOT_CANDIDATE",
+            "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
             "source_authority": "git_object_database",
             "source_commit": source_commit,
             "source_tree": source_tree,
             "source_allowlist_sha256": _sha256(allowlist_path.read_bytes()),
             "anonymization_mapping_sha256": _sha256(mapping_path.read_bytes()),
             "file_count": len(file_records),
+            "base_file_count": len(base_entries),
+            "public_overlay_file_count": len(overlay_entries),
             "source_total_bytes": sum(int(item["source_size"]) for item in file_records),
             "worker_total_bytes": sum(int(item["worker_size"]) for item in file_records),
             "worker_tree_aggregate_sha256": _tree_aggregate(file_records),

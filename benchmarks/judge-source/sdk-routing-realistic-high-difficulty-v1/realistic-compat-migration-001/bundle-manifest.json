@@ -1,0 +1,167 @@
+{
+  "file_count_excluding_manifest": 31,
+  "files": [
+    {
+      "path": "anonymization-map.json",
+      "sha256": "eea6653eb62d72890bf041d675e4b64fb8648aa59b7f3059ecee1f018c198e1a",
+      "size": 1537
+    },
+    {
+      "path": "challenge-eligibility.json",
+      "sha256": "0a02a9bbab4cd239c6dd7a6d340cc32005707b49459c9117211341a3421b3821",
+      "size": 400
+    },
+    {
+      "path": "checker/check_properties.py",
+      "sha256": "a51f9557b367c2d8b66852c5e2efad1195855c8c1fd00cffcf61f673cacc46c8",
+      "size": 14787
+    },
+    {
+      "path": "evidence/anonymization-review.md",
+      "sha256": "b204ff83f1dfda1f4a0ebe847cb2f7e741ea5e16759c7ecfdc5b9c80961754ed",
+      "size": 402
+    },
+    {
+      "path": "evidence/mutations/r-p01-legacy-bytes.json",
+      "sha256": "622d6235acffe2297a6afe98510bfb2d05cd90e8423cbf8f26c177c044c4eaa4",
+      "size": 9234
+    },
+    {
+      "path": "evidence/mutations/r-p02-stage-discriminator.json",
+      "sha256": "9a70cc6c31cb4127c71c732c5bf6028dc3879fa436abd27da55264c448becef0",
+      "size": 6766
+    },
+    {
+      "path": "evidence/mutations/r-p03-plan-binding.json",
+      "sha256": "f6a392132e7693935cffad9e6b4097db8bed8c0e3d9074cd41761ecc3e9c94f3",
+      "size": 7170
+    },
+    {
+      "path": "evidence/mutations/r-p04-reserve-isolation.json",
+      "sha256": "f3cbc8094dc8d761b95d46177f2ed527c4564c84aa85d5fc86875f1348dc9344",
+      "size": 9253
+    },
+    {
+      "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
+      "sha256": "1a80431079309b5b16c49d90e999255745af66e17f185fa14ce2b652d1eb5455",
+      "size": 9253
+    },
+    {
+      "path": "evidence/mutations/r-p06-export-roundtrip.json",
+      "sha256": "1a11cbbcfc4fa6bbb6b151a50d9a5d8261e9e3e605dc065b1ad73804dfb746d5",
+      "size": 7953
+    },
+    {
+      "path": "evidence/mutations/r-p07-cross-checkout.json",
+      "sha256": "e77251536da9db8afb5debcff0f722edd459c13efe78d3fe7d02027e2e9343f4",
+      "size": 9231
+    },
+    {
+      "path": "evidence/mutations/r-p08-operator-contract.json",
+      "sha256": "b15c2fea73adcdf8e92bf2288fe89016d7e3ec0907f9d1bbcdfffddc34f56888",
+      "size": 9239
+    },
+    {
+      "path": "evidence/pristine.json",
+      "sha256": "c6c7b30fe146ee6a152550a2e22b3b38616bed57ec94eae7c75979cfab1b9e9a",
+      "size": 6396
+    },
+    {
+      "path": "evidence/reference.json",
+      "sha256": "070bd7402f4dccc4546deb79500c056f45ca9261b6e372aff3a1c7aa6a23bc9e",
+      "size": 9227
+    },
+    {
+      "path": "incident-claims.json",
+      "sha256": "ba8b2f615748b51350b1690ea52c433728bc11b3f5837810b5ef05278cd7d6f8",
+      "size": 86
+    },
+    {
+      "path": "information-dependency-map.json",
+      "sha256": "fcfa28e07d24904c923d2329b90b16bded4d5d05d6345af014750d41e0be0d5d",
+      "size": 4624
+    },
+    {
+      "path": "negative-mutations/r-p01-legacy-bytes.patch",
+      "sha256": "7cab56947edec76c9fc15529e0474548e170907c65eb1b2d04f53c73aabefe81",
+      "size": 427
+    },
+    {
+      "path": "negative-mutations/r-p02-stage-discriminator.patch",
+      "sha256": "d9f1dcdf78f7ed5998b5a18d64bed95ab3d410eb8172ddd58193dd9846370048",
+      "size": 782
+    },
+    {
+      "path": "negative-mutations/r-p03-plan-binding.patch",
+      "sha256": "9ee5f97a5557504f08d57717d8d784e8ace69997f496a9467d132cb9496a56cc",
+      "size": 1020
+    },
+    {
+      "path": "negative-mutations/r-p04-reserve-isolation.patch",
+      "sha256": "ba78c9e521eb6035b0fe9c1e9f2d5e523e08a1c9a6d1e1b62e29a0b27a92ac17",
+      "size": 786
+    },
+    {
+      "path": "negative-mutations/r-p05-lifecycle-reuse.patch",
+      "sha256": "375a658e8bf55648d7cad3dbc647db63060f7a031171ca610a446372a9706e9f",
+      "size": 389
+    },
+    {
+      "path": "negative-mutations/r-p06-export-roundtrip.patch",
+      "sha256": "6daf7147b2c595bd827454a7eb9f1993d57dd559b690699e0481439edf7d022e",
+      "size": 701
+    },
+    {
+      "path": "negative-mutations/r-p07-cross-checkout.patch",
+      "sha256": "e1cc9dc88320247eda86c51fb3aa289a1b9bf406a17847e4ad2091c091df7a4e",
+      "size": 228
+    },
+    {
+      "path": "negative-mutations/r-p08-operator-contract.patch",
+      "sha256": "febf5f09a751a85416be4e550d38dc3527d69cee2eb5ad7b04891de2d89462f5",
+      "size": 5274
+    },
+    {
+      "path": "operator-contract.json",
+      "sha256": "cf3f59edd2e04d1c4638d5e53800ae6ee1f0d617bad6d9758e2ee3d4bace37b8",
+      "size": 3652
+    },
+    {
+      "path": "prerequisite-dag.json",
+      "sha256": "d7a83087d7485e6255a2049799c98720634db2f677a50184daf979bbf2c20d23",
+      "size": 1022
+    },
+    {
+      "path": "property-catalog.json",
+      "sha256": "3d3ba999e061547a2f2d7e5704d4cfca6c5f6508aaec8e19fb82abb0e8c3ddb1",
+      "size": 1841
+    },
+    {
+      "path": "r-change-composition.json",
+      "sha256": "df228caa83c36aff992b13a20fb120d21ea099f8b7cd17682fd3169ec40eb3a7",
+      "size": 50070
+    },
+    {
+      "path": "reference.patch",
+      "sha256": "0a33bc75420c7b7f0fa8a213654feff8572712689bb4606c06a97c040829de44",
+      "size": 312839
+    },
+    {
+      "path": "solution-leakage-catalog.json",
+      "sha256": "a3cb2b792c494a5080820c0ba79239fc8a73daacac3c2f35d51beb7a110144c6",
+      "size": 317
+    },
+    {
+      "path": "worker-information-boundary.json",
+      "sha256": "17d31f7cbff4469442f7097077750d2013becbc493bd06853945090fee10d165",
+      "size": 396
+    }
+  ],
+  "payload_aggregate_sha256": "77c6f1a0ce9ee8cac1d96f1b406b5291e0bca00e00de1361e41cd29f06043f4e",
+  "profile": "R",
+  "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
+  "status": "PROFILE_R_SOURCE_BUNDLE_VERIFIED"
+}

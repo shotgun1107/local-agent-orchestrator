@@ -1,0 +1,13 @@
+{
+  "forbidden_worker_literals": [
+    "reference.patch",
+    "negative-mutations/",
+    "check_properties.py",
+    "56c91334fb32c4699d11ef80769831f14a0431d6"
+  ],
+  "forbidden_worker_paths": [
+    "benchmarks/judge-source/**",
+    "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/**"
+  ],
+  "schema_version": 1
+}

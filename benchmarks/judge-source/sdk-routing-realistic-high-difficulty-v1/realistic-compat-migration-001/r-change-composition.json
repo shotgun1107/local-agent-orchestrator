@@ -1,0 +1,1006 @@
+{
+  "base_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
+  "category_counts": {
+    "authored_source": 21,
+    "authored_spec_or_operator_contract": 32,
+    "authored_test": 11,
+    "generated_schema_or_manifest": 2,
+    "golden_or_export_mirror": 17,
+    "historical_result_or_evidence": 8
+  },
+  "classification_revision": "profile-r-composition-r1",
+  "counted_semantic_group_count": 64,
+  "profile": "R",
+  "raw_changed_path_count": 91,
+  "records": [
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/capabilities.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/capabilities.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/capabilities.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/policies.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/policies.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/policies.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/project.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/project.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/project.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/policies.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/policies.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/policies.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/project.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/project.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/project.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_config.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_config.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_config.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_incident.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_incident.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_incident.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/cli/__init__.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/cli/config_cli.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/migration/__init__.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/migration/legacy.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/runtime/__init__.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/runtime/parser.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/runtime/serializer.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/schema/__init__.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/schema/errors.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-config-migration/schema/model.py",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/analysis/evidence-ledger.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/analysis/uncertainties.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/report/action-plan.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/report/claims.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/report/final-report.md",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/timeline/events.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json"
+      ],
+      "category": "golden_or_export_mirror",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/three-stage-incident-analysis/timeline/hypotheses.json",
+      "producer_or_derivation": "byte_mirror_of_reference_fixture",
+      "semantic_group_id": "content:benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ],
+      "category": "generated_schema_or_manifest",
+      "counted_for_structure": false,
+      "git_status": "M",
+      "path": "benchmarks/suites/sdk-routing-v1/stage.schema.json",
+      "producer_or_derivation": "generated_from_routing_suite_models",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ],
+      "category": "generated_schema_or_manifest",
+      "counted_for_structure": false,
+      "git_status": "M",
+      "path": "benchmarks/suites/sdk-routing-v1/suite.schema.json",
+      "producer_or_derivation": "generated_from_routing_suite_models",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    },
+    {
+      "canonical_source_paths": [
+        "benchmarks/suites/sdk-routing-v1/suite.yaml"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "benchmarks/suites/sdk-routing-v1/suite.yaml",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:benchmarks/suites/sdk-routing-v1/suite.yaml"
+    },
+    {
+      "canonical_source_paths": [
+        "docs/design/sdk-routing-s2-intermediate-spec.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "docs/design/sdk-routing-s2-intermediate-spec.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:docs/design/sdk-routing-s2-intermediate-spec.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "M",
+      "path": "docs/operations/codex-revision-log.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/operations/codex-revision-log.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "M",
+      "path": "docs/operations/home-codex-handoff.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/operations/home-codex-handoff.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "docs/operations/implementation-incidents/entries/DEV-20260808-001.json",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/operations/implementation-incidents/entries/DEV-20260808-001.json"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "M",
+      "path": "docs/operations/implementation-incidents/index.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/operations/implementation-incidents/index.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "docs/reviews/benchmark-runner/claude-rereview-prompt-sdk-routing-s2-intermediate-spec.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/reviews/benchmark-runner/claude-rereview-prompt-sdk-routing-s2-intermediate-spec.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "docs/reviews/benchmark-runner/claude-rereview-sdk-routing-s2-intermediate-spec.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/reviews/benchmark-runner/claude-rereview-sdk-routing-s2-intermediate-spec.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "docs/reviews/benchmark-runner/claude-review-prompt-sdk-routing-s2-intermediate-spec.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/reviews/benchmark-runner/claude-review-prompt-sdk-routing-s2-intermediate-spec.md"
+    },
+    {
+      "canonical_source_paths": [],
+      "category": "historical_result_or_evidence",
+      "counted_for_structure": false,
+      "git_status": "A",
+      "path": "docs/reviews/benchmark-runner/claude-review-sdk-routing-s2-intermediate-spec.md",
+      "producer_or_derivation": "historical_record_excluded_from_structure",
+      "semantic_group_id": "history:docs/reviews/benchmark-runner/claude-review-sdk-routing-s2-intermediate-spec.md"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/README.md"
+      ],
+      "category": "authored_spec_or_operator_contract",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/README.md",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/README.md"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/scripts/run_sdk_routing_s1.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/adapter.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/src/benchmark_runner/adapter.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/adapter.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+      ],
+      "category": "authored_source",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/tests/test_judge.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/tests/test_judge.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/tests/test_judge.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/tests/test_routing_s2.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "A",
+      "path": "tools/benchmark-runner/tests/test_routing_s2.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/tests/test_routing_s2.py"
+    },
+    {
+      "canonical_source_paths": [
+        "tools/benchmark-runner/tests/test_routing_suite.py"
+      ],
+      "category": "authored_test",
+      "counted_for_structure": true,
+      "git_status": "M",
+      "path": "tools/benchmark-runner/tests/test_routing_suite.py",
+      "producer_or_derivation": "authored_at_reference_commit",
+      "semantic_group_id": "content:tools/benchmark-runner/tests/test_routing_suite.py"
+    }
+  ],
+  "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "COMPOSITION_CANDIDATE"
+}

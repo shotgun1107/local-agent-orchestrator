@@ -1,0 +1,13 @@
+{
+  "challenge_ready": false,
+  "judge_runtime_boundary_verified": false,
+  "negative_mutation_count": 8,
+  "pristine_aggregate_status": "fail",
+  "profile": "R",
+  "profile_i_status": "not_applicable",
+  "reference_aggregate_status": "pass",
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "source_bundle_verified": true,
+  "status": "PROFILE_R_SOURCE_BUNDLE_VERIFIED"
+}

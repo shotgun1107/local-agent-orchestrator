@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/routing_suite.py b/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+index f9afb3ede74fb4dbd13ae27cdc6656883815d8e5..4589916e38365e704209a14e78e75216eaa27c50 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
++++ b/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+@@ -228,7 +228,7 @@ class RoutingS1StageManifest(StrictModel):
+ 
+ class RoutingS2StageManifest(StrictModel):
+     schema_version: Literal[1]
+-    stage_id: Literal["s2-intermediate"]
++    stage_id: Literal["s1-baseline"]
+     status: Literal["implementation_candidate", "frozen_before_execution"]
+     purpose: Literal["profile_routing"]
+     fixture_manifests: list[FixtureManifestSelection] = Field(min_length=1)

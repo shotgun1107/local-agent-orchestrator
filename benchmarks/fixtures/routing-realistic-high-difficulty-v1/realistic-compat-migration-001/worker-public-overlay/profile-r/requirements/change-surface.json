@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "task_id": "R01",
+      "purpose": "structure migration invariants and the public change inventory",
+      "write_paths": [
+        "profile-r/work/migration-ledger.json",
+        "profile-r/work/source-inventory.json"
+      ]
+    },
+    {
+      "task_id": "R02",
+      "purpose": "add the exact stage discriminator and stage-neutral manifest parser",
+      "write_paths": [
+        "benchmarks/suites/sdk-routing-v1/stage.schema.json",
+        "benchmarks/suites/sdk-routing-v1/suite.schema.json",
+        "benchmarks/suites/sdk-routing-v1/suite.yaml",
+        "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ]
+    },
+    {
+      "task_id": "R03",
+      "purpose": "add both public three-task fixtures and their developer checks",
+      "write_paths": [
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/**",
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/**",
+        "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+      ]
+    },
+    {
+      "task_id": "R04",
+      "purpose": "bind stage-neutral Plan, source identity, order, and common budget",
+      "write_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+        "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
+        "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+      ]
+    },
+    {
+      "task_id": "R05",
+      "purpose": "reuse the existing lifecycle and add deterministic S2 policy",
+      "write_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/adapter.py",
+        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+        "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
+        "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
+      ]
+    },
+    {
+      "task_id": "R06",
+      "purpose": "extend status, property evaluation, export, and verification",
+      "write_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+        "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
+        "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+      ]
+    },
+    {
+      "task_id": "R07",
+      "purpose": "add S2 regressions while preserving the S1 regression surface",
+      "write_paths": [
+        "tools/benchmark-runner/tests/test_judge.py",
+        "tools/benchmark-runner/tests/test_routing_s2.py",
+        "tools/benchmark-runner/tests/test_routing_suite.py"
+      ]
+    },
+    {
+      "task_id": "R08",
+      "purpose": "align operator commands and failure semantics with code",
+      "write_paths": [
+        "profile-r/work/operator-contract.json",
+        "tools/benchmark-runner/README.md"
+      ]
+    }
+  ]
+}

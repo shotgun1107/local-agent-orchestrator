@@ -1,0 +1,49 @@
+{
+  "properties": [
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P01-LEGACY-BYTES"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P02-STAGE-DISCRIMINATOR"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P02-STAGE-DISCRIMINATOR"
+      ],
+      "property_id": "R-P03-PLAN-BINDING"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P03-PLAN-BINDING"
+      ],
+      "property_id": "R-P04-RESERVE-ISOLATION"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P05-LIFECYCLE-REUSE"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P02-STAGE-DISCRIMINATOR",
+        "R-P03-PLAN-BINDING"
+      ],
+      "property_id": "R-P06-EXPORT-ROUNDTRIP"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P06-EXPORT-ROUNDTRIP"
+      ],
+      "property_id": "R-P07-CROSS-CHECKOUT-REPRO"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P03-PLAN-BINDING",
+        "R-P06-EXPORT-ROUNDTRIP"
+      ],
+      "property_id": "R-P08-OPERATOR-CONTRACT"
+    }
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,18 @@
+{
+  "allowed_information": [
+    "public requirements",
+    "public developer checks",
+    "base implementation",
+    "declared Task graph"
+  ],
+  "forbidden_information": [
+    "reference.patch",
+    "negative-mutations/**",
+    "checker/**",
+    "evidence/**",
+    "historical reference commit explanation",
+    "golden solution tree"
+  ],
+  "schema_version": 1,
+  "worker_root": "workspace"
+}

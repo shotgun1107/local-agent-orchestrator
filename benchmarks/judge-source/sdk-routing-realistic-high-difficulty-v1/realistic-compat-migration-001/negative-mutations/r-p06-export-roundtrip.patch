@@ -1,0 +1,11 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/routing_suite.py b/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+index f9afb3ede74fb4dbd13ae27cdc6656883815d8e5..0eefdfb51c43d75d04941c94c8030fdbfb2b9646 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
++++ b/tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+@@ -1735,5 +1735,5 @@ def verify_routing_s1_nonlive_export(export_root: Path) -> dict[str, Any]:
+ def verify_routing_s2_nonlive_export(export_root: Path) -> dict[str, Any]:
+     return _verify_routing_nonlive_export(
+         export_root,
+-        expected_stage_id="s2-intermediate",
++        expected_stage_id="s1-baseline",
+     )

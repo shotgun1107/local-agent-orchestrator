@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 
 REPOSITORY = Path(__file__).resolve().parents[3]
 INTAKE_PATH = (
@@ -22,6 +24,14 @@ COMPOSITION_PATH = INTAKE_PATH.with_name("r-change-composition.json")
 ALLOWLIST_PATH = INTAKE_PATH.with_name("worker-source-allowlist.json")
 WORKER_ROOT = INTAKE_PATH.with_name("workspace")
 WORKER_MANIFEST_PATH = INTAKE_PATH.with_name("worker-snapshot-manifest.json")
+PUBLIC_OVERLAY_ROOT = INTAKE_PATH.with_name("worker-public-overlay")
+JUDGE_SOURCE_ROOT = (
+    REPOSITORY
+    / "benchmarks"
+    / "judge-source"
+    / "sdk-routing-realistic-high-difficulty-v1"
+    / "realistic-compat-migration-001"
+)
 ANONYMIZATION_MAP_PATH = (
     REPOSITORY
     / "benchmarks"
@@ -182,7 +192,14 @@ def _load_snapshot_builder():
 
 def _workspace_files(root: Path) -> list[Path]:
     return sorted(
-        (path for path in root.rglob("*") if path.is_file()),
+        (
+            path
+            for path in root.rglob("*")
+            if path.is_file()
+            and not {".git", ".pytest_cache", "__pycache__"}.intersection(
+                path.relative_to(root).parts
+            )
+        ),
         key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
     )
 
@@ -194,14 +211,27 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
     files = _workspace_files(WORKER_ROOT)
     relative_paths = [path.relative_to(WORKER_ROOT).as_posix() for path in files]
 
-    assert manifest["status"] == "ANONYMIZED_BASE_SNAPSHOT_CANDIDATE"
+    assert manifest["status"] == "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE"
     assert manifest["challenge_ready"] is False
-    assert manifest["file_count"] == allowlist["expected_file_count"] == len(files) == 99
+    overlay_files = _workspace_files(PUBLIC_OVERLAY_ROOT)
+    assert manifest["base_file_count"] == allowlist["expected_file_count"] == 115
+    assert manifest["public_overlay_file_count"] == len(overlay_files)
+    assert manifest["file_count"] == len(files) == allowlist["expected_file_count"] + len(overlay_files)
     assert relative_paths == [record["path"] for record in manifest["files"]]
     for path, record in zip(files, manifest["files"], strict=True):
         payload = path.read_bytes()
         assert len(payload) == record["worker_size"]
         assert hashlib.sha256(payload).hexdigest() == record["worker_sha256"]
+        assert record["provenance"] in {"base_snapshot", "public_requirement"}
+        if record["provenance"] == "public_requirement":
+            assert record["source_blob_oid"] is None
+            assert record["source_path"].startswith(
+                "benchmarks/fixtures/routing-realistic-high-difficulty-v1/"
+                "realistic-compat-migration-001/worker-public-overlay/"
+            )
+        else:
+            assert record["source_blob_oid"]
+            assert record["source_path"] is None
         for literal in mapping["forbidden_worker_literals"]:
             assert literal.encode("utf-8") not in payload
         for pattern in mapping["forbidden_worker_regexes"]:
@@ -227,3 +257,172 @@ def test_profile_r_worker_snapshot_rebuild_is_byte_identical(tmp_path: Path) -> 
         _workspace_files(output_a), _workspace_files(output_b), strict=True
     ):
         assert path_a.read_bytes() == path_b.read_bytes()
+
+
+def _dependency_depth(tasks: list[dict[str, object]], task_id: str) -> int:
+    by_id = {str(task["key"]): task for task in tasks}
+    dependencies = [str(value) for value in by_id[task_id]["depends_on"]]
+    if not dependencies:
+        return 1
+    return 1 + max(_dependency_depth(tasks, dependency) for dependency in dependencies)
+
+
+def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> None:
+    run = yaml.safe_load((WORKER_ROOT / "benchmark-run.yaml").read_text(encoding="utf-8"))
+    tasks = run["tasks"]
+    task_ids = [task["key"] for task in tasks]
+    assert task_ids == [f"R{number:02d}" for number in range(1, 9)]
+    assert {task["key"]: task["depends_on"] for task in tasks} == {
+        "R01": [],
+        "R02": ["R01"],
+        "R03": ["R01"],
+        "R04": ["R02", "R03"],
+        "R05": ["R02", "R04"],
+        "R06": ["R04", "R05"],
+        "R07": ["R01", "R03", "R06"],
+        "R08": ["R02", "R07"],
+    }
+    assert max(_dependency_depth(tasks, task_id) for task_id in task_ids) == 7
+    assert {task_id for task_id, task in zip(task_ids, tasks, strict=True) if len(task["depends_on"]) > 1} == {
+        "R04", "R05", "R06", "R07", "R08"
+    }
+    protected = {
+        "benchmark-run.yaml",
+        "README.md",
+        "benchmark_checks/**",
+        ".orchestrator/**",
+        "profile-r/requirements/**",
+    }
+    for task in tasks:
+        assert task["workspace_mode"] == "shared_serial_write"
+        assert task["approval"] == "none"
+        assert task["check_names"] == [f"{task['key'].lower()}_contract", "diff_check"]
+        assert protected.isdisjoint(set(task["write_scope"]))
+
+    checks = yaml.safe_load(
+        (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
+    )["checks"]
+    assert list(checks) == [
+        *(f"r{number:02d}_contract" for number in range(1, 9)),
+        "diff_check",
+    ]
+    for number in range(1, 9):
+        check = checks[f"r{number:02d}_contract"]
+        assert check["argv"] == [
+            "python",
+            "benchmark_checks/check_profile_r.py",
+            f"R{number:02d}",
+        ]
+        assert check["timeout_seconds"] == 120
+
+
+def test_profile_r_public_check_is_model_free_and_compiles() -> None:
+    check_path = WORKER_ROOT / "benchmark_checks/check_profile_r.py"
+    source = check_path.read_text(encoding="utf-8")
+    forbidden = (
+        "openai_codex",
+        "CodexClient",
+        "turn/start",
+        "OPENAI_API_KEY",
+        "CODEX_API_KEY",
+    )
+    assert all(value not in source for value in forbidden)
+    compile(source, str(check_path), "exec")
+
+
+def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> None:
+    check_path = WORKER_ROOT / "benchmark_checks/check_profile_r.py"
+    for number in range(1, 9):
+        task_id = f"R{number:02d}"
+        result = subprocess.run(
+            [sys.executable, str(check_path), task_id],
+            cwd=WORKER_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+        )
+        assert result.returncode == 1
+        assert result.stdout.strip() == f"{task_id}_PUBLIC_CONTRACT_FAILED"
+        assert result.stderr == ""
+
+
+def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> None:
+    manifest = json.loads(
+        (JUDGE_SOURCE_ROOT / "bundle-manifest.json").read_text(encoding="utf-8")
+    )
+    eligibility = json.loads(
+        (JUDGE_SOURCE_ROOT / "challenge-eligibility.json").read_text(encoding="utf-8")
+    )
+    assert manifest["status"] == "PROFILE_R_SOURCE_BUNDLE_VERIFIED"
+    assert eligibility["status"] == "PROFILE_R_SOURCE_BUNDLE_VERIFIED"
+    assert eligibility["source_bundle_verified"] is True
+    assert eligibility["judge_runtime_boundary_verified"] is False
+    assert eligibility["challenge_ready"] is False
+    records = manifest["files"]
+    assert manifest["file_count_excluding_manifest"] == len(records) == 31
+    for record in records:
+        payload = (JUDGE_SOURCE_ROOT / record["path"]).read_bytes()
+        assert len(payload) == record["size"]
+        assert hashlib.sha256(payload).hexdigest() == record["sha256"]
+
+    reference = json.loads(
+        (JUDGE_SOURCE_ROOT / "evidence/reference.json").read_text(encoding="utf-8")
+    )
+    pristine = json.loads(
+        (JUDGE_SOURCE_ROOT / "evidence/pristine.json").read_text(encoding="utf-8")
+    )
+    assert reference["aggregate_status"] == "pass"
+    assert {item["status"] for item in reference["properties"]} == {"pass"}
+    assert pristine["aggregate_status"] == "fail"
+
+
+def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> None:
+    target_by_name = {
+        "r-p01-legacy-bytes": "R-P01-LEGACY-BYTES",
+        "r-p02-stage-discriminator": "R-P02-STAGE-DISCRIMINATOR",
+        "r-p03-plan-binding": "R-P03-PLAN-BINDING",
+        "r-p04-reserve-isolation": "R-P04-RESERVE-ISOLATION",
+        "r-p05-lifecycle-reuse": "R-P05-LIFECYCLE-REUSE",
+        "r-p06-export-roundtrip": "R-P06-EXPORT-ROUNDTRIP",
+        "r-p07-cross-checkout": "R-P07-CROSS-CHECKOUT-REPRO",
+        "r-p08-operator-contract": "R-P08-OPERATOR-CONTRACT",
+    }
+    evidence_root = JUDGE_SOURCE_ROOT / "evidence" / "mutations"
+    patch_root = JUDGE_SOURCE_ROOT / "negative-mutations"
+    assert {path.stem for path in evidence_root.glob("*.json")} == set(target_by_name)
+    assert {path.stem for path in patch_root.glob("*.patch")} == set(target_by_name)
+    for name, target in target_by_name.items():
+        result = json.loads((evidence_root / f"{name}.json").read_text(encoding="utf-8"))
+        statuses = {item["property_id"]: item["status"] for item in result["properties"]}
+        assert statuses[target] == "fail"
+        assert all(
+            status in {"pass", "blocked_by_prerequisite"}
+            for property_id, status in statuses.items()
+            if property_id != target
+        )
+        assert (patch_root / f"{name}.patch").stat().st_size > 0
+
+
+def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak() -> None:
+    checker = (JUDGE_SOURCE_ROOT / "checker/check_properties.py").read_text(
+        encoding="utf-8"
+    )
+    compile(checker, "check_properties.py", "exec")
+    forbidden_runtime = (
+        "openai_codex",
+        "CodexClient",
+        "turn/start",
+        "OPENAI_API_KEY",
+        "CODEX_API_KEY",
+    )
+    assert all(value not in checker for value in forbidden_runtime)
+    leakage = json.loads(
+        (JUDGE_SOURCE_ROOT / "solution-leakage-catalog.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for path in _workspace_files(WORKER_ROOT):
+        payload = path.read_bytes()
+        for literal in leakage["forbidden_worker_literals"]:
+            assert literal.encode("utf-8") not in payload

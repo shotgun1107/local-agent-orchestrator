@@ -1,3 +1,4 @@
-workspace/** -text
+workspace/** -text -whitespace
+worker-public-overlay/** -text -whitespace
 worker-snapshot-manifest.json text eol=lf
 worker-source-allowlist.json text eol=lf

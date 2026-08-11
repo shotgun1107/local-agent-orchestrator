@@ -1,0 +1,13 @@
+diff --git a/benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml b/benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml
+index be9506415af0904505e18f35c3bdee00adbae6e3..9251f610e616b457728db23f8817096612b70090 100644
+--- a/benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml
++++ b/benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml
+@@ -45,7 +45,7 @@ profiles:
+       failure_profile: omission_risk
+       solution_ambiguity: medium
+ cells:
+-  - {cell_id: cell_s2_a_1_c2, profile_alias: a, fixture_id: three-stage-config-migration, variant_id: c2}
++  - {cell_id: cell_s2_a_1_b1_mutated, profile_alias: a, fixture_id: three-stage-config-migration, variant_id: c2}
+   - {cell_id: cell_s2_a_1_b1, profile_alias: a, fixture_id: three-stage-config-migration, variant_id: b1}
+   - {cell_id: cell_s2_b_1_b1, profile_alias: b, fixture_id: three-stage-incident-analysis, variant_id: b1}
+   - {cell_id: cell_s2_b_1_c2, profile_alias: b, fixture_id: three-stage-incident-analysis, variant_id: c2}
