@@ -482,6 +482,7 @@ def create_docker_judge_manifest(
     *,
     docker_executable: Path,
     limits: DockerJudgeLimits | None = None,
+    cell_id: str | None = None,
 ) -> DockerJudgeManifest:
     limits = limits or DockerJudgeLimits()
     executable = Path(docker_executable).resolve(strict=True)
@@ -496,7 +497,7 @@ def create_docker_judge_manifest(
         DockerJudgeMount(role="O", host_path=str(prepared.O.resolve()), container_path=CONTAINER_O, read_only=False),
     ]
     container_name = f"lao-{prepared.run_root.name}"
-    cell_id = f"pristine-{prepared.run_root.name[-24:]}"
+    cell_id = cell_id or f"pristine-{prepared.run_root.name[-24:]}"
     command = build_docker_judge_command(
         docker_executable=executable,
         container_name=container_name,
@@ -639,6 +640,7 @@ def execute_docker_judge(
     backend: DockerExecutionBackend | None = None,
     source_environment: Mapping[str, str] | None = None,
     limits: DockerJudgeLimits | None = None,
+    cell_id: str | None = None,
 ) -> tuple[DockerJudgeManifest, DockerJudgeResult]:
     """Run one frozen Docker Judge invocation and always persist typed evidence."""
 
@@ -646,6 +648,7 @@ def execute_docker_judge(
         prepared,
         docker_executable=docker_executable,
         limits=limits,
+        cell_id=cell_id,
     )
     verify_docker_judge_manifest(manifest)
     environment = build_docker_controller_environment(source_environment)
