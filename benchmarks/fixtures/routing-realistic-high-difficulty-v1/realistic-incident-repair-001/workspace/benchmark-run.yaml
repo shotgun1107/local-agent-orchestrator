@@ -1,0 +1,197 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Repair the public runtime-boundary implementation from the evidence without claiming more than the observations prove."
+completion_criteria:
+  - id: IC1
+    text: "All eight public incident-repair Task contracts pass without changing protected challenge files."
+    satisfied_by_tasks: [I01, I02, I03, I04, I05, I06, I07, I08]
+constraints:
+  - "Modify only paths declared by the active Task write_scope."
+  - "Do not modify benchmark_checks/**, .orchestrator/**, profile-i/evidence/**, profile-i/requirements/**, README.md, or benchmark-run.yaml."
+  - "Keep the runtime-boundary path model-free and preserve the exact four-file bundle contract."
+  - "Do not use network access, external actions, API keys, model calls, or hidden paths from checks."
+  - "Classify evidence as confirmed, excluded, or unknown; do not convert missing evidence into a confirmed cause."
+assumptions: []
+tasks:
+  - key: I01
+    goal: "Classify the conflicting public observations as confirmed, excluded, or unknown and bind every incident claim to public evidence."
+    completion_criteria:
+      - {id: I01C1, text: "The evidence ledger and incident claims satisfy the public evidence contract.", check_names: [i01_contract]}
+    depends_on: []
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/requirements/evidence-ledger.schema.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/evidence/**"
+      - "profile-i/requirements/**"
+      - "profile-i/work/**"
+      - "benchmark_checks/check_profile_i.py"
+    write_scope:
+      - "profile-i/work/evidence-ledger.json"
+      - "profile-i/work/incident-claims.json"
+      - "profile-i/work/task-contracts.json"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i01_contract, diff_check]
+    approval: none
+  - key: I02
+    goal: "Bind the actual active permission profile to direction-aware SDK request, response, and notification evidence while rejecting legacy argument use."
+    completion_criteria:
+      - {id: I02C1, text: "The public profile-provenance contract and its model-free regressions are declared and implemented.", check_names: [i02_contract]}
+    depends_on: [I01]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i02_contract, diff_check]
+    approval: none
+  - key: I03
+    goal: "Make the frozen helper command and effective configuration agree with the public execution contract and preserve diagnostic failures."
+    completion_criteria:
+      - {id: I03C1, text: "Command, configuration, and failure-evidence work is declared with public regressions.", check_names: [i03_contract]}
+    depends_on: [I01, I02]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "docs/design/**"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md"
+      - "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md"
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/scripts/probe_runtime_boundary.py"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i03_contract, diff_check]
+    approval: none
+  - key: I04
+    goal: "Preserve the declared workspace read/write behavior while binding its observed access transition to the executing sandbox identity."
+    completion_criteria:
+      - {id: I04C1, text: "Workspace boundary behavior and identity binding are declared with public regressions.", check_names: [i04_contract]}
+    depends_on: [I01, I03]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i04_contract, diff_check]
+    approval: none
+  - key: I05
+    goal: "Keep declared workspace access working while making every public read/write case against the two logical Controller-only roots fail and preserving their identities."
+    completion_criteria:
+      - {id: I05C1, text: "Controller-only root behavior and identity preservation are declared with public regressions.", check_names: [i05_contract]}
+    depends_on: [I01, I04]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i05_contract, diff_check]
+    approval: none
+  - key: I06
+    goal: "Make direct and public link/path variants produce the same protected result while keeping temporary path state and frozen command identity unchanged after execution."
+    completion_criteria:
+      - {id: I06C1, text: "Link/path equivalence, cleanup, and command stability are declared with public regressions.", check_names: [i06_contract]}
+    depends_on: [I03, I05]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/scripts/probe_runtime_boundary.py"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i06_contract, diff_check]
+    approval: none
+  - key: I07
+    goal: "Make public typed results for blocked state operations agree with independently verified Controller preconditions and postconditions without exposing protected state."
+    completion_criteria:
+      - {id: I07C1, text: "State-access result meaning and independent recalculation are declared with public regressions.", check_names: [i07_contract]}
+    depends_on: [I02, I05]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i07_contract, diff_check]
+    approval: none
+  - key: I08
+    goal: "Recalculate all eight probe results, exact bundle identity, regressions, and structured evidence claims into one fail-closed candidate decision."
+    completion_criteria:
+      - {id: I08C1, text: "Bundle recalculation and evidence-claim alignment are declared and all public Task records are complete.", check_names: [i08_contract]}
+    depends_on: [I01, I06, I07]
+    inputs:
+      - {path: "profile-i/evidence/public-observations.json"}
+      - {path: "profile-i/work/evidence-ledger.json"}
+      - {path: "profile-i/work/incident-claims.json"}
+    read_scope:
+      - "README.md"
+      - "profile-i/**"
+      - "benchmark_checks/check_profile_i.py"
+      - "docs/design/**"
+      - "tools/benchmark-runner/**"
+    write_scope:
+      - "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md"
+      - "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md"
+      - "profile-i/work/evidence-ledger.json"
+      - "profile-i/work/incident-claims.json"
+      - "profile-i/work/task-contracts.json"
+      - "tools/benchmark-runner/scripts/probe_runtime_boundary.py"
+      - "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      - "tools/benchmark-runner/tests/test_runtime_boundary.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [i08_contract, diff_check]
+    approval: none

@@ -1,0 +1,19 @@
+{
+  "expected_file_count": 10,
+  "include_paths": [
+    "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md",
+    "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md",
+    "tools/benchmark-runner/README.md",
+    "tools/benchmark-runner/pyproject.toml",
+    "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+    "tools/benchmark-runner/src/benchmark_runner/__init__.py",
+    "tools/benchmark-runner/src/benchmark_runner/contract.py",
+    "tools/benchmark-runner/src/benchmark_runner/runner.py",
+    "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+    "tools/benchmark-runner/tests/test_runtime_boundary.py"
+  ],
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "source_commit": "5fe78aa5c6a357c08682684a258b41e7d84c4dbc",
+  "status": "SOURCE_ALLOWLIST_CANDIDATE"
+}

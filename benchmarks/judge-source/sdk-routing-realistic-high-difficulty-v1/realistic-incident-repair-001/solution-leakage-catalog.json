@@ -1,0 +1,59 @@
+{
+  "facts": [
+    {
+      "fact_id": "FINAL_CANDIDATE_IDENTITY",
+      "forbidden_normalized_literals": ["p015", "runtime_boundary_candidate"],
+      "forbidden_structured_keys": ["candidate_ordinal", "reference_commit"],
+      "reference_only_hashes": [
+        "144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13",
+        "1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d",
+        "326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2",
+        "3f51d7ff986cfdc1f01e798c55b8fb975abc08458ea5ab38351da461e7fdc5df",
+        "9b29e781136e13b43b1e18f3fe1823bf496bef5c",
+        "9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc"
+      ],
+      "source_evidence_sha256": "b891e051df58a1ae802b7d0b19774c79e2ba1759fd3ce9e7a29f997980cee1e9",
+      "task_ids": ["I01", "I02", "I03", "I04", "I05", "I06", "I07", "I08"]
+    },
+    {
+      "fact_id": "FINAL_CORRECTION_LINEAGE",
+      "forbidden_normalized_literals": [
+        "harden_controller_only_directory",
+        "inheritance:r",
+        "lexical argv",
+        "metadata nondisclosure",
+        "no-follow"
+      ],
+      "forbidden_structured_keys": ["correction_class", "successor_ordinal"],
+      "reference_only_hashes": [
+        "144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13",
+        "1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d",
+        "326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2",
+        "3f51d7ff986cfdc1f01e798c55b8fb975abc08458ea5ab38351da461e7fdc5df",
+        "9b29e781136e13b43b1e18f3fe1823bf496bef5c",
+        "9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc"
+      ],
+      "source_evidence_sha256": "2362ca1128326d5850fcb34dedf6e3c62d792b63b07672b067a9e21ab60caf54",
+      "task_ids": ["I02", "I03", "I04", "I05", "I06", "I07", "I08"]
+    },
+    {
+      "fact_id": "JUDGE_ONLY_EXPECTATIONS",
+      "forbidden_normalized_literals": ["reference.patch"],
+      "forbidden_structured_keys": ["expected_answer", "expected_derived_passed"],
+      "reference_only_hashes": [
+        "144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13",
+        "1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d",
+        "326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2",
+        "3f51d7ff986cfdc1f01e798c55b8fb975abc08458ea5ab38351da461e7fdc5df",
+        "9b29e781136e13b43b1e18f3fe1823bf496bef5c",
+        "9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc"
+      ],
+      "source_evidence_sha256": "2362ca1128326d5850fcb34dedf6e3c62d792b63b07672b067a9e21ab60caf54",
+      "task_ids": ["I01", "I02", "I03", "I04", "I05", "I06", "I07", "I08"]
+    }
+  ],
+  "normalization": "utf8-nfc-lf-slash-casefold-v1",
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "status": "CONTROLLER_ONLY_LEAKAGE_CATALOG_CANDIDATE"
+}

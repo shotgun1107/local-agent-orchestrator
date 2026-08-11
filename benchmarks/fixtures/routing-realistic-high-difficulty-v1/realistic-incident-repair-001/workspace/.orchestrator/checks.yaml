@@ -1,0 +1,11 @@
+schema_version: 1
+checks:
+  i01_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I01"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i02_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I02"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i03_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I03"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i04_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I04"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i05_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I05"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i06_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I06"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i07_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I07"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  i08_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_i.py", "I08"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  diff_check: {kind: command, argv: ["git", "diff", "--check"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}

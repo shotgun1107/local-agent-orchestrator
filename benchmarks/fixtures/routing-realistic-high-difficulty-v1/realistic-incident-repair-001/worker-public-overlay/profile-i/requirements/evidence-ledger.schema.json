@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "records": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "contradiction_ids": {"items": {"pattern": "^O[0-9]{3}$", "type": "string"}, "type": "array", "uniqueItems": true},
+          "observation_id": {"pattern": "^O[0-9]{3}$", "type": "string"},
+          "observation_sha256s": {"items": {"pattern": "^[0-9a-f]{64}$", "type": "string"}, "type": "array", "uniqueItems": true},
+          "reason_code": {"minLength": 1, "type": "string"},
+          "status": {"enum": ["unclassified", "confirmed", "excluded", "unknown"]}
+        },
+        "required": ["observation_id", "status", "reason_code", "observation_sha256s", "contradiction_ids"],
+        "type": "object"
+      },
+      "maxItems": 14,
+      "minItems": 14,
+      "type": "array"
+    },
+    "schema_version": {"const": 1}
+  },
+  "required": ["schema_version", "records"],
+  "type": "object"
+}

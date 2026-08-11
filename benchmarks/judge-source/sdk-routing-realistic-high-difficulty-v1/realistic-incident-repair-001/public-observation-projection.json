@@ -1,0 +1,167 @@
+{
+  "records": [
+    {
+      "facts": {
+        "active_profile_provenance": "not_proven",
+        "probe_dispatch_count": 0
+      },
+      "observation_id": "O001",
+      "source_ordinal": "P001",
+      "stage": "profile_provenance",
+      "task_ids": ["I01", "I02"]
+    },
+    {
+      "facts": {
+        "effective_policy": "not_proven",
+        "failure_detail": "unavailable"
+      },
+      "observation_id": "O002",
+      "source_ordinal": "P002",
+      "stage": "effective_policy",
+      "task_ids": ["I01", "I03"]
+    },
+    {
+      "facts": {
+        "gate_result": "not_proven",
+        "legacy_mode_value": null,
+        "legacy_workspace_write_value": null
+      },
+      "observation_id": "O003",
+      "source_ordinal": "P003",
+      "stage": "effective_policy",
+      "task_ids": ["I01", "I03"]
+    },
+    {
+      "facts": {
+        "failure_stream_preserved": false,
+        "probe_dispatch_count": 1,
+        "probe_role": "workspace_positive_read",
+        "stdout_class": "empty_or_non_json"
+      },
+      "observation_id": "O004",
+      "source_ordinal": "P004",
+      "stage": "probe_dispatch",
+      "task_ids": ["I01", "I03"]
+    },
+    {
+      "facts": {
+        "controller_pre_postcondition": "unchanged",
+        "failure_class": "child_command_not_found",
+        "probe_role": "workspace_positive_read",
+        "stdout_bytes": 0,
+        "wrapper_exit_class": "nonzero"
+      },
+      "observation_id": "O005",
+      "source_ordinal": "P005",
+      "stage": "probe_dispatch",
+      "task_ids": ["I01", "I03"]
+    },
+    {
+      "facts": {
+        "controller_only_roots_identity": "unchanged",
+        "probe_dispatch_count": 0,
+        "workspace_acl_delta": "one_explicit_allow_entry"
+      },
+      "observation_id": "O006",
+      "source_ordinal": "P006",
+      "stage": "root_identity",
+      "task_ids": ["I01", "I04"]
+    },
+    {
+      "facts": {
+        "later_probe_dispatch_count": 0,
+        "principal_binding": "mismatch_under_current_comparison",
+        "workspace_positive_probe": "typed_identity_collected"
+      },
+      "observation_id": "O007",
+      "source_ordinal": "P007",
+      "stage": "workspace_identity_binding",
+      "task_ids": ["I01", "I04"]
+    },
+    {
+      "facts": {
+        "candidate_identity_collection_a": "empty",
+        "candidate_identity_collection_b": "nonempty",
+        "workspace_grant_binding": "not_proven"
+      },
+      "observation_id": "O008",
+      "source_ordinal": "P008",
+      "stage": "workspace_identity_binding",
+      "task_ids": ["I01", "I04"]
+    },
+    {
+      "facts": {
+        "controller_only_read": "success_with_content",
+        "later_probe_dispatch_count": 0,
+        "workspace_positive_read": "success"
+      },
+      "observation_id": "O009",
+      "source_ordinal": "P009",
+      "stage": "controller_only_read",
+      "task_ids": ["I01", "I05"]
+    },
+    {
+      "facts": {
+        "initialize_request_count": 1,
+        "initialize_response_count": 0,
+        "probe_dispatch_count": 0,
+        "profile_configuration": "rejected_before_thread_start"
+      },
+      "observation_id": "O010",
+      "source_ordinal": "P010",
+      "stage": "profile_initialize",
+      "task_ids": ["I01", "I02", "I03"]
+    },
+    {
+      "facts": {
+        "controller_only_read": "success_with_content",
+        "named_profile": "active",
+        "workspace_positive_read": "success"
+      },
+      "observation_id": "O011",
+      "source_ordinal": "P011",
+      "stage": "controller_only_read",
+      "task_ids": ["I01", "I05"]
+    },
+    {
+      "facts": {
+        "acl_observation": "sandbox_related_inherited_modify_entries_present",
+        "controller_only_read": "success_with_content",
+        "named_profile": "active"
+      },
+      "observation_id": "O012",
+      "source_ordinal": "P012",
+      "stage": "controller_only_read",
+      "task_ids": ["I01", "I05"]
+    },
+    {
+      "facts": {
+        "command_identity_after_link_probe": "different",
+        "content_disclosure": false,
+        "temporary_junction_after_probe": "present"
+      },
+      "observation_id": "O013",
+      "source_ordinal": "P013",
+      "stage": "link_path_cleanup",
+      "task_ids": ["I01", "I06"]
+    },
+    {
+      "facts": {
+        "controller_state_pre_postcondition": "unchanged",
+        "first_seven_probe_results": "passed",
+        "state_create": "access_denied",
+        "state_read": "access_denied",
+        "state_replace": "access_denied",
+        "stored_final_probe_result": "failed",
+        "worker_target_metadata": "unavailable"
+      },
+      "observation_id": "O014",
+      "source_ordinal": "P014",
+      "stage": "state_result_recalculation",
+      "task_ids": ["I01", "I07", "I08"]
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "status": "CONTROLLER_ONLY_PUBLIC_PROJECTION_CANDIDATE"
+}

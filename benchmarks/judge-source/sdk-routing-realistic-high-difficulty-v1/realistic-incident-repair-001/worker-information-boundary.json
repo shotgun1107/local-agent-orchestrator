@@ -1,0 +1,696 @@
+{
+  "allowed_provenance": [
+    "base_snapshot",
+    "public_observation",
+    "public_requirement"
+  ],
+  "b1_feedback_contract": {
+    "allowed_fields": [
+      "check_id",
+      "exit_code",
+      "stderr",
+      "stderr_sha256",
+      "stderr_truncated",
+      "stdout",
+      "stdout_sha256",
+      "stdout_truncated"
+    ],
+    "combined_maximum_bytes": 4096,
+    "per_stream_maximum_bytes": 2048,
+    "provenance": "public_requirement"
+  },
+  "challenge_ready": false,
+  "checks": [
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I01"
+      ],
+      "check_id": "i01_contract",
+      "cwd": ".",
+      "definition_sha256": "6983c7980bb587dcffecc82bae7aaf1723d708f810fc7ee625f13c8cb4ef975b",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I02"
+      ],
+      "check_id": "i02_contract",
+      "cwd": ".",
+      "definition_sha256": "e86409f4e0d57efaa3bfd0050853a60ab086776dba7242acf56e8c986a891fb2",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I03"
+      ],
+      "check_id": "i03_contract",
+      "cwd": ".",
+      "definition_sha256": "a2c85a78e43520b5f6f201d7eb25fb75f32633710e29bf7764e334afaa26255c",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I04"
+      ],
+      "check_id": "i04_contract",
+      "cwd": ".",
+      "definition_sha256": "6d6b6a6970bdade1c30877111d5be05ec94a577edcca53d5a3e49b23ab6ace6c",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I05"
+      ],
+      "check_id": "i05_contract",
+      "cwd": ".",
+      "definition_sha256": "00c70c8fefc05cde9253c14dccdeb2355a6467b27ee48452827186cb2d5a1956",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I06"
+      ],
+      "check_id": "i06_contract",
+      "cwd": ".",
+      "definition_sha256": "a408b1a2c17a06a7ca78118e8c50247923618dd1ea9d8e84c2ab9f3b8ace80ab",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I07"
+      ],
+      "check_id": "i07_contract",
+      "cwd": ".",
+      "definition_sha256": "975fe8c76adb2a4b7a1e3ca2cc418860513518cdfd3fd91ebfa276b1e4daca04",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "python",
+        "benchmark_checks/check_profile_i.py",
+        "I08"
+      ],
+      "check_id": "i08_contract",
+      "cwd": ".",
+      "definition_sha256": "0ee612619b62cd4c089a72246a434df11b607a7fddbef3cb154e77141138c380",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "check_id": "diff_check",
+      "cwd": ".",
+      "definition_sha256": "51dfcde030987b2d23d68e2cd0115cf35ed6d3feb963d1a1226a3c0940abbb20",
+      "expected_exit_codes": [
+        0
+      ],
+      "provenance": "public_requirement",
+      "stderr_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      },
+      "stdout_schema": {
+        "encoding": "utf-8-replacement",
+        "maximum_bytes": 2048
+      }
+    }
+  ],
+  "checks_manifest_sha256": "fd5e618625bd31242ab4ce796f16ba9b88c0966170dad596052d5ad5eedc7d56",
+  "file_count": 20,
+  "files": [
+    {
+      "path": ".orchestrator/checks.yaml",
+      "provenance": "public_requirement",
+      "sha256": "fd5e618625bd31242ab4ce796f16ba9b88c0966170dad596052d5ad5eedc7d56"
+    },
+    {
+      "path": "README.md",
+      "provenance": "public_requirement",
+      "sha256": "a70fdaad4bc65fe83d466536bb3ca8de460b6a3605f6aa8b3e1714e5a36ccf3d"
+    },
+    {
+      "path": "benchmark-run.yaml",
+      "provenance": "public_requirement",
+      "sha256": "8f7450d1993544dd5ffa66b30f286cc92a1635a0ef8567f111e8fd62c8ade4a1"
+    },
+    {
+      "path": "benchmark_checks/check_profile_i.py",
+      "provenance": "public_requirement",
+      "sha256": "c31bea688b912e116ea75d8d5986f7d223c3a932d132c37f86bc77bd1279c8c7"
+    },
+    {
+      "path": "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md",
+      "provenance": "base_snapshot",
+      "sha256": "e7e5bea97dab798d19923c7d934a35b6a079cd9fecf5e863129619b7c96ba293"
+    },
+    {
+      "path": "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md",
+      "provenance": "base_snapshot",
+      "sha256": "2a037f5fff4dea3118219eeadd5156f6c3e989782cfa2b008a6edff39f8172b3"
+    },
+    {
+      "path": "profile-i/evidence/public-observations.json",
+      "provenance": "public_observation",
+      "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+    },
+    {
+      "path": "profile-i/requirements/boundary-contract.md",
+      "provenance": "public_requirement",
+      "sha256": "43c1d95b98ff4d99c0f5e6abe16c99707b0fa6f7ccf8a93db5e524333f1c61ff"
+    },
+    {
+      "path": "profile-i/requirements/evidence-ledger.schema.json",
+      "provenance": "public_requirement",
+      "sha256": "6236210ac6322c78263f62cc0acee8e4cdaaad7337ed53a04a90268332ff74d3"
+    },
+    {
+      "path": "profile-i/work/evidence-ledger.json",
+      "provenance": "public_requirement",
+      "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+    },
+    {
+      "path": "profile-i/work/incident-claims.json",
+      "provenance": "public_requirement",
+      "sha256": "4d972026e949813141677eec36ad4d646c440afd81507fe52402d94c8970c58d"
+    },
+    {
+      "path": "profile-i/work/task-contracts.json",
+      "provenance": "public_requirement",
+      "sha256": "599bd58c59155f94347b491443b9e8ebec4ce7bcc53bca05dc3022eed5a15aab"
+    },
+    {
+      "path": "tools/benchmark-runner/README.md",
+      "provenance": "base_snapshot",
+      "sha256": "3e98babbb84f135a2be5fae6dd759e680ff3de0dc6a821c1339e7b4d3c80baf8"
+    },
+    {
+      "path": "tools/benchmark-runner/pyproject.toml",
+      "provenance": "base_snapshot",
+      "sha256": "2c5ef7adbfebe82d1fb5b7107b43e23cf188ed9b65bbf666b58f3e1dd7c05e60"
+    },
+    {
+      "path": "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "sha256": "b3d374e479c70397a5668080c6ed5da7b87d2d7eb0badc2a89e4fb572958fcc7"
+    },
+    {
+      "path": "tools/benchmark-runner/src/benchmark_runner/__init__.py",
+      "provenance": "base_snapshot",
+      "sha256": "f07f57b00af54f5cf5e4ae02d385bdf06ed8d18ec4f811a7229d68e0c6a75226"
+    },
+    {
+      "path": "tools/benchmark-runner/src/benchmark_runner/contract.py",
+      "provenance": "base_snapshot",
+      "sha256": "4a6834190ae88e5accfbe45d5a40dd7ebf6c08f342856581e8d889e94bafc47f"
+    },
+    {
+      "path": "tools/benchmark-runner/src/benchmark_runner/runner.py",
+      "provenance": "base_snapshot",
+      "sha256": "8048ab45aee271b285f2110502ef21b019870ffc105403b0958e28d12ae963bf"
+    },
+    {
+      "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "sha256": "da3dd934401e08c89426a6fd4239b248b4185d00280e6717afd53e5c41e0ba6b"
+    },
+    {
+      "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+      "provenance": "base_snapshot",
+      "sha256": "5967c42f30dee4c1bef067af55d549ff1510f38a08bc198d46b76206ea5e25b5"
+    }
+  ],
+  "protected_worker_paths": [
+    ".orchestrator/**",
+    "README.md",
+    "benchmark-run.yaml",
+    "benchmark_checks/**",
+    "profile-i/evidence/**",
+    "profile-i/requirements/**"
+  ],
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "status": "WORKER_INFORMATION_BOUNDARY_VERIFIED",
+  "task_manifest_path": "benchmark-run.yaml",
+  "task_manifest_sha256": "8f7450d1993544dd5ffa66b30f286cc92a1635a0ef8567f111e8fd62c8ade4a1",
+  "tasks": [
+    {
+      "check_names": [
+        "i01_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i01_contract"
+          ],
+          "id": "I01C1",
+          "text": "The evidence ledger and incident claims satisfy the public evidence contract."
+        }
+      ],
+      "completion_criteria_sha256": "7440843992c67a23f4f734de44da55d38cd67a6a481517d8b3ffdefb1f84530f",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/requirements/evidence-ledger.schema.json",
+          "provenance": "public_requirement",
+          "sha256": "6236210ac6322c78263f62cc0acee8e4cdaaad7337ed53a04a90268332ff74d3"
+        }
+      ],
+      "goal": "Classify the conflicting public observations as confirmed, excluded, or unknown and bind every incident claim to public evidence.",
+      "goal_sha256": "b3ac1c1f65c6aa6e15ab97ebd41a7b3a2edfec04eca05ce7f43f524a7b34ae88",
+      "read_scope": [
+        "README.md",
+        "profile-i/evidence/**",
+        "profile-i/requirements/**",
+        "profile-i/work/**",
+        "benchmark_checks/check_profile_i.py"
+      ],
+      "task_id": "I01",
+      "write_scope": [
+        "profile-i/work/evidence-ledger.json",
+        "profile-i/work/incident-claims.json",
+        "profile-i/work/task-contracts.json"
+      ]
+    },
+    {
+      "check_names": [
+        "i02_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i02_contract"
+          ],
+          "id": "I02C1",
+          "text": "The public profile-provenance contract and its model-free regressions are declared and implemented."
+        }
+      ],
+      "completion_criteria_sha256": "4ea7fa854d30cce0c84e356eeb2612da5c6aa83cec63cab567bece9b03167ff3",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Bind the actual active permission profile to direction-aware SDK request, response, and notification evidence while rejecting legacy argument use.",
+      "goal_sha256": "7c5b503e654f657eaef68e6d34d614e4f4f02672334205650172f7f6a7c8efe0",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I02",
+      "write_scope": [
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i03_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i03_contract"
+          ],
+          "id": "I03C1",
+          "text": "Command, configuration, and failure-evidence work is declared with public regressions."
+        }
+      ],
+      "completion_criteria_sha256": "fd4446879d2475a4a6a628615f28e11d1e039111a2fced4ce1a7eca8f85bf5d4",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Make the frozen helper command and effective configuration agree with the public execution contract and preserve diagnostic failures.",
+      "goal_sha256": "4513470da008fa4d68fecb843b2f53ec05c47e73f91574d6a345a1181ed3f7c2",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "docs/design/**",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I03",
+      "write_scope": [
+        "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md",
+        "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md",
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i04_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i04_contract"
+          ],
+          "id": "I04C1",
+          "text": "Workspace boundary behavior and identity binding are declared with public regressions."
+        }
+      ],
+      "completion_criteria_sha256": "d56762dd30afa0d458d43ddb21482611e0657a4c7af28d9491a79ebcac4045a7",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Preserve the declared workspace read/write behavior while binding its observed access transition to the executing sandbox identity.",
+      "goal_sha256": "4c4fbe69b2fe70c294b46bc8735581588a0933a917b14548a1dcb2da61811bbe",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I04",
+      "write_scope": [
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i05_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i05_contract"
+          ],
+          "id": "I05C1",
+          "text": "Controller-only root behavior and identity preservation are declared with public regressions."
+        }
+      ],
+      "completion_criteria_sha256": "8f76ca72f1c800466c3bc1fe92cf6b03abfd41be5e28e10ac20384846a31419d",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Keep declared workspace access working while making every public read/write case against the two logical Controller-only roots fail and preserving their identities.",
+      "goal_sha256": "eed04ec1c4f312a94ad8ea41a357b3d59c4384fe5029a64411afb1e7ce4914dd",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I05",
+      "write_scope": [
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i06_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i06_contract"
+          ],
+          "id": "I06C1",
+          "text": "Link/path equivalence, cleanup, and command stability are declared with public regressions."
+        }
+      ],
+      "completion_criteria_sha256": "2ced62ec38b79773ab79d2a4a4a8ab4891a83068d234d0d9a6f82e27cadd270f",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Make direct and public link/path variants produce the same protected result while keeping temporary path state and frozen command identity unchanged after execution.",
+      "goal_sha256": "091e4df17f3a73ae8bbcf265a0d708c1f9e88cbb30fe781ea8535aba903ca289",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I06",
+      "write_scope": [
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i07_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i07_contract"
+          ],
+          "id": "I07C1",
+          "text": "State-access result meaning and independent recalculation are declared with public regressions."
+        }
+      ],
+      "completion_criteria_sha256": "1669e9372f6535921116640bae940fa129c5009b4e27b848a04cd343e65229a7",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        }
+      ],
+      "goal": "Make public typed results for blocked state operations agree with independently verified Controller preconditions and postconditions without exposing protected state.",
+      "goal_sha256": "06175554320ffa888e6dd7d7c7d8b2b63d9aa19b13c2e946d55ab4ce1ee1b4f5",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I07",
+      "write_scope": [
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    },
+    {
+      "check_names": [
+        "i08_contract",
+        "diff_check"
+      ],
+      "completion_criteria": [
+        {
+          "check_names": [
+            "i08_contract"
+          ],
+          "id": "I08C1",
+          "text": "Bundle recalculation and evidence-claim alignment are declared and all public Task records are complete."
+        }
+      ],
+      "completion_criteria_sha256": "c3d10819553815fe826d101941b1ecf9f7d7f7c75640f1c430959d750ee7c4e6",
+      "declared_inputs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "provenance": "public_observation",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "provenance": "public_requirement",
+          "sha256": "93e1cd521af18d75d5c31919c7bd50b6d511ceb1d7a4ee9719c9246fc5979cb4"
+        },
+        {
+          "path": "profile-i/work/incident-claims.json",
+          "provenance": "public_requirement",
+          "sha256": "4d972026e949813141677eec36ad4d646c440afd81507fe52402d94c8970c58d"
+        }
+      ],
+      "goal": "Recalculate all eight probe results, exact bundle identity, regressions, and structured evidence claims into one fail-closed candidate decision.",
+      "goal_sha256": "a25b87b6223e9d1abf530a5100ee875b5feb3c5b0e0671cd7f0f179a32710d76",
+      "read_scope": [
+        "README.md",
+        "profile-i/**",
+        "benchmark_checks/check_profile_i.py",
+        "docs/design/**",
+        "tools/benchmark-runner/**"
+      ],
+      "task_id": "I08",
+      "write_scope": [
+        "docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md",
+        "docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md",
+        "profile-i/work/evidence-ledger.json",
+        "profile-i/work/incident-claims.json",
+        "profile-i/work/task-contracts.json",
+        "tools/benchmark-runner/scripts/probe_runtime_boundary.py",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+        "tools/benchmark-runner/tests/test_runtime_boundary.py"
+      ]
+    }
+  ],
+  "worker_tree_aggregate_sha256": "870e1f2eda2a047d59e8a7f736aa3c8f513113989758c71ca73d2b262a25df31"
+}
