@@ -1851,3 +1851,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 단위시험은 `11 passed in 0.49s`, 기존 Judge 및 Phase D fixture와 합친 표적 회귀는 `33 passed, 1 skipped in 19.23s`, Python compile과 `git diff --check`는 통과했다. skip은 기존 Windows symlink 권한 제한이다.
 - exact commit에서 만든 pristine W/J로 run `profile-r-judge-candidate-20260811-8bb3418-1`을 실제 실행했다. 컨테이너 exit 1을 runtime 장애가 아닌 `CHECKS_FAILED`로 회수했고, 실패 property는 사전 등록된 `R-P02-STAGE-DISCRIMINATOR`, `R-P05-LIFECYCLE-REUSE`였다. W/J는 실행 전후 동일하고 O는 비었으며 `workspace_mutated=false`, timeout false, 종료 뒤 container 잔여 없음, model turn 0이다.
 - 현재 Docker Judge 고정 실행과 결과 회수·분류는 구현됐지만 reference positive control과 negative mutation 8개를 Docker backend에서 전수 실행하지 않았다. 따라서 Profile R은 `challenge_ready=false`, Phase E/F와 model turn은 `NO-GO`를 유지한다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-backend-result.md`에 기록했다.
+
+## Phase D Profile R Docker Judge 9종 qualification
+
+- 작업일: 2026-08-11. reference 1개와 사전 등록 negative mutation 8개를 fresh W/J/O에서 순서대로 실행하고, 각 Docker manifest/result와 47개 evidence 파일을 batch seal로 묶는 matrix를 구현했다. 구현 회귀는 39 passed, 기존 Windows symlink 권한 제한 1 skipped다.
+- 실제 실행에서 세 환경 결손을 순서대로 발견했다. base Python image에는 pytest·PyYAML·pydantic·jsonschema가 없어 R-P02가 실패했고, 첫 전용 image에는 git이 없어 R-P06이 실패했으며, 두 번째 image에는 UID 65532의 passwd home이 없어 최소 subprocess 환경에서 `Path.home()`이 실패했다. exact dependency lock, git, UID 65532 `/tmp` home을 Dockerfile에 고정하고 각 공통 실패를 단일 검사로 재현·교정했다.
+- Windows AppData의 긴 경로는 260자 제한으로 patch 적용 전에 중단돼 fresh short root `C:\lao-r`를 사용했다. 잘못 입력한 full commit SHA 1회는 Git 추출 전에 중단됐다. 이 준비 실패와 r1~r3 `CHALLENGE_NOT_READY` 결과는 성공 근거에 합치지 않았다.
+- 최종 source commit `5146ee0ba4ab9ff69f181ca9a13d20d7fb7e96a0`, Judge image digest `fc6b0d42...93fbf98`로 batch `profile-r-docker-matrix-r5`를 184.8초 실행했다. Reference는 8/8 pass, mutation 8개는 각 사전 등록 목표 실패 패턴과 일치해 9/9 matched, W/J 무변경, O empty, container 잔여 없음, model turn 0이었다.
+- 독립 verifier 재실행 결과는 `CHALLENGE_READY True 9`다. manifest SHA-256은 `a58d9761...79f363`, result는 `b25c7ad4...546ce4`, seal은 `56c1d214...e553bb`다. 민감 경로를 제외한 projection은 `benchmarks/artifacts/profile-r-docker-judge-qualification-v1/qualification.json`에 보존했다.
+- Profile R 상태를 `PROFILE_R_CHALLENGE_READY`, `challenge_ready=true`로 판정한다. 이는 challenge artifact의 실험 사용 가능성만 뜻하며 SS1/B1 우위는 아직 미검증이다. 실제 Worker·SDK·model turn은 0회이며 다음 Phase 실행에는 별도 계획과 사용자 승인이 필요하다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-qualification-result.md`에 기록했다.
