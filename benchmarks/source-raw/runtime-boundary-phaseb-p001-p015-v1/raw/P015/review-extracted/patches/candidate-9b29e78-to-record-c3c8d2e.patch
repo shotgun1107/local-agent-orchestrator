@@ -1,0 +1,118 @@
+diff --git a/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md b/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
+index 3adf97f42e11fea870b128658708d55761314349..29ae3e0aeb3d6a4d08c4315abf52875c2220255f 100644
+--- a/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
++++ b/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
+@@ -1,16 +1,16 @@
+ # SDK routing 현실 고난도 비교 — 구현 후보 명세
+ 
+-- 문서 상태: `revision_10_runtime_boundary_p08_nondisclosure_corrected`
++- 문서 상태: `revision_10_runtime_boundary_candidate_verified`
+ - 설계 revision: 10
+ - 작성일: 2026-08-09
+-- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
++- 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
+ - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
+ - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
+ - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
+ - revision 2 재심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md) — P0 0건, P1 4건 closed·P1-1 partial
+ - runtime boundary: [Windows·SDK runtime boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)
+-- runtime 교정: Phase B 009에서 확인된 built-in `:workspace`의 J read 허용을 전용 least-privilege profile로 차단
+-- 이번 교정의 금지: model turn, Phase C·snapshot·fixture·checker 선행 구현
++- runtime 교정: Phase B 015가 custom profile, J/S protected ACL, P01~P08 8/8과 separate-process bundle 재검증을 통과
++- 현재 금지: 외부 closure 전 `judge_only_verified` 주장, Phase C·snapshot·fixture·checker 선행 구현, model turn
+ 
+ ## 1. 목적과 결론
+ 
+@@ -23,7 +23,7 @@
+ 
+ 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
+ 
+-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 014는 처음으로 8개 probe와 bundle 검증을 마쳤다. P01~P07은 통과했지만 P08의 강한 S metadata 비공개를 과거 판정식이 실패로 보아 aggregate가 아직 NOT_PROVEN이다. Revision 10은 Worker에게 S target 존재·hash 비공개를 요구하고 실제 불변은 Controller 전후조건에만 맡긴다. 새 source·새 root token의 재실행 전까지 candidate는 아니다.
++Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 새 source·새 root 원칙으로 순차 교정했고 015가 P01~P08 8/8, actual model turn 0, `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. 별도 process가 exact bundle·command·J/S protected ACL을 다시 검증했고 최종 Runner 전체 `258 passed`도 통과했다. 이는 Phase B 후보 closure 자료이며 외부 심사 전 `judge_only_verified`나 Phase C 승인으로 확대하지 않는다.
+ 
+ ## 2. 공식 runtime 근거와 주장 한계
+ 
+diff --git a/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md b/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
+index a98a1423da7ca7b9c5f8e4c3fd7e374907f4ec6c..f895f03e58f47ac9471f38fb4c65c7188aba0b9d 100644
+--- a/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
++++ b/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
+@@ -1,12 +1,12 @@
+ # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
+ 
+-- 문서 상태: `revision_17_p08_metadata_nondisclosure_candidate`
++- 문서 상태: `revision_17_runtime_boundary_candidate_verified`
+ - 작성일: 2026-08-09
+-- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
++- 기준 commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
+ - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
+ - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
+-- 현재 상태: 열네 번째 model-free 실행은 P01~P08 전체와 exact 4-file bundle 검증까지 완료했다. P01~P07은 pass, P08은 S의 existing replace target metadata까지 숨겨 `target_exists=false`, hash null을 반환했는데 과거 재계산식이 Worker에게 그 존재·hash 노출을 요구해 false가 됨. aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`
+-- 이번 교정 범위: P08 Worker observation은 S target 존재·hash 비공개를 요구하고, 실제 target 존재·불변은 Controller pre/postcondition이 manifest size/hash로 증명하도록 분리한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
++- 현재 상태: 열다섯 번째 model-free 실행 `runtime-boundary-phaseb-20260809-015`는 P01~P08 8/8, elevated·active profile·ACL·identity·Controller 전후조건과 exact 4-file bundle 검증을 모두 통과해 `RUNTIME_BOUNDARY_CANDIDATE`다. actual model turn은 0회다
++- 현재 종료선: 별도 process 재검증과 Benchmark Runner 전체 `258 passed`까지 완료했다. 이는 Phase B 후보 증거이며 아직 `judge_only_verified`, Phase C 승인, live/model usage 승인이 아니다
+ 
+ ## 1. 결정
+ 
+diff --git a/docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md b/docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4d302b7f2930289be29d8eb2eafa5671b08212e9
+--- /dev/null
++++ b/docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md
+@@ -0,0 +1,42 @@
++# 현실 고난도 비교 — Phase B runtime-boundary 결과
++
++- 결과: `RUNTIME_BOUNDARY_CANDIDATE`
++- 실행: `runtime-boundary-phaseb-20260809-015`
++- source commit: `9b29e781136e13b43b1e18f3fe1823bf496bef5c`
++- 실행 시각: 2026-08-09 09:02:15Z ~ 09:02:20Z
++- actual model turns: 0
++
++## 확인된 결과
++
++Pinned `openai-codex`와 bundled CLI `0.144.4`가 같은 executable을 사용했고, SDK empty thread의 active profile은 `runtime-boundary-worker`, Windows sandbox 분류는 `elevated`였다. J와 S는 inheritance를 제거한 Controller-only NTFS ACL을 사용했다.
++
++P01~P08은 모두 verifier 재계산에서 true였다.
++
++| Probe | 확인한 경계 | 결과 |
++|---|---|---|
++| P01 | W read와 sandbox process identity | pass |
++| P02 | J absolute read 차단 | pass |
++| P03 | W 기준 상대경로 J read 차단 | pass |
++| P04 | J basename 비공개 | pass |
++| P05 | symlink·junction escape와 cleanup | pass |
++| P06 | child process 동일 경계와 J read 차단 | pass |
++| P07 | 환경·process argument 금지값 비노출 | pass |
++| P08 | S read/create/replace 차단과 metadata 비공개 | pass |
++
++## Artifact identity
++
++| 항목 | SHA-256 |
++|---|---|
++| `manifest.json` | `9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc` |
++| `result.json` | `1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d` |
++| `files.sha256` / aggregate | `326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2` |
++| `bundle-seal.json` | `144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13` |
++| runtime identity | `6a11a49633fd018c39f5aba049b5d743ef2c23b2424ea9099665023420160d61` |
++| configuration identity | `371f4bb66e38922a0560b6444c7e218e06a76ef0106f6be9f418294602d99e41` |
++| bundled executable | `51398051c2332b6afe08dc3b9dbb4056085c197f35ca57a307ee303d450cada5` |
++
++실행과 다른 Python process가 exact four-file set, aggregate, eight derived results, frozen command identity와 현재 J/S protected ACL을 다시 검증했다. 이후 Benchmark Runner 전체 회귀는 `258 passed in 200.38s`였다.
++
++## 주장하지 않는 것
++
++이 결과는 Phase B의 실행 후보 증거다. 아직 `judge_only_verified`, Phase C 승인, snapshot/checker 완성, 실제 SS1/B1 비교 성공 또는 model 사용 승인이 아니다. 다음 단계는 이 bundle과 구현 diff의 독립 closure다.
+diff --git a/docs/operations/codex-revision-log.md b/docs/operations/codex-revision-log.md
+index 5dcb590a836f2248bebd77be31b306c0f55e749e..9e83430eda2e22e04944d4e074ed5ea55cc52f54 100644
+--- a/docs/operations/codex-revision-log.md
++++ b/docs/operations/codex-revision-log.md
+@@ -1611,3 +1611,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI
+ - P08 typed Evidence는 S sentinel read, absent target create, existing target replace가 모두 `access_denied`였고 S sentinel Controller hash와 W source hash는 전후 동일했다. Sandbox는 existing S replace target의 존재·hash도 볼 수 없어 before/after false·null을 반환했다. 과거 재계산식은 오히려 target 존재 true와 manifest hash 노출을 요구해 P08을 false로 만들었다.
+ - 이 결과는 mutation이나 content disclosure가 아니라 더 강한 metadata nondisclosure다. 새 계약은 Worker 쪽 existing S target을 false/null로 요구하고, 실제 target 존재·size·hash 불변과 create target 부재는 이미 실행 전후 `_probe_precondition`이 확인한 Controller evidence로만 증명한다. Worker가 S target 존재·hash를 관측하면 실패다.
+ - 014 bundle aggregate SHA-256은 `07ec2b31a49ad11b88f8e13570c9e72745e48aaf407efe642e012354a923468d`, result SHA-256은 `a1b4adc43d565e8c4337d7aa266046fff0317e9f5cb5da1f2246f0e792736cbc`다. Bundle과 W/J/S는 비candidate 진단 증거로 보존하며 재사용하지 않는다. P08 nondisclosure/metadata disclosure negative 회귀를 포함한 표적 시험은 `19 passed`다.
++
++## 현실 고난도 Phase B runtime-boundary candidate 도달
++
++- 작업일: 2026-08-09. source `9b29e781136e13b43b1e18f3fe1823bf496bef5c`의 `phaseb-20260809-015`는 pinned SDK/CLI `0.144.4`, ChatGPT account, custom `runtime-boundary-worker`, native Windows `elevated`, W capability ACL restricted-SID 결합과 Controller-only J/S protected ACL을 확인했다.
++- P01~P08 derived result는 정확히 8/8 true이고 failure reason은 없으며 actual model turn은 0회다. Aggregate status는 최초로 `RUNTIME_BOUNDARY_CANDIDATE`에 도달했다. Manifest SHA-256은 `9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc`, result SHA-256은 `1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d`, bundle aggregate/files SHA-256은 `326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2`, bundle-seal SHA-256은 `144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13`다.
++- 실행과 다른 새 Python process가 exact 4-file bundle, stored/derived aggregate, P01~P08, frozen command identity와 현재 J/S root identity·exact protected ACL을 다시 열어 모두 통과했다. 이어 Benchmark Runner 전체 회귀 `258 passed in 200.38s`를 확인했다.
++- 001~014의 실패 root와 artifact는 삭제·재사용하지 않고 보존한다. 015 candidate도 수정·재실행하지 않는다. 사람용 결과 보고서는 `docs/experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md`다. 다음 관문은 이 Phase B 후보의 독립 closure이며, 그 전에는 `judge_only_verified`, Phase C, snapshot/checker 구현, live/model usage를 열지 않는다.
