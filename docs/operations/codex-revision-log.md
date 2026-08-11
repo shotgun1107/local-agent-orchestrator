@@ -1835,3 +1835,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 실패 verification code는 `COMMON_PARENT_ENUMERATION_NOT_DENIED`, `DRIVE_ROOT_ENUMERATION_NOT_DENIED`, `LOOPBACK_CONNECTION_ACCEPTED`, `LOOPBACK_NOT_PERMISSION_DENIED`, `PARENT_CHILD_MATRIX_MISMATCH`, `SYMLINK_CREATE_NOT_SUCCESS` 여섯 개다. 특히 `network.enabled=false` profile에서도 parent·child가 Controller loopback listener에 접속해 accepted connection count가 2였다.
 - 이 결과를 통과로 완화하거나 같은 조건에서 반복하지 않는다. 현재 Windows Codex 0.144.4 permission profile만으로 동결 명세의 no-network Judge 경계를 증명하지 못했으므로 Profile R은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, `challenge_ready=false`에 머문다. 실제 Worker, Phase E/F와 model turn은 계속 `NO-GO`다.
 - 다음 관문은 loopback까지 차단하는 별도 OS 격리 경계를 채택할지, 아니면 Judge를 신뢰된 로컬 검사기로 재분류해 명세·주장 범위를 낮출지에 대한 사용자 결정이다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-judge-boundary-result.md`에 기록했다.
+
+## Phase D Profile R Docker Judge 사전검증
+
+- 작업일: 2026-08-11. Windows Codex sandbox의 loopback 차단 실패를 우회해 통과 처리하지 않고 별도 실행환경 후보인 Docker Desktop을 실제 확인했다. Docker Desktop `4.85.0`, Linux Engine `29.6.2`가 동작했고 `python:3.12-slim` image를 digest `sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36`으로 고정했다.
+- 실제 Profile R W/J를 read-only, 새 O를 read/write로 mount하고 S는 노출하지 않았다. `--network none`, read-only root filesystem, capability 전부 제거, no-new-privileges, 비root 사용자, PID·CPU·memory 제한을 적용했다. W/J/root write는 `EROFS`, O/tmp write는 성공했고 Windows Controller listener 연결은 `ENETUNREACH`, accepted connection은 0이었다.
+- 같은 격리에서 현재 stdlib-only Checker가 Linux에서 실행됐다. pristine W는 exit 1 typed 결과로 `R-P02-STAGE-DISCRIMINATOR`, `R-P05-LIFECYCLE-REUSE`를 실패 처리했고 총 property 8개, `workspace_mutated=false`였다. 기존 Windows 실행의 negative control과 의미상 일치한다.
+- Docker CLI 설치 뒤 engine이 꺼져 있어 Desktop을 시작했다. 잘못된 W 경로 1회는 container 전에 중단됐고, inline Python quote가 제거된 1회는 checker 시작 전 문법 오류로 끝났다. 최종 시험은 stdin 전달과 새 root를 사용해 전 항목을 다시 수행했다. 실패 준비 시도는 통과 근거로 세지 않았다.
+- 판정은 `DOCKER_JUDGE_PREFLIGHT_PASSED`다. 아직 Docker backend, image recipe, timeout·kill·seal·Runner 통합과 Windows 전용 검사 분리는 미구현이므로 `challenge_ready=false`, Phase E/F와 model turn `NO-GO`를 유지한다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-preflight.md`에 기록했다.
