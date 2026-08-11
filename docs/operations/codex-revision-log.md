@@ -1882,3 +1882,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - `worker-information-boundary.json`은 모든 W file·Task·Check·feedback surface의 hash/provenance/cap을 열거한다. leakage catalog는 source evidence와 final reference-only hash를 결합하며 W에서 P015, correction lineage, J/S raw, SID·절대경로·thread·sentinel과 reference identity를 발견하지 않았다.
 - source gate와 Worker projection 결합 표적 시험은 `14 passed in 2.95s`다. pristine W의 I01~I08 public Check는 의도대로 8/8 nonzero이며 actual model turn은 0회다.
 - 상태는 `ANONYMIZED_WORKER_TASK_PACK_CANDIDATE`, `WORKER_INFORMATION_BOUNDARY_VERIFIED`, `challenge_ready=false`다. 다음 관문은 Profile I J source bundle, reference replay, deterministic property checker와 negative mutation이며 Docker qualification, 실제 Worker와 Phase E/F model turn은 아직 열지 않는다.
+
+## Profile I Worker 완료 뒤 집→회사 작업 반환
+
+- 작업일: 2026-08-11. 집에서 완료한 P001~P015 byte-exact import, Profile I source gate와 20-file Worker snapshot을 회사 기존 clone으로 반환하기 위해 `home-to-company-codex-handoff.md`를 revision 4로 갱신했다.
+- 전달 branch는 `codex/phase-d-artifacts`이며 반드시 포함할 작업 commit은 `a66386dea97681d68dc51975c28586ba9627a5a0`이다. 회사는 fetch 뒤 이 commit을 포함한 원격 latest tip과 exact tree로 ff-only 동기화한다.
+- 새 회사 시작 프롬프트는 이미 통과한 raw import·source gate·W build를 반복하지 않고 Profile I versioned J source bundle, reference, property checker, negative mutation과 model-free Docker qualification부터 이어가도록 고정했다.
+- 실제 SS1/B1 Worker, SDK thread, live Plan, Codex model turn과 main 병합은 여전히 금지한다. Profile I artifact가 준비돼도 별도 artifact 심사와 사용자 Phase E 승인 전에는 live 비교를 시작하지 않는다.
