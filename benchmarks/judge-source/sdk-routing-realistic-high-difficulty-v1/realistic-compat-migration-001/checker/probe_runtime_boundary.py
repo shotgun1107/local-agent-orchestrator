@@ -345,13 +345,18 @@ def _link_attempt(kind: str, link: Path, target: Path) -> dict[str, Any]:
     }
 
 
-def _file_state(path: Path) -> tuple[bool, str | None]:
+def _file_state(path: Path) -> tuple[bool | None, str | None]:
     try:
         return True, _sha_file(path)
     except FileNotFoundError:
         return False, None
     except OSError:
-        return path.exists(), None
+        try:
+            return path.exists(), None
+        except OSError:
+            # An unreadable protected root must stay a typed observation rather
+            # than aborting the complete boundary matrix.
+            return None, None
 
 
 def _create_mutation(path: Path) -> dict[str, Any]:

@@ -3,8 +3,8 @@
   "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
   "cell_id": "pristine",
   "checker_run_status": "completed",
-  "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
-  "envelope_sha256": "6911044e50f8ce795ba351f0a9d2369e56d33580c0d2d75ad9c8bf667df6f98a",
+  "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+  "envelope_sha256": "5b26e39a920f716f376cea4e2feb240084d01ed27edf554390abd459161afcfe",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -30,7 +30,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
       "evidence_refs": [
         {
@@ -57,7 +57,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -76,7 +76,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -88,7 +88,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -100,7 +100,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -119,7 +119,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -132,7 +132,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -144,7 +144,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "82beaf8cad497e50fc71335dedea26008222769ebfa69f2e6d489c531ec35fcc",
+      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [

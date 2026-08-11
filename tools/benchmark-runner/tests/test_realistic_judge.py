@@ -15,9 +15,12 @@ from benchmark_runner.realistic_judge import (
     TreeFingerprint,
     _git_prefix_records,
     _judge_config_overrides,
+    _persist_process_capture,
+    _sandbox_prefix,
     fingerprint_tree,
     verification_codes,
 )
+from benchmark_runner.runtime_boundary import RuntimeIdentity
 from benchmark_runner.runner import canonical_json_bytes, sha256_bytes
 
 
@@ -156,14 +159,30 @@ def test_judge_profile_has_exact_read_write_deny_and_network_contract(tmp_path: 
     assert f'default_permissions="realistic-property-judge-v1"' in values
     assert 'permissions.realistic-property-judge-v1.extends=":workspace"' in values
     assert "permissions.realistic-property-judge-v1.network.enabled=false" in values
+    assert (
+        f"permissions.realistic-property-judge-v1.workspace_roots="
+        + "{" + f"{json.dumps(str(roots[2].resolve()))}=true" + "}"
+        in values
+    )
     filesystem = next(value for value in values if ".filesystem=" in value)
     assert '":root"="deny"' in filesystem
     assert '":minimal"="read"' in filesystem
+    assert '":workspace_roots"={"."="write"}' in filesystem
     encoded = [json.dumps(str(root.resolve()), ensure_ascii=False) for root in roots]
     assert f'{encoded[0]}="read"' in filesystem
     assert f'{encoded[1]}="read"' in filesystem
     assert f'{encoded[2]}="write"' in filesystem
     assert f'{encoded[3]}="deny"' in filesystem
+
+
+def test_judge_sandbox_uses_explicit_profile_without_managed_policy_merge(tmp_path: Path) -> None:
+    runtime = RuntimeIdentity.model_construct(
+        probe_resolved_executable=str((tmp_path / "codex.exe").resolve())
+    )
+    command = _sandbox_prefix(runtime, cwd=tmp_path, overrides=("x=1",))
+    assert command[:2] == [runtime.probe_resolved_executable, "sandbox"]
+    assert command[command.index("--permission-profile") + 1] == "realistic-property-judge-v1"
+    assert "--include-managed-config" not in command
 
 
 def test_tree_fingerprint_is_deterministic_and_rejects_symlink(tmp_path: Path) -> None:
@@ -212,6 +231,28 @@ def test_probe_output_root_matrix_is_fresh_and_cleaned(tmp_path: Path) -> None:
     assert all(result[name]["outcome"] == "success" for name in ("create", "write", "read", "replace", "delete"))
     assert result["enumerate_after_cleanup"]["entry_count"] == 0
     assert list(tmp_path.iterdir()) == []
+
+
+def test_process_capture_is_persisted_before_payload_decode(tmp_path: Path) -> None:
+    stdout = b""
+    stderr = b"permission profile rejected"
+    raw = (
+        2,
+        stdout,
+        len(stdout),
+        sha256_bytes(stdout),
+        stderr,
+        len(stderr),
+        sha256_bytes(stderr),
+        17,
+    )
+    record = _persist_process_capture(tmp_path, "probe", raw, 1024)
+    assert record.exit_code == 2
+    assert (tmp_path / "probe.stdout.bin").read_bytes() == stdout
+    assert (tmp_path / "probe.stderr.bin").read_bytes() == stderr
+    assert json.loads((tmp_path / "probe-process.json").read_text(encoding="utf-8"))[
+        "stderr_sha256"
+    ] == sha256_bytes(stderr)
 
 
 def test_verified_parent_child_matrix_has_no_failure_codes() -> None:
