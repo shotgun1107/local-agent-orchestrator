@@ -1800,3 +1800,22 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - W 후보는 99 files, tree aggregate SHA-256 `62cb754fb6b6bd107ad79d11024553948b0e1c1e9185eed3073d6249e6e6fa3`이다. 별도 두 output root에 재생성한 workspace와 manifest가 committed candidate bytes와 일치했다.
 - 표적 시험은 `6 passed in 10.32s`, 두 Python 파일 `py_compile` 통과다. 첫 생성 명령은 존재하지 않는 `tools/benchmark-runner/.venv`를 지정해 Python 실행 전에 실패했고, 실제 Python 3.12 환경인 `stages/b1-sequential/.venv`로 교정했다. 제품 코드나 artifact 실패는 아니었다.
 - 현재 상태는 `ANONYMIZED_BASE_SNAPSHOT_CANDIDATE`이며 `challenge_ready=false`다. 8-Task envelope, public requirement/check, J source bundle, reference·negative mutation·property checker는 아직 없다. SDK·Codex·probe·model turn은 실행하지 않았다.
+
+## Phase D Profile R 8-Task·공개 검사 pack 후보
+
+- 작업일: 2026-08-11. 익명화 base W 99 files 위에 `public_requirement` provenance의 공개 overlay 14 files를 결정론적으로 결합했다. 최종 W 후보는 113 files, tree aggregate SHA-256 `8ea7b95b7c512bbcbbfad7623e8ed92854b3c4debb1e3737f288a4751f571d79`, manifest SHA-256 `ee2604277fd553d7b5b8fe0b635d7c92734ed2af10243d4d69a46e9a1fe46767`이다.
+- `benchmark-run.yaml`은 승인 명세의 R01~R08 의존 관계를 그대로 사용한다. R01에서 갈라진 R02·R03이 R04에서 합쳐지고 R05→R06→R07→R08로 이어져 Task 8개, 최장 깊이 7, fan-in R04~R08을 가진다. 각 Task는 같은 공개 goal·completion criteria·inputs·read/write scope를 SS1/B1에 제공할 수 있는 B1 `RunSpec` version 1로 파싱됐다.
+- W의 고정 `benchmark_checks/check_profile_r.py`는 Task별 공개 정상 계약만 검사한다. R01 inventory/ledger, R02 discriminator, R03 fixture graph, R04 Plan identity/order, R05 reserve/lifecycle reuse, R06 status/property/export API, R07 model-free regression, R08 structured operator relation을 분리했다. 이 파일과 `.orchestrator/**`, public requirements, root RunSpec은 모든 Task write scope 밖의 보호 파일이다.
+- pristine W에서 R01~R08 공개 completion check가 각각 exit 1과 고정 `Rxx_PUBLIC_CONTRACT_FAILED`만 반환하는 것을 확인했다. 이는 아직 Worker solution이나 reference를 넣지 않은 의도된 표적 실패다. public check는 실제 model·SDK·Codex·network를 호출하지 않는다.
+- snapshot builder는 detached base Git object와 versioned public overlay를 별도 provenance로 결합하고 collision, unsafe path, symlink, case-fold duplicate와 민감 literal을 계속 거부한다. 두 재생성 결과와 committed W/manifest가 byte-identical임을 검증했다.
+- 검증 결과는 B1 `RunSpec` parse `tasks=8`, `test_realistic_phase_d_fixtures.py` `9 passed in 9.41s`, Python compile, `git diff --check` 통과다. 첫 재검증에서 이전 compile이 만든 ignored `__pycache__` 1개 때문에 W file count가 114로 보였고, 생성물이 아닌 해당 cache만 제거한 뒤 113-file 정본으로 재검증했다.
+- 현재 상태는 `ANONYMIZED_WORKER_TASK_PACK_CANDIDATE`, `challenge_ready=false`다. Worker/reference solution, versioned J source bundle, property checker, negative mutations, positive replay와 Judge boundary는 아직 만들지 않았다. Phase E live와 Phase F model turn은 계속 `NO-GO`다.
+
+## Phase D Profile R W·J source bundle 검증
+
+- 작업일: 2026-08-11. Profile R Worker가 공개 검사를 실제로 실행할 수 있도록 B1 schema/source를 base allowlist에 추가하고, 공개 overlay에 LF 고정 `.gitattributes`를 추가했다. 최종 W는 base 115 files와 overlay 15 files를 합친 130 files이며 tree aggregate SHA-256은 `d83ffcb39405eabc0fae45329737e4da424264523be4fa678e7bff5e5bbae950`이다.
+- 공개 검사는 숨겨진 golden tree를 읽지 않는다. R06은 현재 fixture output과 공개 property/export 계약을 검사하며, R07은 독립 W에서 실행 가능한 S2 fake regression을 실행하고 Git history가 필요한 기존 S1 함수 다섯 개는 source 존재를 정적으로 확인한다. reference를 적용한 disposable W에서 R01~R08 공개 검사가 모두 `Rxx_PUBLIC_CONTRACT_OK`로 통과했다.
+- Judge source bundle은 property catalog·선행 DAG·정보 경계·누출 catalog·reference patch·8개 negative mutation·pristine/reference/mutation evidence·checker를 포함한다. manifest 제외 31 files, payload aggregate SHA-256 `77c6f1a0ce9ee8cac1d96f1b406b5291e0bca00e00de1361e41cd29f06043f4e`, bundle manifest SHA-256 `083e262abfe80870062ae43eea40218a44cc2f8992fd04f40086e35cc6cf8a61`, reference patch SHA-256 `0a33bc75420c7b7f0fa8a213654feff8572712689bb4606c06a97c040829de44`다.
+- pristine은 대상 property를 실패하고 reference는 R-P01~R-P08 8/8을 통과한다. 8개 negative mutation은 각각 목표 property를 실패시키며 관계없는 property는 통과하거나 선행 실패로 차단된다. 생성기를 서로 다른 Python process에서 두 번 실행했을 때 bundle manifest와 reference patch hash가 동일했다.
+- 회귀 중 발견한 두 문제를 교정했다. W 파일 집계가 테스트가 만든 `__pycache__`를 정식 artifact로 세지 않도록 cache 디렉터리를 제외했고, Windows checkout의 CRLF였던 routing schema 두 개를 기존 schema exporter로 LF 정본화했다. 해당 두 회귀 시험은 `2 passed in 1.10s`, Profile R fixture 표적 시험은 `12 passed in 11.99s`, 최종 Benchmark Runner 전체 회귀는 `303 passed in 292.66s`다.
+- 현재 상태는 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, `challenge_ready=false`다. Worker/Judge 정보 분리와 source bundle은 준비됐지만 보호된 Judge filesystem/no-network 실행 경계를 아직 검증하지 않았다. 따라서 실제 Worker 실행, Phase E live, Phase F model turn은 계속 `NO-GO`다. 이번 작업의 model·SDK·Codex·app-server·sandbox·network 호출은 0회다.

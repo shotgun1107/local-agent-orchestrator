@@ -1,0 +1,209 @@
+schema_version: 1
+request:
+  source: benchmark
+  text: "Extend the public single-stage routing system with the stage-neutral S2 compatibility migration contract."
+completion_criteria:
+  - id: RC1
+    text: "All eight public migration Task contracts pass without changing protected challenge files."
+    satisfied_by_tasks: [R01, R02, R03, R04, R05, R06, R07, R08]
+constraints:
+  - "Modify only paths declared by the active Task write_scope."
+  - "Do not modify benchmark_checks/**, .orchestrator/**, profile-r/requirements/**, README.md, or benchmark-run.yaml."
+  - "Preserve the existing S1 lifecycle, Measurement, seal, export, and route-decision meanings."
+  - "Do not add an S2-only Controller, state machine, Judge, runtime, adapter, Measurement, or seal implementation."
+  - "Do not use network access, external actions, API keys, or model calls from checks."
+assumptions: []
+tasks:
+  - key: R01
+    goal: "Structure the public migration invariants and every declared change surface into the migration ledger and source inventory."
+    completion_criteria:
+      - {id: R01C1, text: "The migration ledger and source inventory satisfy the public structure contract.", check_names: [r01_contract]}
+    depends_on: []
+    inputs:
+      - {path: "profile-r/requirements/migration-contract.md"}
+      - {path: "profile-r/requirements/change-surface.json"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "profile-r/work/migration-ledger.json"
+      - "profile-r/work/source-inventory.json"
+      - "benchmark_checks/check_profile_r.py"
+    write_scope:
+      - "profile-r/work/migration-ledger.json"
+      - "profile-r/work/source-inventory.json"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r01_contract, diff_check]
+    approval: none
+  - key: R02
+    goal: "Implement the additive S1/S2 suite and stage Schemas with an exact stage discriminator and stage-neutral manifest parser."
+    completion_criteria:
+      - {id: R02C1, text: "Both stage branches load and reject cross-branch bytes.", check_names: [r02_contract]}
+    depends_on: [R01]
+    inputs:
+      - {path: "profile-r/work/migration-ledger.json"}
+      - {path: "profile-r/work/source-inventory.json"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "profile-r/work/migration-ledger.json"
+      - "profile-r/work/source-inventory.json"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/suites/sdk-routing-v1/**"
+      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    write_scope:
+      - "benchmarks/suites/sdk-routing-v1/stage.schema.json"
+      - "benchmarks/suites/sdk-routing-v1/suite.schema.json"
+      - "benchmarks/suites/sdk-routing-v1/suite.yaml"
+      - "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r02_contract, diff_check]
+    approval: none
+  - key: R03
+    goal: "Create the two public three-Task fixtures, their protected requirements, developer checks, and frozen fixture manifest."
+    completion_criteria:
+      - {id: R03C1, text: "Both fixture graphs and public check surfaces satisfy the public structure contract.", check_names: [r03_contract]}
+    depends_on: [R01]
+    inputs:
+      - {path: "profile-r/work/migration-ledger.json"}
+      - {path: "profile-r/work/source-inventory.json"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "profile-r/work/migration-ledger.json"
+      - "profile-r/work/source-inventory.json"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/fixtures/routing-v1/**"
+      - "benchmarks/manifests/**"
+    write_scope:
+      - "benchmarks/fixtures/routing-v1/intermediate/**"
+      - "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r03_contract, diff_check]
+    approval: none
+  - key: R04
+    goal: "Connect the exact stage discriminator, frozen source identity, cell order, and common turn budget through the stage-neutral Plan path."
+    completion_criteria:
+      - {id: R04C1, text: "The S2 Plan API exposes the exact public order and budget without duplicating the S1 builder.", check_names: [r04_contract]}
+    depends_on: [R02, R03]
+    inputs:
+      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
+      - {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/suites/sdk-routing-v1/**"
+      - "benchmarks/manifests/**"
+      - "benchmarks/fixtures/routing-v1/intermediate/**"
+      - "tools/benchmark-runner/src/benchmark_runner/**"
+      - "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
+      - "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+    write_scope:
+      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      - "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
+      - "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r04_contract, diff_check]
+    approval: none
+  - key: R05
+    goal: "Reuse the existing create, status, and run-next lifecycle while adding the structured S2 reserve and routing policy."
+    completion_criteria:
+      - {id: R05C1, text: "The public reserve and lifecycle policy invariants pass.", check_names: [r05_contract]}
+    depends_on: [R02, R04]
+    inputs:
+      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
+      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/suites/sdk-routing-v1/**"
+      - "tools/benchmark-runner/src/benchmark_runner/**"
+    write_scope:
+      - "tools/benchmark-runner/src/benchmark_runner/adapter.py"
+      - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+      - "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
+      - "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r05_contract, diff_check]
+    approval: none
+  - key: R06
+    goal: "Extend status, deterministic post-hoc properties, export, and verification while preserving legacy artifact bytes and meanings."
+    completion_criteria:
+      - {id: R06C1, text: "The S2 status/export/verifier API and property contract are present on the shared path.", check_names: [r06_contract]}
+    depends_on: [R04, R05]
+    inputs:
+      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}
+      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_live.py"}
+      - {path: "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/suites/sdk-routing-v1/**"
+      - "benchmarks/fixtures/routing-v1/intermediate/**"
+      - "tools/benchmark-runner/src/benchmark_runner/**"
+    write_scope:
+      - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      - "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+      - "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r06_contract, diff_check]
+    approval: none
+  - key: R07
+    goal: "Add the S2 model-free regressions and update the legacy suite/Judge regressions without weakening the S1 branch."
+    completion_criteria:
+      - {id: R07C1, text: "The required S2 and legacy regression groups are present and pass.", check_names: [r07_contract]}
+    depends_on: [R01, R03, R06]
+    inputs:
+      - {path: "profile-r/work/migration-ledger.json"}
+      - {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}
+      - {path: "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/**"
+      - "tools/benchmark-runner/src/benchmark_runner/**"
+      - "tools/benchmark-runner/tests/**"
+    write_scope:
+      - "tools/benchmark-runner/tests/test_judge.py"
+      - "tools/benchmark-runner/tests/test_routing_s2.py"
+      - "tools/benchmark-runner/tests/test_routing_suite.py"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r07_contract, diff_check]
+    approval: none
+  - key: R08
+    goal: "Make the machine-readable operator commands, states, stop rules, failure meanings, implementation symbols, public Schemas, and operator documentation agree."
+    completion_criteria:
+      - {id: R08C1, text: "The structured operator contract is complete and referenced by the operator README.", check_names: [r08_contract]}
+    depends_on: [R02, R07]
+    inputs:
+      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
+      - {path: "tools/benchmark-runner/tests/test_routing_s2.py"}
+      - {path: "profile-r/requirements/operator-contract-schema.json"}
+    read_scope:
+      - "README.md"
+      - "profile-r/requirements/**"
+      - "profile-r/work/operator-contract.json"
+      - "benchmark_checks/check_profile_r.py"
+      - "benchmarks/suites/sdk-routing-v1/**"
+      - "tools/benchmark-runner/src/benchmark_runner/**"
+      - "tools/benchmark-runner/tests/test_routing_s2.py"
+      - "tools/benchmark-runner/README.md"
+    write_scope:
+      - "profile-r/work/operator-contract.json"
+      - "tools/benchmark-runner/README.md"
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    check_names: [r08_contract, diff_check]
+    approval: none

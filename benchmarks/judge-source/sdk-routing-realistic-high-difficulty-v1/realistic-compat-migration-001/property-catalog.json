@@ -1,0 +1,64 @@
+{
+  "legacy_byte_contract": {
+    "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2",
+    "tools/benchmark-runner/schemas/v1/execution-plan.schema.json": "830da4ec042fdf16dde369d8ddeedf8ef5fc5f7158ebe47c66952e57b99805d2",
+    "tools/benchmark-runner/schemas/v1/intervention-event.schema.json": "220b8867ee209a345b08895e8b25b5b94e399e6bc683c3a365879898bc0bb9c8",
+    "tools/benchmark-runner/schemas/v1/measurement.schema.json": "0a797f16be2ef51832afebe93045c1c59f025b04e1205341ad63bfd3398b4e95"
+  },
+  "profile": "R",
+  "properties": [
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P01-LEGACY-BYTES",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P02-STAGE-DISCRIMINATOR",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P02-STAGE-DISCRIMINATOR"
+      ],
+      "property_id": "R-P03-PLAN-BINDING",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P03-PLAN-BINDING"
+      ],
+      "property_id": "R-P04-RESERVE-ISOLATION",
+      "severity": "major"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P05-LIFECYCLE-REUSE",
+      "severity": "major"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P02-STAGE-DISCRIMINATOR",
+        "R-P03-PLAN-BINDING"
+      ],
+      "property_id": "R-P06-EXPORT-ROUNDTRIP",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P06-EXPORT-ROUNDTRIP"
+      ],
+      "property_id": "R-P07-CROSS-CHECKOUT-REPRO",
+      "severity": "major"
+    },
+    {
+      "prerequisite_ids": [
+        "R-P03-PLAN-BINDING",
+        "R-P06-EXPORT-ROUNDTRIP"
+      ],
+      "property_id": "R-P08-OPERATOR-CONTRACT",
+      "severity": "major"
+    }
+  ],
+  "schema_version": 1
+}

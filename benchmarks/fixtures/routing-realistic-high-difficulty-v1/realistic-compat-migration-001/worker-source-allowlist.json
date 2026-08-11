@@ -11,8 +11,10 @@
     "benchmarks/manifests/b0-b1-frozen.yaml",
     "benchmarks/manifests/b0-b1-sequential-followup.yaml",
     "benchmarks/suites/sdk-routing-v1",
+    "stages/b1-sequential/schemas/v1",
+    "stages/b1-sequential/src",
     "tools/benchmark-runner"
   ],
-  "expected_file_count": 99,
-  "scope_note": "Base S1 public implementation, fixtures, manifests, tests, schemas, scripts, and operator README only."
+  "expected_file_count": 115,
+  "scope_note": "Base S1 public implementation, fixtures, manifests, tests, schemas, scripts, operator README, and the B1 public source/Schema dependency used by routing regressions."
 }

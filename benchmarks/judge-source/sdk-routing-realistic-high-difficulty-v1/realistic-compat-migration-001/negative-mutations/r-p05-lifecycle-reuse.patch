@@ -1,0 +1,7 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/routing_s2_live.py b/tools/benchmark-runner/src/benchmark_runner/routing_s2_live.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f78086ead5ea06ea9d520a598484f54436628e89
+--- /dev/null
++++ b/tools/benchmark-runner/src/benchmark_runner/routing_s2_live.py
+@@ -0,0 +1 @@
++"""Forbidden duplicate S2 lifecycle."""
