@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -102,16 +103,30 @@ def _run_pytest(root: Path, *nodeids: str, timeout_seconds: float = 240.0) -> bo
         }
     )
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", *nodeids],
-            cwd=root,
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
+        with tempfile.TemporaryDirectory(
+            prefix="profile-r-pytest-",
+            dir=environment.get("TEMP"),
+        ) as base_temp:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pytest",
+                    "-q",
+                    "-p",
+                    "no:cacheprovider",
+                    "--basetemp",
+                    base_temp,
+                    *nodeids,
+                ],
+                cwd=root,
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                timeout=timeout_seconds,
+                check=False,
+                shell=False,
+            )
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0 and len(result.stdout) <= 1_000_000 and len(result.stderr) <= 1_000_000
