@@ -1,0 +1,2387 @@
+diff --git a/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md b/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
+index cc504b3adbfb506be0440b7d3685b4e1d45f92dc..3adf97f42e11fea870b128658708d55761314349 100644
+--- a/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
++++ b/docs/design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md
+@@ -1,16 +1,16 @@
+ # SDK routing 현실 고난도 비교 — 구현 후보 명세
+ 
+-- 문서 상태: `revision_4_runtime_observation_corrected`
+-- 설계 revision: 4
++- 문서 상태: `revision_10_runtime_boundary_p08_nondisclosure_corrected`
++- 설계 revision: 10
+ - 작성일: 2026-08-09
+-- 기준 commit: `236afd3c481eebad4d46017f0cd26c1ebb16f6e8`
++- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
+ - 상위 승인 설계: [현실 고난도 비교 명세 revision 2](./sdk-routing-realistic-high-difficulty-comparison-spec.md)
+ - closure 심사: [ChatGPT Pro 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-spec-r2.md)
+ - revision 1 구현 심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-implementation-candidate-r1.md) — P0 0건, P1 5건, P2 3건
+ - revision 2 재심사: [ChatGPT Pro 조건부 승인 보고서](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md) — P0 0건, P1 4건 closed·P1-1 partial
+ - runtime boundary: [Windows·SDK runtime boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)
+-- runtime 교정: 최초 Phase B model-free 실행에서 드러난 SDK profile provenance 오류만 실제 bundled app-server surface에 맞춰 수정
+-- 이번 교정의 금지: P01~P08 재실행, model turn, Phase C·snapshot·fixture·checker 선행 구현
++- runtime 교정: Phase B 009에서 확인된 built-in `:workspace`의 J read 허용을 전용 least-privilege profile로 차단
++- 이번 교정의 금지: model turn, Phase C·snapshot·fixture·checker 선행 구현
+ 
+ ## 1. 목적과 결론
+ 
+@@ -23,7 +23,7 @@
+ 
+ 새 계보는 기존 S3의 다음 숫자 단계인 `S4`가 아니다. 기존 S3 결과도 수정하지 않는다. 구현 식별자는 별도 계보인 `sdk-routing-realistic-high-difficulty-v1`을 사용한다.
+ 
+-Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 사용자 승인으로 Phase B를 구현했으나 최초 model-free 실행은 P01 전에 SDK profile evidence gate에서 중단됐다. Revision 4는 실제 bundled app-server가 제공하는 `permissions`, `activePermissionProfile`, `permissionProfile/list`, `thread/started`에 맞춰 그 수집 계약만 교정한다. Windows·Codex SDK에서 `W`만 읽고 `J`·`S`는 읽을 수 없다는 실제 실행 증거는 새 manifest로 P01~P08을 실행하기 전까지 여전히 없다.
++Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO**였다. 이후 승인된 model-free Phase B를 순차 교정했고 014는 처음으로 8개 probe와 bundle 검증을 마쳤다. P01~P07은 통과했지만 P08의 강한 S metadata 비공개를 과거 판정식이 실패로 보아 aggregate가 아직 NOT_PROVEN이다. Revision 10은 Worker에게 S target 존재·hash 비공개를 요구하고 실제 불변은 Controller 전후조건에만 맡긴다. 새 source·새 root token의 재실행 전까지 candidate는 아니다.
+ 
+ ## 2. 공식 runtime 근거와 주장 한계
+ 
+@@ -34,17 +34,17 @@ Revision 3 당시 결론은 **P1-1 좁은 closure 재심사 가능, 구현 NO-GO
+ - native Windows sandbox는 `elevated`와 더 약한 fallback인 `unelevated`가 있으며 elevated가 권장된다: <https://learn.chatgpt.com/codex/windows/windows-sandbox>
+ - sandbox에서 시작된 child process도 같은 경계를 상속한다: <https://learn.chatgpt.com/codex/sandboxing>
+ - sandbox와 approval policy는 별개이며 workspace 밖 쓰기와 network는 기본적으로 제한된다: <https://learn.chatgpt.com/codex/agent-approvals-security>
+-- stable `codex sandbox windows` helper는 permission profile과 cwd·config를 지정해 Codex의 native Windows sandbox 아래 임의 command를 model turn 없이 실행할 수 있다: <https://developers.openai.com/codex/developer-commands>
+-- permission profile은 legacy `sandbox_mode`/`--sandbox`와 조합되지 않는다: <https://learn.chatgpt.com/codex/permissions>
++- stable `codex sandbox` helper는 permission profile과 cwd·config를 지정해 Codex의 native Windows sandbox 아래 임의 command를 model turn 없이 실행할 수 있다: <https://developers.openai.com/codex/developer-commands>
++- permission profile은 legacy `sandbox_mode`/`--sandbox`와 조합되지 않으며, custom profile에서 broad root deny와 narrower workspace/minimal 허용을 구성할 수 있다: <https://learn.chatgpt.com/codex/permissions>
+ 
+ 이 문서가 공식 문서에서 추론하지 않는 것은 다음과 같다.
+ 
+ 1. `workspace_write`라는 이름만으로 `J`·`S` read deny가 보장된다고 주장하지 않는다.
+-2. Python SDK 객체 자체가 임의 model-free command probe API를 제공한다고 주장하지 않는다. Phase B 후보는 SDK가 resolve한 동일 bundled executable의 stable `codex sandbox windows` helper를 사용한다.
++2. Python SDK 객체 자체가 임의 model-free command probe API를 제공한다고 주장하지 않는다. Phase B 후보는 SDK가 resolve한 동일 bundled executable의 stable `codex sandbox` helper를 사용한다.
+ 3. Windows `unelevated` fallback을 `elevated`와 같은 증거로 인정하지 않는다.
+ 4. `/sandbox-add-read-dir` 같은 session read grant는 `J`·`S` 격리를 약화할 수 있으므로 비교 실행 중 사용하지 않는다.
+ 
+-새 비교 계보는 built-in permission profile `:workspace`만 사용한다. SDK thread/turn의 legacy `sandbox` argument는 생략하며 app-server config에 `default_permissions=":workspace"`를 명시한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
++새 비교 계보는 `runtime-boundary-worker` custom permission profile만 사용한다. 이 profile은 built-in `:workspace`를 상속해 W write를 유지하면서 `:root=deny`, `:minimal=read`, resolved 공통 부모·J·S exact deny, network disabled를 고정한다. SDK thread/turn의 legacy `sandbox` argument는 생략한다. 기존 S1~S3가 사용하는 `Sandbox.workspace_write` 계약은 바꾸지 않는다.
+ 
+ exact executable·config·permission profile binding과 elevated 경계를 runtime-boundary 명세대로 증명할 수 없으면 Adapter 구현으로 넘어가지 않고 `RUNTIME_BOUNDARY_NOT_PROVEN`으로 닫는다.
+ 
+@@ -54,7 +54,7 @@ exact executable·config·permission profile binding과 elevated 경계를 runti
+ 
+ | 현재 파일 | 재사용 책임 | 허용되는 최소 확장 후보 |
+ |---|---|---|
+-| `tools/benchmark-runner/src/benchmark_runner/sdk_common.py` | pinned Codex SDK, ChatGPT 인증, thread start/turn, usage와 timeout | 새 track의 `:workspace` permission-profile mode, bundled executable/config identity Evidence. 기존 S1~S3 legacy mode 변경 금지 |
++| `tools/benchmark-runner/src/benchmark_runner/sdk_common.py` | pinned Codex SDK, ChatGPT 인증, thread start/turn, usage와 timeout | 새 track의 `runtime-boundary-worker` permission-profile mode, bundled executable/config identity Evidence. 기존 S1~S3 legacy mode 변경 금지 |
+ | `tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py` | 같은 thread를 유지하는 기존 C1 실행 형태와 fresh-thread C2 형태 | `SS1PersistentAdapter`, self-request reserve, Task별 turn trace. 기존 C1/C2 의미 변경 금지 |
+ | `tools/benchmark-runner/src/benchmark_runner/sdk_cells.py` | 공통 Plan→Adapter→Judge→Measurement→seal lifecycle, exact runtime admission, model-turn 계수, Evidence redaction | `AdapterAdmission` registry에 exact SS1/B1 fake·live runtime과 turn counter 등록. 임의 subclass·duck typing 허용 금지 |
+ | `tools/benchmark-runner/src/benchmark_runner/adapter.py` | 기존 `B1SequentialAdapter`와 B1 normalized metrics | versioned B1 public report의 boundary record·reserve·feedback Evidence 검증. B1 CLI·원장 소유권 변경 금지 |
+@@ -103,7 +103,7 @@ preflight_evidence_validator
+ - 등록되지 않은 Adapter, subclass, runtime, turn counter는 계속 거부한다.
+ - SS1의 actual model turns는 runtime counter와 turn trace 길이가 같아야 한다.
+ - B1은 report turns, public boundary records와 adapter normalized turn count가 같아야 한다.
+-- 새 track의 두 live runtime 모두 permission profile `:workspace`, legacy sandbox argument omitted를 preflight Evidence로 증명해야 한다.
++- 새 track의 두 live runtime 모두 permission profile `runtime-boundary-worker`, exact least-privilege override와 legacy sandbox argument omitted를 preflight Evidence로 증명해야 한다.
+ 
+ ### 3.3 B1 turn-boundary hook
+ 
+@@ -125,8 +125,8 @@ B1 원장·Task scheduling·Check와 retry/resume 결정권은 계속 `stages/b1
+ 
+ ```text
+ runtime_contract_version: 2
+-permission_profile_id: Literal[:workspace]
+-default_permissions_override: Literal[:workspace]
++permission_profile_id: Literal[runtime-boundary-worker]
++default_permissions_override: Literal[runtime-boundary-worker]
+ thread_sandbox_argument: Literal[omitted]
+ turn_sandbox_argument: Literal[omitted]
+ legacy_sandbox_settings_present: Literal[False]
+@@ -136,12 +136,12 @@ active_profile_provenance_required: Literal[True]
+ ```
+ 
+ - SS1과 B1 모두 같은 contract v2를 사용한다.
+-- SS1 `CodexSdkRuntime`은 bundled app-server에 `default_permissions=":workspace"` config override를 주고 thread/turn의 `sandbox` 인자를 생략한다.
++- SS1 `CodexSdkRuntime`은 bundled app-server에 동결된 custom-profile override 5개를 주고 thread/turn의 `sandbox` 인자를 생략한다. Filesystem 규칙은 하나의 TOML inline table로 전달하며 공통 부모·J·S exact deny path가 manifest root와 다르면 생성·검증을 거부한다.
+ - B1은 versioned RunSpec·TaskEnvelope와 public report에 위 필드를 추가하고 `CodexRuntime`이 같은 config override·sandbox 생략을 사용한다.
+ - B1의 기존 `SandboxMode.read_only|workspace_write` v1 계약과 기존 S1~S3 실행 bytes는 변경하지 않는다.
+-- active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `:workspace`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
++- active config에 legacy `sandbox_mode` 또는 `sandbox_workspace_write`가 있거나 managed requirements가 `runtime-boundary-worker`를 허용하지 않으면 두 Variant 모두 preflight에서 중단한다.
+ - public preflight/report에는 effective permission profile ID, config identity hash와 legacy argument 부재를 봉인한다.
+-- Phase B는 `permissionProfile/list`에서 허용된 `:workspace`를 확인하고 empty `thread/start`에 `permissions=":workspace"`를 직접 보낸 뒤 raw response의 `activePermissionProfile.id`를 봉인한다. response와 `thread/started`의 thread ID가 같아야 하며 request에 `sandbox` key가 없어야 한다. raw `approvalPolicy="never"`만 `deny_all`로 정규화하고 `ThreadStartResponse.sandbox`는 profile 증거로 사용하지 않는다.
++- Phase B는 `permissionProfile/list`에서 허용된 `runtime-boundary-worker`를 확인하고 empty `thread/start`에 같은 profile을 직접 보낸 뒤 raw response의 `activePermissionProfile.id`를 봉인한다. response와 `thread/started`의 thread ID가 같아야 하며 request에 `sandbox` key가 없어야 한다. raw `approvalPolicy="never"`만 `deny_all`로 정규화하고 `ThreadStartResponse.sandbox`는 profile 증거로 사용하지 않는다.
+ 
+ ## 4. suite와 Plan 계약
+ 
+@@ -452,8 +452,8 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
+ ### 7.1 필요한 경계
+ 
+ - `W`: Worker가 읽고 쓸 수 있는 독립 workspace
+-- `J`: checker·reference·positive evidence가 있는 Controller 전용 root
+-- `S`: Plan·Measurement·seal이 있는 Controller 전용 외부 state root
++- `J`: checker·reference·positive evidence가 있는 Controller 전용 root. Opaque private parent와 J leaf 모두 inheritance를 제거하고 Controller·SYSTEM·Administrators 외 ACE를 허용하지 않음
++- `S`: Plan·Measurement·seal이 있는 Controller 전용 외부 state root. J와 별도 opaque private parent와 같은 exact protected ACL 사용
+ 
+ 세 root는 서로의 하위, 상위, symlink, junction 대상이 아니어야 한다. Worker prompt·환경 변수·process argument에는 `J`·`S`의 path나 내용을 넣지 않는다.
+ 
+@@ -462,13 +462,14 @@ SS1과 B1은 Task당 최초 1 turn, Variant당 추가 최대 2 turn이라는 같
+ 세부 계약은 [runtime-boundary 명세](./sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md)가 소유한다.
+ 
+ - Python SDK가 `codex_cli_bin.bundled_codex_path()`로 resolve한 exact `codex.exe`를 사용한다.
+-- 같은 파일을 SDK app-server와 `codex sandbox windows` probe에 사용하고 path·version·SHA-256을 결합한다.
+-- SDK/CLI `0.144.4`, config stack, managed requirements, built-in permission profile `:workspace`, cwd, environment와 elevated identity가 모두 같아야 한다.
+-- SDK profile list와 empty thread의 request/raw response/`thread/started` canonical JSON을 result 안에 넣고 requested/active profile `:workspace`, allowed=true, raw approval `never`, cwd=W, request `sandbox` key 부재, `turn/start` 0회를 독립 verifier가 다시 계산한다.
++- 같은 파일을 SDK app-server와 `codex sandbox` probe에 사용하고 path·version·SHA-256을 결합한다.
++- SDK/CLI `0.144.4`, config stack, managed requirements, custom permission profile `runtime-boundary-worker`, cwd, environment와 elevated identity가 모두 같아야 한다.
++- SDK profile list와 empty thread의 request/raw response/`thread/started` canonical JSON을 result 안에 넣고 requested/active custom profile, allowed=true, raw approval `never`, cwd=W, request `sandbox` key 부재, `turn/start` 0회를 독립 verifier가 다시 계산한다.
+ - SDK thread/turn과 CLI command 어디에도 legacy sandbox argument가 없어야 한다. active config에 `sandbox_mode`·`sandbox_workspace_write`가 있으면 실패다.
+ - Codex의 `elevated` 구현은 Windows token의 `TokenIsElevated`와 혼동하지 않는다. effective `windows.sandbox=elevated`, `windowsSandbox/readiness=ready`, Controller와 dedicated sandbox user의 TokenUser SID 차이, 모든 probe identity 일치를 typed result로 재계산한다.
+ - W positive, J/S absolute·relative·enumeration·link·child·process-input·state read/write의 8개 argv와 64 KiB stream cap·30초 timeout을 manifest에 봉인한다. 결과는 P01~P08 discriminated union이며 enumeration·symlink/junction·child identity·환경/argument match·S read/create/replace를 각각 보존한다.
+ - negative read의 `not_found`는 통과가 아니며 OS access denied와 content byte 0을 요구한다.
++- Profile exact deny만 신뢰하지 않는다. J/S의 protected NTFS ACL은 manifest identity 캡처 전 적용하며 생성·각 probe 전후에 exact 세 principal과 inheritance 제거를 다시 확인한다.
+ - result는 embedded app-server canonical JSON과 typed probe observation을 포함하는 exact 4-file bundle로 만들고 create·각 dispatch 전 profile·elevated·8개 pass를 작성자와 독립적으로 재계산한다.
+ 
+ 허용 결과:
+@@ -535,7 +536,7 @@ B가 실패하면 C를 억지로 진행하지 않는다. runtime 경계가 해
+ ChatGPT Pro는 구현하지 말고 다음을 read-only로 판정한다.
+ 
+ 1. 기존 Runner 구성요소를 재사용하면서도 새 Controller·Judge·seal을 복제하지 않는가?
+-2. SDK의 profile list·explicit `permissions` request·raw `thread/start` response가 actual `:workspace` profile을 직접 증명하며 `thread/started` binding까지 재검증할 수 있는가?
++2. SDK의 profile list·explicit `permissions` request·raw `thread/start` response가 actual `runtime-boundary-worker` profile과 exact least-privilege config를 직접 증명하며 `thread/started` binding까지 재검증할 수 있는가?
+ 3. elevated 분류가 effective config·readiness·Controller/probe TokenUser SID에서 독립 재계산되고 `TokenIsElevated`를 잘못 쓰지 않는가?
+ 4. P01~P08 strict union이 각 복합 관측을 보존하고 verifier가 stored pass를 불신해 다시 계산하는가?
+ 5. `AdapterAdmission`, stage registry, SS1 factory와 B1 public hook이 실제 연결 공백을 닫는가?
+diff --git a/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md b/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
+index fb1b8838da0f40f2b9f208de2c4ae496e17b7286..a98a1423da7ca7b9c5f8e4c3fd7e374907f4ec6c 100644
+--- a/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
++++ b/docs/design/sdk-routing-realistic-high-difficulty-runtime-boundary-spec.md
+@@ -1,23 +1,23 @@
+ # 현실 고난도 비교 — Windows·SDK runtime boundary 명세
+ 
+-- 문서 상태: `revision_4_p01_observation_recorded`
++- 문서 상태: `revision_17_p08_metadata_nondisclosure_candidate`
+ - 작성일: 2026-08-09
+-- 기준 commit: `b59a78031bf95f8d0691316ecc8dee1394da67c1`
++- 기준 commit: `d21f3d86e738a18818c0d318b51864e33646f7bb`
+ - 상위 문서: [구현 후보 명세 revision 3](./sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md)
+ - 기원 finding: [ChatGPT Pro 구현 후보 revision 2 재심사 P1-1](../reviews/benchmark-runner/chatgpt-pro-rereview-sdk-routing-realistic-high-difficulty-implementation-candidate-r2.md)
+-- 현재 상태: 네 번째 model-free 실행은 profile·effective policy·readiness를 통과한 뒤 P01 wrapper가 JSON stdout을 내지 않아 중단됨. Phase B candidate는 아직 증명되지 않음
+-- 이번 교정 범위: optional legacy field의 `null` 의미 교정과 P01 중단 관측 기록. P01 재시도·P02~P08·model turn·Phase C는 포함하지 않음
++- 현재 상태: 열네 번째 model-free 실행은 P01~P08 전체와 exact 4-file bundle 검증까지 완료했다. P01~P07은 pass, P08은 S의 existing replace target metadata까지 숨겨 `target_exists=false`, hash null을 반환했는데 과거 재계산식이 Worker에게 그 존재·hash 노출을 요구해 false가 됨. aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`
++- 이번 교정 범위: P08 Worker observation은 S target 존재·hash 비공개를 요구하고, 실제 target 존재·불변은 Controller pre/postcondition이 manifest size/hash로 증명하도록 분리한다. 새 P01~P08·model turn·Phase C는 포함하지 않음
+ 
+ ## 1. 결정
+ 
+-Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `codex.exe`를 사용하지 않는다. Python SDK가 실제 app-server 실행에 resolve하는 **bundled `codex.exe`와 동일한 파일**을 `codex sandbox windows`의 실행 파일로 사용한다.
++Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `codex.exe`를 사용하지 않는다. Python SDK가 실제 app-server 실행에 resolve하는 **bundled `codex.exe`와 동일한 파일**을 `codex sandbox`의 실행 파일로 사용한다.
+ 
+ 현재 pinned SDK `openai-codex==0.144.4`는 `openai-codex-cli-bin==0.144.4`에 의존한다. 설치된 SDK의 `openai_codex.client`는 기본 설정에서 `codex_cli_bin.bundled_codex_path()`를 resolve해 그 파일을 `app-server --listen stdio://`로 실행한다. 따라서 다음 결합을 모두 만족할 때만 CLI probe를 SDK Worker 경계 후보로 인정한다.
+ 
+ 1. SDK app-server와 sandbox helper의 resolved executable path가 같다.
+ 2. executable SHA-256과 package metadata version·target이 같다.
+-3. config override·managed requirements와 built-in permission profile `:workspace`의 effective identity가 같다.
+-4. cwd, environment allowlist, `default_permissions=":workspace"`, approval=`deny_all`이 같고 legacy sandbox 인자는 양쪽 모두 없다.
++3. config override·managed requirements와 custom permission profile `runtime-boundary-worker`의 effective identity가 같다.
++4. cwd, environment allowlist, `default_permissions="runtime-boundary-worker"`, approval=`deny_all`이 같고 legacy sandbox 인자는 양쪽 모두 없다.
+ 5. 실제 SDK thread의 `activePermissionProfile.id`와 native Windows elevated sandbox 선택이 재계산 가능한 typed Evidence로 증명된다.
+ 6. actual model turns는 0이다.
+ 
+@@ -29,9 +29,9 @@ Phase B의 0-model-turn probe는 시스템 PATH의 Codex나 Desktop App의 `code
+ - Windows subcommand는 `--cd`, `--config`, `--include-managed-config`, `--permission-profile`, `--profile`, `COMMAND...`을 지원한다: <https://developers.openai.com/codex/developer-commands>
+ - app-server는 JSONL JSON-RPC를 사용하고 `thread/start`는 turn과 별개다: <https://developers.openai.com/codex/app-server>
+ - native Windows elevated sandbox는 unelevated fallback보다 강하며 기본 후보로 사용해야 한다: <https://developers.openai.com/codex/windows/windows-sandbox>
+-- permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않으며 `:workspace`는 runtime workspace root 쓰기와 최소 runtime 읽기를 제공한다: <https://learn.chatgpt.com/codex/permissions>
++- permission profile은 legacy `sandbox_mode`·`--sandbox`와 조합되지 않는다. Custom profile은 `:workspace`를 상속하고 `:root="deny"`로 나머지 filesystem read를 제거한 뒤 `:minimal="read"`만 복원할 수 있으며, native Windows의 split deny-read는 elevated backend가 필요하다: <https://learn.chatgpt.com/codex/permissions>
+ 
+-이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions=":workspace"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 `default_permissions=":workspace"`를 명시한다. `codex sandbox windows`도 `--permission-profile :workspace`를 사용한다. active config 어디에든 legacy `sandbox_mode`·`sandbox_workspace_write`가 있거나 CLI에 `--sandbox`가 들어가면 profile 결합이 무효이므로 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. 기존 S1~S3의 legacy `workspace_write` 계약은 변경하지 않는다.
++이 새 계보는 permission profile 방식만 사용한다. SDK `thread/start`는 `permissions="runtime-boundary-worker"`를 직접 보내고, thread와 각 turn에서 legacy `sandbox` argument를 생략하며 app-server config에도 같은 default를 명시한다. `codex sandbox`도 같은 custom profile과 exact 5개 override를 사용한다. Profile은 `:workspace`를 상속해 W write를 유지하되 filesystem inline table에 `:minimal=read`, `:root=deny`, resolved 공통 부모·J·S exact deny를 함께 넣고 network를 끈다. Manifest validator는 이 세 path가 실제 root identity와 다르면 거부한다. override 추가·누락, active legacy 설정, CLI `--sandbox`는 모두 결합 무효다. 기존 S1~S3의 legacy 계약은 변경하지 않는다.
+ 
+ ## 2. 구현 책임과 금지
+ 
+@@ -83,9 +83,9 @@ runtime:
+   codex_bin_override_present: Literal[False]
+   launch_args_override_present: Literal[False]
+ configuration:
+-  default_permissions: Literal[:workspace]
+-  permission_profile_name: Literal[:workspace]
+-  config_overrides[]
++  default_permissions: Literal[runtime-boundary-worker]
++  permission_profile_name: Literal[runtime-boundary-worker]
++  config_overrides[5]: exact sorted set; filesystem inline table is bound to common_parent/J/S
+   effective_config_sha256
+   config_sources[{kind, redacted_path_id, sha256}]
+   managed_requirement_sources[{redacted_path_id, sha256}]
+@@ -103,8 +103,8 @@ sdk_profile_probe:
+   thread_start_request_method: Literal[thread/start]
+   thread_started_notification_method: Literal[thread/started]
+   notification_timeout_seconds: Literal[2]
+-  expected_requested_permission_profile_id: Literal[:workspace]
+-  expected_active_permission_profile_id: Literal[:workspace]
++  expected_requested_permission_profile_id: Literal[runtime-boundary-worker]
++  expected_active_permission_profile_id: Literal[runtime-boundary-worker]
+   expected_approval_policy_raw: Literal[never]
+   expected_cwd_role: Literal[W]
+   require_sandbox_key_absent: Literal[True]
+@@ -132,6 +132,7 @@ roots:
+     volume_identity
+     owner_sid
+     acl_sddl_sha256
++  J, S additionally require exact protected DACL: Controller/SYSTEM/Administrators full control only
+   pairwise_parent_child: Literal[False]
+   pairwise_reparse_target: Literal[False]
+ sentinels:
+@@ -168,9 +169,9 @@ expected_actual_model_turns: Literal[0]
+ 
+ 1. `initialize`에 `capabilities.experimentalApi=true`를 보내고 `initialized`를 보낸다.
+ 2. `account/read`가 ChatGPT account임을 확인한다.
+-3. 같은 cwd로 `permissionProfile/list`를 한 번 호출해 `id=":workspace"`가 정확히 하나이고 `allowed=true`인지 확인한다.
+-4. `thread/start`를 정확히 한 번 raw JSON-RPC로 호출한다. request의 `cwd=W`, `approvalPolicy="never"`, `permissions=":workspace"`, `config.default_permissions=":workspace"`를 강제하고 `sandbox` key는 존재해서는 안 된다.
+-5. raw response의 `activePermissionProfile.id == ":workspace"`, `approvalPolicy == "never"`, `cwd == W`를 확인한다. 같은 connection의 보장된 `thread/started.params.thread.id`는 response의 `thread.id`와 같아야 한다.
++3. 같은 cwd로 `permissionProfile/list`를 한 번 호출해 `id="runtime-boundary-worker"`가 정확히 하나이고 `allowed=true`인지 확인한다.
++4. `thread/start`를 정확히 한 번 raw JSON-RPC로 호출한다. request의 `cwd=W`, `approvalPolicy="never"`, `permissions="runtime-boundary-worker"`, 같은 `config.default_permissions`를 강제하고 `sandbox` key는 존재해서는 안 된다.
++5. raw response의 `activePermissionProfile.id == "runtime-boundary-worker"`, `approvalPolicy == "never"`, `cwd == W`를 확인한다. 같은 connection의 보장된 `thread/started.params.thread.id`는 response의 `thread.id`와 같아야 한다.
+ 6. thread를 닫고 app-server를 종료한다. `turn/start`는 호출하지 않는다.
+ 
+ 같은 connection의 전체 방향 결합 JSON-RPC transcript를 canonical JSON bytes로 `result.json` 안에 넣고 byte length와 SHA-256을 함께 기록한다. verifier는 base64를 decode해 JSON을 다시 parse하고, request key 부재·profile list·response field·thread ID binding·method ledger·hash를 직접 재계산한다. profile이 없거나 금지됨, response 오류, `activePermissionProfile=null`, 다른 profile, `thread/started` 누락·중복·다른 thread ID면 `RUNTIME_BOUNDARY_NOT_PROVEN`이다. `approvalPolicy`의 wire 값 `never`만 내부 `deny_all`로 정규화한다.
+@@ -184,8 +185,8 @@ resolved_executable_sha256
+ config_identity_sha256
+ initialize_experimental_api: bool
+ permission_profile_list_request_count: nonnegative int
+-workspace_permission_profile_match_count: nonnegative int
+-workspace_permission_profile_allowed: bool
++selected_permission_profile_match_count: nonnegative int
++selected_permission_profile_allowed: bool
+ thread_start_request_count: nonnegative int
+ thread_start_response_thread_id_sha256
+ thread_started_notification_thread_id_sha256
+@@ -205,7 +206,7 @@ profile_failure_reason_codes[]
+ derived_profile_passed: bool
+ ```
+ 
+-verifier는 embedded transcript에서 모든 derived field와 실패 코드를 다시 계산한다. 합격 조건은 account `chatgpt`, experimental flag true, `permissionProfile/list`의 유일한 `:workspace`가 allowed, exact method ledger, `thread/started` count 1, thread binding true, request `permissions=:workspace`, request에 `sandbox` key 없음, response active profile `:workspace`, raw approval `never`, cwd=W, legacy provenance false, `turn_start_request_count=0`, `actual_model_turns=0`의 conjunction이다. stored `derived_profile_passed`나 실패 코드가 재계산값과 다르면 Schema failure다.
++verifier는 embedded transcript에서 모든 derived field와 실패 코드를 다시 계산한다. 합격 조건은 account `chatgpt`, experimental flag true, `permissionProfile/list`의 유일한 `runtime-boundary-worker`가 allowed, exact method ledger, `thread/started` count 1, thread binding true, request와 response의 selected profile 일치, request에 `sandbox` key 없음, raw approval `never`, cwd=W, legacy provenance false, `turn_start_request_count=0`, `actual_model_turns=0`의 conjunction이다. stored `derived_profile_passed`나 실패 코드가 재계산값과 다르면 Schema failure다.
+ 
+ ### 3.2 elevated 판별 surface
+ 
+@@ -218,6 +219,7 @@ verifier는 embedded transcript에서 모든 derived field와 실패 코드를 
+ 3. `configRequirements/read`가 requirements를 반환하면 `allowedWindowsSandboxImplementations`에 `elevated`가 포함돼야 한다. null은 그대로 기록하되 금지 증거로 보지 않는다.
+ 4. Controller와 sandbox 안 P01 process가 Win32 `GetCurrentProcess` → `OpenProcessToken(TOKEN_QUERY)` → `GetTokenInformation(TokenUser)`로 얻은 SID를 각각 기록하며 서로 달라야 한다. 공식 계약상 elevated는 dedicated lower-privilege sandbox user, unelevated는 현재 사용자에서 파생한 restricted token을 사용한다.
+ 5. P01~P08의 sandbox process token-user SID와 canonical process identity hash가 P01과 같고, P06 child도 P06 parent와 같아야 한다.
++6. SDK 준비 뒤 W에 추가된 ACL은 explicit allow ACE 정확히 1개여야 하며, `OICI`, `Modify+Synchronize(0x1301bf)`, object GUID 없음으로 고정한다. runtime이 `cap_sids`로 전달한 그 ACE의 SID hash는 P01 token의 `restricted_sid_sha256s`에 정확히 포함돼야 한다. `TokenCapabilities`나 TokenUser SID 직접 일치는 요구하지 않는다. J·S identity와 W owner·group·volume·DACL control은 바뀌면 안 된다.
+ 
+ `WindowsProcessIdentityObservation`은 `token_user_sid`, `integrity_level_sid`, `token_is_elevated_raw`(진단 전용), `token_is_app_container_raw`, 정렬된 `restricted_sid_sha256s`, 정렬된 `capability_sid_sha256s`, 각 Win32 call의 return code·`GetLastError`, 그리고 위 field의 canonical SHA-256을 저장한다. verifier가 canonical hash와 SID 비교를 다시 계산한다.
+ 
+@@ -238,6 +240,7 @@ readiness_response_sha256
+ readiness_status_raw: str | null
+ controller_process_identity: WindowsProcessIdentityObservation
+ P01_process_identity: WindowsProcessIdentityObservation
++workspace_acl_transition: WorkspaceAclTransitionObservation
+ dedicated_user_sid_differs_from_controller: bool
+ all_probe_process_identities_equal_P01: bool
+ P06_parent_child_identity_equal: bool
+@@ -248,7 +251,33 @@ derived_elevation_passed: bool
+ 
+ verifier는 두 embedded app-server response, effective config와 process identity의 canonical bytes를 다시 hash한다. requirements가 null이면 `allowed_implementations_raw=null`이어야 하며, non-null이면 embedded response에서 그대로 추출되고 `elevated`를 포함해야 한다. stored `observed_kind`와 `derived_elevation_passed`가 §3.2 알고리즘의 재계산값과 다르면 Schema failure다.
+ 
+-1~5가 모두 맞을 때만 `observed_kind=elevated`다. explicit config가 `unelevated`이거나 successful probe의 token-user SID가 Controller와 같으면 `unelevated`, 그 밖의 누락·API 실패·불일치는 `unknown`이다. `unelevated|unknown`은 항상 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
++1~6이 모두 맞을 때만 `observed_kind=elevated`다. explicit config가 `unelevated`이거나 successful probe의 token-user SID가 Controller와 같으면 `unelevated`, 그 밖의 누락·API 실패·불일치는 `unknown`이다. `unelevated|unknown`은 항상 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
++
++### 3.3 W ACL transition 계약
++
++manifest 생성 직후의 W ACL을 기준선으로 메모리에 보존한다. SDK profile 준비 전에는 W·J·S 모두 manifest identity와 정확히 같아야 한다. 준비 뒤에는 다음 전이만 허용한다.
++
++- W: 기존 ACE 제거·수정 없이 explicit allow ACE 정확히 1개 추가
++- 추가 ACE: `A;OICI;0x1301bf`, object/inherit object GUID 없음, inherited flag 없음
++- W path·owner·group descriptor·volume·DACL control flag: 기준선과 동일
++- J·S path·owner·ACL·volume: manifest와 정확히 동일
++- P01: 추가 ACE의 SID hash가 실제 sandbox process restricted SID hash 목록에 포함
++- P02~P08: P01에서 결합된 ACL과 SID가 계속 동일
++
++P01 전에는 기준선 상태 또는 위 exact 전이 상태만 허용한다. P01 종료 뒤 전이가 없거나 추가 ACE SID hash가 P01 restricted SID hash 목록에 없으면 중단한다. 다른 ACE 추가, ACE 제거, J·S 변화, 전이 되돌림은 모두 fail-closed다. 결과 bundle은 초기/활성 ACL hash, DACL control hash, ACE hash multiset, 추가 ACE와 SID, P01 restricted-token 결합 여부를 포함하며 verifier가 전이와 classification hash를 다시 계산한다.
++
++### 3.4 J/S Controller-only NTFS ACL 계약
++
++Permission profile 선언은 필수지만 012까지의 실제 Windows 실행에서는 상위 폴더의 `CodexSandboxUsers` inherited Modify ACE가 J/S에 남아 P02 read가 성공했다. 따라서 root 준비 단계에서 OS ACL 자체를 다음처럼 닫는다.
++
++- J와 S는 base root의 직접 sibling이 아니라 서로 다른 예측 불가능한 private parent 아래 `judge`, `state` leaf로 만든다. P04가 enumerate하는 common parent에는 J basename이 존재하지 않는다.
++- 각 private parent와 J/S leaf에서 ACL inheritance를 제거한다.
++- exact DACL은 Controller TokenUser SID, `SYSTEM(S-1-5-18)`, `BUILTIN\\Administrators(S-1-5-32-544)`의 `OICI Full Control` 세 ACE뿐이다.
++- canonical SDDL DACL control은 `PAI`, ACE multiset은 `SY`, `BA`, Controller SID의 세 explicit allow ACE와 정확히 같아야 한다.
++- J/S root identity는 이 hardening 뒤 캡처한다. 생성 직후와 매 probe 전후에 owner·volume·ACL hash뿐 아니라 위 exact protected ACL 의미도 다시 검사한다.
++- ACL 적용 도구가 실패·timeout·nonzero exit이거나 추가 ACE, inherited ACE, 다른 principal이 남으면 manifest를 만들지 않는다.
++
++W는 이 hardening 대상이 아니다. W는 기존 inherited access에서 시작하고 §3.3의 exact capability ACE 하나만 추가될 수 있다.
+ 
+ ## 4. 공통 command prefix
+ 
+@@ -257,13 +286,15 @@ manifest의 모든 command는 shell 문자열이 아니라 argv 배열로 봉인
+ ```text
+ [
+   <sdk_resolved_executable>,
+-  "sandbox", "windows",
++  "sandbox",
+   "--cd", <W>,
+-  "--permission-profile", ":workspace",
++  "--permission-profile", "runtime-boundary-worker",
+   "--include-managed-config",
+-  "--config", "default_permissions=\":workspace\"",
++  "--config", "default_permissions=\"runtime-boundary-worker\"",
++  "--config", "permissions.runtime-boundary-worker.extends=\":workspace\"",
++  "--config", "permissions.runtime-boundary-worker.filesystem={\":minimal\"=\"read\",\":root\"=\"deny\",<common_parent>=\"deny\",<J>=\"deny\",<S>=\"deny\"}",
++  "--config", "permissions.runtime-boundary-worker.network.enabled=false",
+   "--config", "windows.sandbox=\"elevated\"",
+-  <그 밖의 frozen config override마다 "--config", "key=value">,
+   "--",
+   <probe_python>, "-P",
+   <W>/.orchestrator-probe/probe_runtime_boundary.py,
+@@ -331,6 +362,8 @@ negative read에서 `not_found`는 합격이 아니다. Controller가 직전·
+ 
+ 예상: symlink와 junction 각각 link 생성이 거부되거나 생성된 link read가 `access_denied`; 어떤 경우에도 content byte 0. probe 종료 뒤 Controller가 두 link·target·W tree를 검사한다.
+ 
++P05의 symlink/junction argv는 `resolve()`로 target을 따라 재계산하지 않고 W 기준 lexical absolute path로 봉인한다. Link entry 존재는 target read 가능 여부와 무관하게 `lstat`로 확인한다. 생성에 성공한 symlink는 `unlink`, junction은 `rmdir`를 반드시 시도하며 cleanup 뒤 entry가 남으면 P05 실패다. 남은 reparse point 때문에 후속 command identity가 바뀌어서는 안 된다.
++
+ ### P06 — allowed child process read
+ 
+ ```text
+@@ -353,7 +386,7 @@ negative read에서 `not_found`는 합격이 아니다. Controller가 직전·
+ ... -- state-read-write --read-path <S-sentinel> --create-path <p08_create_target> --replace-source <p08_replace_source> --replace-target <p08_replace_target>
+ ```
+ 
+-예상: read·create·replace가 각각 `access_denied`, read content byte 0. Controller가 create target 부재, replace source·target과 S sentinel의 원래 hash를 각각 확인한다.
++예상: read·create·replace가 각각 `access_denied`, read content byte 0. Worker observation에서 existing S replace target은 `target_exists_before/after=false`, target hash null로 비공개여야 한다. 실제 target 존재·불변은 Controller가 dispatch 전후 manifest size/hash로 확인하고 `controller_precondition_ok`·`controller_postcondition_ok`에 결합한다. W의 replace source는 Worker가 볼 수 있으므로 존재와 hash가 유지돼야 한다.
+ 
+ ### 5.1 공통 typed observation
+ 
+@@ -473,7 +506,7 @@ P08StateResult:
+ - P05: 각 kind가 create `access_denied`이거나 create 성공 뒤 read `access_denied + bytes 0 + hash null`; cleanup 뒤 link 부재. 한 kind라도 other/not_found면 실패.
+ - P06: child spawn 성공, parent/child canonical identity 동일, child read `access_denied + bytes 0 + hash null`.
+ - P07: 두 scan이 complete, forbidden hash list가 manifest와 일치, 두 match count가 0이고 matching list도 빈 배열.
+-- P08: read `access_denied + bytes 0 + hash null`; create와 replace 각각 `access_denied`; pre/post 존재·hash가 manifest와 일치하고 create target은 끝까지 부재.
++- P08: read `access_denied + bytes 0 + hash null`; create와 replace 각각 `access_denied`; Worker의 create target과 existing S replace target은 before/after false·hash null, W replace source는 before/after true·manifest hash 일치. Controller pre/postcondition은 실제 S target·sentinel이 그대로 존재하고 hash가 유지되며 create target이 부재임을 별도로 증명한다. Worker가 S target 존재나 hash를 보고하면 통과가 아니라 metadata disclosure 실패다.
+ 
+ 모든 probe에서 stream truncation, Controller pre/postcondition false, process identity drift는 실패다. P02~P08에서 J/S content byte가 1 이상이거나 P08 mutation이 성공하면 aggregate는 `NOT_READY`다.
+ 
+@@ -525,18 +558,18 @@ runtime-boundary/files.sha256
+ runtime-boundary/bundle-seal.json
+ ```
+ 
+-`files.sha256`는 manifest/result의 raw bytes를 정렬된 상대경로로 집계한다. `result.json` 안에는 §3.1 app-server의 방향 결합 전체 transcript가 canonical JSON bytes로 포함되므로 별도 raw transcript 파일은 만들지 않는다. profile 단계가 실패하면 exact bundle 안이 아니라 그 옆의 `<bundle>.profile-failure.json`에 같은 transcript와 재계산 실패 코드를 남기고 중단한다. profile은 통과했지만 effective policy가 실패하면 `<bundle>.policy-failure.json`에 profile transcript, redacted policy projection, `configRequirements/read`, `windowsSandbox/readiness`, 재계산 실패 코드를 남긴다. app-server의 optional legacy field가 `null`로 직렬화된 것은 설정 사용으로 보지 않고, `sandbox_mode` 또는 `sandbox_workspace_write`의 실제 값이 non-null일 때만 legacy 설정으로 차단한다. 두 진단 파일 모두 candidate bundle이나 통과 증거가 아니며 같은 경로를 덮어쓰거나 자동 재시도하지 않는다. `bundle-seal.json`은 `probe_id`, file count, aggregate SHA-256과 source commit을 가진다. 기존 `canonical_json_bytes`, `atomic_write`, `sha256_file`을 재사용하며 새 lifecycle이나 mutable state를 만들지 않는다.
++`files.sha256`는 manifest/result의 raw bytes를 정렬된 상대경로로 집계한다. `result.json` 안에는 §3.1 app-server의 방향 결합 전체 transcript가 canonical JSON bytes로 포함되므로 별도 raw transcript 파일은 만들지 않는다. profile 단계가 실패하면 exact bundle 안이 아니라 그 옆의 `<bundle>.profile-failure.json`에 같은 transcript와 재계산 실패 코드를 남기고 중단한다. profile은 통과했지만 effective policy가 실패하면 `<bundle>.policy-failure.json`에 profile transcript, redacted policy projection, `configRequirements/read`, `windowsSandbox/readiness`, 재계산 실패 코드를 남긴다. app-server의 optional legacy field가 `null`로 직렬화된 것은 설정 사용으로 보지 않고, `sandbox_mode` 또는 `sandbox_workspace_write`의 실제 값이 non-null일 때만 legacy 설정으로 차단한다. probe dispatch 뒤 JSON 해석 전에 실패하면 `<bundle>.probe-failure.json`에 frozen probe ID·argv hash·wrapper exit code·Controller 전후조건과 제한 크기 안의 stdout/stderr bytes 및 전체 stream 크기·SHA-256을 남긴다. 세 진단 파일 모두 candidate bundle이나 통과 증거가 아니며 같은 경로를 덮어쓰거나 자동 재시도하지 않는다. `bundle-seal.json`은 `probe_id`, file count, aggregate SHA-256과 source commit을 가진다. 기존 `canonical_json_bytes`, `atomic_write`, `sha256_file`을 재사용하며 새 lifecycle이나 mutable state를 만들지 않는다.
+ 
+ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`, runtime/configuration identity를 넣는다. create와 각 dispatch 직전에 다음을 다시 확인한다.
+ 
+ 1. exact 4-file set와 aggregate hash
+ 2. bundled executable path·version·SHA-256
+ 3. SDK·CLI package metadata hash
+-4. embedded profile list·thread/start request/response·`thread/started`를 다시 parse해 actual `:workspace` profile·approval·cwd·sandbox key 부재·thread ID binding 확인
+-5. effective config·`:workspace` permission profile·managed requirements identity와 legacy sandbox 부재
+-6. `windowsSandbox/readiness`, effective `windows.sandbox`, Controller/probe token-user SID로 elevated classification 재계산
++4. embedded profile list·thread/start request/response·`thread/started`를 다시 parse해 actual `runtime-boundary-worker` profile·approval·cwd·sandbox key 부재·thread ID binding 확인
++5. effective config·custom least-privilege permission profile·managed requirements identity와 legacy sandbox 부재
++6. `windowsSandbox/readiness`, effective `windows.sandbox`, Controller/probe token-user SID와 W ACL transition으로 elevated classification 재계산
+ 7. P01~P08 strict union, exact order와 operation-specific observation에서 각 `derived_passed` 재계산
+-8. W/J/S resolved root·volume·ACL identity
++8. 초기 W/J/S resolved root·volume·ACL identity와 W-only ACL transition·P01 SID 결합
+ 9. probe script·Python identity
+ 
+ 하나라도 달라지면 probe 자동 재실행이 아니라 `RUNTIME_BOUNDARY_DRIFT`로 중단한다. 새 probe는 새 manifest·bundle·외부 심사 대상이다.
+@@ -545,12 +578,12 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
+ 
+ 별도 사용자 승인이 난 뒤에도 다음 순서만 허용한다.
+ 
+-1. model-free manifest build
++1. fresh W와 opaque private parent 아래 J/S를 만들고 J/S Controller-only ACL을 적용·검증한 뒤 model-free manifest build
+ 2. 독립 verifier로 manifest와 bundled executable binding 확인
+-3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions=":workspace"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
++3. pinned SDK app-server initialize/account 확인 뒤 `permissionProfile/list` 1회, explicit `permissions="runtime-boundary-worker"` empty `thread/start` 1회, raw response와 matching `thread/started`로 actual profile provenance 수집; `turn/start` 0회
+ 4. `configRequirements/read`와 `windowsSandbox/readiness` raw response 수집
+-5. Controller Win32 token observation 수집
+-6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox windows` P01~P08 각 1회
++5. Controller Win32 token observation과 준비 뒤 W/J/S ACL transition 수집
++6. explicit `windows.sandbox="elevated"` 아래 `codex sandbox` P01~P08 각 1회; P01 restricted SID와 W 추가 ACE를 결합한 뒤에만 P02 진행
+ 7. strict typed 결과와 4-file bundle 생성
+ 8. 독립 verifier로 embedded JSON·elevated classification·8개 derived result·exact file set·aggregate 재계산
+ 9. 보고 후 중단
+@@ -563,7 +596,7 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
+ - 시스템·Desktop App Codex 사용 금지
+ - actual `thread/start` raw response의 `activePermissionProfile.id` provenance와 profile list·request·`thread/started` raw Evidence 재검증 계약 확정
+ - effective config/readiness/Controller·probe SID에 의한 elevated 재계산 규칙 확정; `TokenIsElevated` 오판 금지
+-- config/profile/managed requirements/W/J/S/ACL identity Schema 확정
++- config/profile/managed requirements, J/S exact protected ACL, W/J/S 초기 identity와 exact W-only ACL transition Schema 확정
+ - 8개 probe의 exact argv·예상 결과·discriminated typed observation·재계산 규칙 확정
+ - result와 4-file bundle·재검증 조건 확정
+ - negative read의 `not_found` 통과 금지
+diff --git a/docs/operations/codex-revision-log.md b/docs/operations/codex-revision-log.md
+index 12ff10721fd0204eee4ef27da32d093f5441c2c7..5dcb590a836f2248bebd77be31b306c0f55e749e 100644
+--- a/docs/operations/codex-revision-log.md
++++ b/docs/operations/codex-revision-log.md
+@@ -1543,3 +1543,71 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI
+ - pinned app-server Schema에서 두 legacy field는 optional이며 값이 없을 때도 top-level config에 `null`로 직렬화될 수 있다. 기존 판정은 key 존재만으로 legacy 사용이라 오판했다. commit `b59a78031bf95f8d0691316ecc8dee1394da67c1`에서 `null`은 미사용, non-null만 실제 legacy 설정으로 차단하도록 좁게 고쳤고, null 허용·non-null 거부 회귀를 포함한 표적 시험 `9 passed`, `py_compile`, `git diff --check`를 통과했다.
+ - source `b59a78031bf95f8d0691316ecc8dee1394da67c1`의 `phaseb-20260809-004`는 profile·effective policy·readiness·requirements·Controller identity 관문을 통과하고 P01을 정확히 1회 dispatch했다. 그러나 wrapper stdout이 빈 값 또는 JSON이 아닌 값이어서 `runtime-boundary probe stdout is not one JSON object`로 중단됐다. P02~P08은 실행하지 않았고 actual model turn은 0회이며 candidate bundle은 생성되지 않았다.
+ - 현재 P01 failure path는 capped stdout/stderr를 메모리에서 수집하지만 JSON parse 전에 실패하면 이를 artifact로 남기지 않는다. 따라서 004 종료 뒤 wrapper exit code와 stderr 내용을 복구할 수 없으며, sandbox 경계 실패와 wrapper 실행 실패를 아직 구분할 수 없다. 002·003·004 W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. Phase B는 `RUNTIME_BOUNDARY_CANDIDATE`가 아니며 Phase C는 계속 중단 상태다.
++
++## 현실 고난도 Phase B P01 실패 증거와 obsolete CLI argv 확정
++
++- 작업일: 2026-08-09. 최신 `main` merge commit `9804977bea4c1d4d8eeb0c7ff3f6d1b30a9cad89`에서 `codex/runtime-boundary-p01` 브랜치를 새로 만들었다. commit `d8f2ac1d257a2ae2f1ed459253e9d3bc3bfb9908`은 probe JSON 해석 전 실패 시 `<bundle>.probe-failure.json`에 frozen probe ID·argv hash·wrapper exit code·Controller 전후조건과 64 KiB capped stdout/stderr bytes, captured/full stream hash를 기록하고 같은 경로 재시도를 거부한다. 관련 표적 시험은 `10 passed`, `py_compile`과 `git diff --check`도 통과했다.
++- source `d8f2ac1d257a2ae2f1ed459253e9d3bc3bfb9908`의 `phaseb-20260809-005`는 profile·effective policy·readiness·requirements·Controller identity를 통과하고 P01을 정확히 1회 dispatch했다. P01은 202 ms 뒤 wrapper exit 1, stdout 0 bytes, stderr 884 bytes로 종료됐다. Controller pre/postcondition은 모두 true, actual model turn은 0회이며 P02~P08과 candidate bundle 생성은 없었다.
++- 실패 artifact의 재계산 코드는 `PROBE_STDOUT_NOT_JSON`, `PROBE_WRAPPER_EXIT_NONZERO`다. stderr는 `CreateProcessAsUserW failed: 2`와 함께 실제 child command가 `windows --cd ... -- C:\Python314\python.exe ...`였음을 보존했다. 즉 Python이나 W/J/S 접근을 시험하기 전에 존재하지 않는 `windows` executable을 spawn하려다 멈췄다.
++- 같은 pinned `codex.exe`의 read-only `sandbox --help`는 실제 usage를 `codex sandbox [OPTIONS] [COMMAND]...`로 표시한다. `sandbox windows --help`는 help subcommand가 아니라 sandbox 안에서 `windows --help` 실행을 시도해 같은 `CreateProcessAsUserW` 오류 2로 실패했다. 따라서 manifest의 `['sandbox', 'windows', ...]` prefix가 현재 pinned CLI 0.144.4와 맞지 않는 obsolete argv임이 확정됐다.
++- `phaseb-20260809-005` W/J/S root, pending manifest와 probe-failure artifact는 삭제·재사용하지 않고 보존했다. 다음 수정은 frozen prefix에서 `windows` token 하나를 제거하고 exact argv 시험·명세를 함께 고친 뒤 새 source commit과 새 root token으로만 실행해야 한다. Phase B와 Phase C는 계속 중단 상태다.
++
++## 현실 고난도 Phase B CLI argv 교정과 W ACL transition 관측
++
++- 작업일: 2026-08-09. commit `1b44ad3a48784ecd6d5675703f7371dc13bcc326`에서 pinned CLI 0.144.4의 실제 usage `codex sandbox [OPTIONS] [COMMAND]...`에 맞춰 frozen prefix의 obsolete `windows` token 하나를 제거했다. exact argv 시험과 runtime-boundary·상위 구현 후보 명세도 함께 고쳤고, 표적 시험 `10 passed`, `py_compile`, `git diff --check`를 통과했다.
++- source `1b44ad3a48784ecd6d5675703f7371dc13bcc326`의 `phaseb-20260809-006`은 SDK profile·effective policy·readiness·requirements·Controller identity를 통과했지만 P01 command spawn 전 `verify_root_identity_contract`에서 중단됐다. 실제 model turn과 P01~P08 dispatch는 모두 0회이며 candidate bundle과 probe-failure artifact는 생성되지 않았다.
++- 독립 read-only 비교에서 J와 S의 owner·ACL·volume은 manifest와 모두 같았고 W도 owner·volume은 같았다. W ACL만 manifest SHA-256 `0b3bcbc9cbec3ca8bba045802b277ad47b0ae9a48890b87f42aec7c22adebe01`에서 `41ffad743c3889293161edc98a20410449402f14df61af3c81f75415235ea032`로 바뀌었다.
++- raw ACL 차이는 W에만 새 non-inherited allow ACE 하나가 추가된 것이다. 이 ACE는 새 SID에 `Modify, Synchronize`와 child object/container inheritance를 부여하며 J·S에는 추가되지 않았다. 이는 `:workspace` 준비가 dedicated sandbox user에게 W 접근만 부여한 정상 transition으로 추정된다. raw SID는 공개 기록에 남기지 않았다.
++- 현재 exact-equality root gate는 안전한 W-only grant와 J/S scope 확장을 구분하지 못한다. 다음 교정은 초기 W ACL을 보존하면서 dispatch 전에는 이 exact W-only ACE delta만 잠정 허용하고, P01 결과의 sandbox process TokenUser SID가 추가 ACE SID와 같을 때만 최종 통과시켜야 한다. J·S owner·ACL·volume은 계속 bit-for-bit 동일해야 하며 다른 delta는 즉시 중단한다.
++- `phaseb-20260809-006` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. 자동 재시도는 하지 않았고 Phase B·Phase C는 계속 중단 상태다.
++
++## 현실 고난도 Phase B W ACL 전이와 capability SID 교정
++
++- 작업일: 2026-08-09. commit `b93ce1b1e5e970d5d64e2ad44f15c54f7b643051`에서 초기 W ACL과 준비 뒤 ACL의 multiset 차이를 비교해 explicit `A;OICI;0x1301bf` ACE 정확히 1개만 잠정 허용하고, W owner·group descriptor·volume·DACL control 및 J·S 전체 identity를 각 probe 전후에 고정하는 guard를 구현했다. 표적 시험 `13 passed`, 실제 SDK가 있는 B1 Python과 저장소 밖 short basetemp에서 Runner 전체 `252 passed`를 확인했다.
++- source `b93ce1b1e5e970d5d64e2ad44f15c54f7b643051`의 `phaseb-20260809-007`은 profile·effective policy·readiness·requirements·Controller identity를 통과하고 P01을 정확히 1회 dispatch해 typed JSON과 sandbox process identity까지 수집했다. 그러나 추가 ACE SID를 P01 TokenUser SID와 직접 비교한 관문에서 다르다고 판정해 P02 전에 중단됐다. actual model turn은 0회이고 candidate bundle은 생성되지 않았다.
++- 007 W의 explicit ACE 대상은 Controller SID, 현재 `CodexSandboxOffline`·`CodexSandboxOnline` 사용자 SID, `CodexSandboxUsers` 그룹 SID 어느 것과도 같지 않았으며 계정명으로 translate되지 않았다. 설치된 pinned runtime binary에는 sandbox spawn request의 `cap_sids`, capability SID file과 permission-profile ACL 적용 경로가 존재한다. 따라서 006의 “dedicated sandbox user SID 직접 grant” 추정은 폐기하고 **workspace capability SID grant**로 교정한다.
++- 다음 계약은 추가 ACE raw SID의 SHA-256이 P01 `WindowsProcessIdentityObservation.capability_sid_sha256s`에 포함될 때만 결합을 통과시킨다. TokenUser는 여전히 Controller와 다른 dedicated sandbox user임을 별도로 증명한다. J·S exact identity와 W-only one-ACE delta는 완화하지 않는다.
++- `phaseb-20260809-007` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존했다. P01 재시도는 하지 않았으며 새 source commit과 새 root token으로만 다음 model-free 실행을 수행한다. Phase B·Phase C는 계속 중단 상태다.
++- source `0102f0de802a916975beafb6ed0b8342563e648b`의 `phaseb-20260809-008`도 profile·policy·readiness·Controller 관문을 통과하고 P01 typed JSON까지 수집했지만, 추가 ACE SID hash가 P01 `TokenCapabilities`에 없어서 P02 전에 중단됐다. 오류가 봉인한 실제 capability hash 목록은 빈 목록이었다. actual model turn은 0회이고 candidate bundle은 생성되지 않았다.
++- 설치된 `codex-command-runner.exe`의 read-only binary surface는 spawn request의 `cap_sids`, `no capability SIDs provided`, `CreateRestrictedToken`과 `windows-sandbox-rs/src/token.rs` 경로를 함께 포함한다. 즉 runtime이 capability라고 부르는 SID는 Windows `TokenCapabilities`가 아니라 restricted token의 restricting SID로 적용된다.
++- 다음 계약은 추가 ACE SID hash를 P01 `restricted_sid_sha256s`에 결합한다. TokenUser 차이, W-only exact one-ACE delta, J·S exact identity는 그대로 유지한다. `phaseb-20260809-008` W/J/S root와 pending manifest도 삭제·재사용하지 않고 보존했으며 새 source·새 root token만 허용한다.
++
++## 현실 고난도 Phase B J read 노출과 전용 least-privilege profile 교정
++
++- 작업일: 2026-08-09. source `b9de58ed8436309b88990c36b8a370f6d9f62b37`, pending manifest SHA-256 `70da017dac1bbe755bba8835062b2eaee4b2d03ec058e3d33cfee027cb5741c5`의 `phaseb-20260809-009`는 SDK profile·effective policy·readiness·Controller identity와 P01 W positive control, exact W ACL transition·restricted SID 결합을 통과했다.
++- P02 J absolute read가 Controller-only content를 노출해 Controller가 `P02 disclosed or mutated a Controller-only boundary; NOT_READY`로 즉시 중단했다. P03~P08은 실행하지 않았고 actual model turn은 0회이며 candidate bundle은 생성되지 않았다. 이는 harness 오판이 아니라 built-in `:workspace`가 W 밖 read를 넓게 허용한다는 실제 격리 실패다.
++- `phaseb-20260809-009` W/J/S root와 pending manifest는 삭제·재사용하지 않고 그대로 보존한다. 같은 source·root에서 P02를 재시도하지 않으며 다음 실행은 새 commit·새 root token만 사용한다.
++- 공식 permission-profile 계약에 따라 새 `runtime-boundary-worker` profile은 `:workspace`를 상속하되 exact frozen override로 `:root="deny"`, `:minimal="read"`, network disabled를 적용한다. SDK empty thread와 bundled `codex sandbox`는 같은 profile ID와 같은 6개 override를 사용하고, 추가·누락 override를 Schema에서 거부한다. 이 교정은 모델 호출 없이 새 Phase B root에서 다시 증명하기 전까지 candidate 주장이 아니다.
++
++## 현실 고난도 Phase B custom profile 직렬화 교정
++
++- 작업일: 2026-08-09. source `a640a002707a3fc1aab865dab7803c7552ff3b5b`, pending manifest SHA-256 `ab76634dbc914342944bc8114352a22a86794c672581c00d5ba8287eaae3321b`의 `phaseb-20260809-010`은 SDK app-server initialize 단계에서 중단됐다. failure artifact는 client의 initialize request 1개와 server response 0개를 보존했고, actual model turn과 P01~P08은 모두 0회이며 candidate bundle은 생성되지 않았다.
++- 별도 0-turn app-server 진단의 stderr는 `filesystem path '":minimal"' must be absolute, use '~/...', or start with ':'`를 확정했다. 설계한 access 값이 아니라 CLI dotted override에서 quoted key가 따옴표 포함 literal path로 해석된 직렬화 오류다.
++- `phaseb-20260809-010` W/J/S root, pending manifest와 profile-failure artifact는 삭제·재사용하지 않고 보존한다. Filesystem 두 항목은 exact 단일 override `permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}`로 교정한다. 같은 inline table을 적용한 pinned app-server 별도 initialize는 성공했으며 model turn은 0회였다. 새 source·새 root token의 전체 probe 전까지 candidate 주장은 계속 금지한다.
++
++## 현실 고난도 Phase B explicit Controller-root deny 교정
++
++- 작업일: 2026-08-09. source `2eff82d8489ae7d6d215f6f8f584b6ae3907b779`, pending manifest SHA-256 `86ddd9e9d9b8a099e8ab7c983a7f0b858b927e8abff5a005a1d8dcadc271733d`의 `phaseb-20260809-011`은 custom profile provenance·effective config·elevated readiness와 P01 W positive control·ACL restricted-SID 결합을 통과했다. 그러나 P02 J absolute read가 다시 내용을 노출해 즉시 `NOT_READY`로 중단됐다. P03~P08과 model turn은 0회이고 candidate bundle은 없다.
++- 별도 `config/read`는 active default와 profile이 `runtime-boundary-worker`, `extends=:workspace`, filesystem `:minimal=read`·`:root=deny`, network disabled로 실제 적용됐음을 확인했다. 따라서 011은 설정 누락이 아니라 broad root deny가 Windows의 더 좁은 read grant에서 J를 제거하지 못한 결과다.
++- `phaseb-20260809-011` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존한다. 다음 profile은 같은 inline table에 resolved W/J/S 공통 부모, J, S를 각각 exact deny로 추가한다. Manifest validator가 serialized path와 root identity를 직접 비교하며 다른 J/S로 바꾼 profile은 거부한다. 표적 회귀 15개는 통과했고 새 source·새 root token 전까지 candidate 주장은 금지한다.
++
++## 현실 고난도 Phase B inherited ACL 원인 확정과 J/S hardening
++
++- 작업일: 2026-08-09. source `f7b530f7826075efe417b5e4ade189ae6c25528c`, pending manifest SHA-256 `217a8a90475a075f04e0cc456f22c4eb80e73c4dbde3a6da0c4bd4f5e2248267`의 `phaseb-20260809-012`는 exact common-parent/J/S profile deny와 P01을 통과했지만 P02 J content가 다시 노출돼 `NOT_READY`로 중단됐다. P03~P08과 model turn은 0회이고 candidate bundle은 없다.
++- Read-only `icacls`는 012 J에 Controller·SYSTEM·Administrators뿐 아니라 `CodexSandboxUsers`와 두 sandbox 관련 SID의 inherited `OI/CI Modify` ACE가 있음을 확인했다. Profile의 declarative deny가 active여도 dedicated sandbox user가 이 inherited allow를 통해 읽을 수 있었던 것이 반복 P02 성공의 실제 OS 원인이다.
++- `phaseb-20260809-012` W/J/S root와 pending manifest는 삭제·재사용하지 않고 보존한다. 다음 준비 구현은 J/S를 서로 다른 opaque private parent 아래 만들고 parent와 leaf 모두 inheritance를 제거한 뒤 Controller SID, SYSTEM, BUILTIN Administrators의 `OICI Full Control` 세 explicit ACE만 허용한다. W는 기존 ACL과 capability transition 계약을 유지한다.
++- 임시 폴더에서 `icacls /inheritance:r`와 SID 기반 `/grant:r` 문법, canonical `D:PAI`와 exact 세 ACE를 확인한 뒤 임시 폴더를 삭제했다. 실제 helper와 exact ACL 회귀를 포함한 runtime-boundary 표적 시험은 `16 passed`다. 새 source·새 root token에서 P01~P08을 다시 실행하기 전에는 candidate가 아니다.
++
++## 현실 고난도 Phase B P05 junction cleanup 교정
++
++- 작업일: 2026-08-09. source `5d9d1a544699af0738cb0f504f3e3e7be4da90d3`, pending manifest SHA-256 `b7871d23cc37ca68bdeb1022fbebdb130995238e63417b5a7a8e11cc892faa08`의 `phaseb-20260809-013`은 J/S protected ACL을 준비·검증하고 P02의 이전 content disclosure를 재발시키지 않은 채 P05까지 진행했다. P05 뒤 P06 dispatch 전 exact command 재검사에서 `P05 argv differs from frozen contract`로 중단됐고 actual model turn과 candidate bundle은 0이다.
++- 보존된 W에는 P05 symlink는 없고 `escape-junction`만 남아 있었다. Junction target J가 unreadable하면 `Path.exists()`도 false가 될 수 있어 기존 cleanup 분기가 `os.rmdir`를 호출하지 않았고, 후속 `_probe_command_argvs()`의 `resolve()`가 남은 junction target을 따라가 frozen literal path와 달라진 것이 직접 원인이다. J content가 노출된 사건은 아니다.
++- `phaseb-20260809-013` W/J/S와 pending manifest, 남은 junction은 진단 증거로 삭제·재사용하지 않는다. P05 fixture argv는 `abspath` 기반 no-follow lexical path로 고정하고, entry 존재는 `os.lstat`, 생성 성공 시 symlink는 `os.unlink`, junction은 `os.rmdir`로 cleanup한다.
++- 실제 junction이 존재해도 command identity가 유지되는 회귀와 target unreadable 상황을 모사해 `Path.exists()`에 의존하지 않고 junction이 제거되는 회귀를 추가했다. Controller-only ACL 회귀를 포함한 표적 시험은 `18 passed`다. 새 source·새 root token 전까지 candidate 주장은 금지한다.
++
++## 현실 고난도 Phase B 8-probe 완주와 P08 metadata 계약 교정
++
++- 작업일: 2026-08-09. source `d21f3d86e738a18818c0d318b51864e33646f7bb`, pending/embedded manifest SHA-256 `9c2024a3294998dfb810886e3329d2c9af10e8a0a2a76475308f73948abfc351`의 `phaseb-20260809-014`는 P01~P08을 모두 실행하고 exact 4-file bundle을 생성·검증했다. P01~P07은 모두 true, P08만 false, actual model turn은 0이며 aggregate는 `RUNTIME_BOUNDARY_NOT_PROVEN`이다.
++- P08 typed Evidence는 S sentinel read, absent target create, existing target replace가 모두 `access_denied`였고 S sentinel Controller hash와 W source hash는 전후 동일했다. Sandbox는 existing S replace target의 존재·hash도 볼 수 없어 before/after false·null을 반환했다. 과거 재계산식은 오히려 target 존재 true와 manifest hash 노출을 요구해 P08을 false로 만들었다.
++- 이 결과는 mutation이나 content disclosure가 아니라 더 강한 metadata nondisclosure다. 새 계약은 Worker 쪽 existing S target을 false/null로 요구하고, 실제 target 존재·size·hash 불변과 create target 부재는 이미 실행 전후 `_probe_precondition`이 확인한 Controller evidence로만 증명한다. Worker가 S target 존재·hash를 관측하면 실패다.
++- 014 bundle aggregate SHA-256은 `07ec2b31a49ad11b88f8e13570c9e72745e48aaf407efe642e012354a923468d`, result SHA-256은 `a1b4adc43d565e8c4337d7aa266046fff0317e9f5cb5da1f2246f0e792736cbc`다. Bundle과 W/J/S는 비candidate 진단 증거로 보존하며 재사용하지 않는다. P08 nondisclosure/metadata disclosure negative 회귀를 포함한 표적 시험은 `19 passed`다.
+diff --git a/tools/benchmark-runner/scripts/probe_runtime_boundary.py b/tools/benchmark-runner/scripts/probe_runtime_boundary.py
+index b3e1cc844ebc1fc5e98a10777e471ec3a9b5d6b4..ebb4254605079b12286bfe668b5f237c34eb3d57 100644
+--- a/tools/benchmark-runner/scripts/probe_runtime_boundary.py
++++ b/tools/benchmark-runner/scripts/probe_runtime_boundary.py
+@@ -1,7 +1,7 @@
+ """Standalone, model-free observations for the Windows runtime-boundary probe.
+ 
+ The controller copies this file into W and invokes it with ``python -P`` inside
+-``codex sandbox windows``.  It intentionally imports only the standard library,
++``codex sandbox``.  It intentionally imports only the standard library,
+ prints exactly one canonical JSON object, and never interprets benchmark data.
+ """
+ 
+@@ -281,6 +281,16 @@ def _enumerate(path: Path, forbidden: str) -> dict[str, Any]:
+         }
+ 
+ 
++def _path_entry_exists(path: Path) -> bool:
++    """Observe a link or junction entry without reading its target."""
++
++    try:
++        os.lstat(path)
++    except OSError:
++        return False
++    return True
++
++
+ def _link_attempt(kind: str, link: Path, target: Path) -> dict[str, Any]:
+     read_path = link
+     try:
+@@ -310,26 +320,27 @@ def _link_attempt(kind: str, link: Path, target: Path) -> dict[str, Any]:
+     except OSError as exc:
+         create_outcome, _ = _outcome(exc)
+ 
+-    exists_after_create = link.exists() or link.is_symlink()
++    exists_after_create = _path_entry_exists(link)
+     read = read_observation(read_path) if create_outcome == "success" else {
+         "outcome": "not_attempted",
+         "bytes_read": 0,
+         "content_sha256": None,
+         "win32_error": None,
+     }
+-    try:
+-        if link.is_symlink():
+-            link.unlink()
+-        elif link.exists():
+-            os.rmdir(link)
+-    except OSError:
+-        pass
++    if create_outcome == "success":
++        try:
++            if kind == "symlink":
++                os.unlink(link)
++            else:
++                os.rmdir(link)
++        except OSError:
++            pass
+     return {
+         "link_kind": kind,
+         "create_outcome": create_outcome,
+         "link_exists_after_create": exists_after_create,
+         "read": read,
+-        "link_exists_after_cleanup": link.exists() or link.is_symlink(),
++        "link_exists_after_cleanup": _path_entry_exists(link),
+     }
+ 
+ 
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 6cf18f83b645035a3636737cf7226cec89fdbeb4..233c804be8ac3207bc23338eec5c103d81c88eec 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -18,9 +18,11 @@ import subprocess
+ import threading
+ import time
+ import uuid
++from collections import Counter
++from dataclasses import dataclass
+ from datetime import datetime
+ from pathlib import Path
+-from typing import Annotated, Any, Literal, Mapping, Sequence
++from typing import Annotated, Any, Literal, Mapping, NoReturn, Sequence
+ 
+ from pydantic import Field, JsonValue, TypeAdapter, field_validator, model_validator
+ 
+@@ -39,7 +41,7 @@ PINNED_SDK_DISTRIBUTION = "openai-codex"
+ PINNED_CLI_DISTRIBUTION = "openai-codex-cli-bin"
+ PINNED_CODEX_VERSION = "0.144.4"
+ PINNED_CLI_TARGET = "x86_64-pc-windows-msvc"
+-PERMISSION_PROFILE_ID = ":workspace"
++PERMISSION_PROFILE_ID = "runtime-boundary-worker"
+ WINDOWS_SANDBOX_KIND = "elevated"
+ PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list"
+ THREAD_STARTED_NOTIFICATION_METHOD = "thread/started"
+@@ -54,6 +56,51 @@ EXACT_BUNDLE_FILES = frozenset(
+ )
+ 
+ 
++def _toml_basic_string(value: str) -> str:
++    """Return a TOML basic string suitable for one inline-table key or value."""
++
++    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
++
++
++def _runtime_boundary_config_overrides(
++    *,
++    W: Path,
++    J: Path,
++    S: Path,
++) -> tuple[str, ...]:
++    """Build the exact custom profile shared by SDK and CLI surfaces."""
++
++    W_path = Path(W).resolve()
++    J_path = Path(J).resolve()
++    S_path = Path(S).resolve()
++    try:
++        common_parent = Path(os.path.commonpath([W_path, J_path, S_path])).resolve()
++    except ValueError as exc:
++        raise ValueError("W, J and S must share a drive for the permission profile") from exc
++    filesystem_entries = {
++        ":minimal": "read",
++        ":root": "deny",
++        str(common_parent): "deny",
++        str(J_path): "deny",
++        str(S_path): "deny",
++    }
++    filesystem_value = "{" + ",".join(
++        f"{_toml_basic_string(path)}={_toml_basic_string(access)}"
++        for path, access in sorted(filesystem_entries.items())
++    ) + "}"
++    return tuple(
++        sorted(
++            (
++                'default_permissions="runtime-boundary-worker"',
++                'permissions.runtime-boundary-worker.extends=":workspace"',
++                "permissions.runtime-boundary-worker.filesystem=" + filesystem_value,
++                "permissions.runtime-boundary-worker.network.enabled=false",
++                'windows.sandbox="elevated"',
++            )
++        )
++    )
++
++
+ class RuntimeBoundaryError(RuntimeError):
+     """Raised when evidence cannot prove the frozen boundary."""
+ 
+@@ -381,9 +428,9 @@ class RuntimeIdentity(StrictModel):
+ 
+ 
+ class ConfigurationExpectation(StrictModel):
+-    default_permissions: Literal[":workspace"]
+-    permission_profile_name: Literal[":workspace"]
+-    config_overrides: list[str] = Field(min_length=2)
++    default_permissions: Literal["runtime-boundary-worker"]
++    permission_profile_name: Literal["runtime-boundary-worker"]
++    config_overrides: list[str] = Field(min_length=5, max_length=5)
+     include_managed_config: Literal[True]
+     legacy_sandbox_settings_present: Literal[False]
+     sdk_thread_sandbox_argument_omitted: Literal[True]
+@@ -394,12 +441,26 @@ class ConfigurationExpectation(StrictModel):
+ 
+     @model_validator(mode="after")
+     def required_overrides_are_present(self) -> "ConfigurationExpectation":
+-        required = {
+-            'default_permissions=":workspace"',
++        required_static = {
++            'default_permissions="runtime-boundary-worker"',
++            'permissions.runtime-boundary-worker.extends=":workspace"',
++            "permissions.runtime-boundary-worker.network.enabled=false",
+             'windows.sandbox="elevated"',
+         }
+-        if not required.issubset(self.config_overrides):
+-            raise ValueError("required profile and Windows sandbox overrides are missing")
++        filesystem_overrides = [
++            value
++            for value in self.config_overrides
++            if value.startswith("permissions.runtime-boundary-worker.filesystem=")
++        ]
++        if (
++            not required_static.issubset(self.config_overrides)
++            or len(filesystem_overrides) != 1
++            or '":minimal"="read"' not in filesystem_overrides[0]
++            or '":root"="deny"' not in filesystem_overrides[0]
++        ):
++            raise ValueError(
++                "runtime-boundary profile overrides must be the exact frozen least-privilege set"
++            )
+         override_keys = {
+             value.split("=", 1)[0].strip().lower() for value in self.config_overrides
+         }
+@@ -425,8 +486,47 @@ class RootIdentity(StrictModel):
+         return value
+ 
+ 
+-def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootIdentity:
+-    """Capture owner, DACL and volume identity without exporting the raw ACL."""
++@dataclass(frozen=True)
++class _WindowsRootSecuritySnapshot:
++    identity: RootIdentity
++    sddl: str
++    owner_group_sddl_prefix: str
++    dacl_control: str
++    dacl_aces: tuple[str, ...]
++
++
++def _split_sddl_dacl(sddl: str) -> tuple[str, tuple[str, ...]]:
++    marker = sddl.find("D:")
++    if marker < 0:
++        raise RuntimeBoundaryError("Windows root security descriptor has no DACL")
++    dacl = sddl[marker + 2 :]
++    sacl_marker = dacl.find("S:")
++    if sacl_marker >= 0:
++        dacl = dacl[:sacl_marker]
++    first_ace = dacl.find("(")
++    if first_ace < 0:
++        return dacl, ()
++    control = dacl[:first_ace]
++    remainder = dacl[first_ace:]
++    aces: list[str] = []
++    cursor = 0
++    while cursor < len(remainder):
++        if remainder[cursor] != "(":
++            raise RuntimeBoundaryError("Windows DACL is not canonical SDDL")
++        end = remainder.find(")", cursor + 1)
++        if end < 0:
++            raise RuntimeBoundaryError("Windows DACL contains an unterminated ACE")
++        aces.append(remainder[cursor : end + 1])
++        cursor = end + 1
++    return control, tuple(aces)
++
++
++def _capture_windows_root_security(
++    path: Path,
++    *,
++    redacted_path_id: str,
++) -> _WindowsRootSecuritySnapshot:
++    """Capture root identity plus an in-memory ACL used by the transition guard."""
+ 
+     if os.name != "nt":
+         raise RuntimeBoundaryError("runtime-boundary root identity is Windows-only")
+@@ -510,13 +610,99 @@ def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootI
+         len(volume_name),
+     ):
+         raise _ctypes.WinError(_ctypes.get_last_error())
+-    return RootIdentity(
++    identity = RootIdentity(
+         redacted_path_id=redacted_path_id,
+         resolved_absolute_path=str(resolved),
+         volume_identity=volume_name.value,
+         owner_sid=owner_sid,
+         acl_sddl_sha256=_sha_text(sddl),
+     )
++    dacl_control, dacl_aces = _split_sddl_dacl(sddl)
++    return _WindowsRootSecuritySnapshot(
++        identity=identity,
++        sddl=sddl,
++        owner_group_sddl_prefix=sddl[: sddl.find("D:")],
++        dacl_control=dacl_control,
++        dacl_aces=dacl_aces,
++    )
++
++
++def capture_windows_root_identity(path: Path, *, redacted_path_id: str) -> RootIdentity:
++    """Capture owner, DACL and volume identity without exporting the raw ACL."""
++
++    return _capture_windows_root_security(
++        path,
++        redacted_path_id=redacted_path_id,
++    ).identity
++
++
++def _assert_controller_only_directory_security(
++    path: Path,
++    *,
++    expected_owner_sid: str,
++) -> _WindowsRootSecuritySnapshot:
++    snapshot = _capture_windows_root_security(path, redacted_path_id="controller-only")
++    expected_aces = Counter(
++        (
++            "(A;OICI;FA;;;SY)",
++            "(A;OICI;FA;;;BA)",
++            f"(A;OICI;FA;;;{expected_owner_sid})",
++        )
++    )
++    if (
++        snapshot.identity.owner_sid != expected_owner_sid
++        or snapshot.dacl_control != "PAI"
++        or Counter(snapshot.dacl_aces) != expected_aces
++    ):
++        raise RuntimeBoundaryError(
++            "Controller-only directory does not have the exact protected ACL"
++        )
++    return snapshot
++
++
++def _harden_controller_only_directory(path: Path) -> RootIdentity:
++    """Replace inherited access with Controller, SYSTEM and Administrators full control."""
++
++    target = Path(path).resolve(strict=True)
++    if not target.is_dir():
++        raise RuntimeBoundaryError("Controller-only ACL target is not a directory")
++    initial = _capture_windows_root_security(target, redacted_path_id="controller-only")
++    owner_sid = initial.identity.owner_sid
++    system_root = os.environ.get("SystemRoot")
++    if not system_root:
++        raise RuntimeBoundaryError("SystemRoot is unavailable for icacls resolution")
++    icacls = (Path(system_root) / "System32" / "icacls.exe").resolve(strict=True)
++    commands = (
++        [str(icacls), str(target), "/inheritance:r"],
++        [
++            str(icacls),
++            str(target),
++            "/grant:r",
++            f"*{owner_sid}:(OI)(CI)(F)",
++            "*S-1-5-18:(OI)(CI)(F)",
++            "*S-1-5-32-544:(OI)(CI)(F)",
++        ],
++    )
++    for command in commands:
++        try:
++            completed = subprocess.run(
++                command,
++                stdin=subprocess.DEVNULL,
++                stdout=subprocess.PIPE,
++                stderr=subprocess.PIPE,
++                timeout=30,
++                check=False,
++            )
++        except (OSError, subprocess.TimeoutExpired) as exc:
++            raise RuntimeBoundaryError("failed to apply Controller-only ACL") from exc
++        if completed.returncode != 0:
++            raise RuntimeBoundaryError(
++                f"icacls rejected Controller-only ACL with exit {completed.returncode}"
++            )
++    return _assert_controller_only_directory_security(
++        target,
++        expected_owner_sid=owner_sid,
++    ).identity
+ 
+ 
+ def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> None:
+@@ -530,6 +716,11 @@ def verify_root_identity_contract(manifest: "RuntimeBoundaryProbeManifest") -> N
+     )
+     if actual != roots:
+         raise RuntimeBoundaryError("W/J/S root owner, ACL or volume identity drifted")
++    for root in (manifest.J, manifest.S):
++        _assert_controller_only_directory_security(
++            Path(root.resolved_absolute_path),
++            expected_owner_sid=root.owner_sid,
++        )
+     paths = tuple(Path(root.resolved_absolute_path).resolve(strict=True) for root in roots)
+     if len(set(paths)) != 3:
+         raise RuntimeBoundaryError("W/J/S roots are not distinct")
+@@ -644,6 +835,11 @@ class RuntimeBoundaryProbeManifest(StrictModel):
+             for right in paths:
+                 if left != right and (left in right.parents or right in left.parents):
+                     raise ValueError("W, J and S cannot be parent/child roots")
++        expected_overrides = list(
++            _runtime_boundary_config_overrides(W=paths[0], J=paths[1], S=paths[2])
++        )
++        if self.configuration.config_overrides != expected_overrides:
++            raise ValueError("configuration is not exactly bound to the W/J/S roots")
+         return self
+ 
+ 
+@@ -657,8 +853,8 @@ class SdkProfileProvenanceObservation(StrictModel):
+     config_identity_sha256: Sha256
+     initialize_experimental_api: bool
+     permission_profile_list_request_count: int = Field(ge=0)
+-    workspace_permission_profile_match_count: int = Field(ge=0)
+-    workspace_permission_profile_allowed: bool
++    selected_permission_profile_match_count: int = Field(ge=0)
++    selected_permission_profile_allowed: bool
+     thread_start_request_count: int = Field(ge=0)
+     thread_started_notification_count: int = Field(ge=0)
+     turn_start_request_count: int = Field(ge=0)
+@@ -725,12 +921,50 @@ class EffectivePolicyEvidence(StrictModel):
+     derived_policy_passed: bool
+ 
+ 
++class WorkspaceAclTransitionObservation(StrictModel):
++    selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_restricted_sid"]
++    initial_W_acl_sddl_sha256: Sha256
++    active_W_acl_sddl_sha256: Sha256
++    initial_W_dacl_control_sha256: Sha256
++    active_W_dacl_control_sha256: Sha256
++    initial_W_ace_sha256s: list[Sha256]
++    active_W_ace_sha256s: list[Sha256]
++    added_ace_sddl: str = Field(min_length=8)
++    added_ace_sha256: Sha256
++    added_ace_type: Literal["A"]
++    added_ace_flags: Literal["OICI"]
++    added_ace_rights: Literal["0x1301bf"]
++    added_ace_object_guid: Literal[""]
++    added_ace_inherit_object_guid: Literal[""]
++    added_capability_sid: str = Field(pattern=r"^S-1-5-21-(?:[0-9]+-){3}[0-9]+$")
++    added_capability_sid_sha256: Sha256
++    removed_ace_sha256s: list[Sha256]
++    W_owner_unchanged: Literal[True]
++    W_owner_group_descriptor_unchanged: Literal[True]
++    W_volume_unchanged: Literal[True]
++    J_identity_unchanged: Literal[True]
++    S_identity_unchanged: Literal[True]
++    P01_restricted_contains_added_ace_sid: Literal[True]
++    derived_transition_passed: bool
++
++    @model_validator(mode="after")
++    def acl_hash_lists_are_canonical(self) -> "WorkspaceAclTransitionObservation":
++        if self.initial_W_ace_sha256s != sorted(self.initial_W_ace_sha256s):
++            raise ValueError("initial W ACE hashes must be sorted")
++        if self.active_W_ace_sha256s != sorted(self.active_W_ace_sha256s):
++            raise ValueError("active W ACE hashes must be sorted")
++        if self.removed_ace_sha256s != sorted(self.removed_ace_sha256s):
++            raise ValueError("removed W ACE hashes must be sorted")
++        return self
++
++
+ class WindowsSandboxProvenanceObservation(StrictModel):
+     selection_method: Literal["effective_config+readiness+token_user_sid"]
+     config_requirements_response: EmbeddedJsonEvidence
+     readiness_response: EmbeddedJsonEvidence
+     controller_process_identity: WindowsProcessIdentityObservation
+     P01_process_identity: WindowsProcessIdentityObservation
++    workspace_acl_transition: WorkspaceAclTransitionObservation
+     dedicated_user_sid_differs_from_controller: bool
+     all_probe_process_identities_equal_P01: bool
+     P06_parent_child_identity_equal: bool
+@@ -772,6 +1006,218 @@ class RuntimeBoundaryProbeResult(StrictModel):
+         return self
+ 
+ 
++def _parse_workspace_acl_ace(ace: str) -> tuple[str, str, str, str, str, str]:
++    if not ace.startswith("(") or not ace.endswith(")"):
++        raise RuntimeBoundaryError("workspace ACL transition ACE is not canonical SDDL")
++    fields = tuple(ace[1:-1].split(";"))
++    if len(fields) != 6:
++        raise RuntimeBoundaryError("workspace ACL transition ACE field count differs")
++    ace_type, flags, rights, object_guid, inherit_object_guid, sid = fields
++    if (
++        ace_type != "A"
++        or flags != "OICI"
++        or rights != "0x1301bf"
++        or object_guid
++        or inherit_object_guid
++    ):
++        raise RuntimeBoundaryError(
++            "workspace ACL transition is not the exact explicit Modify/Synchronize grant"
++        )
++    sid_parts = sid.split("-")
++    if (
++        len(sid_parts) != 8
++        or sid_parts[:4] != ["S", "1", "5", "21"]
++        or not all(part.isdecimal() for part in sid_parts[4:])
++    ):
++        raise RuntimeBoundaryError("workspace ACL transition SID has an unexpected shape")
++    return ace_type, flags, rights, object_guid, inherit_object_guid, sid
++
++
++@dataclass(frozen=True)
++class _WorkspaceAclTransitionState:
++    initial: _WindowsRootSecuritySnapshot
++    active: _WindowsRootSecuritySnapshot
++    added_ace_sddl: str
++    added_capability_sid: str
++
++
++class _WorkspaceAclTransitionGuard:
++    """Allow only Codex's exact W grant while keeping J/S fail-closed."""
++
++    def __init__(
++        self,
++        manifest: RuntimeBoundaryProbeManifest,
++        initial: _WindowsRootSecuritySnapshot,
++    ) -> None:
++        if initial.identity != manifest.W:
++            raise RuntimeBoundaryError("initial W root identity differs from the manifest")
++        self._manifest = manifest
++        self._initial = initial
++        self._transition: _WorkspaceAclTransitionState | None = None
++        self._bound_P01_identity_sha256: str | None = None
++
++    @classmethod
++    def capture(cls, manifest: RuntimeBoundaryProbeManifest) -> "_WorkspaceAclTransitionGuard":
++        initial = _capture_windows_root_security(
++            Path(manifest.W.resolved_absolute_path),
++            redacted_path_id=manifest.W.redacted_path_id,
++        )
++        guard = cls(manifest, initial)
++        guard.verify_current(require_transition=False, require_bound=False)
++        return guard
++
++    def _capture_current_transition(self) -> _WorkspaceAclTransitionState | None:
++        for expected in (self._manifest.J, self._manifest.S):
++            actual = capture_windows_root_identity(
++                Path(expected.resolved_absolute_path),
++                redacted_path_id=expected.redacted_path_id,
++            )
++            if actual != expected:
++                raise RuntimeBoundaryError(
++                    f"{expected.redacted_path_id} root owner, ACL or volume identity drifted"
++                )
++
++        active = _capture_windows_root_security(
++            Path(self._manifest.W.resolved_absolute_path),
++            redacted_path_id=self._manifest.W.redacted_path_id,
++        )
++        initial_identity = self._initial.identity
++        active_identity = active.identity
++        if (
++            active_identity.redacted_path_id != initial_identity.redacted_path_id
++            or active_identity.resolved_absolute_path != initial_identity.resolved_absolute_path
++            or active_identity.owner_sid != initial_identity.owner_sid
++            or active_identity.volume_identity != initial_identity.volume_identity
++        ):
++            raise RuntimeBoundaryError("W root path, owner or volume identity drifted")
++        if active_identity.acl_sddl_sha256 == initial_identity.acl_sddl_sha256:
++            if self._transition is not None:
++                raise RuntimeBoundaryError("W workspace ACL transition reverted after observation")
++            return None
++        if active.owner_group_sddl_prefix != self._initial.owner_group_sddl_prefix:
++            raise RuntimeBoundaryError("W owner/group security descriptor changed")
++        if active.dacl_control != self._initial.dacl_control:
++            raise RuntimeBoundaryError("W DACL control flags changed")
++
++        initial_aces = Counter(self._initial.dacl_aces)
++        active_aces = Counter(active.dacl_aces)
++        removed = list((initial_aces - active_aces).elements())
++        added = list((active_aces - initial_aces).elements())
++        if removed or len(added) != 1:
++            raise RuntimeBoundaryError("W ACL change is not exactly one added ACE")
++        *_, added_sid = _parse_workspace_acl_ace(added[0])
++        observed = _WorkspaceAclTransitionState(
++            initial=self._initial,
++            active=active,
++            added_ace_sddl=added[0],
++            added_capability_sid=added_sid,
++        )
++        if self._transition is not None and observed != self._transition:
++            raise RuntimeBoundaryError("W workspace ACL transition drifted")
++        return observed
++
++    def verify_current(
++        self,
++        *,
++        require_transition: bool,
++        require_bound: bool,
++    ) -> None:
++        observed = self._capture_current_transition()
++        if observed is not None:
++            self._transition = observed
++        if require_transition and self._transition is None:
++            raise RuntimeBoundaryError("required W workspace ACL transition was not observed")
++        if require_bound and self._bound_P01_identity_sha256 is None:
++            raise RuntimeBoundaryError("W workspace ACL transition is not bound to P01")
++
++    def bind_P01_identity(self, identity: WindowsProcessIdentityObservation) -> None:
++        if self._transition is None:
++            raise RuntimeBoundaryError("P01 completed without the W workspace ACL transition")
++        added_hash = _sha_text(self._transition.added_capability_sid)
++        if added_hash not in identity.restricted_sid_sha256s:
++            raise RuntimeBoundaryError(
++                "W workspace ACL grant SID hash is absent from the P01 restricted SID hashes: "
++                f"added={added_hash}, restricted={identity.restricted_sid_sha256s}"
++            )
++        self._bound_P01_identity_sha256 = identity.identity_sha256
++
++    def evidence(self) -> WorkspaceAclTransitionObservation:
++        if self._transition is None or self._bound_P01_identity_sha256 is None:
++            raise RuntimeBoundaryError("W workspace ACL transition evidence is incomplete")
++        state = self._transition
++        ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
++            _parse_workspace_acl_ace(state.added_ace_sddl)
++        )
++        return WorkspaceAclTransitionObservation(
++            selection_method="initial_acl+exact_w_only_ace_delta+p01_restricted_sid",
++            initial_W_acl_sddl_sha256=state.initial.identity.acl_sddl_sha256,
++            active_W_acl_sddl_sha256=state.active.identity.acl_sddl_sha256,
++            initial_W_dacl_control_sha256=_sha_text(state.initial.dacl_control),
++            active_W_dacl_control_sha256=_sha_text(state.active.dacl_control),
++            initial_W_ace_sha256s=sorted(_sha_text(value) for value in state.initial.dacl_aces),
++            active_W_ace_sha256s=sorted(_sha_text(value) for value in state.active.dacl_aces),
++            added_ace_sddl=state.added_ace_sddl,
++            added_ace_sha256=_sha_text(state.added_ace_sddl),
++            added_ace_type=ace_type,
++            added_ace_flags=flags,
++            added_ace_rights=rights,
++            added_ace_object_guid=object_guid,
++            added_ace_inherit_object_guid=inherit_object_guid,
++            added_capability_sid=sid,
++            added_capability_sid_sha256=_sha_text(sid),
++            removed_ace_sha256s=[],
++            W_owner_unchanged=True,
++            W_owner_group_descriptor_unchanged=True,
++            W_volume_unchanged=True,
++            J_identity_unchanged=True,
++            S_identity_unchanged=True,
++            P01_restricted_contains_added_ace_sid=True,
++            derived_transition_passed=True,
++        )
++
++
++def verify_workspace_acl_transition(
++    evidence: WorkspaceAclTransitionObservation,
++    *,
++    P01_process_identity: WindowsProcessIdentityObservation,
++) -> bool:
++    ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
++        _parse_workspace_acl_ace(evidence.added_ace_sddl)
++    )
++    removed = sorted(
++        (Counter(evidence.initial_W_ace_sha256s) - Counter(evidence.active_W_ace_sha256s)).elements()
++    )
++    added = sorted(
++        (Counter(evidence.active_W_ace_sha256s) - Counter(evidence.initial_W_ace_sha256s)).elements()
++    )
++    passed = all(
++        (
++            evidence.initial_W_acl_sddl_sha256 != evidence.active_W_acl_sddl_sha256,
++            evidence.initial_W_dacl_control_sha256 == evidence.active_W_dacl_control_sha256,
++            removed == evidence.removed_ace_sha256s == [],
++            added == [evidence.added_ace_sha256],
++            evidence.added_ace_sha256 == _sha_text(evidence.added_ace_sddl),
++            evidence.added_ace_type == ace_type,
++            evidence.added_ace_flags == flags,
++            evidence.added_ace_rights == rights,
++            evidence.added_ace_object_guid == object_guid,
++            evidence.added_ace_inherit_object_guid == inherit_object_guid,
++            evidence.added_capability_sid == sid,
++            evidence.added_capability_sid_sha256 == _sha_text(sid),
++            _sha_text(sid) in P01_process_identity.restricted_sid_sha256s,
++            evidence.P01_restricted_contains_added_ace_sid,
++            evidence.W_owner_unchanged,
++            evidence.W_owner_group_descriptor_unchanged,
++            evidence.W_volume_unchanged,
++            evidence.J_identity_unchanged,
++            evidence.S_identity_unchanged,
++        )
++    )
++    if evidence.derived_transition_passed != passed:
++        raise RuntimeBoundaryError("workspace ACL transition derived field mismatch")
++    return passed
++
++
+ class RuntimeBoundaryProfileFailureArtifact(StrictModel):
+     """Unsealed diagnostic written beside, never inside, the exact candidate bundle."""
+ 
+@@ -830,6 +1276,89 @@ class RuntimeBoundaryPolicyFailureArtifact(StrictModel):
+         return self
+ 
+ 
++class CappedStreamEvidence(StrictModel):
++    """A bounded byte capture plus the identity of the complete process stream."""
++
++    captured_b64: str
++    captured_byte_count: int = Field(ge=0)
++    total_byte_count: int = Field(ge=0)
++    limit_bytes: int = Field(gt=0)
++    captured_sha256: Sha256
++    sha256: Sha256
++    truncated: bool
++
++    @classmethod
++    def from_capture(
++        cls,
++        captured: bytes,
++        *,
++        total: int,
++        limit: int,
++        sha256: str,
++    ) -> "CappedStreamEvidence":
++        bounded = captured[:limit]
++        return cls(
++            captured_b64=base64.b64encode(bounded).decode("ascii"),
++            captured_byte_count=len(bounded),
++            total_byte_count=total,
++            limit_bytes=limit,
++            captured_sha256=sha256_bytes(bounded),
++            sha256=sha256,
++            truncated=total > limit,
++        )
++
++    def bytes_value(self) -> bytes:
++        try:
++            return base64.b64decode(self.captured_b64, validate=True)
++        except (ValueError, TypeError) as exc:
++            raise ValueError("captured stream is not valid base64") from exc
++
++    @model_validator(mode="after")
++    def capture_is_self_consistent(self) -> "CappedStreamEvidence":
++        data = self.bytes_value()
++        expected_count = min(self.total_byte_count, self.limit_bytes)
++        if len(data) != self.captured_byte_count or len(data) != expected_count:
++            raise ValueError("captured stream byte count mismatch")
++        if self.truncated != (self.total_byte_count > self.limit_bytes):
++            raise ValueError("captured stream truncation flag mismatch")
++        if sha256_bytes(data) != self.captured_sha256:
++            raise ValueError("captured stream prefix SHA-256 mismatch")
++        if not self.truncated and sha256_bytes(data) != self.sha256:
++            raise ValueError("complete captured stream SHA-256 mismatch")
++        return self
++
++
++class RuntimeBoundaryProbeFailureArtifact(StrictModel):
++    """Unsealed diagnostic for a dispatched probe that cannot be parsed."""
++
++    schema_version: Literal[1] = 1
++    probe_id: str = Field(pattern=r"^runtime-boundary-[a-z0-9._-]+$")
++    manifest_sha256: Sha256
++    recorded_at: datetime
++    failed_stage: Literal["probe_dispatch"]
++    failed_probe_id: str = Field(pattern=r"^P0[1-8]$")
++    command_argv_sha256: Sha256
++    failure_reason_codes: list[str] = Field(min_length=1)
++    actual_model_turns: Literal[0]
++    wrapper_exit_code: int
++    stdout: CappedStreamEvidence
++    stderr: CappedStreamEvidence
++    duration_ms: int = Field(ge=0)
++    controller_precondition_ok: Literal[True]
++    controller_postcondition_ok: bool
++
++    _recorded_has_timezone = field_validator("recorded_at")(validate_timestamp)
++
++    @model_validator(mode="after")
++    def failure_is_canonical(self) -> "RuntimeBoundaryProbeFailureArtifact":
++        if self.failure_reason_codes != sorted(set(self.failure_reason_codes)):
++            raise ValueError("failure reason codes must be sorted and unique")
++        expected_codes = probe_dispatch_failure_reason_codes(self)
++        if self.failure_reason_codes != expected_codes:
++            raise ValueError("failure reason codes differ from captured process evidence")
++        return self
++
++
+ class RuntimeBoundaryBundleSeal(StrictModel):
+     schema_version: Literal[1] = 1
+     probe_id: str
+@@ -970,14 +1499,15 @@ def _probe_command_argvs(
+     drive_root = Path(J_path.anchor).resolve()
+     relative_J = os.path.relpath(J_sentinel_path, W_path)
+     script = W_path / probe_script_relative_path
++    p05_symlink_path = Path(os.path.abspath(W_path / fixtures.p05_symlink_path))
++    p05_junction_path = Path(os.path.abspath(W_path / fixtures.p05_junction_path))
+     prefix = [
+         runtime.probe_resolved_executable,
+         "sandbox",
+-        "windows",
+         "--cd",
+         str(W_path),
+         "--permission-profile",
+-        PERMISSION_PROFILE_ID,
++        configuration.permission_profile_name,
+         "--include-managed-config",
+     ]
+     for override in configuration.config_overrides:
+@@ -1011,9 +1541,9 @@ def _probe_command_argvs(
+         [
+             "link-read",
+             "--symlink",
+-            str((W_path / fixtures.p05_symlink_path).resolve()),
++            str(p05_symlink_path),
+             "--junction",
+-            str((W_path / fixtures.p05_junction_path).resolve()),
++            str(p05_junction_path),
+             "--target",
+             str(J_sentinel_path.resolve()),
+         ],
+@@ -1068,11 +1598,12 @@ def build_runtime_boundary_manifest(
+     configuration = ConfigurationExpectation(
+         default_permissions=PERMISSION_PROFILE_ID,
+         permission_profile_name=PERMISSION_PROFILE_ID,
+-        config_overrides=sorted(
+-            [
+-                'default_permissions=":workspace"',
+-                'windows.sandbox="elevated"',
+-            ]
++        config_overrides=list(
++            _runtime_boundary_config_overrides(
++                W=Path(W.resolved_absolute_path),
++                J=Path(J.resolved_absolute_path),
++                S=Path(S.resolved_absolute_path),
++            )
+         ),
+         include_managed_config=True,
+         legacy_sandbox_settings_present=False,
+@@ -1174,13 +1705,19 @@ def prepare_runtime_boundary_roots(
+     if not token or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in token):
+         raise RuntimeBoundaryError("runtime-boundary run token is not path-safe")
+     W_path = root / f"runtime-boundary-w-{token}"
+-    J_path = root / f"runtime-boundary-j-{token}"
+-    S_path = root / f"runtime-boundary-s-{token}"
+-    for path in (W_path, J_path, S_path):
++    J_guard_path = root / f".runtime-boundary-private-{uuid.uuid4().hex}"
++    S_guard_path = root / f".runtime-boundary-private-{uuid.uuid4().hex}"
++    J_path = J_guard_path / "judge"
++    S_path = S_guard_path / "state"
++    for path in (W_path, J_guard_path, S_guard_path):
+         if path.exists():
+             raise RuntimeBoundaryError(f"runtime-boundary root already exists: {path}")
+-    for path in (W_path, J_path, S_path):
+-        path.mkdir()
++    W_path.mkdir()
++    for guard, controller_root in ((J_guard_path, J_path), (S_guard_path, S_path)):
++        guard.mkdir()
++        _harden_controller_only_directory(guard)
++        controller_root.mkdir()
++        _harden_controller_only_directory(controller_root)
+ 
+     probe_source = Path(probe_source_path).resolve(strict=True)
+     probe_python = Path(probe_python_executable).resolve(strict=True)
+@@ -1502,8 +2039,10 @@ def collect_sdk_profile_provenance(
+             {
+                 "cwd": manifest.W.resolved_absolute_path,
+                 "approvalPolicy": manifest.configuration.approval_policy_wire_value,
+-                "config": {"default_permissions": PERMISSION_PROFILE_ID},
+-                "permissions": PERMISSION_PROFILE_ID,
++                "config": {
++                    "default_permissions": manifest.configuration.default_permissions
++                },
++                "permissions": manifest.configuration.permission_profile_name,
+                 "ephemeral": True,
+             },
+         )
+@@ -1623,7 +2162,7 @@ def _probe_precondition(manifest: RuntimeBoundaryProbeManifest, probe_id: str) -
+         return False
+     if probe_id == "P05":
+         return not any(
+-            (W / value).exists() or (W / value).is_symlink()
++            os.path.lexists(W / value)
+             for value in (
+                 manifest.fixtures.p05_symlink_path,
+                 manifest.fixtures.p05_junction_path,
+@@ -1664,7 +2203,7 @@ def _drain_binary_stream(
+     *,
+     limit: int,
+     destination: queue.Queue[tuple[bytes, int, str]],
+-) -> None:
++) -> NoReturn:
+     captured = bytearray()
+     total = 0
+     digest = hashlib.sha256()
+@@ -1742,16 +2281,62 @@ def _run_command_capped(
+     )
+ 
+ 
++def _raise_probe_stream_failure(
++    message: str,
++    *,
++    failure_bundle_root: Path | None,
++    manifest: RuntimeBoundaryProbeManifest,
++    command: ProbeCommandSpec,
++    wrapper_exit_code: int,
++    stdout: bytes,
++    stdout_total: int,
++    stdout_sha256: str,
++    stderr: bytes,
++    stderr_total: int,
++    stderr_sha256: str,
++    duration_ms: int,
++    controller_precondition_ok: bool,
++    controller_postcondition_ok: bool,
++) -> None:
++    if failure_bundle_root is None:
++        raise RuntimeBoundaryError(message)
++    failure_path = write_runtime_boundary_probe_failure(
++        failure_bundle_root,
++        manifest,
++        command,
++        wrapper_exit_code=wrapper_exit_code,
++        stdout=stdout,
++        stdout_total=stdout_total,
++        stdout_sha256=stdout_sha256,
++        stderr=stderr,
++        stderr_total=stderr_total,
++        stderr_sha256=stderr_sha256,
++        duration_ms=duration_ms,
++        controller_precondition_ok=controller_precondition_ok,
++        controller_postcondition_ok=controller_postcondition_ok,
++    )
++    raise RuntimeBoundaryError(f"{message}; failure evidence: {failure_path}")
++
++
+ def execute_frozen_probe_command(
+     manifest: RuntimeBoundaryProbeManifest,
+     command: ProbeCommandSpec,
+     *,
+     source_environment: Mapping[str, str] | None = None,
++    failure_bundle_root: Path | None = None,
++    root_guard: _WorkspaceAclTransitionGuard | None = None,
+ ) -> ProbeResult:
+     """Execute one frozen probe exactly once; the caller owns sequencing and stop rules."""
+ 
+     verify_pinned_runtime_identity(manifest.runtime)
+-    verify_root_identity_contract(manifest)
++    if root_guard is None:
++        verify_root_identity_contract(manifest)
++    else:
++        is_P01 = command.probe_id == "P01"
++        root_guard.verify_current(
++            require_transition=not is_P01,
++            require_bound=not is_P01,
++        )
+     verify_probe_command_contract(manifest)
+     expected_command = manifest.commands[EXACT_PROBE_IDS.index(command.probe_id)]
+     if command != expected_command:
+@@ -1774,7 +2359,7 @@ def execute_frozen_probe_command(
+         stdout,
+         stdout_total,
+         stdout_hash,
+-        _stderr,
++        stderr,
+         stderr_total,
+         stderr_hash,
+         duration_ms,
+@@ -1785,19 +2370,93 @@ def execute_frozen_probe_command(
+         timeout_seconds=manifest.timeout_seconds_per_probe,
+         limit=manifest.stdout_limit_bytes,
+     )
++    if root_guard is not None:
++        root_guard.verify_current(
++            require_transition=True,
++            require_bound=command.probe_id != "P01",
++        )
+     stdout_truncated = stdout_total > manifest.stdout_limit_bytes
+     stderr_truncated = stderr_total > manifest.stderr_limit_bytes
++    postcondition = _probe_postcondition(manifest, command.probe_id)
+     if stdout_truncated:
+-        raise RuntimeBoundaryError("runtime-boundary probe stdout exceeded the frozen limit")
++        _raise_probe_stream_failure(
++            "runtime-boundary probe stdout exceeded the frozen limit",
++            failure_bundle_root=failure_bundle_root,
++            manifest=manifest,
++            command=command,
++            wrapper_exit_code=wrapper_exit_code,
++            stdout=stdout,
++            stdout_total=stdout_total,
++            stdout_sha256=stdout_hash,
++            stderr=stderr,
++            stderr_total=stderr_total,
++            stderr_sha256=stderr_hash,
++            duration_ms=duration_ms,
++            controller_precondition_ok=precondition,
++            controller_postcondition_ok=postcondition,
++        )
++    try:
++        stdout_text = stdout.decode("utf-8")
++    except UnicodeDecodeError:
++        _raise_probe_stream_failure(
++            "runtime-boundary probe stdout is not UTF-8",
++            failure_bundle_root=failure_bundle_root,
++            manifest=manifest,
++            command=command,
++            wrapper_exit_code=wrapper_exit_code,
++            stdout=stdout,
++            stdout_total=stdout_total,
++            stdout_sha256=stdout_hash,
++            stderr=stderr,
++            stderr_total=stderr_total,
++            stderr_sha256=stderr_hash,
++            duration_ms=duration_ms,
++            controller_precondition_ok=precondition,
++            controller_postcondition_ok=postcondition,
++        )
+     try:
+-        raw = json.loads(stdout.decode("utf-8"))
+-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+-        raise RuntimeBoundaryError("runtime-boundary probe stdout is not one JSON object") from exc
+-    payload = _json_object(raw, "runtime-boundary probe output")
++        raw = json.loads(stdout_text)
++    except json.JSONDecodeError:
++        _raise_probe_stream_failure(
++            "runtime-boundary probe stdout is not JSON",
++            failure_bundle_root=failure_bundle_root,
++            manifest=manifest,
++            command=command,
++            wrapper_exit_code=wrapper_exit_code,
++            stdout=stdout,
++            stdout_total=stdout_total,
++            stdout_sha256=stdout_hash,
++            stderr=stderr,
++            stderr_total=stderr_total,
++            stderr_sha256=stderr_hash,
++            duration_ms=duration_ms,
++            controller_precondition_ok=precondition,
++            controller_postcondition_ok=postcondition,
++        )
++    if not isinstance(raw, dict):
++        _raise_probe_stream_failure(
++            "runtime-boundary probe stdout JSON is not one object",
++            failure_bundle_root=failure_bundle_root,
++            manifest=manifest,
++            command=command,
++            wrapper_exit_code=wrapper_exit_code,
++            stdout=stdout,
++            stdout_total=stdout_total,
++            stdout_sha256=stdout_hash,
++            stderr=stderr,
++            stderr_total=stderr_total,
++            stderr_sha256=stderr_hash,
++            duration_ms=duration_ms,
++            controller_precondition_ok=precondition,
++            controller_postcondition_ok=postcondition,
++        )
++    payload = raw
+     operation_payload = _json_object(payload.get("payload"), "runtime-boundary operation payload")
+     identity = WindowsProcessIdentityObservation.model_validate(
+         payload.get("sandbox_process_identity")
+     )
++    if root_guard is not None and command.probe_id == "P01":
++        root_guard.bind_P01_identity(identity)
+     operation_exit_code = payload.get("operation_exit_code")
+     if not isinstance(operation_exit_code, int):
+         raise RuntimeBoundaryError("runtime-boundary operation exit code is missing")
+@@ -1813,7 +2472,6 @@ def execute_frozen_probe_command(
+         duration_ms=duration_ms,
+         sandbox_process_identity=identity,
+     )
+-    postcondition = _probe_postcondition(manifest, command.probe_id)
+     common: dict[str, Any] = {
+         "probe_id": command.probe_id,
+         "argv_sha256": command.argv_sha256,
+@@ -2076,7 +2734,7 @@ def derive_sdk_profile_provenance(
+         "permissionProfile/list response",
+     )
+     profile_data = profile_list_result.get("data")
+-    workspace_profile_matches = (
++    selected_profile_matches = (
+         [
+             item
+             for item in profile_data
+@@ -2085,9 +2743,9 @@ def derive_sdk_profile_provenance(
+         if isinstance(profile_data, list)
+         else []
+     )
+-    workspace_profile_allowed = (
+-        len(workspace_profile_matches) == 1
+-        and workspace_profile_matches[0].get("allowed") is True
++    selected_profile_allowed = (
++        len(selected_profile_matches) == 1
++        and selected_profile_matches[0].get("allowed") is True
+     )
+ 
+     thread_params: dict[str, JsonValue] = {}
+@@ -2168,8 +2826,8 @@ def derive_sdk_profile_provenance(
+         ("CHATGPT_ACCOUNT_NOT_PROVEN", account_type == "chatgpt"),
+         ("PERMISSION_PROFILE_LIST_REQUEST_COUNT", len(profile_list_requests) == 1),
+         ("PERMISSION_PROFILE_LIST_RESPONSE_NOT_PROVEN", profile_list_response_ok),
+-        ("WORKSPACE_PROFILE_NOT_UNIQUE", len(workspace_profile_matches) == 1),
+-        ("WORKSPACE_PROFILE_NOT_ALLOWED", workspace_profile_allowed),
++        ("SELECTED_PROFILE_NOT_UNIQUE", len(selected_profile_matches) == 1),
++        ("SELECTED_PROFILE_NOT_ALLOWED", selected_profile_allowed),
+         ("THREAD_START_REQUEST_COUNT", len(thread_requests) == 1),
+         (
+             "THREAD_START_RESPONSE_NOT_PROVEN",
+@@ -2204,8 +2862,8 @@ def derive_sdk_profile_provenance(
+         "account_type_raw": account_type,
+         "initialize_experimental_api": initialize_experimental,
+         "permission_profile_list_request_count": len(profile_list_requests),
+-        "workspace_permission_profile_match_count": len(workspace_profile_matches),
+-        "workspace_permission_profile_allowed": workspace_profile_allowed,
++        "selected_permission_profile_match_count": len(selected_profile_matches),
++        "selected_permission_profile_allowed": selected_profile_allowed,
+         "thread_start_request_count": len(thread_requests),
+         "thread_started_notification_count": len(thread_started_notifications),
+         "turn_start_request_count": len(turn_requests),
+@@ -2384,6 +3042,120 @@ def verify_runtime_boundary_policy_failure(
+     return artifact
+ 
+ 
++def runtime_boundary_probe_failure_path(bundle_root: Path) -> Path:
++    root = Path(bundle_root)
++    return root.with_name(f"{root.name}.probe-failure.json")
++
++
++def probe_dispatch_failure_reason_codes(
++    artifact: RuntimeBoundaryProbeFailureArtifact,
++) -> list[str]:
++    codes: list[str] = []
++    if artifact.wrapper_exit_code != 0:
++        codes.append("PROBE_WRAPPER_EXIT_NONZERO")
++    if artifact.stdout.truncated:
++        codes.append("PROBE_STDOUT_LIMIT_EXCEEDED")
++    else:
++        try:
++            stdout_text = artifact.stdout.bytes_value().decode("utf-8")
++        except UnicodeDecodeError:
++            codes.append("PROBE_STDOUT_NOT_UTF8")
++        else:
++            try:
++                stdout_value = json.loads(stdout_text)
++            except json.JSONDecodeError:
++                codes.append("PROBE_STDOUT_NOT_JSON")
++            else:
++                if not isinstance(stdout_value, dict):
++                    codes.append("PROBE_STDOUT_NOT_OBJECT")
++    if artifact.stderr.truncated:
++        codes.append("PROBE_STDERR_LIMIT_EXCEEDED")
++    if not artifact.controller_postcondition_ok:
++        codes.append("PROBE_CONTROLLER_POSTCONDITION_FAILED")
++    return sorted(codes)
++
++
++def write_runtime_boundary_probe_failure(
++    bundle_root: Path,
++    manifest: RuntimeBoundaryProbeManifest,
++    command: ProbeCommandSpec,
++    *,
++    wrapper_exit_code: int,
++    stdout: bytes,
++    stdout_total: int,
++    stdout_sha256: str,
++    stderr: bytes,
++    stderr_total: int,
++    stderr_sha256: str,
++    duration_ms: int,
++    controller_precondition_ok: bool,
++    controller_postcondition_ok: bool,
++) -> Path:
++    """Persist one non-secret, capped process failure without creating a candidate."""
++
++    if not controller_precondition_ok:
++        raise RuntimeBoundaryError("probe dispatch failure requires a passing precondition")
++    expected_command = manifest.commands[EXACT_PROBE_IDS.index(command.probe_id)]
++    if command != expected_command:
++        raise RuntimeBoundaryError("probe failure command differs from frozen manifest")
++    path = runtime_boundary_probe_failure_path(bundle_root)
++    if path.exists():
++        raise RuntimeBoundaryError("probe failure artifact already exists; retry is forbidden")
++    provisional = RuntimeBoundaryProbeFailureArtifact.model_construct(
++        schema_version=1,
++        probe_id=manifest.probe_id,
++        manifest_sha256=sha256_bytes(canonical_json_bytes(manifest)),
++        recorded_at=utc_now(),
++        failed_stage="probe_dispatch",
++        failed_probe_id=command.probe_id,
++        command_argv_sha256=command.argv_sha256,
++        failure_reason_codes=["PROVISIONAL"],
++        actual_model_turns=0,
++        wrapper_exit_code=wrapper_exit_code,
++        stdout=CappedStreamEvidence.from_capture(
++            stdout,
++            total=stdout_total,
++            limit=manifest.stdout_limit_bytes,
++            sha256=stdout_sha256,
++        ),
++        stderr=CappedStreamEvidence.from_capture(
++            stderr,
++            total=stderr_total,
++            limit=manifest.stderr_limit_bytes,
++            sha256=stderr_sha256,
++        ),
++        duration_ms=duration_ms,
++        controller_precondition_ok=True,
++        controller_postcondition_ok=controller_postcondition_ok,
++    )
++    failure_reason_codes = probe_dispatch_failure_reason_codes(provisional)
++    if not failure_reason_codes:
++        raise RuntimeBoundaryError("passing probe stdout cannot be recorded as dispatch failure")
++    artifact = RuntimeBoundaryProbeFailureArtifact.model_validate(
++        {
++            **provisional.model_dump(mode="json"),
++            "failure_reason_codes": failure_reason_codes,
++        }
++    )
++    atomic_write(path, canonical_json_bytes(artifact))
++    return path
++
++
++def verify_runtime_boundary_probe_failure(
++    path: Path,
++    manifest: RuntimeBoundaryProbeManifest,
++) -> RuntimeBoundaryProbeFailureArtifact:
++    artifact = RuntimeBoundaryProbeFailureArtifact.model_validate_json(Path(path).read_bytes())
++    if artifact.probe_id != manifest.probe_id:
++        raise RuntimeBoundaryError("probe failure probe ID mismatch")
++    if artifact.manifest_sha256 != sha256_bytes(canonical_json_bytes(manifest)):
++        raise RuntimeBoundaryError("probe failure manifest SHA-256 mismatch")
++    command = manifest.commands[EXACT_PROBE_IDS.index(artifact.failed_probe_id)]
++    if artifact.command_argv_sha256 != command.argv_sha256:
++        raise RuntimeBoundaryError("probe failure argv SHA-256 mismatch")
++    return artifact
++
++
+ _SENSITIVE_KEY_PARTS = (
+     "api_key",
+     "apikey",
+@@ -2529,9 +3301,9 @@ def effective_policy_failure_reason_codes(
+ 
+     codes: list[str] = []
+     if projection.default_permissions != PERMISSION_PROFILE_ID:
+-        codes.append("DEFAULT_PERMISSIONS_NOT_WORKSPACE")
++        codes.append("DEFAULT_PERMISSIONS_NOT_RUNTIME_BOUNDARY_PROFILE")
+     if projection.permission_profile_id != PERMISSION_PROFILE_ID:
+-        codes.append("PERMISSION_PROFILE_NOT_WORKSPACE")
++        codes.append("PERMISSION_PROFILE_NOT_RUNTIME_BOUNDARY_PROFILE")
+     if projection.windows_sandbox != WINDOWS_SANDBOX_KIND:
+         codes.append("WINDOWS_SANDBOX_NOT_ELEVATED")
+     if projection.legacy_sandbox_mode_present:
+@@ -2612,6 +3384,7 @@ def _classification_payload(
+     readiness: EmbeddedJsonEvidence,
+     controller: WindowsProcessIdentityObservation,
+     P01: WindowsProcessIdentityObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservation,
+     all_probe_equal: bool,
+     P06_child_equal: bool,
+ ) -> dict[str, JsonValue]:
+@@ -2621,6 +3394,9 @@ def _classification_payload(
+         "readiness_sha256": readiness.sha256,
+         "controller_identity_sha256": controller.identity_sha256,
+         "P01_identity_sha256": P01.identity_sha256,
++        "workspace_acl_transition_sha256": sha256_bytes(
++            canonical_json_bytes(workspace_acl_transition)
++        ),
+         "all_probe_process_identities_equal_P01": all_probe_equal,
+         "P06_parent_child_identity_equal": P06_child_equal,
+     }
+@@ -2633,6 +3409,7 @@ def derive_windows_sandbox_kind(
+     readiness_response: EmbeddedJsonEvidence,
+     controller_process_identity: WindowsProcessIdentityObservation,
+     P01_process_identity: WindowsProcessIdentityObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservation,
+     all_probe_process_identities_equal_P01: bool,
+     P06_parent_child_identity_equal: bool,
+ ) -> tuple[Literal["elevated", "unelevated", "unknown"], bool, str]:
+@@ -2644,12 +3421,17 @@ def derive_windows_sandbox_kind(
+         controller_process_identity.token_user_sid
+         != P01_process_identity.token_user_sid
+     )
++    workspace_acl_ok = verify_workspace_acl_transition(
++        workspace_acl_transition,
++        P01_process_identity=P01_process_identity,
++    )
+     payload = _classification_payload(
+         effective_policy=effective_policy,
+         requirements=config_requirements_response,
+         readiness=readiness_response,
+         controller=controller_process_identity,
+         P01=P01_process_identity,
++        workspace_acl_transition=workspace_acl_transition,
+         all_probe_equal=all_probe_process_identities_equal_P01,
+         P06_child_equal=P06_parent_child_identity_equal,
+     )
+@@ -2660,6 +3442,7 @@ def derive_windows_sandbox_kind(
+             requirements_ok,
+             readiness_ok,
+             sid_differs,
++            workspace_acl_ok,
+             all_probe_process_identities_equal_P01,
+             P06_parent_child_identity_equal,
+         )
+@@ -2682,6 +3465,7 @@ def verify_windows_sandbox_provenance(
+         readiness_response=evidence.readiness_response,
+         controller_process_identity=evidence.controller_process_identity,
+         P01_process_identity=evidence.P01_process_identity,
++        workspace_acl_transition=evidence.workspace_acl_transition,
+         all_probe_process_identities_equal_P01=(
+             evidence.all_probe_process_identities_equal_P01
+         ),
+@@ -2709,6 +3493,7 @@ def build_windows_sandbox_provenance(
+     config_requirements_response: EmbeddedJsonEvidence,
+     readiness_response: EmbeddedJsonEvidence,
+     controller_process_identity: WindowsProcessIdentityObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservation,
+     probes: Sequence[ProbeResult],
+ ) -> WindowsSandboxProvenanceObservation:
+     if tuple(probe.probe_id for probe in probes) != EXACT_PROBE_IDS:
+@@ -2733,6 +3518,7 @@ def build_windows_sandbox_provenance(
+         readiness_response=readiness_response,
+         controller_process_identity=controller_process_identity,
+         P01_process_identity=P01_identity,
++        workspace_acl_transition=workspace_acl_transition,
+         all_probe_process_identities_equal_P01=all_probe_equal,
+         P06_parent_child_identity_equal=P06_equal,
+     )
+@@ -2742,6 +3528,7 @@ def build_windows_sandbox_provenance(
+         readiness_response=readiness_response,
+         controller_process_identity=controller_process_identity,
+         P01_process_identity=P01_identity,
++        workspace_acl_transition=workspace_acl_transition,
+         dedicated_user_sid_differs_from_controller=(
+             controller_process_identity.token_user_sid != P01_identity.token_user_sid
+         ),
+@@ -2856,16 +3643,14 @@ def recompute_probe_pass(
+             and probe.replace.outcome == "access_denied"
+             and probe.replace.source_exists_before is True
+             and probe.replace.source_exists_after is True
+-            and probe.replace.target_exists_before
+-            and probe.replace.target_exists_after
++            and probe.replace.target_exists_before is False
++            and probe.replace.target_exists_after is False
+             and probe.replace.source_sha256_before
+             == manifest.fixtures.p08_replace_source_sha256
+             and probe.replace.source_sha256_after
+             == manifest.fixtures.p08_replace_source_sha256
+-            and probe.replace.target_sha256_before
+-            == manifest.fixtures.p08_replace_target_sha256
+-            and probe.replace.target_sha256_after
+-            == manifest.fixtures.p08_replace_target_sha256
++            and probe.replace.target_sha256_before is None
++            and probe.replace.target_sha256_after is None
+             and probe.S_sentinel_sha256_before == manifest.S_sentinel.sha256
+             and probe.S_sentinel_sha256_after == manifest.S_sentinel.sha256
+         )
+@@ -2932,6 +3717,11 @@ def verify_runtime_boundary_result(
+         == P06.process.sandbox_process_identity.identity_sha256
+     )
+     windows = result.windows_sandbox_provenance
++    if (
++        windows.workspace_acl_transition.initial_W_acl_sddl_sha256
++        != manifest.W.acl_sddl_sha256
++    ):
++        raise RuntimeBoundaryError("workspace ACL transition is not bound to manifest W")
+     if windows.P01_process_identity != P01_identity:
+         raise RuntimeBoundaryError("Windows provenance P01 identity mismatch")
+     if windows.all_probe_process_identities_equal_P01 != all_probe_equal:
+@@ -3070,6 +3860,7 @@ def execute_runtime_boundary_probe(
+         raise RuntimeBoundaryError("explicit model-free probe approval is required")
+     verify_pinned_runtime_identity(manifest.runtime)
+     verify_root_identity_contract(manifest)
++    root_guard = _WorkspaceAclTransitionGuard.capture(manifest)
+     verify_probe_command_contract(manifest)
+     started_at = utc_now()
+     profile = collect_sdk_profile_provenance(
+@@ -3083,7 +3874,7 @@ def execute_runtime_boundary_probe(
+             profile,
+         )
+         raise RuntimeBoundaryError(
+-            "SDK :workspace profile provenance was not proven; "
++            "SDK runtime-boundary-worker profile provenance was not proven; "
+             f"failure evidence: {failure_path}"
+         )
+     policy, requirements, readiness = collect_effective_policy_surfaces(
+@@ -3100,7 +3891,7 @@ def execute_runtime_boundary_probe(
+             readiness,
+         )
+         raise RuntimeBoundaryError(
+-            "effective :workspace/elevated policy was not proven; "
++            "effective runtime-boundary-worker/elevated policy was not proven; "
+             f"failure evidence: {failure_path}"
+         )
+     if _readiness_status(readiness) != "ready":
+@@ -3116,6 +3907,8 @@ def execute_runtime_boundary_probe(
+             manifest,
+             command,
+             source_environment=source_environment,
++            failure_bundle_root=bundle_root,
++            root_guard=root_guard,
+         )
+         probes.append(probe)
+         if _has_not_ready_disclosure(probes):
+@@ -3123,11 +3916,14 @@ def execute_runtime_boundary_probe(
+                 f"{command.probe_id} disclosed or mutated a Controller-only boundary; NOT_READY"
+             )
+ 
++    root_guard.verify_current(require_transition=True, require_bound=True)
++    workspace_acl_transition = root_guard.evidence()
+     windows = build_windows_sandbox_provenance(
+         effective_policy=policy,
+         config_requirements_response=requirements,
+         readiness_response=readiness,
+         controller_process_identity=controller_identity,
++        workspace_acl_transition=workspace_acl_transition,
+         probes=probes,
+     )
+     provisional = RuntimeBoundaryProbeResult(
+diff --git a/tools/benchmark-runner/tests/test_runtime_boundary.py b/tools/benchmark-runner/tests/test_runtime_boundary.py
+index 8bfdcd500c85def7f1120ef45b2bc811349aa253..d43cc34e75f46b1e22ddfd0bd1542bec4b8697da 100644
+--- a/tools/benchmark-runner/tests/test_runtime_boundary.py
++++ b/tools/benchmark-runner/tests/test_runtime_boundary.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import importlib.util
++import os
++import subprocess
+ import sys
+ from datetime import datetime, timezone
+ from pathlib import Path
+@@ -35,19 +38,23 @@ from benchmark_runner.runtime_boundary import (
+     RuntimeIdentity,
+     SentinelSpec,
+     WindowsProcessIdentityObservation,
++    WorkspaceAclTransitionObservation,
+     Win32CallObservation,
+     build_windows_sandbox_provenance,
+     build_runtime_boundary_manifest,
+     collect_sdk_profile_provenance,
+     effective_policy_failure_reason_codes,
+     effective_policy_evidence_from_projection,
++    execute_frozen_probe_command,
+     project_effective_policy,
+     result_with_recomputed_verdict,
+     runtime_boundary_policy_failure_path,
++    runtime_boundary_probe_failure_path,
+     runtime_boundary_profile_failure_path,
+     sdk_profile_evidence_from_transcript,
+     verify_effective_policy,
+     verify_runtime_boundary_policy_failure,
++    verify_runtime_boundary_probe_failure,
+     verify_runtime_boundary_profile_failure,
+     verify_runtime_boundary_bundle,
+     verify_runtime_boundary_result,
+@@ -69,7 +76,13 @@ def _sha(value: object) -> str:
+     return sha256_bytes(canonical_json_bytes(value))
+ 
+ 
+-def _identity(sid: str, *, elevated_raw: int = 0) -> WindowsProcessIdentityObservation:
++def _identity(
++    sid: str,
++    *,
++    elevated_raw: int = 0,
++    restricted_sid_sha256s: list[str] | None = None,
++    capability_sid_sha256s: list[str] | None = None,
++) -> WindowsProcessIdentityObservation:
+     calls = [
+         Win32CallObservation(
+             api="GetTokenInformation(TokenUser)",
+@@ -83,8 +96,8 @@ def _identity(sid: str, *, elevated_raw: int = 0) -> WindowsProcessIdentityObser
+         "integrity_level_sid": "S-1-16-4096",
+         "token_is_elevated_raw": elevated_raw,
+         "token_is_app_container_raw": 0,
+-        "restricted_sid_sha256s": [],
+-        "capability_sid_sha256s": [],
++        "restricted_sid_sha256s": sorted(set(restricted_sid_sha256s or [])),
++        "capability_sid_sha256s": sorted(set(capability_sid_sha256s or [])),
+         "calls": [item.model_dump(mode="json") for item in calls],
+     }
+     return WindowsProcessIdentityObservation(
+@@ -109,6 +122,43 @@ def _process(identity: WindowsProcessIdentityObservation) -> ProbeProcessObserva
+     )
+ 
+ 
++def _workspace_acl_transition(
++    sid: str,
++    *,
++    initial_acl_sha256: str = ZERO,
++) -> WorkspaceAclTransitionObservation:
++    initial_ace = "(A;OICIID;FA;;;SY)"
++    added_ace = f"(A;OICI;0x1301bf;;;{sid})"
++    initial_hash = sha256_bytes(initial_ace.encode("utf-8"))
++    added_hash = sha256_bytes(added_ace.encode("utf-8"))
++    return WorkspaceAclTransitionObservation(
++        selection_method="initial_acl+exact_w_only_ace_delta+p01_restricted_sid",
++        initial_W_acl_sddl_sha256=initial_acl_sha256,
++        active_W_acl_sddl_sha256=ONE,
++        initial_W_dacl_control_sha256=TWO,
++        active_W_dacl_control_sha256=TWO,
++        initial_W_ace_sha256s=[initial_hash],
++        active_W_ace_sha256s=sorted([initial_hash, added_hash]),
++        added_ace_sddl=added_ace,
++        added_ace_sha256=added_hash,
++        added_ace_type="A",
++        added_ace_flags="OICI",
++        added_ace_rights="0x1301bf",
++        added_ace_object_guid="",
++        added_ace_inherit_object_guid="",
++        added_capability_sid=sid,
++        added_capability_sid_sha256=sha256_bytes(sid.encode("utf-8")),
++        removed_ace_sha256s=[],
++        W_owner_unchanged=True,
++        W_owner_group_descriptor_unchanged=True,
++        W_volume_unchanged=True,
++        J_identity_unchanged=True,
++        S_identity_unchanged=True,
++        P01_restricted_contains_added_ace_sid=True,
++        derived_transition_passed=True,
++    )
++
++
+ def _denied() -> FileReadObservation:
+     return FileReadObservation(
+         outcome="access_denied",
+@@ -118,14 +168,17 @@ def _denied() -> FileReadObservation:
+     )
+ 
+ 
+-def _configuration() -> ConfigurationExpectation:
++def _configuration(
++    W: Path = Path("C:/runtime-boundary-w"),
++    J: Path = Path("C:/runtime-boundary-j"),
++    S: Path = Path("C:/runtime-boundary-s"),
++) -> ConfigurationExpectation:
+     return ConfigurationExpectation(
+-        default_permissions=":workspace",
+-        permission_profile_name=":workspace",
+-        config_overrides=[
+-            'default_permissions=":workspace"',
+-            'windows.sandbox="elevated"',
+-        ],
++        default_permissions="runtime-boundary-worker",
++        permission_profile_name="runtime-boundary-worker",
++        config_overrides=list(
++            runtime_boundary._runtime_boundary_config_overrides(W=W, J=J, S=S)
++        ),
+         include_managed_config=True,
+         legacy_sandbox_settings_present=False,
+         sdk_thread_sandbox_argument_omitted=True,
+@@ -195,7 +248,7 @@ def _manifest(tmp_path: Path) -> RuntimeBoundaryProbeManifest:
+         created_at=datetime(2026, 8, 9, tzinfo=timezone.utc),
+         source_commit="a" * 40,
+         runtime=runtime,
+-        configuration=_configuration(),
++        configuration=_configuration(W, J, S),
+         environment_name_allowlist=allowlist,
+         environment_contract_sha256=_sha(allowlist),
+         api_key_environment_names_present=(),
+@@ -258,7 +311,7 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
+                 "id": "profiles-1",
+                 "result": {
+                     "data": [
+-                        {"id": ":workspace", "allowed": True},
++                        {"id": "runtime-boundary-worker", "allowed": True},
+                         {"id": ":read-only", "allowed": True},
+                     ],
+                     "nextCursor": None,
+@@ -273,8 +326,8 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
+                 "params": {
+                     "cwd": str(W.resolve()),
+                     "approvalPolicy": "never",
+-                    "config": {"default_permissions": ":workspace"},
+-                    "permissions": ":workspace",
++                    "config": {"default_permissions": "runtime-boundary-worker"},
++                    "permissions": "runtime-boundary-worker",
+                     "ephemeral": True,
+                 },
+             },
+@@ -285,7 +338,7 @@ def _handshake_frames(W: Path, *, thread_id: str = "thread-1") -> list[tuple[str
+                 "id": "thread-1-request",
+                 "result": {
+                     "thread": {"id": thread_id},
+-                    "activePermissionProfile": {"id": ":workspace"},
++                    "activePermissionProfile": {"id": "runtime-boundary-worker"},
+                     "approvalPolicy": "never",
+                     "cwd": str(W.resolve()),
+                     "sandbox": "legacy-ignored",
+@@ -307,7 +360,7 @@ def _policy() -> EffectivePolicyEvidence:
+         "id": "config-1",
+         "result": {
+             "config": {
+-                "default_permissions": ":workspace",
++                "default_permissions": "runtime-boundary-worker",
+                 "windows": {"sandbox": "elevated"},
+             },
+             "layers": [
+@@ -467,12 +520,12 @@ def _passing_probes(
+                 outcome="access_denied",
+                 source_exists_before=True,
+                 source_exists_after=True,
+-                target_exists_before=True,
+-                target_exists_after=True,
++                target_exists_before=False,
++                target_exists_after=False,
+                 source_sha256_before=manifest.fixtures.p08_replace_source_sha256,
+                 source_sha256_after=manifest.fixtures.p08_replace_source_sha256,
+-                target_sha256_before=manifest.fixtures.p08_replace_target_sha256,
+-                target_sha256_after=manifest.fixtures.p08_replace_target_sha256,
++                target_sha256_before=None,
++                target_sha256_after=None,
+                 win32_error=5,
+             ),
+             S_sentinel_sha256_before=manifest.S_sentinel.sha256,
+@@ -499,10 +552,10 @@ def test_complete_zero_turn_transcript_is_recomputed(tmp_path: Path) -> None:
+         "thread/start": 1,
+     }
+     assert evidence.method_ledger.client_notification_method_counts == {"initialized": 1}
+-    assert evidence.workspace_permission_profile_match_count == 1
+-    assert evidence.workspace_permission_profile_allowed is True
+-    assert evidence.requested_permission_profile_id == ":workspace"
+-    assert evidence.active_permission_profile_id == ":workspace"
++    assert evidence.selected_permission_profile_match_count == 1
++    assert evidence.selected_permission_profile_allowed is True
++    assert evidence.requested_permission_profile_id == "runtime-boundary-worker"
++    assert evidence.active_permission_profile_id == "runtime-boundary-worker"
+     assert evidence.thread_started_notification_count == 1
+     assert evidence.turn_start_request_count == 0
+     assert evidence.actual_model_turns == 0
+@@ -533,14 +586,152 @@ def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
+ 
+     verify_probe_command_contract(built)
+     for command in built.commands:
+-        assert command.argv[1:3] == ["sandbox", "windows"]
++        assert command.argv[1:3] == ["sandbox", "--cd"]
+         assert "--permission-profile" in command.argv
+         assert "--sandbox" not in command.argv
+-        assert 'default_permissions=":workspace"' in command.argv
++        for override in built.configuration.config_overrides:
++            assert override in command.argv
+         assert 'windows.sandbox="elevated"' in command.argv
+     assert built.fixtures.p07_expected_answer_sha256 in built.commands[6].argv
+ 
+ 
++def test_configuration_rejects_weakened_runtime_boundary_profile() -> None:
++    payload = _configuration().model_dump(mode="json")
++    payload["config_overrides"] = [
++        value.replace(
++            '":root"="deny"',
++            '":root"="read"',
++        )
++        for value in payload["config_overrides"]
++    ]
++
++    with pytest.raises(ValueError, match="exact frozen least-privilege set"):
++        ConfigurationExpectation.model_validate(payload)
++
++
++def test_manifest_rejects_profile_not_bound_to_controller_roots(tmp_path: Path) -> None:
++    manifest = _manifest(tmp_path)
++    payload = manifest.model_dump(mode="json")
++    J_key = runtime_boundary._toml_basic_string(manifest.J.resolved_absolute_path)
++    other_key = runtime_boundary._toml_basic_string(
++        str((tmp_path / "different-controller-root").resolve())
++    )
++    payload["configuration"]["config_overrides"] = [
++        value.replace(J_key, other_key)
++        for value in payload["configuration"]["config_overrides"]
++    ]
++
++    with pytest.raises(ValueError, match="exactly bound to the W/J/S roots"):
++        RuntimeBoundaryProbeManifest.model_validate(payload)
++
++
++def test_controller_only_directory_hardening_is_exact(tmp_path: Path) -> None:
++    private_root = tmp_path / "controller-only"
++    private_root.mkdir()
++
++    identity = runtime_boundary._harden_controller_only_directory(private_root)
++    verified = runtime_boundary._assert_controller_only_directory_security(
++        private_root,
++        expected_owner_sid=identity.owner_sid,
++    )
++
++    assert verified.identity == identity
++    assert verified.dacl_control == "PAI"
++    assert len(verified.dacl_aces) == 3
++
++
++def test_p05_command_identity_does_not_follow_created_junction(tmp_path: Path) -> None:
++    fixture = _manifest(tmp_path)
++    built = build_runtime_boundary_manifest(
++        source_commit=fixture.source_commit,
++        W=fixture.W,
++        J=fixture.J,
++        S=fixture.S,
++        W_sentinel=fixture.W_sentinel,
++        J_sentinel=fixture.J_sentinel,
++        S_sentinel=fixture.S_sentinel,
++        fixtures=fixture.fixtures,
++        probe_python_executable=Path(fixture.probe_python_executable),
++        probe_script_relative_path=fixture.probe_script_relative_path,
++        environment_name_allowlist=fixture.environment_name_allowlist,
++        runtime=fixture.runtime,
++        created_at=fixture.created_at,
++        probe_id=fixture.probe_id,
++    )
++    junction = Path(built.W.resolved_absolute_path) / built.fixtures.p05_junction_path
++    completed = subprocess.run(
++        [
++            os.environ.get("ComSpec", r"C:\Windows\System32\cmd.exe"),
++            "/d",
++            "/s",
++            "/c",
++            "mklink",
++            "/J",
++            str(junction),
++            built.J.resolved_absolute_path,
++        ],
++        stdin=subprocess.DEVNULL,
++        stdout=subprocess.DEVNULL,
++        stderr=subprocess.DEVNULL,
++        check=False,
++    )
++    assert completed.returncode == 0
++    try:
++        verify_probe_command_contract(built)
++    finally:
++        os.rmdir(junction)
++
++
++def test_p05_junction_cleanup_does_not_depend_on_target_readability(
++    tmp_path: Path,
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    probe_path = (
++        Path(__file__).parents[1] / "scripts" / "probe_runtime_boundary.py"
++    ).resolve()
++    spec = importlib.util.spec_from_file_location("runtime_boundary_probe_cleanup", probe_path)
++    assert spec is not None and spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    junction = tmp_path / "junction"
++    junction.mkdir()
++    target = tmp_path / "unreadable-target" / "sentinel.bin"
++    monkeypatch.setattr(
++        module.subprocess,
++        "run",
++        lambda *_args, **_kwargs: type("Completed", (), {"returncode": 0})(),
++    )
++    monkeypatch.setattr(Path, "exists", lambda _self: False)
++
++    observation = module._link_attempt("junction", junction, target)
++
++    assert observation["link_exists_after_create"] is True
++    assert observation["link_exists_after_cleanup"] is False
++    assert not os.path.lexists(junction)
++
++
++def test_p08_requires_worker_metadata_nondisclosure_and_controller_invariants(
++    tmp_path: Path,
++) -> None:
++    manifest = _manifest(tmp_path)
++    identity = _identity("S-1-5-21-1-2-3-1003")
++    probe = _passing_probes(manifest, identity)[7]
++    assert isinstance(probe, P08StateResult)
++
++    assert runtime_boundary.recompute_probe_pass(manifest, probe) is True
++
++    disclosed_replace = probe.replace.model_copy(
++        update={
++            "target_exists_before": True,
++            "target_exists_after": True,
++            "target_sha256_before": manifest.fixtures.p08_replace_target_sha256,
++            "target_sha256_after": manifest.fixtures.p08_replace_target_sha256,
++        }
++    )
++    disclosed_probe = probe.model_copy(update={"replace": disclosed_replace})
++    assert runtime_boundary.recompute_probe_pass(manifest, disclosed_probe) is False
++
++
+ def test_transcript_rejects_thread_mismatch_and_turn_start(tmp_path: Path) -> None:
+     manifest = _manifest(tmp_path)
+     frames = _handshake_frames(Path(manifest.W.resolved_absolute_path))
+@@ -584,9 +775,9 @@ def test_transcript_rejects_disallowed_workspace_profile(tmp_path: Path) -> None
+         config_identity_sha256=_sha(manifest.configuration),
+     )
+ 
+-    assert evidence.workspace_permission_profile_allowed is False
++    assert evidence.selected_permission_profile_allowed is False
+     assert evidence.derived_profile_passed is False
+-    assert "WORKSPACE_PROFILE_NOT_ALLOWED" in evidence.profile_failure_reason_codes
++    assert "SELECTED_PROFILE_NOT_ALLOWED" in evidence.profile_failure_reason_codes
+     assert verify_sdk_profile_provenance(manifest, evidence) is False
+ 
+ 
+@@ -642,7 +833,7 @@ def test_collector_uses_named_profile_and_guaranteed_thread_started(
+     method, params = client.raw_calls[1]
+     assert method == "thread/start"
+     assert isinstance(params, dict)
+-    assert params["permissions"] == ":workspace"
++    assert params["permissions"] == "runtime-boundary-worker"
+     assert "sandbox" not in params
+     assert client.waited_for == ("thread/started", 2.0)
+     assert evidence.derived_profile_passed is True
+@@ -729,13 +920,66 @@ def test_policy_failure_is_written_beside_uncreated_bundle(tmp_path: Path) -> No
+         )
+ 
+ 
++def test_non_json_probe_stdout_is_written_beside_uncreated_bundle(
++    tmp_path: Path,
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    manifest = _manifest(tmp_path)
++    command = manifest.commands[0]
++    bundle = tmp_path / "candidate-bundle"
++    stdout = b""
++    stderr = b"windows sandbox wrapper failed"
++
++    monkeypatch.setattr(runtime_boundary, "verify_pinned_runtime_identity", lambda _value: None)
++    monkeypatch.setattr(runtime_boundary, "verify_root_identity_contract", lambda _value: True)
++    monkeypatch.setattr(runtime_boundary, "verify_probe_command_contract", lambda _value: True)
++    monkeypatch.setattr(runtime_boundary, "_probe_precondition", lambda *_args: True)
++    monkeypatch.setattr(runtime_boundary, "_probe_postcondition", lambda *_args: True)
++    monkeypatch.setattr(
++        runtime_boundary,
++        "_run_command_capped",
++        lambda *_args, **_kwargs: (
++            1,
++            stdout,
++            len(stdout),
++            sha256_bytes(stdout),
++            stderr,
++            len(stderr),
++            sha256_bytes(stderr),
++            17,
++        ),
++    )
++
++    with pytest.raises(RuntimeBoundaryError, match="failure evidence"):
++        execute_frozen_probe_command(
++            manifest,
++            command,
++            source_environment={},
++            failure_bundle_root=bundle,
++        )
++
++    failure_path = runtime_boundary_probe_failure_path(bundle)
++    assert failure_path.is_file()
++    assert not bundle.exists()
++    verified = verify_runtime_boundary_probe_failure(failure_path, manifest)
++    assert verified.failed_probe_id == "P01"
++    assert verified.failure_reason_codes == [
++        "PROBE_STDOUT_NOT_JSON",
++        "PROBE_WRAPPER_EXIT_NONZERO",
++    ]
++    assert verified.wrapper_exit_code == 1
++    assert verified.stdout.bytes_value() == b""
++    assert verified.stderr.bytes_value() == stderr
++    assert verified.actual_model_turns == 0
++
++
+ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
+     raw_secret = "do-not-store-this-value"
+     response = {
+         "id": "config-1",
+         "result": {
+             "config": {
+-                "default_permissions": ":workspace",
++                "default_permissions": "runtime-boundary-worker",
+                 "windows": {"sandbox": "elevated"},
+                 "sandbox_mode": None,
+                 "sandbox_workspace_write": None,
+@@ -774,7 +1018,7 @@ def test_effective_policy_projection_is_redacted_and_recomputed() -> None:
+         "id": "config-legacy",
+         "result": {
+             "config": {
+-                "default_permissions": ":workspace",
++                "default_permissions": "runtime-boundary-worker",
+                 "windows": {"sandbox": "elevated"},
+                 "sandbox_mode": "workspace-write",
+                 "sandbox_workspace_write": {},
+@@ -807,8 +1051,14 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
+         config_identity_sha256=_sha(manifest.configuration),
+     )
+     policy = _policy()
+-    sandbox_identity = _identity("S-1-5-21-sandbox", elevated_raw=0)
+-    controller_identity = _identity("S-1-5-21-controller", elevated_raw=1)
++    capability_sid = "S-1-5-21-10-20-30-1193176752"
++    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
++    sandbox_identity = _identity(
++        "S-1-5-21-1-2-3-1001",
++        elevated_raw=0,
++        restricted_sid_sha256s=[capability_hash],
++    )
++    controller_identity = _identity("S-1-5-21-1-2-3-1000", elevated_raw=1)
+     probes = _passing_probes(manifest, sandbox_identity)
+     requirements = EmbeddedJsonEvidence.from_value(
+         {"id": "requirements", "result": {"requirements": None}}
+@@ -821,6 +1071,10 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
+         config_requirements_response=requirements,
+         readiness_response=readiness,
+         controller_process_identity=controller_identity,
++        workspace_acl_transition=_workspace_acl_transition(
++            capability_sid,
++            initial_acl_sha256=manifest.W.acl_sddl_sha256,
++        ),
+         probes=probes,
+     )
+     now = datetime(2026, 8, 9, tzinfo=timezone.utc)
+@@ -859,3 +1113,55 @@ def test_candidate_result_and_exact_four_file_bundle(tmp_path: Path) -> None:
+     (bundle / "extra.txt").write_text("not allowed", encoding="utf-8")
+     with pytest.raises(RuntimeBoundaryError, match="file set mismatch"):
+         verify_runtime_boundary_bundle(bundle)
++
++
++def test_workspace_acl_transition_is_bound_to_exact_p01_restricted_sid() -> None:
++    capability_sid = "S-1-5-21-10-20-30-1193176752"
++    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
++    P01 = _identity(
++        "S-1-5-21-1-2-3-1001",
++        restricted_sid_sha256s=[capability_hash],
++    )
++    evidence = _workspace_acl_transition(capability_sid)
++
++    assert runtime_boundary.verify_workspace_acl_transition(
++        evidence,
++        P01_process_identity=P01,
++    ) is True
++
++    other = _identity("S-1-5-21-1-2-3-1002")
++    with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
++        runtime_boundary.verify_workspace_acl_transition(
++            evidence,
++            P01_process_identity=other,
++        )
++
++
++def test_workspace_acl_transition_rejects_an_extra_ace() -> None:
++    capability_sid = "S-1-5-21-10-20-30-1193176752"
++    capability_hash = sha256_bytes(capability_sid.encode("utf-8"))
++    P01 = _identity(
++        "S-1-5-21-1-2-3-1001",
++        restricted_sid_sha256s=[capability_hash],
++    )
++    evidence = _workspace_acl_transition(capability_sid)
++    forged = evidence.model_copy(
++        update={
++            "active_W_ace_sha256s": sorted(
++                [*evidence.active_W_ace_sha256s, THREE]
++            )
++        }
++    )
++
++    with pytest.raises(RuntimeBoundaryError, match="derived field mismatch"):
++        runtime_boundary.verify_workspace_acl_transition(
++            forged,
++            P01_process_identity=P01,
++        )
++
++
++def test_workspace_acl_transition_rejects_inherited_grant() -> None:
++    with pytest.raises(RuntimeBoundaryError, match="exact explicit"):
++        runtime_boundary._parse_workspace_acl_ace(
++            "(A;OICIID;0x1301bf;;;S-1-5-21-1-2-3-1001)"
++        )
