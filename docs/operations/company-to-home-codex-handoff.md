@@ -1,13 +1,13 @@
 # 회사 로컬 → 집 로컬 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 2
+- revision: 3
 - 작성일: 2026-08-11
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
 - 최소 포함 qualification commit: `0112c20e6c59b1555ac444836b608af1e773d936`
 - 최소 포함 tree: `09b28fe9983bb43a1bb1b54a3db9b1b743f2dc48`
-- 시작 프롬프트: [집 Codex 동기화·Phase E 계획 시작 프롬프트](../prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md)
+- 시작 프롬프트: [집 Codex 동기화·P001~P015 원본 import 시작 프롬프트](../prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md)
 
 > 이 문서를 commit한 원격 tip은 위 qualification commit의 후손이다. 집에서는 문서 안에 자기 자신의 commit을 기록하려 하지 말고 `git fetch` 후 `origin/codex/phase-d-artifacts`의 최신 tip을 정본으로 사용한다. 단, 최신 tip에 `0112c20e...`가 반드시 포함돼야 한다.
 
@@ -16,16 +16,16 @@
 오늘 회사 PC에서 Profile R challenge를 실제 실험에 투입할 수 있는 수준까지 model-free 검증했다. 이제 집 PC의 기존 Codex 작업에 다음 상태를 그대로 넘긴다.
 
 1. Git이 관리하는 코드·문서·fixture·검증 projection을 회사와 집에서 같은 commit/tree로 맞춘다.
-2. 집에만 있는 P001~P015 원본은 보존한다. branch 동기화를 이유로 이동·삭제·재구성하지 않는다.
-3. Profile R의 다음 관문인 SS1↔B1 실제 비교 실행계획을 작성한다.
-4. 실행계획과 사용자 승인이 끝나기 전에는 실제 Worker·SDK thread·model turn을 시작하지 않는다.
+2. 집에만 있는 P001~P015 원본을 byte 그대로 Git 정본에 복사해 commit·push한다. 원본 위치의 파일은 이동·삭제·수정하지 않는다.
+3. 원본 push로 Profile I source gate와 model-free artifact 제작을 다시 진행할 수 있게 한다.
+4. Profile R과 Profile I가 모두 준비되고 실행계획과 사용자 승인이 끝나기 전에는 실제 Worker·SDK thread·model turn을 시작하지 않는다.
 
 동일화 대상은 Git이 추적하는 파일뿐이다. 다음 PC별 자료는 자동 동기화되지 않는다.
 
 - Codex 대화·세션·메모리
 - `.venv`, cache, 로컬 Python·Docker 설치
 - ChatGPT 로그인 상태
-- 집의 P001~P015 원본
+- 집의 P001~P015 원본 위치 자체. 다만 집 작업에서 이 원본의 byte-exact 복사본을 Git tracked source로 추가해야 한다.
 - 회사의 raw qualification root `C:\lao-r\profile-r-docker-matrix-r5`
 - 회사 Docker Engine 안에만 있는 built image
 
@@ -145,9 +145,13 @@ Docker Judge의 경계는 다음과 같다.
 
 - 회사 raw root `C:\lao-r\profile-r-docker-matrix-r5`의 47개 원시 evidence 파일
 - Docker Engine local image layer 자체
-- 집 P001~P015 원본
+- 집 P001~P015 원본. **이 항목은 집 후속 작업에서 반드시 Git에 byte 그대로 추가해 push해야 하는 미완료 전달물이다.**
 
-집에서 문서·계획 작업을 하는 데 이 raw와 image는 필요하지 않다. 실제 Judge를 재실행하려면 Dockerfile로 image를 새로 build하고 새 digest를 기록해야 한다. 회사 결과를 독립적으로 원시 재검증하려면 raw 47파일을 별도 안전 경로로 전달해야 하며 Git projection을 raw라고 간주하면 안 된다.
+remote repository는 `PUBLIC`이다. 사용자는 P001~P015의 SID·절대경로·thread ID·실행 metadata를 익명화하지 않고 원본 그대로 올리는 것을 명시적으로 승인했다. 같은 repository에 raw·reference·원인 기록이 있어도 Worker 실행 시 W allowlist에서 이 tracked source root를 제외하므로 시험 정답 노출과 동일하지 않다.
+
+단, 실제로 사용 가능한 API key·token·password·cookie·private key 같은 인증 비밀은 공개 저장소에 push하지 않는다. 일회용 독립 AI가 값 자체를 응답에 출력하지 않고 secret scanner로 검사하며, 실제 credential 후보가 한 개라도 있으면 해당 파일을 임의 수정·삭제·익명화하지 말고 전체 raw import를 중단해 파일 상대경로와 검출 종류만 보고한다. SID·경로·thread ID는 이 중단 조건이 아니다.
+
+회사 raw qualification 결과와 Docker local image는 이번 P001~P015 import 대상이 아니다. 실제 Judge를 집에서 재실행할 때는 Dockerfile로 image를 새로 build하고 새 digest를 기록한다.
 
 ## 5. branch 관계와 동기화 원칙
 
@@ -172,39 +176,47 @@ Docker Judge의 경계는 다음과 같다.
 
 집 local과 `origin/codex/phase-d-artifacts`의 HEAD·tree를 동일하게 만든다. 안전 절차는 시작 프롬프트에 고정했다.
 
-### 6.2 두 번째 단계: SS1↔B1 실행계획 후보
+### 6.2 두 번째 단계: P001~P015 원본 byte-exact import와 push
 
-동기화가 정상이고 working tree가 clean이면 다음 문서 작업을 진행한다.
+동기화가 정상이고 working tree가 clean이면 현재 Codex는 P001~P015 내용을 직접 읽지 않는다. 프로젝트 대화·설계·reference 맥락을 넘기지 않은 일회용 독립 AI 하나를 호출해 다음 작업만 맡긴다.
 
-- Profile R 한 개만 대상으로 한다.
-- 순서는 동결 명세대로 `SS1 → B1`이다.
-- 같은 W, R01~R08, 공개 Task, model/reasoning, turn ceiling, 시간 한도와 Docker Judge를 사용한다.
-- SS1은 한 thread를 유지한다.
-- B1은 Task별 Worker, 공개 중간 Check, 제한된 retry/resume를 사용한다.
-- 마지막 평가는 둘 다 같은 Docker Judge가 수행한다.
-- 최초 실행은 profile별 1 pair이며, 결과를 본 뒤 반복 수·prompt·판정 기준을 바꾸지 못하게 실행 전에 봉인할 필드를 정한다.
-- ChatGPT 구독 인증만 사용하고 API key를 사용하지 않는다.
-- 예상 model turn 수, 예상 소요시간, 중단 조건과 실패 분류를 명시한다.
+1. 집의 기존 inventory와 실제 원본을 읽기 전용으로 대조한다.
+2. P001~P015의 정확한 raw 파일 집합을 ordinal별로 식별한다.
+3. P013/P014는 ACL을 변경하지 않고 읽는다. OS가 거부하면 사용자에게 일회성 read-only 권한 승인을 요청하며 ACL을 재작성하지 않는다.
+4. 실제 credential을 값 출력 없이 검사한다. credential 후보가 있으면 import를 중단한다.
+5. credential 후보가 없으면 모든 raw byte를 수정·익명화·줄바꿈 변환 없이 `benchmarks/source-raw/runtime-boundary-phaseb-p001-p015-v1/raw/P001`~`P015`에 복사한다.
+6. `raw/** -text`를 적용해 Git 줄바꿈 변환을 막는다.
+7. ordinal·상대경로·크기·SHA-256·source inventory 결합을 기록한 index와 `files.sha256`을 만든다. 절대 source path는 새 index에 추가로 복제하지 않는다. 원본 파일 안에 이미 있는 절대경로는 수정하지 않는다.
+8. source와 tracked copy의 파일 집합·크기·SHA-256이 모두 같은지 독립 재계산한다.
+9. 응답에는 raw 내용, SID, thread ID, 절대경로 또는 인증 metadata 값을 출력하지 않고 ordinal별 파일 수·총 byte·aggregate hash·검증 결과만 반환한다.
 
-이 단계는 **계획 작성과 model-free 검증까지만**이다. 실제 SS1/B1 Worker, SDK thread, model turn, Docker qualification 반복은 사용자 승인을 받기 전 실행하지 않는다.
+일회용 AI가 끝나면 현재 Codex는 raw 내용을 열어보지 않고 생성된 manifest/hash와 Git file set만 기계적으로 확인한다. exact import root만 `git add -f`하고, code·Profile R·원본 위치의 다른 파일이 섞이지 않았는지 확인한 뒤 `codex/phase-d-artifacts`에 commit·push한다. push 후 local/remote commit·tree와 remote tracked raw file count를 다시 확인한다.
+
+### 6.3 세 번째 단계: Profile I 재개
+
+P001~P015 원본 commit이 원격에 존재하고 exact copy 검증이 끝난 뒤에만 원래 Phase D revision 2 명세를 따라 Profile I source intake를 재개한다. tracked raw root는 Controller/Judge source일 뿐 Worker W에 넣지 않는다. W에는 명세가 정한 Worker-visible 관측만 별도 투영하며, tracked raw root·reference·후속 원인 기록이 W에 포함되면 challenge를 거부한다.
+
+이번 집 후속의 필수 완료점은 **P001~P015 exact raw commit·push**다. 시간이 남으면 Profile I source intake와 model-free artifact 후보까지 진행할 수 있지만 실제 SS1/B1 Worker, SDK thread와 model turn은 사용자 승인을 받기 전 실행하지 않는다.
 
 ## 7. 아직 남은 일
 
-- Profile R SS1↔B1 실행계획 작성·검토·동결
-- 별도 사용자 승인 뒤 Profile R 최초 pair 실행
-- 결과에 따라 `CHALLENGE_TOO_EASY`, instance advantage, mechanism observation 또는 infrastructure failure로 정직하게 분류
-- Profile I P013/P014 protected raw 확인과 source gate closure
-- 독립 두 번째 profile이 준비된 뒤 반대 순서 `B1 → SS1` 실행
+- P001~P015 exact raw import commit·push
+- Profile I P013/P014 source 확인과 source gate closure
+- Profile I W/J·8 Task·reference·checker·Docker qualification
+- Profile R과 Profile I가 모두 ready인 뒤 SS1↔B1 실행계획 작성·검토·동결
+- 별도 사용자 승인 뒤 Profile R `SS1 → B1`, Profile I `B1 → SS1` 실행
 - 두 독립 profile 전에는 일반 route 결론이나 B1 채택 결론을 내리지 않음
 - Phase 결과와 branch 안정화 뒤 main 병합 검토
 
 ## 8. 중단선
 
-집 동기화·실행계획 작업 중 다음은 금지한다.
+집 동기화·원본 import 작업 중 다음은 금지한다.
 
-- 집 P001~P015 원본 이동·수정·재실행
+- 집 P001~P015 원본 위치의 파일 이동·수정·삭제·재실행. Git tracked import root로 byte-exact 복사하는 것은 필수 허용 작업이다.
 - reconstructed replay R3 부활
 - 회사 raw qualification 결과를 Git projection으로 재구성
+- P001~P015 익명화·요약·문서 기반 재구성
+- 실제 credential이 검출된 상태에서 public remote push
 - 실제 SS1/B1 Worker 실행
 - SDK thread·Codex model turn
 - API key 생성·요구·입력·출력
