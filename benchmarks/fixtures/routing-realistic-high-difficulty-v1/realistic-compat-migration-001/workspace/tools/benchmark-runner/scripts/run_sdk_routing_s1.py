@@ -1,0 +1,104 @@
+"""CLI for the frozen SDK routing S1 live calibration."""
+
+from __future__ import annotations
+
+import os
+import sys
+
+if not sys.flags.safe_path or os.environ.get("PYTHONPATH"):
+    raise SystemExit(
+        "S1 live controller requires 'python -P' and an empty PYTHONPATH"
+    )
+
+import argparse
+import json
+from pathlib import Path
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+RUNNER_SOURCE = REPOSITORY_ROOT / "tools" / "benchmark-runner" / "src"
+B1_SOURCE = REPOSITORY_ROOT / "stages" / "b1-sequential" / "src"
+for source in (str(B1_SOURCE), str(RUNNER_SOURCE)):
+    if source not in sys.path:
+        sys.path.insert(0, source)
+
+from benchmark_runner.routing_live import (  # noqa: E402
+    create_routing_s1_live_candidate,
+    export_routing_s1_live,
+    routing_s1_live_status,
+    run_next_routing_s1_live_cell,
+    verify_routing_s1_live_export,
+    verify_routing_s1_live_freeze,
+)
+
+
+SUITE_PATH = REPOSITORY_ROOT / "benchmarks" / "suites" / "sdk-routing-v1" / "suite.yaml"
+STAGE_PATH = SUITE_PATH.parent / "stages" / "s1-baseline.yaml"
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="SDK routing S1 live calibration")
+    parser.add_argument(
+        "command",
+        choices=["create", "verify-freeze", "run-next", "status", "export", "verify-export"],
+    )
+    parser.add_argument("--state-root", type=Path)
+    parser.add_argument("--artifact-root", type=Path)
+    parser.add_argument("--regression-record", type=Path)
+    parser.add_argument("--results-root", type=Path)
+    parser.add_argument("--export-root", type=Path)
+    parser.add_argument("--revision", type=int, default=1)
+    parser.add_argument("--confirm-model-usage", action="store_true")
+    return parser
+
+
+def _require(value: Path | None, message: str) -> Path:
+    if value is None:
+        raise SystemExit(message)
+    return value
+
+
+def main() -> int:
+    args = _parser().parse_args()
+    if args.command == "create":
+        result = create_routing_s1_live_candidate(
+            repository_root=REPOSITORY_ROOT,
+            suite_path=SUITE_PATH,
+            stage_path=STAGE_PATH,
+            state_root=_require(args.state_root, "create requires --state-root"),
+            artifact_root=_require(args.artifact_root, "create requires --artifact-root"),
+            regression_record_path=_require(
+                args.regression_record, "create requires --regression-record"
+            ),
+            benchmark_python=Path(sys.executable),
+            revision=args.revision,
+        )
+    elif args.command == "verify-freeze":
+        result = verify_routing_s1_live_freeze(
+            _require(args.artifact_root, "verify-freeze requires --artifact-root")
+        )
+    elif args.command == "run-next":
+        result = run_next_routing_s1_live_cell(
+            state_root=_require(args.state_root, "run-next requires --state-root"),
+            benchmark_python=Path(sys.executable),
+            confirm_model_usage=args.confirm_model_usage,
+        )
+    elif args.command == "status":
+        result = routing_s1_live_status(
+            _require(args.state_root, "status requires --state-root")
+        )
+    elif args.command == "export":
+        result = export_routing_s1_live(
+            state_root=_require(args.state_root, "export requires --state-root"),
+            results_root=_require(args.results_root, "export requires --results-root"),
+        )
+    else:
+        result = verify_routing_s1_live_export(
+            _require(args.export_root, "verify-export requires --export-root")
+        )
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

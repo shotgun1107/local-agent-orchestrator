@@ -1,0 +1,327 @@
+{
+  "$defs": {
+    "ExpectedWriteFiles": {
+      "additionalProperties": false,
+      "properties": {
+        "maximum": {
+          "minimum": 0,
+          "title": "Maximum",
+          "type": "integer"
+        },
+        "minimum": {
+          "minimum": 0,
+          "title": "Minimum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "title": "ExpectedWriteFiles",
+      "type": "object"
+    },
+    "FixtureComplexity": {
+      "additionalProperties": false,
+      "properties": {
+        "check_count": {
+          "minimum": 0,
+          "title": "Check Count",
+          "type": "integer"
+        },
+        "dependency_depth": {
+          "minimum": 1,
+          "title": "Dependency Depth",
+          "type": "integer"
+        },
+        "dependency_edges": {
+          "minimum": 0,
+          "title": "Dependency Edges",
+          "type": "integer"
+        },
+        "expected_write_files": {
+          "$ref": "#/$defs/ExpectedWriteFiles"
+        },
+        "failure_profile": {
+          "enum": [
+            "normal",
+            "omission_risk",
+            "compatibility_risk",
+            "injected"
+          ],
+          "title": "Failure Profile",
+          "type": "string"
+        },
+        "handoff_kind": {
+          "enum": [
+            "none",
+            "filesystem_implicit",
+            "declared_single",
+            "declared_multiple"
+          ],
+          "title": "Handoff Kind",
+          "type": "string"
+        },
+        "max_fan_in": {
+          "minimum": 0,
+          "title": "Max Fan In",
+          "type": "integer"
+        },
+        "scope_overlap": {
+          "enum": [
+            "not_applicable",
+            "disjoint",
+            "partial",
+            "shared"
+          ],
+          "title": "Scope Overlap",
+          "type": "string"
+        },
+        "solution_ambiguity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Solution Ambiguity",
+          "type": "string"
+        },
+        "task_count": {
+          "minimum": 1,
+          "title": "Task Count",
+          "type": "integer"
+        },
+        "verification_kind": {
+          "enum": [
+            "public_to_worker",
+            "post_hoc_property",
+            "judge_only_verified",
+            "judge_only_unverified",
+            "partial",
+            "human"
+          ],
+          "title": "Verification Kind",
+          "type": "string"
+        },
+        "worker_read_bytes": {
+          "minimum": 0,
+          "title": "Worker Read Bytes",
+          "type": "integer"
+        },
+        "worker_read_files": {
+          "minimum": 0,
+          "title": "Worker Read Files",
+          "type": "integer"
+        },
+        "write_modules": {
+          "minimum": 1,
+          "title": "Write Modules",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "task_count",
+        "dependency_depth",
+        "dependency_edges",
+        "max_fan_in",
+        "worker_read_files",
+        "worker_read_bytes",
+        "expected_write_files",
+        "write_modules",
+        "check_count",
+        "handoff_kind",
+        "scope_overlap",
+        "verification_kind",
+        "failure_profile",
+        "solution_ambiguity"
+      ],
+      "title": "FixtureComplexity",
+      "type": "object"
+    },
+    "FixtureManifestSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "fixture_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Fixture Ids",
+          "type": "array"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "fixture_ids"
+      ],
+      "title": "FixtureManifestSelection",
+      "type": "object"
+    },
+    "FixtureProfileDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "complexity": {
+          "$ref": "#/$defs/FixtureComplexity"
+        },
+        "fixture_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fixture_id",
+        "complexity"
+      ],
+      "title": "FixtureProfileDeclaration",
+      "type": "object"
+    },
+    "RoutingCellDeclaration": {
+      "additionalProperties": false,
+      "properties": {
+        "fixture_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "repetition": {
+          "const": 1,
+          "default": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "variant_id": {
+          "enum": [
+            "c2",
+            "b1"
+          ],
+          "title": "Variant Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fixture_id",
+        "variant_id"
+      ],
+      "title": "RoutingCellDeclaration",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "allowed_outcomes": {
+      "items": {
+        "enum": [
+          "CALIBRATION_PASS",
+          "CALIBRATION_STOP",
+          "CALIBRATION_INCONCLUSIVE"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Allowed Outcomes",
+      "type": "array"
+    },
+    "baseline_variant": {
+      "const": "c2",
+      "title": "Baseline Variant",
+      "type": "string"
+    },
+    "candidate_variants": {
+      "items": {
+        "const": "b1",
+        "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "title": "Candidate Variants",
+      "type": "array"
+    },
+    "cells": {
+      "items": {
+        "$ref": "#/$defs/RoutingCellDeclaration"
+      },
+      "minItems": 1,
+      "title": "Cells",
+      "type": "array"
+    },
+    "fixture_manifests": {
+      "items": {
+        "$ref": "#/$defs/FixtureManifestSelection"
+      },
+      "minItems": 1,
+      "title": "Fixture Manifests",
+      "type": "array"
+    },
+    "planned_live_model_turns": {
+      "minimum": 1,
+      "title": "Planned Live Model Turns",
+      "type": "integer"
+    },
+    "profiles": {
+      "items": {
+        "$ref": "#/$defs/FixtureProfileDeclaration"
+      },
+      "minItems": 1,
+      "title": "Profiles",
+      "type": "array"
+    },
+    "purpose": {
+      "const": "calibration_only",
+      "title": "Purpose",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "stage_id": {
+      "const": "s1-baseline",
+      "title": "Stage Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "implementation_candidate",
+        "frozen_before_execution"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "variants": {
+      "items": {
+        "enum": [
+          "c2",
+          "b1"
+        ],
+        "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Variants",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "stage_id",
+    "status",
+    "purpose",
+    "fixture_manifests",
+    "variants",
+    "baseline_variant",
+    "candidate_variants",
+    "profiles",
+    "cells",
+    "planned_live_model_turns",
+    "allowed_outcomes"
+  ],
+  "title": "RoutingStageManifest",
+  "type": "object"
+}

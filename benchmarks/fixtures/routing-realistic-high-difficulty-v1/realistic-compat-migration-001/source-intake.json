@@ -2,7 +2,7 @@
   "schema_version": 1,
   "snapshot_id": "realistic-compat-migration-001",
   "profile": "R",
-  "status": "SOURCE_VERIFIED_COMPOSITION_PENDING",
+  "status": "SOURCE_VERIFIED_COMPOSITION_CANDIDATE",
   "source_authority": "git_object_database",
   "base_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
   "base_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",

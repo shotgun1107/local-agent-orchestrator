@@ -1,0 +1,1063 @@
+{
+  "anonymization_mapping_sha256": "098a555430d01622985b962ee463d33fd4a8897d8bfbaa68b64967d5a990f04d",
+  "challenge_ready": false,
+  "file_count": 99,
+  "files": [
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/.orchestrator/capabilities.yaml",
+      "source_blob_oid": "31d630c251a48b5966c3293fcd15ce6254411665",
+      "source_sha256": "55a58702deb561d772df0c8980448b6181228c70d37b345c9b4f330f2108cbf0",
+      "source_size": 166,
+      "worker_sha256": "55a58702deb561d772df0c8980448b6181228c70d37b345c9b4f330f2108cbf0",
+      "worker_size": 166
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/.orchestrator/checks.yaml",
+      "source_blob_oid": "b3bda315c222bab5a973c9bc46a1791d95e0d2f5",
+      "source_sha256": "e1f9004d8473582ad3abe4e097cd46340256e729a56f5929836e178a252db416",
+      "source_size": 336,
+      "worker_sha256": "e1f9004d8473582ad3abe4e097cd46340256e729a56f5929836e178a252db416",
+      "worker_size": 336
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/.orchestrator/policies.yaml",
+      "source_blob_oid": "02825262678cbee543920e652cc6ce604465b7c5",
+      "source_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "source_size": 376,
+      "worker_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "worker_size": 376
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/.orchestrator/project.yaml",
+      "source_blob_oid": "81241636465cbef606833f10508e431b0963dd65",
+      "source_sha256": "2502cb83e961f4da220cd3567450bb81956df2d00076708aa0dc8623f122973b",
+      "source_size": 163,
+      "worker_sha256": "2502cb83e961f4da220cd3567450bb81956df2d00076708aa0dc8623f122973b",
+      "worker_size": 163
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/README.md",
+      "source_blob_oid": "adc40fccf0049e94f5c09ff02a56a7863fd28c9d",
+      "source_sha256": "5a4dd348a64c9f62dc605b71377169088e6b0506aa6972b2459cd32516ed9391",
+      "source_size": 216,
+      "worker_sha256": "5a4dd348a64c9f62dc605b71377169088e6b0506aa6972b2459cd32516ed9391",
+      "worker_size": 216
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/benchmark-run.yaml",
+      "source_blob_oid": "ba1abe4d4ba59d11838182025aeff19eeda1e60f",
+      "source_sha256": "035783b80503a39e1f63f2b8cb05db9da9b668f86c31133d9d2b0e9f46114095",
+      "source_size": 810,
+      "worker_sha256": "035783b80503a39e1f63f2b8cb05db9da9b668f86c31133d9d2b0e9f46114095",
+      "worker_size": 810
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/benchmark_checks/test_acceptance.py",
+      "source_blob_oid": "4d3fe4d773f23136adb9fe6276f11f4d61949beb",
+      "source_sha256": "d2f31760e9b6316bca4caf5f1c8d3f322197bc0bad18cd2fc17412919736e1aa",
+      "source_size": 315,
+      "worker_sha256": "d2f31760e9b6316bca4caf5f1c8d3f322197bc0bad18cd2fc17412919736e1aa",
+      "worker_size": 315
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/code-change/src/config.py",
+      "source_blob_oid": "9ac7e8d8d379b8234b95a981fa1dd72bcd643bac",
+      "source_sha256": "b03909885660fe876a57c95919184f6f9e88b8da8b2006e22930d87cd4e071a3",
+      "source_size": 114,
+      "worker_sha256": "b03909885660fe876a57c95919184f6f9e88b8da8b2006e22930d87cd4e071a3",
+      "worker_size": 114
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/.orchestrator/capabilities.yaml",
+      "source_blob_oid": "fe0136a1dbe4b9cce64ad1fe04c60147cb7ca9ff",
+      "source_sha256": "3a2874d213f95548792d623d1357897aba8578c2813d44e2eb7d9066cb0ef4fe",
+      "source_size": 169,
+      "worker_sha256": "3a2874d213f95548792d623d1357897aba8578c2813d44e2eb7d9066cb0ef4fe",
+      "worker_size": 169
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/.orchestrator/checks.yaml",
+      "source_blob_oid": "05eb35331f9c008abeb09eb4d68bff92a377ada3",
+      "source_sha256": "528689ffc81d4a5eaf4d8870205a8b84585e5dcf93a99dafd9bf6a834b38f762",
+      "source_size": 316,
+      "worker_sha256": "528689ffc81d4a5eaf4d8870205a8b84585e5dcf93a99dafd9bf6a834b38f762",
+      "worker_size": 316
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/.orchestrator/policies.yaml",
+      "source_blob_oid": "02825262678cbee543920e652cc6ce604465b7c5",
+      "source_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "source_size": 376,
+      "worker_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "worker_size": 376
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/.orchestrator/project.yaml",
+      "source_blob_oid": "b47cf704c0e715d05177ca48e7a28b5bd39642ab",
+      "source_sha256": "fcdf8b6663b825926d2698ccc84d622d1a31fd9231494950143a56266e99f973",
+      "source_size": 168,
+      "worker_sha256": "fcdf8b6663b825926d2698ccc84d622d1a31fd9231494950143a56266e99f973",
+      "worker_size": 168
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/README.md",
+      "source_blob_oid": "30ec36667ed710b1e73e0ac1538042eefc547ad3",
+      "source_sha256": "d14c935a9dc8d0802610c70e7e67707717f449716210eb488754990d129464ca",
+      "source_size": 211,
+      "worker_sha256": "d14c935a9dc8d0802610c70e7e67707717f449716210eb488754990d129464ca",
+      "worker_size": 211
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/benchmark-run.yaml",
+      "source_blob_oid": "ff064104f7b94dfb914661a6dfd522b8b5336354",
+      "source_sha256": "7f2d6680a2ba5f97f566635f7b85e66f097b934e5e6469aeac4dbf00e029987b",
+      "source_size": 844,
+      "worker_sha256": "7f2d6680a2ba5f97f566635f7b85e66f097b934e5e6469aeac4dbf00e029987b",
+      "worker_size": 844
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/benchmark_checks/check_report.py",
+      "source_blob_oid": "c5f0a261a6142958cd24ed82f99e13ae9a87a896",
+      "source_sha256": "b983fa9d4d2dd425d38eb0f053baf59255de64c4377cda201edea88ef991a656",
+      "source_size": 253,
+      "worker_sha256": "b983fa9d4d2dd425d38eb0f053baf59255de64c4377cda201edea88ef991a656",
+      "worker_size": 253
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/document-read/sources/notes.md",
+      "source_blob_oid": "982b227b32cb8a12e9b0f652c0bbcbe1b01a5423",
+      "source_sha256": "e621b1d9d816fcf74b28405561b447bbb3272e8bd75a60f02a6cbdc6860cbc13",
+      "source_size": 140,
+      "worker_sha256": "e621b1d9d816fcf74b28405561b447bbb3272e8bd75a60f02a6cbdc6860cbc13",
+      "worker_size": 140
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/.orchestrator/capabilities.yaml",
+      "source_blob_oid": "31d630c251a48b5966c3293fcd15ce6254411665",
+      "source_sha256": "55a58702deb561d772df0c8980448b6181228c70d37b345c9b4f330f2108cbf0",
+      "source_size": 166,
+      "worker_sha256": "55a58702deb561d772df0c8980448b6181228c70d37b345c9b4f330f2108cbf0",
+      "worker_size": 166
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/.orchestrator/checks.yaml",
+      "source_blob_oid": "c5ddd0cee409ae9ecc23f513817a68052c668dba",
+      "source_sha256": "ce9ebd1d0f641e12bd2f5e48dd92a02330cbb9a62a1da4abfdad7a023b615dfa",
+      "source_size": 499,
+      "worker_sha256": "ce9ebd1d0f641e12bd2f5e48dd92a02330cbb9a62a1da4abfdad7a023b615dfa",
+      "worker_size": 499
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/.orchestrator/policies.yaml",
+      "source_blob_oid": "02825262678cbee543920e652cc6ce604465b7c5",
+      "source_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "source_size": 376,
+      "worker_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "worker_size": 376
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/.orchestrator/project.yaml",
+      "source_blob_oid": "4f7e74de0c93795b46e88dbf2bde2c67e85a5a32",
+      "source_sha256": "3650a36566b85ff7ef02e6434e820633bd2dddfe23f1a104fde4a842a81df0c1",
+      "source_size": 174,
+      "worker_sha256": "3650a36566b85ff7ef02e6434e820633bd2dddfe23f1a104fde4a842a81df0c1",
+      "worker_size": 174
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/README.md",
+      "source_blob_oid": "9fb086ecf376e93448ff23338b94df9763a308a2",
+      "source_sha256": "0ab157bec191070791ce7d911f33af1b036765e7245a6af0bdd96ae7f6dfa7c7",
+      "source_size": 246,
+      "worker_sha256": "0ab157bec191070791ce7d911f33af1b036765e7245a6af0bdd96ae7f6dfa7c7",
+      "worker_size": 246
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/benchmark-run.yaml",
+      "source_blob_oid": "029e55a564aa31b29bc353b53d46441367f16c75",
+      "source_sha256": "046f38e68172de4795bf33e7fc069529ff7a5aa5e7ec6d2bb041dca7b8d54bac",
+      "source_size": 1793,
+      "worker_sha256": "046f38e68172de4795bf33e7fc069529ff7a5aa5e7ec6d2bb041dca7b8d54bac",
+      "worker_size": 1793
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/benchmark_checks/test_acceptance.py",
+      "source_blob_oid": "b78ca9b98e02a82e51e7eb1829d8aeadbaa489e1",
+      "source_sha256": "c9c62464f566ad250082d583a674b33cf56ea42234e93a6c398fca7e9db37893",
+      "source_size": 905,
+      "worker_sha256": "c9c62464f566ad250082d583a674b33cf56ea42234e93a6c398fca7e9db37893",
+      "worker_size": 905
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/benchmark_checks/test_stage1.py",
+      "source_blob_oid": "5b9baf70205f28eb62486ed0431adc1599777e65",
+      "source_sha256": "42a03238e72a2aad810451fce82ee12a3ad9a00d8038677ec831bab7ccd3365d",
+      "source_size": 678,
+      "worker_sha256": "42a03238e72a2aad810451fce82ee12a3ad9a00d8038677ec831bab7ccd3365d",
+      "worker_size": 678
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-code-change/src/config.py",
+      "source_blob_oid": "4c5efefcd5518eb5496f3f95629e0e80c0950ba1",
+      "source_sha256": "7f2e63677d24b2f58ef995bb78aa8a94dd98060bb04c9d57e4f506a34f1d75fe",
+      "source_size": 266,
+      "worker_sha256": "7f2e63677d24b2f58ef995bb78aa8a94dd98060bb04c9d57e4f506a34f1d75fe",
+      "worker_size": 266
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/.orchestrator/capabilities.yaml",
+      "source_blob_oid": "fe0136a1dbe4b9cce64ad1fe04c60147cb7ca9ff",
+      "source_sha256": "3a2874d213f95548792d623d1357897aba8578c2813d44e2eb7d9066cb0ef4fe",
+      "source_size": 169,
+      "worker_sha256": "3a2874d213f95548792d623d1357897aba8578c2813d44e2eb7d9066cb0ef4fe",
+      "worker_size": 169
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/.orchestrator/checks.yaml",
+      "source_blob_oid": "0a901d548a07aace0f8f73734b70fc74fc533c36",
+      "source_sha256": "943d373b02134f609b98380a30a61fb55550cc30c40385bcb9cb5279ce3ead26",
+      "source_size": 471,
+      "worker_sha256": "943d373b02134f609b98380a30a61fb55550cc30c40385bcb9cb5279ce3ead26",
+      "worker_size": 471
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/.orchestrator/policies.yaml",
+      "source_blob_oid": "02825262678cbee543920e652cc6ce604465b7c5",
+      "source_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "source_size": 376,
+      "worker_sha256": "d01d079f56cfc49ce7a013c4772d9b84c9a3f84fbed52d61c057a4aad6f621c9",
+      "worker_size": 376
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/.orchestrator/project.yaml",
+      "source_blob_oid": "3fa1a1460b7a8cc5d37797bd395683819a767a94",
+      "source_sha256": "e9b8969cd82bf9a29bef02809e82d6069e8f5826fe9eee67b9abad535f61921f",
+      "source_size": 174,
+      "worker_sha256": "e9b8969cd82bf9a29bef02809e82d6069e8f5826fe9eee67b9abad535f61921f",
+      "worker_size": 174
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/README.md",
+      "source_blob_oid": "558a1f45f0e29c9ea74f4232a5488f7941e3eb98",
+      "source_sha256": "a59b9eb032a720536ccb8474faf56c3ef0a580473576fc184a19eb0c5403c5d0",
+      "source_size": 278,
+      "worker_sha256": "a59b9eb032a720536ccb8474faf56c3ef0a580473576fc184a19eb0c5403c5d0",
+      "worker_size": 278
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/benchmark-run.yaml",
+      "source_blob_oid": "5f949ba8abc32bf35ddfb1c5880dbbd95144a716",
+      "source_sha256": "c8b0769ae00ce063411960fbf85b4fdde618f1fdd6085d42b0262299d3401660",
+      "source_size": 1856,
+      "worker_sha256": "c8b0769ae00ce063411960fbf85b4fdde618f1fdd6085d42b0262299d3401660",
+      "worker_size": 1856
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/benchmark_checks/check_evidence.py",
+      "source_blob_oid": "bdd3a47c7402784908a93b82c45388350de41301",
+      "source_sha256": "7fb78691983aac71a359ed6fa72f6032c7373e109ecd6d7a9ea5b8b5f149e5ef",
+      "source_size": 932,
+      "worker_sha256": "2def1e8485c0282c8767ef34ded339f7fbeb4a04ce53c4accd6a1fc95e1e9905",
+      "worker_size": 932
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/benchmark_checks/check_report.py",
+      "source_blob_oid": "42efe046c2636be992d7dc43ffe42eceb0d94dfc",
+      "source_sha256": "4b862dbb477ce895190329f1c257210c3d6655246f1db335debbd2144ee5f061",
+      "source_size": 1270,
+      "worker_sha256": "c3e7da601d30de9198eb3433dc8a85a04ffb2cac10b7364d91c17e19d553f64c",
+      "worker_size": 1270
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "benchmarks/fixtures/sequential-document/sources/notes.md",
+      "source_blob_oid": "a62bd8d434d1b9d5f8fbf284c5be0009f9807bca",
+      "source_sha256": "070e6cc77c96e8c6f450f39eec3e7ee97381b63ea503dbdbde68c80ad3c47475",
+      "source_size": 497,
+      "worker_sha256": "2a7348b1127db5e83455dd9e925187f6e7d891a4d031564d0ee84ad278e76e3a",
+      "worker_size": 497
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "benchmarks/manifests/b0-b1-frozen.yaml",
+      "source_blob_oid": "8deb655a662f435e9fe32cb661d5d0393e0bae47",
+      "source_sha256": "5633cb18a8a46db8737eaeeecdf7a99edaa201a9f98a2a4f5b455afd5cdb826a",
+      "source_size": 1333,
+      "worker_sha256": "ed7fdc3eda70dc0c921f1929164108873555197c11d3df959aa0a291d67cba12",
+      "worker_size": 1333
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "benchmarks/manifests/b0-b1-sequential-followup.yaml",
+      "source_blob_oid": "8dd6fc2162f3b051b4046b26046bf54120dfdba5",
+      "source_sha256": "0dc126ed559497c8c1399893c9b4365eb00868911ff5fe40566dec3ed0db9ddf",
+      "source_size": 1445,
+      "worker_sha256": "0b2fa2c715ddb08fafd1e693d0feed6fdebaf8a35505a79192e9ffeac8c858a5",
+      "worker_size": 1445
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/suites/sdk-routing-v1/complexity.schema.json",
+      "source_blob_oid": "a60ea8848298e93c8673515b04be578b3ab34c1d",
+      "source_sha256": "ef0e864bc470c19308425a1d08f418fe7648750ae355736aa999ffe8be9b59d6",
+      "source_size": 2910,
+      "worker_sha256": "ef0e864bc470c19308425a1d08f418fe7648750ae355736aa999ffe8be9b59d6",
+      "worker_size": 2910
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/suites/sdk-routing-v1/stage.schema.json",
+      "source_blob_oid": "1cce7fbda9d07977958b1e4e36e3d03bb5c2263f",
+      "source_sha256": "b54620770f857b6dbdf2729e48a1e484bf4cfa1b2817c0ab5f3de6281a37535a",
+      "source_size": 7442,
+      "worker_sha256": "b54620770f857b6dbdf2729e48a1e484bf4cfa1b2817c0ab5f3de6281a37535a",
+      "worker_size": 7442
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
+      "source_blob_oid": "eb4dc4df37fd7af050e7da14771c8011251455af",
+      "source_sha256": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2",
+      "source_size": 2829,
+      "worker_sha256": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2",
+      "worker_size": 2829
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/suites/sdk-routing-v1/suite.schema.json",
+      "source_blob_oid": "d05bf996604935366a79ae58792594b6d24b4153",
+      "source_sha256": "f50416bbba47623eb2c6c32ac882ec549b02a09cb978e298203c827650142a09",
+      "source_size": 1781,
+      "worker_sha256": "f50416bbba47623eb2c6c32ac882ec549b02a09cb978e298203c827650142a09",
+      "worker_size": 1781
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "benchmarks/suites/sdk-routing-v1/suite.yaml",
+      "source_blob_oid": "798e638b19dd975fe0d24a994a251071a841380c",
+      "source_sha256": "4e93b95867a9cf94d029852fb6ce64f9bd9c692e391ff5a535e084f3d709091f",
+      "source_size": 280,
+      "worker_sha256": "4e93b95867a9cf94d029852fb6ce64f9bd9c692e391ff5a535e084f3d709091f",
+      "worker_size": 280
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/.gitattributes",
+      "source_blob_oid": "7caaff0f63edaedba473199937d9ae2d4e26eaeb",
+      "source_sha256": "598aab03cb953c0e1474f3201062d865b04313176a8e648b761a5d2085ba9f0f",
+      "source_size": 57,
+      "worker_sha256": "598aab03cb953c0e1474f3201062d865b04313176a8e648b761a5d2085ba9f0f",
+      "worker_size": 57
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/.gitignore",
+      "source_blob_oid": "490a1976e3aa92a2661722bd7a1b22d20c433344",
+      "source_sha256": "439dba5aff2796ece7ff79dc8f67dec8ecd9a2191323bf2913dfc507f54c992f",
+      "source_size": 24,
+      "worker_sha256": "439dba5aff2796ece7ff79dc8f67dec8ecd9a2191323bf2913dfc507f54c992f",
+      "worker_size": 24
+    },
+    {
+      "mapping_ids": [
+        "repository-name",
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/README.md",
+      "source_blob_oid": "cadc29900cf722648a90cfc86d00e023fbb70296",
+      "source_sha256": "d2321fc41b0ebf3cb5c21227c5dab6a91e4240eb37721e6b00a48d6814fe3afe",
+      "source_size": 18368,
+      "worker_sha256": "15b4e470cde7a2e3568ca79e40373522ebea54630f858dc66e904da064d4dadb",
+      "worker_size": 18362
+    },
+    {
+      "mapping_ids": [
+        "repository-name"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/pyproject.toml",
+      "source_blob_oid": "36669792088ccdc77ada896fdd6607b4500b9c6e",
+      "source_sha256": "83c094bb9982f63a9b00152b44987ce60408096d7b582e46c9a6bd3adf4fdaa6",
+      "source_size": 732,
+      "worker_sha256": "2c5ef7adbfebe82d1fb5b7107b43e23cf188ed9b65bbf666b58f3e1dd7c05e60",
+      "worker_size": 726
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/schemas/v1/execution-plan.schema.json",
+      "source_blob_oid": "3ee3c2546632af7c0d7dd13f68e761af386faebb",
+      "source_sha256": "830da4ec042fdf16dde369d8ddeedf8ef5fc5f7158ebe47c66952e57b99805d2",
+      "source_size": 6520,
+      "worker_sha256": "830da4ec042fdf16dde369d8ddeedf8ef5fc5f7158ebe47c66952e57b99805d2",
+      "worker_size": 6520
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/schemas/v1/intervention-event.schema.json",
+      "source_blob_oid": "5875434c2dd40a5ae209116216b07c1bce52f9cf",
+      "source_sha256": "220b8867ee209a345b08895e8b25b5b94e399e6bc683c3a365879898bc0bb9c8",
+      "source_size": 2164,
+      "worker_sha256": "220b8867ee209a345b08895e8b25b5b94e399e6bc683c3a365879898bc0bb9c8",
+      "worker_size": 2164
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/schemas/v1/measurement.schema.json",
+      "source_blob_oid": "0591af12963ac982663393ae6f1f4daa41d25d57",
+      "source_sha256": "0a797f16be2ef51832afebe93045c1c59f025b04e1205341ad63bfd3398b4e95",
+      "source_size": 11577,
+      "worker_sha256": "0a797f16be2ef51832afebe93045c1c59f025b04e1205341ad63bfd3398b4e95",
+      "worker_size": 11577
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/build_r6_artifacts.py",
+      "source_blob_oid": "6f2e2523159ac1c3a49ee594b414eea0cdf7732d",
+      "source_sha256": "db3bbc0032dc70b44b2489e91ea234a2e7f2101f80fe2b2761ed1167ad426ba7",
+      "source_size": 10806,
+      "worker_sha256": "ea23f6ed9a4c9b18d3b1e5df1eb67afe3a1d7d20951ec0d06c73d5d9df800cfa",
+      "worker_size": 10806
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/export_routing_schemas.py",
+      "source_blob_oid": "7b3d24e201989637e45c15b51fc5c600286c0d82",
+      "source_sha256": "60f061809fdc09da7a91b6537a62061da734d3e8d4fdcf5ce8635ff4f6d8bdf1",
+      "source_size": 507,
+      "worker_sha256": "60f061809fdc09da7a91b6537a62061da734d3e8d4fdcf5ce8635ff4f6d8bdf1",
+      "worker_size": 507
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/export_schemas.py",
+      "source_blob_oid": "ea38006c0c63c0c145c0b2414763372b4e7d58ed",
+      "source_sha256": "db8e813223b722ff967ba0472823ee544ea17f095229845c307b8c6c24abcfee",
+      "source_size": 397,
+      "worker_sha256": "db8e813223b722ff967ba0472823ee544ea17f095229845c307b8c6c24abcfee",
+      "worker_size": 397
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
+      "source_blob_oid": "d3741d8262308de03ba32ea8fa66a98fdb4f9a3d",
+      "source_sha256": "4a9ba336c8ea9d4785e78caca370e7526db28b594641394fde16d9b775b1cb96",
+      "source_size": 3051,
+      "worker_sha256": "4a9ba336c8ea9d4785e78caca370e7526db28b594641394fde16d9b775b1cb96",
+      "worker_size": 3051
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/run_r6_nonlive_regression.py",
+      "source_blob_oid": "98a43ac86a265270a3351556b876f3eaf713ea3b",
+      "source_sha256": "9af2013807d955b1e19174c6e3166b0718dd267de363d320efaa47b2121fc0aa",
+      "source_size": 6399,
+      "worker_sha256": "9af2013807d955b1e19174c6e3166b0718dd267de363d320efaa47b2121fc0aa",
+      "worker_size": 6399
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/run_sdk_pilot.py",
+      "source_blob_oid": "b6d4c5369a6afba9921b88caa1beedbbcb25aed1",
+      "source_sha256": "0bd0bf0db6ea7dee70cc173c466ec1a73c1d7f2d6a2f19fedacd551b7ef9dced",
+      "source_size": 2320,
+      "worker_sha256": "0bd0bf0db6ea7dee70cc173c466ec1a73c1d7f2d6a2f19fedacd551b7ef9dced",
+      "worker_size": 2320
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/scripts/run_sdk_routing_s1.py",
+      "source_blob_oid": "0cc2edb535c0cc762b3b79ca8bcba3f17e3a9008",
+      "source_sha256": "b94d89c45580c0db29a988655f1809c85fdc64dd3219928f4bc8d4d5f0c869ab",
+      "source_size": 3714,
+      "worker_sha256": "b94d89c45580c0db29a988655f1809c85fdc64dd3219928f4bc8d4d5f0c869ab",
+      "worker_size": 3714
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/__init__.py",
+      "source_blob_oid": "1f001f9e3982d9d12004ff020a66191f1063abb9",
+      "source_sha256": "f07f57b00af54f5cf5e4ae02d385bdf06ed8d18ec4f811a7229d68e0c6a75226",
+      "source_size": 80,
+      "worker_sha256": "f07f57b00af54f5cf5e4ae02d385bdf06ed8d18ec4f811a7229d68e0c6a75226",
+      "worker_size": 80
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/__main__.py",
+      "source_blob_oid": "7c5fd265a981fd55044df990cb9a42fe48df86fd",
+      "source_sha256": "247b5524efb43a10e6ebb632f83c2051c8fb91a52d6a77a797d7bddd95026241",
+      "source_size": 64,
+      "worker_sha256": "247b5524efb43a10e6ebb632f83c2051c8fb91a52d6a77a797d7bddd95026241",
+      "worker_size": 64
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/adapter.py",
+      "source_blob_oid": "6aca43fd95e3579cd9a94faac7b1ca71df414bc5",
+      "source_sha256": "fa2440636322cb212e9fcef325c6b18a45a733a1be63e96e6f6ab88822d1b0ac",
+      "source_size": 40318,
+      "worker_sha256": "fa2440636322cb212e9fcef325c6b18a45a733a1be63e96e6f6ab88822d1b0ac",
+      "worker_size": 40318
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/cli.py",
+      "source_blob_oid": "033de56d42b6fde54704ee0224f9be9f73c52f02",
+      "source_sha256": "3a99ac58386e140c30d39aadfba9abb2da86034754c8209b667b9030c50a0a0c",
+      "source_size": 8763,
+      "worker_sha256": "3a99ac58386e140c30d39aadfba9abb2da86034754c8209b667b9030c50a0a0c",
+      "worker_size": 8763
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/contract.py",
+      "source_blob_oid": "e81854b110270e7031f769512feb9e39ed03d5bc",
+      "source_sha256": "4a6834190ae88e5accfbe45d5a40dd7ebf6c08f342856581e8d889e94bafc47f",
+      "source_size": 14401,
+      "worker_sha256": "4a6834190ae88e5accfbe45d5a40dd7ebf6c08f342856581e8d889e94bafc47f",
+      "worker_size": 14401
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/failure_scenarios.py",
+      "source_blob_oid": "6e15239aa0ea463876eb6a0e5d33564b47874fe5",
+      "source_sha256": "418acfc63416e07b8d6303555a6ead9223ae3e0bb024c7e4a6fce59418065eb7",
+      "source_size": 4413,
+      "worker_sha256": "418acfc63416e07b8d6303555a6ead9223ae3e0bb024c7e4a6fce59418065eb7",
+      "worker_size": 4413
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/judge.py",
+      "source_blob_oid": "f328c67eac2a67c5a1c6de995f1dece3f5e899c1",
+      "source_sha256": "dcfee4d03316ca139d86bfbbb09e141832b35ba370d530aaaa97ee3f40994b26",
+      "source_size": 30601,
+      "worker_sha256": "dcfee4d03316ca139d86bfbbb09e141832b35ba370d530aaaa97ee3f40994b26",
+      "worker_size": 30601
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/plan.py",
+      "source_blob_oid": "d64c66d2d0853fcf87537d7b795ffae5cba3e49a",
+      "source_sha256": "87029298630af824933c6453d4bee44e914d855a9fe3d249e165207a50246632",
+      "source_size": 17653,
+      "worker_sha256": "87029298630af824933c6453d4bee44e914d855a9fe3d249e165207a50246632",
+      "worker_size": 17653
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/r6.py",
+      "source_blob_oid": "c258e83773fabadf08376d871acefab8831ef444",
+      "source_sha256": "e5fbcd29c48cc6e19113e80d941dbe61cfa3356feb986dc1407b53b4c71afa41",
+      "source_size": 36046,
+      "worker_sha256": "e5fbcd29c48cc6e19113e80d941dbe61cfa3356feb986dc1407b53b4c71afa41",
+      "worker_size": 36046
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+      "source_blob_oid": "4b09954724eafd01f1d21a75bba836d2eb15ec03",
+      "source_sha256": "f9fb07dee0328f7cc080a91cabe5b5a45afcbb62f8fb9a43bd3d5fe3446e7237",
+      "source_size": 88177,
+      "worker_sha256": "f9fb07dee0328f7cc080a91cabe5b5a45afcbb62f8fb9a43bd3d5fe3446e7237",
+      "worker_size": 88177
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+      "source_blob_oid": "adcfd1811ca1e3f865dddbe0e5b0566638805b0d",
+      "source_sha256": "855eb3c07722528e898601933a8f978f64d72dbc72362d52cd27961b77e11a53",
+      "source_size": 46941,
+      "worker_sha256": "855eb3c07722528e898601933a8f978f64d72dbc72362d52cd27961b77e11a53",
+      "worker_size": 46941
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/runner.py",
+      "source_blob_oid": "797f2e4dee3c8591394a5a52f552c4540ee3cfe4",
+      "source_sha256": "8048ab45aee271b285f2110502ef21b019870ffc105403b0958e28d12ae963bf",
+      "source_size": 185956,
+      "worker_sha256": "8048ab45aee271b285f2110502ef21b019870ffc105403b0958e28d12ae963bf",
+      "worker_size": 185956
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py",
+      "source_blob_oid": "f9b709cfe245561fdf9df1fd5243f99b7f9b403a",
+      "source_sha256": "f43ab3e6cbcc7a2d93b7d3bd54ea94b4dd06f464611b4568e43f27cb2baf7e2d",
+      "source_size": 8619,
+      "worker_sha256": "f43ab3e6cbcc7a2d93b7d3bd54ea94b4dd06f464611b4568e43f27cb2baf7e2d",
+      "worker_size": 8619
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py",
+      "source_blob_oid": "3c5148b15d76f149576ffe247344c225d515dae1",
+      "source_sha256": "634e55101410ad474cb4b3da1643b803e44af3d0643eb704f5913ea37c8e14be",
+      "source_size": 27166,
+      "worker_sha256": "634e55101410ad474cb4b3da1643b803e44af3d0643eb704f5913ea37c8e14be",
+      "worker_size": 27166
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_common.py",
+      "source_blob_oid": "d008d30af1b9d83e593795314a69d194cd7f36c5",
+      "source_sha256": "96734982f2c98e38b49c6861b55668a62178dc9e565ee965552dd70d0b1499e5",
+      "source_size": 17621,
+      "worker_sha256": "96734982f2c98e38b49c6861b55668a62178dc9e565ee965552dd70d0b1499e5",
+      "worker_size": 17621
+    },
+    {
+      "mapping_ids": [
+        "repository-name"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py",
+      "source_blob_oid": "fd395fcfed32ff3bbfa05bdc895e6b0f6034b8ca",
+      "source_sha256": "c083e2b35fb5c872bd3de6ba6df77b95dc70cdbdaaa299fac9018e05336764bb",
+      "source_size": 27441,
+      "worker_sha256": "45e75402a98483899d2e12a5779b468419c007d901ba78fdef65dbfde6ea5113",
+      "worker_size": 27438
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/sdk_vertical_slice.py",
+      "source_blob_oid": "d9617c4d204272b835bb54b1d0f72714a84cc3e3",
+      "source_sha256": "a2f51f1e368ee50cb5ea332ab20b8ab185f0f625e6d06b583bd91a3bcd676be9",
+      "source_size": 1108,
+      "worker_sha256": "a2f51f1e368ee50cb5ea332ab20b8ab185f0f625e6d06b583bd91a3bcd676be9",
+      "worker_size": 1108
+    },
+    {
+      "mapping_ids": [
+        "synthetic-email-workspace-git"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/src/benchmark_runner/workspace.py",
+      "source_blob_oid": "b3b5b198c74fbaba9abcb95ee28521fb18fe28f4",
+      "source_sha256": "b2898f3286099a0216d633f376052e4448b9bd855a92c237f34ef18134446039",
+      "source_size": 12915,
+      "worker_sha256": "84ec19782ff824700fe48f2b95cd96e384c8e91cc3365aecfbffbc2a396fd26d",
+      "worker_size": 12925
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/conftest.py",
+      "source_blob_oid": "ed92268e9082aed23b6fc4344ce5ab2e79fa13a7",
+      "source_sha256": "c7b42af4254f390363e8f8285be8f229e81fceb8e5ca6fc6ccab9e1adf3776c0",
+      "source_size": 590,
+      "worker_sha256": "c7b42af4254f390363e8f8285be8f229e81fceb8e5ca6fc6ccab9e1adf3776c0",
+      "worker_size": 590
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/fixtures/r1-golden/code-change.patch",
+      "source_blob_oid": "06565aa38e5a1671b0cc14d4523a3dd817b24d92",
+      "source_sha256": "d2ef97df72ab65a2dd724d0cae01ea54a6add6504bd397b36c2281966ca3db8b",
+      "source_size": 362,
+      "worker_sha256": "d2ef97df72ab65a2dd724d0cae01ea54a6add6504bd397b36c2281966ca3db8b",
+      "worker_size": 362
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/fixtures/r1-golden/document-read.patch",
+      "source_blob_oid": "3875d4e856a6fc9f271e932de04d0ae98f84517a",
+      "source_sha256": "3dc84f6c9061c84aa225666fea268445a9f7ce294a6dcbefd4b3ab73627a3809",
+      "source_size": 289,
+      "worker_sha256": "3dc84f6c9061c84aa225666fea268445a9f7ce294a6dcbefd4b3ab73627a3809",
+      "worker_size": 289
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_b1_adapter.py",
+      "source_blob_oid": "a1921cea3aae3ea6bd545b00486cb6e4f9d95744",
+      "source_sha256": "4d6cfebdcfeec53c33befc3fe165ae6f8d923cc502039a517672ac40d5d80797",
+      "source_size": 5522,
+      "worker_sha256": "4d6cfebdcfeec53c33befc3fe165ae6f8d923cc502039a517672ac40d5d80797",
+      "worker_size": 5522
+    },
+    {
+      "mapping_ids": [
+        "synthetic-email-redaction-canary"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_b1_adapter_failures.py",
+      "source_blob_oid": "d1647775884b8a961cdcc201c4ac8726d45c617e",
+      "source_sha256": "124d85948f628fb93da62e6372d96b2c35a5575c00af92e0b52728b4aff21976",
+      "source_size": 11352,
+      "worker_sha256": "d33aeb3d481e2ad49e73e5dc8cf7cf0c1a82983495e8eb318c4a3f589a52b2cd",
+      "worker_size": 11348
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_cli.py",
+      "source_blob_oid": "e66182fe807a3a99734cf9fd1858010d3f53de9e",
+      "source_sha256": "f6e851d679ba06b80123c103c96e340ddfb7a28ddd5450d6a3367f5e11ded549",
+      "source_size": 2274,
+      "worker_sha256": "f6e851d679ba06b80123c103c96e340ddfb7a28ddd5450d6a3367f5e11ded549",
+      "worker_size": 2274
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_contract.py",
+      "source_blob_oid": "60a456aab9bbb23858e0910de03d858044942a79",
+      "source_sha256": "cbaed75047c9470751210335202f0cec4021d3fd1a3404c1a37ba26b7e659082",
+      "source_size": 3062,
+      "worker_sha256": "235db7846dd8176ebdd29c074a00a4c65e2ac3fd3e0d2ebb96669eb76891252a",
+      "worker_size": 3062
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_f1_partial_snapshot.py",
+      "source_blob_oid": "2f9c4a539a66b6a20cdfb96a5e28f907d4bbf203",
+      "source_sha256": "d11eb42813fbc0f649f54c86253786fb6ac7b636a34cf657455b0ebb5e5f1f36",
+      "source_size": 1519,
+      "worker_sha256": "347b564fc328671d27d3399a445222f507e88e54a9e37fb49b1b3a67d805e3b5",
+      "worker_size": 1519
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_failure_scenarios.py",
+      "source_blob_oid": "f8c07bbbd93b3ddbd7bc0ca3ff35a2890479a5ed",
+      "source_sha256": "248581fbd7079a463bdac40cf6b650d4317a729615b55c71b643413858ba35fe",
+      "source_size": 5164,
+      "worker_sha256": "248581fbd7079a463bdac40cf6b650d4317a729615b55c71b643413858ba35fe",
+      "worker_size": 5164
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_judge.py",
+      "source_blob_oid": "1afa781513c71ae2329ecd660c50c7c67b521f8b",
+      "source_sha256": "049451c1800a2304053ae9c76ec3225fb67a0e09694c6916fb516fc8e142b51b",
+      "source_size": 16105,
+      "worker_sha256": "049451c1800a2304053ae9c76ec3225fb67a0e09694c6916fb516fc8e142b51b",
+      "worker_size": 16105
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_plan.py",
+      "source_blob_oid": "5809a8b0cb91375c366413d2311e676eb1f6fa56",
+      "source_sha256": "55a1932e299e7df5327dce21eee1788c3b0d75fd2b9a1198c1923c3daff7373e",
+      "source_size": 4651,
+      "worker_sha256": "33cb25d5765e44b64caf8e29cc1ba48a8ef4466dc158c598d508c57b81e2bd67",
+      "worker_size": 4651
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r2_runner.py",
+      "source_blob_oid": "c43885524a69b48f1d7cb2ae03e37c9c7609722b",
+      "source_sha256": "e65906a16bea6882471392c5804c093c89f9563cb51b83a57bf28823c84cdc5a",
+      "source_size": 6393,
+      "worker_sha256": "53b467d2116019e20f006571c724da34ee4c5afd3b67573090a2290d385c3e73",
+      "worker_size": 6393
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r3_b0_manual.py",
+      "source_blob_oid": "dab9057b507b17dd467e029b4b3ecc8ff0e18b47",
+      "source_sha256": "282f58fbc2811b4853c2b27012ae33cff01db7b6c2177afd45cc0b131a2339f0",
+      "source_size": 8730,
+      "worker_sha256": "e3391e0e8717fb6387b1c916125a0a76bc917cef665a1d1f59067ea53cdd6e3f",
+      "worker_size": 8730
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r4_controller.py",
+      "source_blob_oid": "19e515bea1e218fbedb5180187f7b794a9ff9e46",
+      "source_sha256": "57039b2c7945aaa1f06d44bbd0073ed6446d0351826a4764e69312ad5c23e76d",
+      "source_size": 20439,
+      "worker_sha256": "d847cfa98fe13c1274b625bd85fbf40b520a3c8fa458f0c42cb016480d00dbcf",
+      "worker_size": 20439
+    },
+    {
+      "mapping_ids": [
+        "synthetic-user-path",
+        "synthetic-email-reporter",
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r5_reporter.py",
+      "source_blob_oid": "3ce8f1b3d2c58a7c094e2e0475c4b6a13db6f6c0",
+      "source_sha256": "cdc24f4db6faba069a120b8bdd1c976b943caa899578ecbcb296d7b9615655e9",
+      "source_size": 20760,
+      "worker_sha256": "b9467ca7a73f2f93d9190975edaa94af9ca9a080a2f96f7eab504780b27dae78",
+      "worker_size": 20760
+    },
+    {
+      "mapping_ids": [
+        "synthetic-email-r6-git"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r6_build_reproducibility.py",
+      "source_blob_oid": "af0cc9da40c3be93a736761a0739919d5c3e5c0e",
+      "source_sha256": "bcd18f71a43c305ac41d162154f788d31008cef52e1a4d0eeb544b8d5a896d1e",
+      "source_size": 3535,
+      "worker_sha256": "da167a6d28b3d5dc079b6c24df008214f2ce630cb11667bacd24c87282c414bf",
+      "worker_size": 3538
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r6_freeze_boundary.py",
+      "source_blob_oid": "f3afaf204bd6f22cf878f6bc7b1d692e0082cc05",
+      "source_sha256": "3675d1ec19c4462af4723b241898d74422ed0448922ef48a867dfd592328a09f",
+      "source_size": 12256,
+      "worker_sha256": "2fbf2992cf5c8e582cccf0745b605a68d0056f66a765a59def74b2b43d471150",
+      "worker_size": 12256
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_r6_live_drivers.py",
+      "source_blob_oid": "e833edfd46c63a7ded3043fb572698b3fc02071e",
+      "source_sha256": "3f8a1d0f8aaccbf416ab8c785b935bf87c0da4c2ef7831e70f2c81e1664b5ac8",
+      "source_size": 20814,
+      "worker_sha256": "5788e2819b791f8273231951fe835d3c27ecd13e6a6f0758d265109994be3394",
+      "worker_size": 20814
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_routing_live.py",
+      "source_blob_oid": "7e4b62673e98ada6b880e14cb1fee7a994f45b04",
+      "source_sha256": "043c2af4cc86bac908f85eb6267e420ab2d840dd66b54a821d9a761d50a7ba9b",
+      "source_size": 28901,
+      "worker_sha256": "065e492e7c695c50bd8ecdf4fd230542abc3fb1e5e17f02b232d494d8818e98c",
+      "worker_size": 28901
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_routing_suite.py",
+      "source_blob_oid": "68205f7ddd07ab881f2df4e0b1d98bdc163a5e71",
+      "source_sha256": "77482602965f073c99e985e537ae69b494e84106e925ab627e1f65e1f5c009b1",
+      "source_size": 20368,
+      "worker_sha256": "b83c3b1e46ad31865e54bd7e209ce9b77ec990c434e19cca6d7d35ef30a5abfd",
+      "worker_size": 20368
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_runner.py",
+      "source_blob_oid": "6d31eb9838660ce74c834ace6b529b89b844e2a8",
+      "source_sha256": "9f97c018860f84859a7da5d656b2d5eef2fb02fe388d2395e561422e523758a9",
+      "source_size": 3604,
+      "worker_sha256": "0bf5c2c8e7113cca9c7b9b67c62f38171bcd9cfee7543078b87ea56ec332e42c",
+      "worker_size": 3604
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_sdk_cells.py",
+      "source_blob_oid": "46639f9b599c6a4b3e41358c9ae0bcbbfe711ff0",
+      "source_sha256": "ea0d4fc4646301e523121d2e1fc40d32fe6effa9c2ab87b4679bb0751583afc3",
+      "source_size": 23004,
+      "worker_sha256": "ea0d4fc4646301e523121d2e1fc40d32fe6effa9c2ab87b4679bb0751583afc3",
+      "worker_size": 23004
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_sdk_live_runtime.py",
+      "source_blob_oid": "82ed916048eacb3dce71a75547ef63e89a613583",
+      "source_sha256": "dfa12325c72898f664e12e932cae3f2237d27c4007c4339a8cfe1695692aab51",
+      "source_size": 20398,
+      "worker_sha256": "dfa12325c72898f664e12e932cae3f2237d27c4007c4339a8cfe1695692aab51",
+      "worker_size": 20398
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_sdk_vertical_slice.py",
+      "source_blob_oid": "ad3dcf9f3eaa22fefc08b9cb3a606060abd4e449",
+      "source_sha256": "782d7be6b3ac898b1e6f05cf0701ae4cbdb372d6a052406e4b3ad056e85acd18",
+      "source_size": 8775,
+      "worker_sha256": "782d7be6b3ac898b1e6f05cf0701ae4cbdb372d6a052406e4b3ad056e85acd18",
+      "worker_size": 8775
+    },
+    {
+      "mapping_ids": [
+        "historical-year"
+      ],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_sequential_followup_fixtures.py",
+      "source_blob_oid": "bb57f7a30cf36289629d849404e2d0dba5580830",
+      "source_sha256": "44223aa31310bd2036ca3b2bda11532f7043a1b18661ca32e18870f3ad2fa238",
+      "source_size": 6987,
+      "worker_sha256": "408413164b8034c7fa48287150e8220e5f8d9f7fb0f0f22074d343d097358765",
+      "worker_size": 6987
+    },
+    {
+      "mapping_ids": [],
+      "mode": "100644",
+      "path": "tools/benchmark-runner/tests/test_workspace.py",
+      "source_blob_oid": "be5fc16466c40cbe00453cf1d35da21e9ef139f9",
+      "source_sha256": "4425e10addd1f0d4f13fc007f7696994fa855d9f0d126e905197a52b792630b5",
+      "source_size": 4834,
+      "worker_sha256": "4425e10addd1f0d4f13fc007f7696994fa855d9f0d126e905197a52b792630b5",
+      "worker_size": 4834
+    }
+  ],
+  "forbidden_worker_literal_hits": 0,
+  "forbidden_worker_regex_hits": 0,
+  "profile": "R",
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "source_allowlist_sha256": "624903d601f86c1bb43d7a0db1c077ccbf70953a5ca2da35dc6bb0bbf6b7bb4c",
+  "source_authority": "git_object_database",
+  "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
+  "source_total_bytes": 929726,
+  "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
+  "status": "ANONYMIZED_BASE_SNAPSHOT_CANDIDATE",
+  "worker_total_bytes": 929720,
+  "worker_tree_aggregate_sha256": "62cb754fb6b6bd107ad79d11024553948b0e1c1e9185eed3073d6249e6e6fa3f"
+}

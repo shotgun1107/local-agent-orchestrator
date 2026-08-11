@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
+  "status": "SOURCE_ALLOWLIST_CANDIDATE",
+  "include_prefixes": [
+    "benchmarks/fixtures/code-change",
+    "benchmarks/fixtures/document-read",
+    "benchmarks/fixtures/sequential-code-change",
+    "benchmarks/fixtures/sequential-document",
+    "benchmarks/manifests/b0-b1-frozen.yaml",
+    "benchmarks/manifests/b0-b1-sequential-followup.yaml",
+    "benchmarks/suites/sdk-routing-v1",
+    "tools/benchmark-runner"
+  ],
+  "expected_file_count": 99,
+  "scope_note": "Base S1 public implementation, fixtures, manifests, tests, schemas, scripts, and operator README only."
+}

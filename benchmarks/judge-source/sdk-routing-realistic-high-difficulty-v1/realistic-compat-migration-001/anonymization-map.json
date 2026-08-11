@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "CONTROLLER_ONLY_MAPPING_CANDIDATE",
+  "normalization": "literal-utf8-byte-replacement-in-declared-order-v1",
+  "replacements": [
+    {
+      "id": "repository-name",
+      "source_utf8": "local-agent-orchestrator",
+      "replacement_utf8": "orchestration-fixture"
+    },
+    {
+      "id": "synthetic-user-path",
+      "source_utf8": "C:\\Users\\alex\\private\\file.txt",
+      "replacement_utf8": "X:\\fixture\\private\\file.txt"
+    },
+    {
+      "id": "synthetic-email-redaction-canary",
+      "source_utf8": "must-not-be-copied@example.invalid",
+      "replacement_utf8": "must-not-be-copied-email-token"
+    },
+    {
+      "id": "synthetic-email-reporter",
+      "source_utf8": "alex@example.com",
+      "replacement_utf8": "fixture-email-token"
+    },
+    {
+      "id": "synthetic-email-r6-git",
+      "source_utf8": "r6-test@example.invalid",
+      "replacement_utf8": "fixture-r6-git-email-token"
+    },
+    {
+      "id": "synthetic-email-workspace-git",
+      "source_utf8": "benchmark@local.invalid",
+      "replacement_utf8": "fixture-workspace-git-email-token"
+    },
+    {
+      "id": "historical-year",
+      "source_utf8": "2026",
+      "replacement_utf8": "2099"
+    }
+  ],
+  "forbidden_worker_literals": [
+    "local-agent-orchestrator",
+    "C:\\Users\\",
+    "SSAFY",
+    "2026"
+  ],
+  "forbidden_worker_regexes": [
+    "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+  ]
+}
