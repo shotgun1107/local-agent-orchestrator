@@ -1,0 +1,483 @@
+{
+  "candidate_ordinal": "P015",
+  "failed_attempt_count": 14,
+  "ordinal_count": 15,
+  "profile": "I",
+  "raw_identifiers_excluded": [
+    "absolute_paths",
+    "authentication_metadata_values",
+    "raw_sids",
+    "run_ids",
+    "sentinel_contents",
+    "thread_ids"
+  ],
+  "records": [
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "759a1b2eccd9b4ba151fc55f35adfe47d0124848480088f127717213fca21c88",
+          "size": 13191
+        }
+      ],
+      "candidate": false,
+      "cause_class": "collector_contract",
+      "cause_status": "confirmed",
+      "correction_class": "raw_jsonrpc_profile_provenance",
+      "file_count": 8,
+      "observed_outcome": "fail_closed_before_probe",
+      "observed_stage": "sdk_profile_provenance",
+      "ordinal": "P001",
+      "raw_ordinal_aggregate_sha256": "d17cfa3ec0da0a65e023ac87f6d7b5581be86a355d0818db2d36c740c0b999db",
+      "reason_codes": [
+        "PROFILE_PROVENANCE_EVENT_ASSUMPTION"
+      ],
+      "revision_evidence_sha256": "22af95fe0edf2d29174a9f3cf6839392f200ad44a87b4b1b5c5bc9857dc8eafa",
+      "role": "failed_attempt",
+      "source_commit": "5fe78aa5c6a357c08682684a258b41e7d84c4dbc",
+      "successor_ordinal": "P002",
+      "total_bytes": 32378
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "804918a511dd7fc1e15a513e93e2617e94e1e1992eed6987e8a1acc03e14811e",
+          "size": 13191
+        }
+      ],
+      "candidate": false,
+      "cause_class": "evidence_gap",
+      "cause_status": "unknown_at_ordinal",
+      "correction_class": "preserve_policy_failure_artifact",
+      "file_count": 8,
+      "observed_outcome": "fail_closed_before_probe",
+      "observed_stage": "effective_policy",
+      "ordinal": "P002",
+      "raw_ordinal_aggregate_sha256": "d40c30af3fd28797363df986ffd95d185f58fca8182b416aae1f98d35060e102",
+      "reason_codes": [
+        "POLICY_FAILURE_DETAIL_NOT_PRESERVED"
+      ],
+      "revision_evidence_sha256": "bd0c659c664c66b4eaf84a512ae956cd113886d8aef8f9ce1e699fed40b1912e",
+      "role": "failed_attempt",
+      "source_commit": "ea4e1db01e2def366a1b7fd133f8e0a22976b2cc",
+      "successor_ordinal": "P003",
+      "total_bytes": 32378
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "507d59cb194ee9ea0bbbbd05a29a64d309ec3a2ba8dfd2f90ea88ae53093ced4",
+          "size": 13191
+        },
+        {
+          "path": "S/runtime-boundary.policy-failure.json",
+          "sha256": "c3244c5cbe532a24112fab680d2faecc4a4c95144e13cdedf3afbc9093edb719",
+          "size": 11861
+        }
+      ],
+      "candidate": false,
+      "cause_class": "recalculation_contract",
+      "cause_status": "confirmed",
+      "correction_class": "null_legacy_fields_mean_unused",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_before_probe",
+      "observed_stage": "effective_policy",
+      "ordinal": "P003",
+      "raw_ordinal_aggregate_sha256": "d3090688137df40c03c878263407932e40fec231090a8eaee62806d86b28f285",
+      "reason_codes": [
+        "LEGACY_SANDBOX_MODE_PRESENT",
+        "LEGACY_SANDBOX_WORKSPACE_WRITE_PRESENT"
+      ],
+      "revision_evidence_sha256": "bd0c659c664c66b4eaf84a512ae956cd113886d8aef8f9ce1e699fed40b1912e",
+      "role": "failed_attempt",
+      "source_commit": "3a74545e013131a86a11885adf182f104dcf4ba9",
+      "successor_ordinal": "P004",
+      "total_bytes": 44239
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "5cc04d2d2c3d838d5f2c7bdbb2a65d8a7e5b2cb88f874fa76a57a4e91b082177",
+          "size": 13191
+        }
+      ],
+      "candidate": false,
+      "cause_class": "evidence_gap",
+      "cause_status": "confirmed_by_successor",
+      "correction_class": "preserve_probe_failure_artifact",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_after_one_probe_dispatch",
+      "observed_stage": "probe_dispatch_p01",
+      "ordinal": "P004",
+      "raw_ordinal_aggregate_sha256": "832deaaa3a92c6c0edcc35edde93e43399781f7590cc9e1df3f244c094fd6629",
+      "reason_codes": [
+        "PROBE_OUTPUT_NOT_PRESERVED"
+      ],
+      "revision_evidence_sha256": "bd0c659c664c66b4eaf84a512ae956cd113886d8aef8f9ce1e699fed40b1912e",
+      "role": "failed_attempt",
+      "source_commit": "b59a78031bf95f8d0691316ecc8dee1394da67c1",
+      "successor_ordinal": "P005",
+      "total_bytes": 58286
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "939be82757145d3991c483937fd7375bddb6383ef748333a82773b9cee09f88b",
+          "size": 13191
+        },
+        {
+          "path": "S/runtime-boundary.probe-failure.json",
+          "sha256": "ac1391058bda0346e10c0a2f03f5a6a9ebac0fee1fc40e9a7dc3c3b844dc3f93",
+          "size": 2284
+        }
+      ],
+      "candidate": false,
+      "cause_class": "command_contract",
+      "cause_status": "confirmed",
+      "correction_class": "remove_obsolete_windows_subcommand",
+      "file_count": 10,
+      "observed_outcome": "wrapper_failed_before_probe_payload",
+      "observed_stage": "probe_dispatch_p01",
+      "ordinal": "P005",
+      "raw_ordinal_aggregate_sha256": "1bd4b4fa1d230e6355663bde9d871f507d3e309b2755b273cb1bc8c158260870",
+      "reason_codes": [
+        "PROBE_STDOUT_NOT_JSON",
+        "PROBE_WRAPPER_EXIT_NONZERO"
+      ],
+      "revision_evidence_sha256": "6605d7d0563e36853c969888e05d326dc304f5a83035edb1cf71b468fb6212a6",
+      "role": "failed_attempt",
+      "source_commit": "d8f2ac1d257a2ae2f1ed459253e9d3bc3bfb9908",
+      "successor_ordinal": "P006",
+      "total_bytes": 60570
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "3e1a9b2c00db8c9a2f682298d8634f2291d97426befda2da058eb0b8f8d553bb",
+          "size": 13111
+        }
+      ],
+      "candidate": false,
+      "cause_class": "verifier_contract",
+      "cause_status": "confirmed",
+      "correction_class": "allow_exact_w_only_acl_transition",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_before_probe",
+      "observed_stage": "root_identity_pre_dispatch",
+      "ordinal": "P006",
+      "raw_ordinal_aggregate_sha256": "a434c8f915b742fac9654cc8d138312eb0e67c055379770fd9f8fc7084b8eeea",
+      "reason_codes": [
+        "SAFE_W_CAPABILITY_ACE_REJECTED"
+      ],
+      "revision_evidence_sha256": "8f10ef25ef48630e72c552cda5eafaffac6fd38a93c4de7b5e3aa9be7a0d5be0",
+      "role": "failed_attempt",
+      "source_commit": "1b44ad3a48784ecd6d5675703f7371dc13bcc326",
+      "successor_ordinal": "P007",
+      "total_bytes": 58206
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "3e2a88c888da89966ea9fd93c509b58a8a1763ad95b986320c7741650c1668e0",
+          "size": 13111
+        }
+      ],
+      "candidate": false,
+      "cause_class": "verifier_contract",
+      "cause_status": "confirmed",
+      "correction_class": "bind_acl_grant_to_capability_identity",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_after_p01",
+      "observed_stage": "p01_identity_binding",
+      "ordinal": "P007",
+      "raw_ordinal_aggregate_sha256": "9c4b26d9e6ae5073f15fc12fbe09dea34756ea5712fe9dbb7cc3a04b6eceebfa",
+      "reason_codes": [
+        "CAPABILITY_ACE_COMPARED_TO_TOKEN_USER"
+      ],
+      "revision_evidence_sha256": "d9b8b7421174e72f8f71a1c3e46a20b5fb7b4ce5cdc76a8c078b0fc9d4445bd9",
+      "role": "failed_attempt",
+      "source_commit": "b93ce1b1e5e970d5d64e2ad44f15c54f7b643051",
+      "successor_ordinal": "P008",
+      "total_bytes": 58190
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "d67556b71db64944bb9a74f026541361b802e014a12d458ac0af9ce7d761fa9a",
+          "size": 13111
+        }
+      ],
+      "candidate": false,
+      "cause_class": "verifier_contract",
+      "cause_status": "confirmed",
+      "correction_class": "bind_acl_grant_to_restricted_sid",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_after_p01",
+      "observed_stage": "p01_identity_binding",
+      "ordinal": "P008",
+      "raw_ordinal_aggregate_sha256": "f94f6a8a700c1e050019d95f533f499c67698a6ef1292f6670d941c6408e9a60",
+      "reason_codes": [
+        "CAPABILITY_ACE_COMPARED_TO_TOKEN_CAPABILITIES"
+      ],
+      "revision_evidence_sha256": "d9b8b7421174e72f8f71a1c3e46a20b5fb7b4ce5cdc76a8c078b0fc9d4445bd9",
+      "role": "failed_attempt",
+      "source_commit": "0102f0de802a916975beafb6ed0b8342563e648b",
+      "successor_ordinal": "P009",
+      "total_bytes": 58190
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "70da017dac1bbe755bba8835062b2eaee4b2d03ec058e3d33cfee027cb5741c5",
+          "size": 13111
+        }
+      ],
+      "candidate": false,
+      "cause_class": "actual_runtime_boundary_failure",
+      "cause_status": "confirmed",
+      "correction_class": "introduce_least_privilege_worker_profile",
+      "file_count": 9,
+      "observed_outcome": "controller_only_content_disclosed",
+      "observed_stage": "p02_j_absolute_read",
+      "ordinal": "P009",
+      "raw_ordinal_aggregate_sha256": "75a9e89e99b4fc8b00b5cdbc41f18cb8a83231d73412eeac1f8190c6fc34bdff",
+      "reason_codes": [
+        "J_CONTENT_DISCLOSED"
+      ],
+      "revision_evidence_sha256": "a6b575feac3a5d5ffb43f0106079b1ad4355abfedf83e5e54187331268b5ac07",
+      "role": "failed_attempt",
+      "source_commit": "b9de58ed8436309b88990c36b8a370f6d9f62b37",
+      "successor_ordinal": "P010",
+      "total_bytes": 58190
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "ab76634dbc914342944bc8114352a22a86794c672581c00d5ba8287eaae3321b",
+          "size": 16050
+        },
+        {
+          "path": "S/runtime-boundary.profile-failure.json",
+          "sha256": "775332d590bd512d42880e894a942799b0341b5ab4c400b999aae284446dbd29",
+          "size": 3377
+        }
+      ],
+      "candidate": false,
+      "cause_class": "profile_serialization_contract",
+      "cause_status": "confirmed",
+      "correction_class": "serialize_filesystem_override_as_inline_table",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_before_probe",
+      "observed_stage": "sdk_app_server_initialize",
+      "ordinal": "P010",
+      "raw_ordinal_aggregate_sha256": "640d3268d64f680610c503d28875168fb135ca561f829698f9c23d3d144b5d55",
+      "reason_codes": [
+        "PROFILE_FILESYSTEM_OVERRIDE_SERIALIZATION"
+      ],
+      "revision_evidence_sha256": "12ed1b9f04e583c0adbc2ca19ef7d988ebd5e8d5abcede67040ece98390e6369",
+      "role": "failed_attempt",
+      "source_commit": "a640a002707a3fc1aab865dab7803c7552ff3b5b",
+      "successor_ordinal": "P011",
+      "total_bytes": 38606
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "86ddd9e9d9b8a099e8ab7c983a7f0b858b927e8abff5a005a1d8dcadc271733d",
+          "size": 15539
+        }
+      ],
+      "candidate": false,
+      "cause_class": "actual_runtime_boundary_failure",
+      "cause_status": "confirmed",
+      "correction_class": "add_exact_controller_root_denies",
+      "file_count": 9,
+      "observed_outcome": "controller_only_content_disclosed",
+      "observed_stage": "p02_j_absolute_read",
+      "ordinal": "P011",
+      "raw_ordinal_aggregate_sha256": "f9311dc1dc40d8800b108ec7851301048a8d152c782a85e38a164ba3493af9f8",
+      "reason_codes": [
+        "J_CONTENT_DISCLOSED"
+      ],
+      "revision_evidence_sha256": "03e3cbc6af66588aea29cd9faf4a457cf9e0feb47dd2f777f0ed6b290d4402ac",
+      "role": "failed_attempt",
+      "source_commit": "2eff82d8489ae7d6d215f6f8f584b6ae3907b779",
+      "successor_ordinal": "P012",
+      "total_bytes": 60618
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "217a8a90475a075f04e0cc456f22c4eb80e73c4dbde3a6da0c4bd4f5e2248267",
+          "size": 18455
+        }
+      ],
+      "candidate": false,
+      "cause_class": "actual_runtime_boundary_failure",
+      "cause_status": "confirmed",
+      "correction_class": "harden_js_acl_without_inheritance",
+      "file_count": 9,
+      "observed_outcome": "controller_only_content_disclosed",
+      "observed_stage": "p02_j_absolute_read",
+      "ordinal": "P012",
+      "raw_ordinal_aggregate_sha256": "b4aa6bf61a3cc545e8ebdf24ef934534e3cfac1da9f9584a3dfff58f1dc19ed5",
+      "reason_codes": [
+        "INHERITED_JS_MODIFY_ACE"
+      ],
+      "revision_evidence_sha256": "2a7a6360a336109666fc2283996fc9a8ac79271c28187aa97d0f16ba84154134",
+      "role": "failed_attempt",
+      "source_commit": "f7b530f7826075efe417b5e4ade189ae6c25528c",
+      "successor_ordinal": "P013",
+      "total_bytes": 63534
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "b7871d23cc37ca68bdeb1022fbebdb130995238e63417b5a7a8e11cc892faa08",
+          "size": 19220
+        }
+      ],
+      "candidate": false,
+      "cause_class": "cleanup_contract",
+      "cause_status": "confirmed",
+      "correction_class": "use_no_follow_lexical_cleanup",
+      "file_count": 9,
+      "observed_outcome": "fail_closed_before_p06",
+      "observed_stage": "post_p05_command_identity",
+      "ordinal": "P013",
+      "raw_ordinal_aggregate_sha256": "450e7f6f03bd2408ed74dee615eb33fd97feca1d1cb579f1fb4185d23bc7bd73",
+      "reason_codes": [
+        "UNREADABLE_JUNCTION_NOT_REMOVED"
+      ],
+      "revision_evidence_sha256": "2c717283775b735f2c453f686ab430ec1a1d3865bdcd3a22faaf12495568ad70",
+      "role": "failed_attempt",
+      "source_commit": "5d9d1a544699af0738cb0f504f3e3e7be4da90d3",
+      "successor_ordinal": "P014",
+      "total_bytes": 64299
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "9c2024a3294998dfb810886e3329d2c9af10e8a0a2a76475308f73948abfc351",
+          "size": 19220
+        },
+        {
+          "path": "S/runtime-boundary/bundle-seal.json",
+          "sha256": "abc37eb00dc134237167b3763722add287a80e279991f0e08a50dbfc5b279f76",
+          "size": 346
+        },
+        {
+          "path": "S/runtime-boundary/files.sha256",
+          "sha256": "07ec2b31a49ad11b88f8e13570c9e72745e48aaf407efe642e012354a923468d",
+          "size": 158
+        },
+        {
+          "path": "S/runtime-boundary/manifest.json",
+          "sha256": "9c2024a3294998dfb810886e3329d2c9af10e8a0a2a76475308f73948abfc351",
+          "size": 19220
+        },
+        {
+          "path": "S/runtime-boundary/result.json",
+          "sha256": "a1b4adc43d565e8c4337d7aa266046fff0317e9f5cb5da1f2246f0e792736cbc",
+          "size": 50355
+        }
+      ],
+      "candidate": false,
+      "cause_class": "evaluation_contract",
+      "cause_status": "confirmed",
+      "correction_class": "treat_state_metadata_nondisclosure_as_success",
+      "file_count": 13,
+      "observed_outcome": "all_probes_ran_p08_false_negative",
+      "observed_stage": "aggregate_recalculation_after_p08",
+      "ordinal": "P014",
+      "raw_ordinal_aggregate_sha256": "95a3d84da43cae8b14ead2b6f5e619dc631e70241652936e5129701d392c316c",
+      "reason_codes": [
+        "P08_FAILED"
+      ],
+      "revision_evidence_sha256": "758b93b0a17e62f9899094811849d5314ae00c4988f5d0654ada739e31ebd519",
+      "role": "failed_attempt",
+      "source_commit": "d21f3d86e738a18818c0d318b51864e33646f7bb",
+      "successor_ordinal": "P015",
+      "total_bytes": 134792
+    },
+    {
+      "actual_model_turns": 0,
+      "artifact_bindings": [
+        {
+          "path": "S/pending-manifest.json",
+          "sha256": "9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc",
+          "size": 19220
+        },
+        {
+          "path": "S/runtime-boundary/bundle-seal.json",
+          "sha256": "144c0a11198699a6c5216745b71d4b1b596cdcfe67eee3c13b0e24a27bc5dd13",
+          "size": 346
+        },
+        {
+          "path": "S/runtime-boundary/files.sha256",
+          "sha256": "326017ab7ee33d5de9ce39ef4a9a721e7e770f27e9ecef14571bc293c96ea4c2",
+          "size": 158
+        },
+        {
+          "path": "S/runtime-boundary/manifest.json",
+          "sha256": "9d7b2c85991192fc78e6235f75636fe323ec057ed4920fa7e33b2217023829bc",
+          "size": 19220
+        },
+        {
+          "path": "S/runtime-boundary/result.json",
+          "sha256": "1914fb39d263e3dec95fadfe49d24b7fec83c51606294972054287a019a74a9d",
+          "size": 50127
+        }
+      ],
+      "candidate": true,
+      "cause_class": "candidate_success",
+      "cause_status": "confirmed",
+      "correction_class": null,
+      "file_count": 42,
+      "observed_outcome": "candidate",
+      "observed_stage": "runtime_boundary_complete",
+      "ordinal": "P015",
+      "raw_ordinal_aggregate_sha256": "3f51d7ff986cfdc1f01e798c55b8fb975abc08458ea5ab38351da461e7fdc5df",
+      "reason_codes": [],
+      "revision_evidence_sha256": "b891e051df58a1ae802b7d0b19774c79e2ba1759fd3ce9e7a29f997980cee1e9",
+      "role": "candidate",
+      "source_commit": "9b29e781136e13b43b1e18f3fe1823bf496bef5c",
+      "successor_ordinal": null,
+      "total_bytes": 1595604
+    }
+  ],
+  "revision_evidence_aggregate_sha256": "721970e782ed97ec3a154ae3f4f12df8f32013b9649501cb1f8c05dd388f572b",
+  "schema_version": 1,
+  "snapshot_id": "realistic-incident-repair-001",
+  "source_index_sha256": "e02cca5ce77edb716a9ab5a1557ca2fb85b932a3cf9529ef50bab381b08db8d5",
+  "source_set_id": "runtime-boundary-phaseb-p001-p015-v1",
+  "status": "PROFILE_I_FAILURE_LINEAGE_VERIFIED",
+  "worker_visibility": "controller_and_judge_only"
+}

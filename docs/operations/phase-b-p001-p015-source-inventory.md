@@ -1,6 +1,12 @@
 # Phase B P001~P015 집 원본 inventory
 
-- 상태: `partial_raw_inventory_committed`
+> 현재 상태(2026-08-11): 이 문서의 최초 inventory 결과는 역사 기록이다.
+> 이후 P001~P015 원본 171개가 byte-exact로 Git에 import됐고 전체 credential
+> scan과 source/copy SHA-256 재대조를 통과했다. 현재 source gate 정본은
+> `benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/source-intake.json`과
+> `benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-incident-repair-001/failure-lineage.json`이다.
+
+- 상태: `historical_snapshot_superseded_by_byte_exact_raw_import`
 - inventory 일자: 2026-08-10
 - 기준 branch: `codex/runtime-boundary-p01`
 - 기준 commit: `fde51c18590261b9073d22f44a9eb4f3f437b59b`
