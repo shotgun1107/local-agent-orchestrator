@@ -300,8 +300,8 @@ def _git_prefix_records(repository: Path, commit: str, prefix: str) -> tuple[str
         pure = PurePosixPath(relative)
         if pure.is_absolute() or any(part in {"", ".", ".."} for part in pure.parts):
             raise RealisticJudgeError("source prefix contains an unsafe path")
-        payload = _git(repository, "cat-file", "blob", raw_oid.decode("ascii"))
-        records.append((relative, raw_oid.decode("ascii"), payload))
+        payload = _git(repository, "cat-file", "blob", raw_oid)
+        records.append((relative, raw_oid, payload))
     if not records:
         raise RealisticJudgeError("source prefix is empty")
     return tree_oid, records
