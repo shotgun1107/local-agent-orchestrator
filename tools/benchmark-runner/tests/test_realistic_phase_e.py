@@ -82,7 +82,7 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
     assert qualification["challenge_ready"] is True
     assert qualification["model_turns"] == 0
     assert qualification["image_reference"].endswith(
-        "@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89"
+        "@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab"
     )
     cells = qualification["cells"]
     assert [cell["ordinal"] for cell in cells] == list(range(1, 10))
