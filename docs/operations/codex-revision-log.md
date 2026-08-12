@@ -2042,3 +2042,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 따라서 R7 실패는 R07 기능 구현의 직접 실패가 아니라 공개 S2 test helper의 B1 project-pack fixture 변환 결손이다. feedback 통로는 작동했지만 test 이름만 전달해 실제 validation 원인이 두 번째 Worker에게 가지 않은 문제도 남았다.
 - Docker Judge는 R-P05/R-P06 실패를 검출했고 Measurement는 `failed`, `scope_ok=false`로 봉인됐다. Cell seal file SHA는 `a2d1a35e...ac3ee`, Measurement는 `442d0f47...ea86`, self seal은 `17f39aa1...5dbc`다. 독립 finalization verifier는 통과했고 잔여 container는 0이다.
 - R7 raw와 seal은 수정·삭제·자동 재시도하지 않는다. 다음은 model-free fixture/helper와 bounded assertion feedback 최소 교정이다. 회귀와 qualification/candidate 영향 판단 전 R8 model 실행과 Cell 3은 `NO-GO`다.
+
+## R7 뒤 집→회사 exact-tree 인수인계
+
+- 작업일: 2026-08-12. 오늘 집 작업의 Git 정본은 `codex/phase-d-artifacts`의 R7 결과 commit `7894c7daf3eae72568e0992002e034a8160530e2`까지다. 현재 집→회사 정본을 `docs/operations/home-to-company-codex-handoff.md` revision 5로 교체했다.
+- 인수 문서는 R07 공개 회귀와 bounded feedback 교정, 집 Docker Judge 재자격, Phase E v2 0-turn 후보, 실제 R7 한 번의 봉인 결과와 model-free 사후 진단을 하나의 계보로 묶는다. 집 Docker image와 raw qualification/R7 root는 로컬 전용이고 Git 동기화 대상이 아님을 분리했다.
+- 회사의 다음 작업은 실제 model 실행이 아니라 공개 S2 test helper가 복사하는 legacy `.orchestrator/project.yaml`을 현재 B1 `ProjectConfig` 형식으로 canonicalize하고, `B1 run validate failed`의 공개 원인을 bounded feedback으로 전달하는 model-free 최소 수정이다. production validation과 필수 assertion은 완화하지 않는다.
+- 관련 R07/S2, B1 전체, Phase F model-free 회귀와 incident/revision 기록, commit·push 뒤 멈춘다. source 변경으로 기존 qualification/candidate가 stale해지는지만 보고하며 Docker 재자격, 후보 재생성, R8, Cell 3과 다른 model turn은 별도 사용자 승인 전 `NO-GO`다.
