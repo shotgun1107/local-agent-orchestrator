@@ -460,6 +460,7 @@ def build_source_bindings(
     repository = repository.resolve()
     profiles = [_profile_binding(repository, source_commit, item) for item in stage.profiles]
     values: dict[str, Any] = {
+        "schema_version": 1,
         "source_commit": source_commit,
         "source_tree": _git_text(repository, "rev-parse", f"{source_commit}^{{tree}}"),
         "stage_manifest_path": PHASE_E_STAGE_RELATIVE,
@@ -807,6 +808,8 @@ def create_phase_e_candidate(
     files_bytes = _files_manifest_bytes(records)
     atomic_write(output_root / "files.sha256", files_bytes)
     values = {
+        "schema_version": 1,
+        "kind": PHASE_E_CANDIDATE_KIND,
         "source_commit": source_commit,
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
