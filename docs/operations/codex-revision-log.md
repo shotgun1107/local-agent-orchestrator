@@ -1984,3 +1984,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 공개 Pydantic Schema의 `ResultArtifact.path` 설명과 Worker prompt에 “existing regular file만 허용하며 directory/glob은 금지, directory output은 concrete manifest/index file로 대표”를 명시했다. result parsing 직후 기존 directory를 발견하면 final blocking 전에 같은 session의 1회 resume로 정확한 교정 문구를 전달한다. missing path와 외부 경로에 대한 기존 final verifier는 유지했다.
 - FakeRuntime 관통 시험은 첫 turn의 directory artifact가 `result_schema` 교정 feedback을 받고, 두 번째 turn의 실제 file artifact가 독립 Check를 통과해 동일 Attempt `resume_count=1`, Run `COMPLETED`로 끝나는 것을 확인했다. prompt·Schema·관통 표적은 `7 passed`, B1 전체는 `75 passed`다. 구현 인시던트는 `DEV-20260812-004`다.
 - R4 원본과 seal은 수정하지 않는다. 다음 실제 실행은 별도 R5 root와 사용자 model-usage 승인 뒤에만 수행한다.
+
+## Phase F Profile R B1 R5와 Python bytecode scope 정규화
+
+- 작업일: 2026-08-12. 사용자 승인 뒤 새 correction root `C:\lao-phase-f-live-c36731c-r5`에서 동일한 sealed Cell 2 request 하나만 실행했다. 실행 전 실제 SDK 0-turn preflight는 `1 passed in 1.76s`였고 ChatGPT 인증만 사용했으며 API-key 환경 이름은 없었다. Cell 3은 자동 실행하지 않았다.
+- R5는 총 1,154.484초, model active 1,118.530초, session 3, turn 3, Attempt 3, token 2,348,081이었다. R01과 R02는 첫 시도에 통과했고 R03에서 `scope_violation`으로 `BLOCKED`됐다. Measurement SHA-256은 `3a419164391ead7f718f96b9145ae19673ea1dd63bba137a3d014b5d93135588`, Cell seal 파일 SHA-256은 `9564a817233560c51d9c9d4cbb7a2c7bb9a0273e49316551035dceca0cba3643`다.
+- R03 ResultEnvelope의 artifact 세 개는 모두 실제 regular file이었다. 따라서 R4에서 발견한 directory artifact 계약 오류는 해결된 상태로 관측됐다. 새 차단 원인은 Worker가 공개 checker를 Python으로 읽는 과정에서 자동 생성된 미추적 `benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc` 하나를 B1이 허용 범위 밖 소스 변경으로 판정한 것이다.
+- B1 scope 검사 전에 Git에 추적되지 않은 regular `__pycache__/*.pyc`만 삭제하고 changed paths를 다시 계산하도록 정정했다. tracked bytecode, symlink·junction을 통과하는 경로, 다른 확장자는 삭제하지 않는다. 같은 `__pycache__` 안의 `injected.txt`는 계속 scope 위반으로 차단한다.
+- FakeRuntime 표적 시험은 자동 `.pyc` 정규화 성공과 일반 파일 차단을 각각 확인해 `2 passed`, B1 전체 회귀는 `77 passed`다. 정정 검증의 model·SDK·Codex·Docker·network 호출은 0회다. 구현 인시던트는 `DEV-20260812-005`다.
+- R5 원본과 seal은 수정하지 않는다. 전체 R01~R08 완료 여부를 다시 측정하려면 새 R6 root와 별도 사용자 model-usage 승인이 필요하다.

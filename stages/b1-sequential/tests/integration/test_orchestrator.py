@@ -187,6 +187,72 @@ def test_directory_artifact_gets_immediate_guidance_then_file_artifact_passes(
     assert "directory paths are invalid: src" in feedback[0]["message"]
 
 
+def test_untracked_python_bytecode_is_normalized_before_scope_validation(
+    tmp_path: Path, project_factory
+) -> None:
+    root = project_factory()
+    bytecode = "benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc"
+    fixture = {
+        "effects": [
+            {
+                "type": "write_file",
+                "path": "src/generated.txt",
+                "content": "generated\n",
+            },
+            {
+                "type": "write_file",
+                "path": bytecode,
+                "content": "automatic bytecode byproduct",
+            },
+        ],
+    }
+
+    _, snapshot = execute(
+        root,
+        tmp_path / "state",
+        make_spec(workspace_mode="shared_serial_write", write_scope=["src/**"]),
+        fixture=fixture,
+    )
+
+    assert snapshot["run"]["state"] == "COMPLETED"
+    assert snapshot["tasks"][0]["state"] == "SUCCEEDED"
+    assert not (root / bytecode).exists()
+
+
+def test_non_bytecode_file_inside_pycache_remains_a_scope_violation(
+    tmp_path: Path, project_factory
+) -> None:
+    root = project_factory()
+    injected = "benchmark_checks/__pycache__/injected.txt"
+    fixture = {
+        "effects": [
+            {
+                "type": "write_file",
+                "path": "src/generated.txt",
+                "content": "generated\n",
+            },
+            {
+                "type": "write_file",
+                "path": injected,
+                "content": "must remain visible to scope validation\n",
+            },
+        ],
+    }
+
+    _, snapshot = execute(
+        root,
+        tmp_path / "state",
+        make_spec(workspace_mode="shared_serial_write", write_scope=["src/**"]),
+        fixture=fixture,
+    )
+
+    attempt = snapshot["tasks"][0]["attempts"][0]
+    assert snapshot["run"]["state"] == "BLOCKED"
+    assert snapshot["tasks"][0]["state"] == "BLOCKED"
+    assert attempt["failure_kind"] == "scope_violation"
+    assert (root / injected).is_file()
+
+
 @pytest.mark.parametrize(
     ("scenario", "expected_run", "expected_failure"),
     [
