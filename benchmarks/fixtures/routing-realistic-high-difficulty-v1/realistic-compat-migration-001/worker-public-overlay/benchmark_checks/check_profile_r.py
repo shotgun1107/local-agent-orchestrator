@@ -16,10 +16,40 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "tools" / "benchmark-runner" / "src"
 REQUIREMENTS = ROOT / "profile-r" / "requirements"
 WORK = ROOT / "profile-r" / "work"
+WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
+WORKER_FEEDBACK_MAX_CHARS = 1600
 
 
 class PublicContractError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, public_feedback: str | None = None) -> None:
+        super().__init__(message)
+        self.public_feedback = public_feedback
+
+
+def _public_pytest_failure_feedback(
+    result: subprocess.CompletedProcess[str],
+) -> str:
+    combined = "\n".join((result.stdout or "", result.stderr or ""))
+    if (
+        "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
+        and "FrozenManifest" in combined
+        and "extra_forbidden" in combined
+    ):
+        message = (
+            "test_s2_fake_four_cell_plan_judge_property_seal_export built the strict "
+            "FrozenManifest/FrozenFixtureSpec input with S2-only extra fields. Convert "
+            "only the fields declared by those public models; stage_id, purpose, "
+            "initial_cell_order, and fixture profile are not valid frozen-manifest fields."
+        )
+    else:
+        summaries = [
+            line.strip()
+            for line in combined.splitlines()
+            if line.startswith(("FAILED ", "ERROR "))
+        ][:4]
+        detail = "; ".join(summaries) or "rerun the public pytest command to inspect the failing test"
+        message = f"public S2 pytest exited {result.returncode}: {detail}"
+    return message[:WORKER_FEEDBACK_MAX_CHARS]
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -345,10 +375,14 @@ def check_r07() -> None:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         timeout=120,
     )
     if result.returncode != 0:
-        raise PublicContractError("the public S2 routing regressions failed")
+        raise PublicContractError(
+            "the public S2 routing regressions failed",
+            public_feedback=_public_pytest_failure_feedback(result),
+        )
 
 
 def check_r08() -> None:
@@ -403,7 +437,12 @@ def main(argv: list[str]) -> int:
     task_id = argv[1]
     try:
         CHECKS[task_id]()
-    except (PublicContractError, OSError, subprocess.SubprocessError):
+    except PublicContractError as exc:
+        print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
+        if exc.public_feedback:
+            print(f"{WORKER_FEEDBACK_PREFIX}{exc.public_feedback}")
+        return 1
+    except (OSError, subprocess.SubprocessError):
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
         return 1
     print(f"{task_id}_PUBLIC_CONTRACT_OK")

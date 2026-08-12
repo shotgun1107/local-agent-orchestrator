@@ -56,6 +56,7 @@ from .verify import (
     GitWorkspace,
     VerificationError,
     hash_project_pack,
+    extract_public_check_feedback,
     run_command_check,
     validate_declared_artifacts,
     validate_result_artifact_path_types,
@@ -430,6 +431,51 @@ class Orchestrator:
             FailureKind.CHECK_FAILED: "retry_check",
         }.get(failure, "manual_recovery")
 
+    def _retry_feedback(
+        self,
+        ledger: Ledger,
+        attempts: list[dict[str, Any]],
+        spec: TaskSpec,
+    ) -> dict[str, Any] | None:
+        if not attempts or attempts[-1]["failure_kind"] != FailureKind.CHECK_FAILED:
+            return None
+        row = ledger.connection.execute(
+            """SELECT payload_json FROM events
+               WHERE aggregate_id=? AND event_type='attempt_finished'
+               ORDER BY seq DESC LIMIT 1""",
+            (attempts[-1]["attempt_id"],),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            payload = json.loads(row["payload_json"])
+        except (json.JSONDecodeError, TypeError):
+            return None
+        feedback = payload.get("public_check_feedback")
+        if not isinstance(feedback, dict):
+            return None
+        check_name = feedback.get("check_name")
+        messages = feedback.get("messages")
+        exit_code = feedback.get("exit_code")
+        if (
+            check_name not in spec.check_names
+            or not isinstance(messages, list)
+            or not messages
+            or not all(isinstance(message, str) and message for message in messages)
+            or (exit_code is not None and not isinstance(exit_code, int))
+        ):
+            return None
+        return {
+            "failure": "checks",
+            "check_name": check_name,
+            "exit_code": exit_code,
+            "public_feedback": messages,
+            "allowed_write_scope": spec.write_scope,
+            "remaining_completion_criteria": [
+                criterion.text for criterion in spec.completion_criteria
+            ],
+        }
+
     def _execute_task(self, ledger: Ledger, run_id: str, task: dict[str, Any], spec: TaskSpec) -> None:
         run = ledger.get("run", run_id)
         self._assert_project_pack_unchanged(run["project_pack_sha256"])
@@ -451,6 +497,7 @@ class Orchestrator:
             timeout_seconds=self.policy.task_timeout_seconds,
             remaining_attempts=self.policy.max_attempts_per_task - attempt_no,
         )
+        retry_feedback = self._retry_feedback(ledger, attempts, spec)
         attempt = ledger.begin_attempt(
             task["task_id"], attempt_no, self._attempt_reason(attempts), canonical_json(envelope),
             fingerprint.sha256, attempt_id=attempt_id,
@@ -472,6 +519,7 @@ class Orchestrator:
         ledger.set_baseline_artifact(attempt_id, baseline_artifact["artifact_id"])
         try:
             session_handle = self.runtime.start_session(envelope, self.runtime_profile)
+            session_handle.initial_feedback = retry_feedback
             capabilities = self.runtime.capabilities()
             capability_profile = self.loaded.pack.capabilities.profiles[spec.capability_profile]
             session = ledger.create_session(
@@ -881,7 +929,21 @@ class Orchestrator:
                     "input_fingerprint": fingerprint.sha256,
                 })
                 if check_result.state != "PASSED":
-                    raise VerificationError("checks", f"Check failed: {check_name}", retryable=True)
+                    messages = extract_public_check_feedback(check_result)
+                    raise VerificationError(
+                        "checks",
+                        f"Check failed: {check_name}",
+                        retryable=True,
+                        public_feedback=(
+                            {
+                                "check_name": check_name,
+                                "exit_code": check_result.exit_code,
+                                "messages": messages,
+                            }
+                            if messages
+                            else None
+                        ),
+                    )
                 passed.add(check_name)
             for criterion in spec.completion_criteria:
                 if not set(criterion.check_names).issubset(passed):
@@ -895,6 +957,12 @@ class Orchestrator:
                 },
             )
         except VerificationError as exc:
+            failure_payload: dict[str, Any] = {
+                "stage": exc.stage,
+                "message": str(exc),
+            }
+            if exc.public_feedback is not None:
+                failure_payload["public_check_feedback"] = exc.public_feedback
             failure_kind = {
                 "write_scope": FailureKind.SCOPE_VIOLATION,
                 "freshness": FailureKind.STALE_INPUT,
@@ -906,12 +974,12 @@ class Orchestrator:
             if failure_kind in {FailureKind.SCOPE_VIOLATION, FailureKind.ARTIFACT_CORRUPT}:
                 ledger.finish_attempt(
                     attempt_id, AttemptState.BLOCKED, TaskState.BLOCKED, failure_kind,
-                    {"stage": exc.stage, "message": str(exc)},
+                    failure_payload,
                 )
             else:
                 self._finish_or_retry(
                     ledger, task, attempt_id, failure_kind, exc.retryable,
-                    {"stage": exc.stage, "message": str(exc)},
+                    failure_payload,
                 )
 
     def _resume_verification(

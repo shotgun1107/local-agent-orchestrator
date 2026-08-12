@@ -5,12 +5,13 @@ import time
 from pathlib import Path
 
 import pytest
+import yaml
 
 from orchestrator.ledger import Ledger
 from orchestrator.recover import ControllerLock, ControllerLockError, backup_run, check_integrity, verify_backup
 from orchestrator.runtime import FakeRuntime
 from orchestrator.schedule import ConfigurationError, Orchestrator, load_project
-from tests.conftest import make_spec
+from tests.conftest import git, make_spec
 
 
 def execute(root: Path, state: Path, spec, *, scenario="complete", fixture=None):
@@ -84,6 +85,61 @@ def test_worker_completed_claim_cannot_override_failed_check(tmp_path: Path, pro
     assert snapshot["tasks"][0]["state"] == "FAILED"
     assert len(snapshot["tasks"][0]["attempts"]) == 2
     assert all(attempt["failure_kind"] == "check_failed" for attempt in snapshot["tasks"][0]["attempts"])
+
+
+def test_retry_prompt_receives_only_explicit_public_check_feedback(
+    tmp_path: Path,
+    project_factory,
+) -> None:
+    root = project_factory()
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    checks["checks"]["test_check"]["argv"] = [
+        "python",
+        "-c",
+        (
+            "print('unmarked private diagnostic'); "
+            "print('WORKER_FEEDBACK:rerun the public regression and fix its strict input'); "
+            "raise SystemExit(1)"
+        ),
+    ]
+    checks_path.write_text(
+        yaml.safe_dump(checks, sort_keys=False),
+        encoding="utf-8",
+    )
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise public retry feedback")
+    runtime = FakeRuntime()
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=tmp_path / "state",
+        runtime_port=runtime,
+        runtime_profile_override={"runtime": "fake"},
+        auth_method_override="none",
+    )
+    try:
+        run_id = orchestrator.start(make_spec())
+    finally:
+        orchestrator.close()
+
+    assert runtime.initial_feedbacks[0] is None
+    assert runtime.initial_feedbacks[1] == {
+        "failure": "checks",
+        "check_name": "test_check",
+        "exit_code": 1,
+        "public_feedback": [
+            "rerun the public regression and fix its strict input"
+        ],
+        "allowed_write_scope": [],
+        "remaining_completion_criteria": ["Check passes"],
+    }
+    assert "private diagnostic" not in json.dumps(
+        runtime.initial_feedbacks,
+        ensure_ascii=False,
+    )
+    with Ledger(tmp_path / "state" / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    assert snapshot["run"]["state"] == "FAILED"
 
 
 def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:

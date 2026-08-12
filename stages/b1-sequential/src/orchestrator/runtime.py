@@ -65,6 +65,7 @@ class SessionHandle:
     raw: Any
     envelope: TaskEnvelope
     runtime_profile: Any
+    initial_feedback: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -117,6 +118,7 @@ class FakeRuntime:
         self.interrupt_grace_seconds = interrupt_grace_seconds
         self.session_count = 0
         self.turn_count = 0
+        self.initial_feedbacks: list[dict[str, Any] | None] = []
         self._outcomes: dict[str, RuntimeOutcome] = {}
         self._done: dict[str, threading.Event] = {}
         self._handles: dict[str, TurnHandle] = {}
@@ -150,6 +152,7 @@ class FakeRuntime:
     def start_turn(self, session_handle: SessionHandle, task_envelope: TaskEnvelope) -> TurnHandle:
         if self.scenario == "dispatch_uncertain":
             raise DispatchUncertain("fake runtime receipt deliberately lost")
+        self.initial_feedbacks.append(session_handle.initial_feedback)
         self.turn_count += 1
         handle = TurnHandle(
             id=f"fake-turn-{self.turn_count}",
@@ -395,7 +398,7 @@ class CodexRuntime:
 
     def start_turn(self, session_handle: SessionHandle, task_envelope: TaskEnvelope) -> TurnHandle:
         raw = session_handle.raw.turn(
-            render_worker_prompt(task_envelope),
+            render_worker_prompt(task_envelope, session_handle.initial_feedback),
             approval_mode=self._ApprovalMode.deny_all,
             cwd=str(self.workspace),
             effort=session_handle.runtime_profile.reasoning_effort,
