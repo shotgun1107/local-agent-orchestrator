@@ -51,6 +51,7 @@ docs/
 - [현실 고난도 Phase B runtime-boundary 결과](./experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md) — Candidate 015와 model-free 경계 증거
 - [현실 고난도 Phase C 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md) — Schema·SS1 Fake Adapter·observer·property/triage 구현과 시험 기록
 - [현실 고난도 Phase E 0-turn 후보](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-result.md) — Profile R·I 네 Cell의 순서·예산·모델·권한과 source 결합을 model turn 0회로 봉인한 결과
+- [현실 고난도 Phase F one-Cell Controller](./experiments/sdk-routing-realistic-high-difficulty-phase-f-one-cell-controller-result.md) — 봉인 Plan에서 호출당 한 Cell만 전달하고 자동 진행을 금지한 model-free 실행 제어 결과
 
 ### `reviews/`
 
@@ -103,6 +104,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F 실제 Worker/model turn은 계속 `NO-GO`이며 Cell 1의 별도 사용자 승인이 필요하다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F one-Cell Controller와 Fake 자동진행 방지 시험은 완료했지만 실제 live backend·Worker/model turn은 계속 `NO-GO`다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

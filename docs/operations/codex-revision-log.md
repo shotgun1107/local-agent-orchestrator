@@ -1908,3 +1908,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 후보 experiment는 `exp_20260812_77e111e8_1`, Plan fingerprint `77e111e868b03e5ff1267c736031cb2a5588e6bcaf420e4388724eb0e9aea57d`, candidate seal `1e93ef12f11f7f05902ba7f0e25708f72dc9ed2e65ccea74956938caa5e57fc7`다. exact file set·hash·source commit/tree·R/I qualification·P015 runtime-boundary 결합을 별도 verifier가 재계산했다.
 - Phase E 표적 시험은 회사 checkout과 clean short clone에서 각각 `3 passed`다. 회사 checkout 전체 회귀는 `351 passed, 1 skipped, 2 failed`였고 실패 2건은 기존 Profile I source-intake의 CRLF working-tree bytes가 LF 정본과 달라진 동일 원인이다. clean clone 전체 회귀는 긴 경로로 인한 불완전 checkout 1회와, Git 비정본 frozen wheel 결손 및 저장소 내부 pytest state root 계약 위반 1회로 환경이 무효였으므로 코드 회귀 숫자에 합치지 않았다.
 - 상태는 `PHASE_E_ZERO_TURN_CANDIDATE_FROZEN`이다. 네 Cell은 아직 전부 미실행이며 SS1/B1 우위·route·일반화·기본 채택 주장은 없다. Phase F는 계속 `NO-GO`이고 첫 R SS1 Cell도 별도 사용자 승인을 받아야 한다.
+
+## Phase F one-Cell Controller model-free 구현
+
+- 작업일: 2026-08-12. 사용자가 승인한 범위에 따라 Phase E candidate를 검증하고 한 호출에서 정확히 다음 Cell 하나만 backend로 넘기는 `realistic_phase_f.py`를 구현했다. 실제 SDK adapter는 넣지 않았고 model·Worker·Codex process 호출은 0회다.
+- Controller는 외부 state root, byte-exact Plan/candidate seal 복사, self-hashed state, write-once dispatch claim, expected ordinal과 별도 Cell/model 승인, request/result identity, Cell당 10-turn 상한을 강제한다. claim 뒤 실패는 `FAILED`로 닫고 자동 재시도하지 않는다.
+- Fake backend 시험에서 Profile R SS1 Cell 1만 정확히 1회 호출됐다. 반환 뒤 Cell 1은 `SEALED`, Cell 2~4는 `PLANNED`이며 Cell 2 dispatch claim은 존재하지 않았다. 잘못된 ordinal, Cell 승인 없음, live model 승인 없음은 backend 호출 전 거부됐다.
+- 최초 시험은 UTC `datetime`의 `+00:00`과 Pydantic canonical JSON의 `Z` 표현 차이로 state self-hash가 불일치했다. hash 전 UTC 표현을 canonical `Z`로 정규화해 교정했다. 최종 Phase F 표적 시험은 `5 passed`, Python compile과 `git diff --check`는 통과했다.
+- 상태는 `PHASE_F_ONE_CELL_CONTROLLER_MODEL_FREE_READY`다. 실제 Profile R SS1 실행에는 runtime contract v2 live backend 구현·Fake transport 계약 시험과 별도 사용자 model-usage 승인이 남아 있다.
