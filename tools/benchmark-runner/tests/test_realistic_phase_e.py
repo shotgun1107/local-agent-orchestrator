@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -60,6 +61,35 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.total_initial_turns == 32
     assert stage.budget.total_turn_ceiling == 40
     assert stage.dispatch.automatic_continuation is False
+    assert stage.profiles[0].qualification_path == (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v2/qualification.json"
+    )
+
+
+def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v2"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+
+    assert qualification["schema_version"] == 1
+    assert qualification["profile"] == "R"
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert qualification["image_reference"].endswith(
+        "@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89"
+    )
+    cells = qualification["cells"]
+    assert [cell["ordinal"] for cell in cells] == list(range(1, 10))
+    assert cells[0]["variant_id"] == "reference"
+    assert cells[0]["aggregate_status"] == "pass"
+    assert all(cell["matched_expectation"] is True for cell in cells)
+    assert all(cell["aggregate_status"] == "fail" for cell in cells[1:])
 
 
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
