@@ -216,7 +216,7 @@ class PhaseFB1RuntimeV2(RuntimePort):
     ) -> TurnHandle:
         return self._start_turn(
             session_handle,
-            render_worker_prompt(task_envelope),
+            render_worker_prompt(task_envelope, session_handle.initial_feedback),
             turn_no=1,
         )
 

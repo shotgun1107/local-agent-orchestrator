@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "anonymization-map.json",
-      "sha256": "eea6653eb62d72890bf041d675e4b64fb8648aa59b7f3059ecee1f018c198e1a",
-      "size": 1537
+      "sha256": "098a555430d01622985b962ee463d33fd4a8897d8bfbaa68b64967d5a990f04d",
+      "size": 1485
     },
     {
       "path": "challenge-eligibility.json",
@@ -23,57 +23,57 @@
     },
     {
       "path": "evidence/anonymization-review.md",
-      "sha256": "8d7ea07a3cd5b266c8e3bc67ba8e2e4781ae84f2e83af5f3b83460dad98aff9c",
+      "sha256": "b204ff83f1dfda1f4a0ebe847cb2f7e741ea5e16759c7ecfdc5b9c80961754ed",
       "size": 402
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "cc58f97c1f7d09866a98761680c1cbc7293ae646aad4aa0e28600b316300c20b",
+      "sha256": "4f2c76cecbf1f88e436d02c45774f9e5e185aa0bb3e4abaa915e96f79ed80d91",
       "size": 9234
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "51826b7a9deb8359f1af2e523ab040c8e33a24383e7d8abd4b3ea49762a426c0",
+      "sha256": "eb42f7c3da61ede7cd15f998b9ecb4e276aad1c01446766df2d841bebbcfcb95",
       "size": 6766
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "ded1e94786369cdfc8dd57e2c5aa118225b46ee9274d583611c9a7422d518960",
+      "sha256": "0949d04098eaa171e783a6bf5aa672c125b29f705f03a7ab556079a5668e7200",
       "size": 7170
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "441b82a3f963eb4bbd1b7b5e386ebbf14c47020763b44f8f5680c33ae6bfc2d9",
+      "sha256": "60698d2b476c1975bee17807690f84dda727b2f52444efb95c431ec4365a148b",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "9340074ef41440b570bcef1bd0004427b94728b42124c2530477436d9a2165cb",
+      "sha256": "2ef2843d81b03debcc23fa95825a5e17907dea6a385699dae59f6f849fb7ded5",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "c9607166689878373778ff8631ea7dae9b30cc095d081e46036ea11cc9ea9026",
+      "sha256": "c310a41e4d0b4f382b4cc8917a53424c07512a8eff8e59b11f7a15122d54ec5a",
       "size": 7953
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "0467e979dda89858b699b534fa26dae07928cd2ab24a5f4d65357750ad10b2f9",
+      "sha256": "82232b46ef3c222375420f60f88adb2690f7e786bbc5eca9d49d51f6c824c79e",
       "size": 9231
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "68f4330d49fd7855e45d2716d4b37ff3f524d82d04ba5cff5f5e53cc3e5eb373",
+      "sha256": "eae5852a3afb0c0377c0161d07640d1d467cd2f3736651fa72af68a908a6f672",
       "size": 9239
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "abbfe5dc41a8325b1278576eef2ee293856f313e1580ad5951fbe9f48cc27563",
+      "sha256": "aed676da4e886bdd6709e1ac6803864928f9ca21a9a5c572210f17f4f1355814",
       "size": 6396
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "eb5d9abd383e0be9df165768ade3a645cef20f6b4ba3c8262aa957cac2a7079f",
+      "sha256": "d2fd2dbe50c74088235875b45557bf6dd1cd4005db80c3d05dc549b44e40ee73",
       "size": 9227
     },
     {
@@ -162,7 +162,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "d9f318662f3501cc8ff3a46eb0e898efad6d67275ba1c39ac22b4558fe7a2707",
+  "payload_aggregate_sha256": "4bb6e9f81bb67215eb28975dfeef236d09d76e6795b1f46a6c90acbd7df4fcd6",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

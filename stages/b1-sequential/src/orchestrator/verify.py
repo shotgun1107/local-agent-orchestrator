@@ -31,11 +31,52 @@ from .contract import (
 )
 
 
+PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
+PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 2048
+
+
 class VerificationError(RuntimeError):
-    def __init__(self, stage: str, message: str, *, retryable: bool = False):
+    def __init__(
+        self,
+        stage: str,
+        message: str,
+        *,
+        retryable: bool = False,
+        public_feedback: dict[str, Any] | None = None,
+    ):
         super().__init__(message)
         self.stage = stage
         self.retryable = retryable
+        self.public_feedback = public_feedback
+
+
+def extract_public_check_feedback(result: CheckResult) -> list[str]:
+    """Return only explicitly marked, UTF-8-bounded Worker-safe Check feedback."""
+
+    messages: list[str] = []
+    remaining = PUBLIC_CHECK_FEEDBACK_MAX_BYTES
+    for stream in (result.stdout, result.stderr):
+        for line in stream.splitlines():
+            if not line.startswith(PUBLIC_CHECK_FEEDBACK_PREFIX):
+                continue
+            message = line[len(PUBLIC_CHECK_FEEDBACK_PREFIX):].strip()
+            if not message or remaining <= 0:
+                continue
+            encoded = message.encode("utf-8")
+            if len(encoded) > remaining:
+                encoded = encoded[:remaining]
+                while encoded:
+                    try:
+                        message = encoded.decode("utf-8")
+                        break
+                    except UnicodeDecodeError:
+                        encoded = encoded[:-1]
+                else:
+                    message = ""
+            if message:
+                messages.append(message)
+                remaining -= len(message.encode("utf-8"))
+    return messages
 
 
 def path_matches(path: str, patterns: Iterable[str]) -> bool:

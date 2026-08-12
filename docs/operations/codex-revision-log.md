@@ -2007,3 +2007,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 작업일: 2026-08-12. 최신 회사→집 정본을 `docs/operations/company-to-home-codex-handoff.md` revision 4로 갱신하고, 같은 집 Codex 작업에 전달할 시작 프롬프트를 `docs/prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md`에 교체했다.
 - 집의 다음 필수 작업은 `codex/phase-d-artifacts` 최신 tip으로 ff-only 동기화한 뒤 R07 test fixture와 공개 Check feedback을 model-free로 최소 교정하고 표적·관련 회귀, 로그, commit·push까지 끝내는 것이다. P001~P015는 이미 tracked 정본이므로 다시 수집하지 않는다.
 - 회사 R1~R6 raw root, `.venv`, Docker local image와 로그인 상태는 Git 동기화 대상이 아니다. R6 결과와 hash는 인수 문서와 이 로그에 보존했다. 실제 model/SDK turn, R7 재실행과 Cell 3은 계속 별도 사용자 승인 대상이다.
+
+## Phase F Profile R B1 R07 공개 회귀와 재시도 피드백 교정
+
+- 작업일: 2026-08-12. 집 저장소를 `codex/phase-d-artifacts` 원격 tip `010a4246ea86bad380a11357b3663ca2e837864d`로 ff-only 동기화한 뒤, 봉인된 R6 원본과 P001~P015 정본은 수정하지 않고 R07 문제만 model-free로 재현했다. strict Pydantic 입력은 fixture `profile`과 S2 전용 `stage_id`, `purpose`, `initial_cell_order` 네 종류를 `extra_forbidden`으로 거부했다.
+- 기준 reference 시험은 이미 `FrozenManifest`와 `FrozenFixtureSpec`의 선언 필드만 사용한다. 실제 실패는 R6 Worker가 새로 만든 test helper의 변환 오류였다. 새 R07 공개 goal에 strict model 선언 필드만 사용하고 S2 stage/profile dict를 전달하지 말라는 경계를 명시했다. production Pydantic model과 R07의 네 필수 시험, assertion은 완화하지 않았다.
+- 보호된 public checker는 알려진 pytest failure를 공개 정보만으로 분류해 `WORKER_FEEDBACK:` 한 줄을 최대 1,600자로 출력한다. B1은 이 명시 marker만 읽고 전체 UTF-8 2,048-byte로 자른 뒤 failed Attempt에 보존하며, 다음 Attempt의 첫 turn에 allowed write scope와 남은 criteria를 함께 전달한다. unmarked stdout/stderr와 Judge/reference/negative-mutation 정보는 전달하지 않는다.
+- Windows subprocess의 비 UTF-8 출력 때문에 public checker reader가 중단되는 model-free 관통 오류도 발견했다. checker는 `errors="replace"`로 디코딩하고 누락 stream을 빈 값으로 취급하도록 fail-closed 교정했다. 새 short reference workspace에서 최종 `R07_PUBLIC_CONTRACT_OK`를 확인했다.
+- Profile R source bundle의 기존 manifest가 LF Git blob 대신 과거 CRLF working bytes의 크기/hash를 보존한 불일치도 회귀에서 드러났다. 이 PC에서 끊어진 `.venv`의 Python 3.12 경로만 로컬 bundled 3.12로 복구하고 정본 builder를 재실행했다. 최초 의존성 없는 builder 결과 `CHALLENGE_NOT_READY`는 통과 근거에서 제외했으며, 최종 bundle은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, payload aggregate `4bb6e9f81bb67215eb28975dfeef236d09d76e6795b1f46a6c90acbd7df4fcd6`다.
+- 최종 model-free 검증은 routing S2와 Profile R fixture `30 passed`, B1 전체 `79 passed`, Phase F B1/finalizer/live 관련 `8 passed, 2 skipped`다. Phase F의 최초 세 실패는 Windows 긴 temp path에서 `git add`가 거부된 환경 실패였고 fresh `C:\lao-tests` root에서 세 시험 모두 통과했다. 실제 model, SDK, Codex, Docker, network 호출은 0회다. 구현 incident는 `DEV-20260812-006`이다.
+- R6 실패 seal은 그대로 유지한다. 이번 교정으로 Worker/Judge source hash가 과거 Phase E candidate와 Docker qualification의 바이트에서 달라졌으므로, 기존 후보를 새 R7 근거로 재사용하지 않는다. 새 source에 대한 필요한 qualification과 model-free Phase E candidate 재동결, 별도 사용자 model 승인 전 실제 R7과 Cell 3은 계속 `NO-GO`다.

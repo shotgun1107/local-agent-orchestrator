@@ -159,7 +159,7 @@ tasks:
     check_names: [r06_contract, diff_check]
     approval: none
   - key: R07
-    goal: "Add the S2 model-free regressions and update the legacy suite/Judge regressions without weakening the S1 branch."
+    goal: "Add the S2 model-free regressions and update the legacy suite/Judge regressions without weakening the S1 branch. Build FrozenManifest and FrozenFixtureSpec test inputs from fields declared by those strict models only; do not forward S2 stage or profile dictionaries into them."
     completion_criteria:
       - {id: R07C1, text: "The required S2 and legacy regression groups are present and pass.", check_names: [r07_contract]}
     depends_on: [R01, R03, R06]

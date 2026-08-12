@@ -6,12 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from orchestrator.contract import CommandCheck
+from orchestrator.contract import CheckResult, CommandCheck
 from orchestrator.verify import (
     ArtifactStore,
     GitWorkspace,
     VerificationError,
     build_check_environment,
+    extract_public_check_feedback,
     hash_project_pack,
     path_matches,
     run_command_check,
@@ -123,6 +124,30 @@ def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> Non
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
     }
+
+
+def test_public_check_feedback_requires_marker_and_is_bounded() -> None:
+    result = CheckResult(
+        check_name="public",
+        state="FAILED",
+        argv=["python", "check.py"],
+        exit_code=1,
+        stdout=(
+            "unmarked private diagnostic\n"
+            "WORKER_FEEDBACK:fix the public fixture boundary\n"
+            f"WORKER_FEEDBACK:{'x' * 3000}\n"
+        ),
+        stderr="unmarked stderr\nWORKER_FEEDBACK:ignored after the byte cap\n",
+        started_at="2026-08-12T00:00:00Z",
+        ended_at="2026-08-12T00:00:01Z",
+    )
+
+    feedback = extract_public_check_feedback(result)
+
+    assert feedback[0] == "fix the public fixture boundary"
+    assert sum(len(message.encode("utf-8")) for message in feedback) == 2048
+    assert "private diagnostic" not in " ".join(feedback)
+    assert "unmarked stderr" not in " ".join(feedback)
 
 
 def test_secret_scan_finds_token_values_but_not_benign_words(tmp_path: Path) -> None:

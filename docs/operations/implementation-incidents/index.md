@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 48건
-- 해결: 46건
+- 전체: 49건
+- 해결: 47건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -61,6 +61,7 @@
 | DEV-20260812-003 | resolved | phase-f-profile-r-b1 | integration | B1 Check resolved bare python to the global interpreter |
 | DEV-20260812-004 | resolved | phase-f-profile-r-b1 | integration | B1 ResultEnvelope accepted directory-shaped artifact claims until final verification |
 | DEV-20260812-005 | resolved | phase-f-profile-r-b1 | integration | B1 scope verification treated untracked Python bytecode as a Worker source change |
+| DEV-20260812-006 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2873,3 +2874,78 @@ Normalize only untracked regular __pycache__/*.pyc files before B1 declared-arti
 
 - 관련 커밋: 기록 없음
 - 출처: C:/lao-phase-f-live-c36731c-r5
+
+## DEV-20260812-006 — Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T10:47:28Z / actual Phase F B1 R6 run and model-free post-run reproduction
+- 해결: 2026-08-12T10:47:28Z
+
+### 증상
+
+R07 failed the public S2 regression on both B1 attempts because its generated test forwarded S2-only stage/profile fields into strict FrozenManifest and FrozenFixtureSpec models, while the retry saw only R07_PUBLIC_CONTRACT_FAILED
+
+### 재현
+
+- Validate a FrozenManifest-shaped test value containing stage_id, purpose, initial_cell_order, and a fixture profile field
+- Run the R07 public checker on a failing S2 regression and observe that the former output contains no actionable reason for the second B1 attempt
+
+### 증거
+
+- `direct-observation`: The sealed R6 ledger recorded two R07 check_failed attempts and did not dispatch R08
+- `reproducible-test`: The strict Pydantic reproduction rejects exactly fixture profile plus stage_id, purpose, and initial_cell_order as extra_forbidden
+- `reproducible-test`: A FakeRuntime retry receives only an explicitly marked, byte-bounded public Check message and never receives unmarked stdout or stderr
+
+### 근본 원인
+
+The public R07 Task did not spell out the conversion boundary between the S2 stage/profile documents and legacy strict frozen-manifest models, and B1 persisted only the generic Check failure rather than an explicitly public, bounded diagnostic
+
+### 검토한 해결안
+
+- `rejected` allow extra fields in the production FrozenManifest models — would weaken a frozen input contract to accommodate one incorrect test fixture
+- `rejected` forward complete pytest stdout and stderr to the next Worker attempt — would create an unbounded information path and could disclose nonpublic diagnostics
+- `adopted` clarify the public R07 goal and forward only protected-checker WORKER_FEEDBACK lines through a strict byte cap — prevents the observed fixture mistake and gives one retry an actionable public reason without exposing Judge data
+
+### 채택한 해결
+
+State the strict FrozenManifest and FrozenFixtureSpec construction rule in the public R07 Task; classify the known public pytest failure in the protected checker; decode Windows subprocess output with replacement; extract only WORKER_FEEDBACK-prefixed text with a 2048-byte cap; persist that public payload in the failed Attempt and place it in the next Attempt's first-turn prompt
+
+### 수정 파일
+
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+- stages/b1-sequential/src/orchestrator/runtime.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/src/orchestrator/verify.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/unit/test_verify.py::test_public_check_feedback_requires_marker_and_is_bounded
+- stages/b1-sequential/tests/integration/test_orchestrator.py::test_retry_prompt_receives_only_explicit_public_check_feedback
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_public_task_pack_has_exact_graph_and_protected_checks
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback
+
+### 검증 결과
+
+- Profile R reference workspace public R07 checker: R07_PUBLIC_CONTRACT_OK
+- routing S2 and Profile R fixture regressions: 30 passed
+- B1 full regression: 79 passed
+- Phase F B1/finalizer/live model-free regressions: 8 passed, 2 opt-in tests skipped; the three long-path failures passed from a fresh short temp root
+- Profile R Judge source bundle rebuilt as PROFILE_R_SOURCE_BUNDLE_VERIFIED
+- No model, SDK, Codex, Docker, or network call was used for the correction verification
+
+### 남은 위험
+
+- The sealed R6 failure remains unchanged and is not reclassified
+- The corrected Worker and Judge source hashes differ from the historical Phase E candidate and Docker qualification; a newly bound model-free candidate and the required qualification gate must precede any actual R7
+- Actual Worker behavior after receiving the corrected goal and retry feedback is not proven without a separately approved model run
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/company-to-home-codex-handoff.md
+- 출처: docs/operations/codex-revision-log.md

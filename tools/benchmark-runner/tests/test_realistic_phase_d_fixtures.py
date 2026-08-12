@@ -190,6 +190,16 @@ def _load_snapshot_builder():
     return module
 
 
+def _load_profile_r_public_checker():
+    path = WORKER_ROOT / "benchmark_checks" / "check_profile_r.py"
+    spec = importlib.util.spec_from_file_location("profile_r_public_checker", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _workspace_files(root: Path) -> list[Path]:
     return sorted(
         (
@@ -299,6 +309,11 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
         assert task["check_names"] == [f"{task['key'].lower()}_contract", "diff_check"]
         assert protected.isdisjoint(set(task["write_scope"]))
 
+    r07 = next(task for task in tasks if task["key"] == "R07")
+    assert "FrozenManifest and FrozenFixtureSpec" in r07["goal"]
+    assert "strict models only" in r07["goal"]
+    assert "do not forward S2 stage or profile dictionaries" in r07["goal"]
+
     checks = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
     )["checks"]
@@ -328,6 +343,50 @@ def test_profile_r_public_check_is_model_free_and_compiles() -> None:
     )
     assert all(value not in source for value in forbidden)
     compile(source, str(check_path), "exec")
+
+
+def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
+    capsys,
+) -> None:
+    checker = _load_profile_r_public_checker()
+    pytest_result = subprocess.CompletedProcess(
+        [sys.executable, "-m", "pytest"],
+        1,
+        (
+            "test_s2_fake_four_cell_plan_judge_property_seal_export\n"
+            "FrozenManifest\n"
+            "extra_forbidden\n"
+        ),
+        "",
+    )
+    feedback = checker._public_pytest_failure_feedback(pytest_result)
+    assert "FrozenManifest/FrozenFixtureSpec" in feedback
+    assert "stage_id, purpose, initial_cell_order" in feedback
+    assert len(feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
+
+    undecodable_stream_feedback = checker._public_pytest_failure_feedback(
+        subprocess.CompletedProcess(
+            [sys.executable, "-m", "pytest"],
+            1,
+            None,
+            None,
+        )
+    )
+    assert "public S2 pytest exited 1" in undecodable_stream_feedback
+    source = (
+        WORKER_ROOT / "benchmark_checks" / "check_profile_r.py"
+    ).read_text(encoding="utf-8")
+    assert 'errors="replace"' in source
+
+    def fail_r07() -> None:
+        raise checker.PublicContractError("failed", public_feedback=feedback)
+
+    checker.CHECKS["R07"] = fail_r07
+    assert checker.main(["check_profile_r.py", "R07"]) == 1
+    assert capsys.readouterr().out.splitlines() == [
+        "R07_PUBLIC_CONTRACT_FAILED",
+        f"WORKER_FEEDBACK:{feedback}",
+    ]
 
 
 def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> None:
