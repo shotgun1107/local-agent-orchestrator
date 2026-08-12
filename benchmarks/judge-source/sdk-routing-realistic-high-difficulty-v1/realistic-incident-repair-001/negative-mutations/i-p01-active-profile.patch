@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..eb7ac60902d5cd2ded50e89854d63b61001fc579 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -43,7 +43,7 @@ PINNED_CODEX_VERSION = "0.144.4"
+ PINNED_CLI_TARGET = "x86_64-pc-windows-msvc"
+ PERMISSION_PROFILE_ID = "runtime-boundary-worker"
+ WINDOWS_SANDBOX_KIND = "elevated"
+-PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list"
++PERMISSION_PROFILE_LIST_METHOD = "permissionProfile/list-mutated"
+ THREAD_STARTED_NOTIFICATION_METHOD = "thread/started"
+ EXACT_PROBE_IDS = tuple(f"P{number:02d}" for number in range(1, 9))
+ EXACT_BUNDLE_FILES = frozenset(

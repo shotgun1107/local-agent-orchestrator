@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..be21c23a7f69b9f2f7303aa817471ce903b4e60a 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -3651,7 +3651,7 @@ def recompute_probe_pass(
+             == manifest.fixtures.p08_replace_source_sha256
+             and probe.replace.target_sha256_before is None
+             and probe.replace.target_sha256_after is None
+-            and probe.S_sentinel_sha256_before == manifest.S_sentinel.sha256
++            and probe.S_sentinel_sha256_before != manifest.S_sentinel.sha256
+             and probe.S_sentinel_sha256_after == manifest.S_sentinel.sha256
+         )
+     raise AssertionError(f"unhandled probe type: {type(probe).__name__}")

@@ -1,0 +1,13 @@
+diff --git a/profile-i/work/incident-claims.json b/profile-i/work/incident-claims.json
+index b25c678ee4d4922aee694694c6ee8132da12a38b..64919064e85c93774819af4a727106d64b0757ac 100644
+--- a/profile-i/work/incident-claims.json
++++ b/profile-i/work/incident-claims.json
+@@ -8,7 +8,7 @@
+         "O010"
+       ],
+       "observation_sha256s": [
+-        "08ee9cb3caacfd46bb6066ff9ca41e20798144cc99fdb3ef16bbd74dc1b50096",
++        "0000000000000000000000000000000000000000000000000000000000000000",
+         "b745112112dec6dbf44e8846002abdc565a093e19f106c91f1d99a59d2c7f315"
+       ],
+       "reason_code": "PUBLIC_FACT_SET_CLASSIFIED",

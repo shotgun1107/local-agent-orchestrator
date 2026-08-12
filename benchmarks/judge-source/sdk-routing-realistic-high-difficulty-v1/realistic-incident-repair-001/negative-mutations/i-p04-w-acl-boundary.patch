@@ -1,0 +1,84 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..b299f41211b3ec47917b19ecc1c450b6ae5171a8 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -921,7 +921,7 @@ class EffectivePolicyEvidence(StrictModel):
+     derived_policy_passed: bool
+ 
+ 
+-class WorkspaceAclTransitionObservation(StrictModel):
++class WorkspaceAclTransitionObservationMutated(StrictModel):
+     selection_method: Literal["initial_acl+exact_w_only_ace_delta+p01_restricted_sid"]
+     initial_W_acl_sddl_sha256: Sha256
+     active_W_acl_sddl_sha256: Sha256
+@@ -948,7 +948,7 @@ class WorkspaceAclTransitionObservation(StrictModel):
+     derived_transition_passed: bool
+ 
+     @model_validator(mode="after")
+-    def acl_hash_lists_are_canonical(self) -> "WorkspaceAclTransitionObservation":
++    def acl_hash_lists_are_canonical(self) -> "WorkspaceAclTransitionObservationMutated":
+         if self.initial_W_ace_sha256s != sorted(self.initial_W_ace_sha256s):
+             raise ValueError("initial W ACE hashes must be sorted")
+         if self.active_W_ace_sha256s != sorted(self.active_W_ace_sha256s):
+@@ -964,7 +964,7 @@ class WindowsSandboxProvenanceObservation(StrictModel):
+     readiness_response: EmbeddedJsonEvidence
+     controller_process_identity: WindowsProcessIdentityObservation
+     P01_process_identity: WindowsProcessIdentityObservation
+-    workspace_acl_transition: WorkspaceAclTransitionObservation
++    workspace_acl_transition: WorkspaceAclTransitionObservationMutated
+     dedicated_user_sid_differs_from_controller: bool
+     all_probe_process_identities_equal_P01: bool
+     P06_parent_child_identity_equal: bool
+@@ -1141,14 +1141,14 @@ class _WorkspaceAclTransitionGuard:
+             )
+         self._bound_P01_identity_sha256 = identity.identity_sha256
+ 
+-    def evidence(self) -> WorkspaceAclTransitionObservation:
++    def evidence(self) -> WorkspaceAclTransitionObservationMutated:
+         if self._transition is None or self._bound_P01_identity_sha256 is None:
+             raise RuntimeBoundaryError("W workspace ACL transition evidence is incomplete")
+         state = self._transition
+         ace_type, flags, rights, object_guid, inherit_object_guid, sid = (
+             _parse_workspace_acl_ace(state.added_ace_sddl)
+         )
+-        return WorkspaceAclTransitionObservation(
++        return WorkspaceAclTransitionObservationMutated(
+             selection_method="initial_acl+exact_w_only_ace_delta+p01_restricted_sid",
+             initial_W_acl_sddl_sha256=state.initial.identity.acl_sddl_sha256,
+             active_W_acl_sddl_sha256=state.active.identity.acl_sddl_sha256,
+@@ -1177,7 +1177,7 @@ class _WorkspaceAclTransitionGuard:
+ 
+ 
+ def verify_workspace_acl_transition(
+-    evidence: WorkspaceAclTransitionObservation,
++    evidence: WorkspaceAclTransitionObservationMutated,
+     *,
+     P01_process_identity: WindowsProcessIdentityObservation,
+ ) -> bool:
+@@ -3384,7 +3384,7 @@ def _classification_payload(
+     readiness: EmbeddedJsonEvidence,
+     controller: WindowsProcessIdentityObservation,
+     P01: WindowsProcessIdentityObservation,
+-    workspace_acl_transition: WorkspaceAclTransitionObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservationMutated,
+     all_probe_equal: bool,
+     P06_child_equal: bool,
+ ) -> dict[str, JsonValue]:
+@@ -3409,7 +3409,7 @@ def derive_windows_sandbox_kind(
+     readiness_response: EmbeddedJsonEvidence,
+     controller_process_identity: WindowsProcessIdentityObservation,
+     P01_process_identity: WindowsProcessIdentityObservation,
+-    workspace_acl_transition: WorkspaceAclTransitionObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservationMutated,
+     all_probe_process_identities_equal_P01: bool,
+     P06_parent_child_identity_equal: bool,
+ ) -> tuple[Literal["elevated", "unelevated", "unknown"], bool, str]:
+@@ -3493,7 +3493,7 @@ def build_windows_sandbox_provenance(
+     config_requirements_response: EmbeddedJsonEvidence,
+     readiness_response: EmbeddedJsonEvidence,
+     controller_process_identity: WindowsProcessIdentityObservation,
+-    workspace_acl_transition: WorkspaceAclTransitionObservation,
++    workspace_acl_transition: WorkspaceAclTransitionObservationMutated,
+     probes: Sequence[ProbeResult],
+ ) -> WindowsSandboxProvenanceObservation:
+     if tuple(probe.probe_id for probe in probes) != EXACT_PROBE_IDS:

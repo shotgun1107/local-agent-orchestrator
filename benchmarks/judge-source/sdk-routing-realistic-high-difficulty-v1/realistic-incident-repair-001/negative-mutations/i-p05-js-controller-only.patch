@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..9256e855269d3aab1b23ad42344878c19e04ae3a 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -644,7 +644,7 @@ def _assert_controller_only_directory_security(
+     snapshot = _capture_windows_root_security(path, redacted_path_id="controller-only")
+     expected_aces = Counter(
+         (
+-            "(A;OICI;FA;;;SY)",
++            "(A;OICI;FA;;;SYY)",
+             "(A;OICI;FA;;;BA)",
+             f"(A;OICI;FA;;;{expected_owner_sid})",
+         )
