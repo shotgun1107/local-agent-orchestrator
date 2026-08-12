@@ -1916,3 +1916,37 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Fake backend 시험에서 Profile R SS1 Cell 1만 정확히 1회 호출됐다. 반환 뒤 Cell 1은 `SEALED`, Cell 2~4는 `PLANNED`이며 Cell 2 dispatch claim은 존재하지 않았다. 잘못된 ordinal, Cell 승인 없음, live model 승인 없음은 backend 호출 전 거부됐다.
 - 최초 시험은 UTC `datetime`의 `+00:00`과 Pydantic canonical JSON의 `Z` 표현 차이로 state self-hash가 불일치했다. hash 전 UTC 표현을 canonical `Z`로 정규화해 교정했다. 최종 Phase F 표적 시험은 `5 passed`, Python compile과 `git diff --check`는 통과했다.
 - 상태는 `PHASE_F_ONE_CELL_CONTROLLER_MODEL_FREE_READY`다. 실제 Profile R SS1 실행에는 runtime contract v2 live backend 구현·Fake transport 계약 시험과 별도 사용자 model-usage 승인이 남아 있다.
+
+## Phase F SDK runtime contract v2 model-free 구현
+
+- 작업일: 2026-08-12. Phase E Plan의 runtime contract v2를 SS1 `SdkRuntime` 경계에 구현했다. 기존 legacy `workspace_write` runtime은 재사용하지 않고 `runtime-boundary-worker`, `deny_all`/wire `never`, `gpt-5.6-sol`, effort `high`, thread·turn legacy sandbox 인자 생략을 별도 계보로 고정했다.
+- `CodexPhaseFAppServerPort`는 실제 `openai-codex==0.144.4` 저수준 client를 지연 생성하며 raw `permissionProfile/list`, `thread/start` response와 `thread/started` notification을 결합한다. import나 객체 생성만으로 app-server를 열지 않으며 실제 실행은 외부 호출자가 `open()`을 호출할 때만 가능하다.
+- Fake app-server와 fake 저수준 Codex client로 exact parameter, persistent single thread, account/model/profile·thread binding fail-closed, API-key 이름 차단, 다섯 config override 계약을 시험했다. Phase F SDK 표적 시험은 `14 passed`다.
+- Phase E/F·SS1·기존 SDK 영향 회귀는 `51 passed`였고 Phase E candidate 재생성 1건만 신규 untracked 파일 때문에 clean-source precondition에서 중단됐다. 실제 SDK thread·Codex process·model turn은 모두 0회다.
+- 상태는 `PHASE_F_SDK_RUNTIME_V2_MODEL_FREE_READY`다. 아직 Profile R workspace 준비, SS1 backend 최종 조립, observer·Judge·Measurement·seal과 실제 Cell 1 model turn은 수행하지 않았다.
+
+## Phase F Profile R SS1 backend model-free 수직 조립
+
+- 작업일: 2026-08-12. 동결 Profile R Worker manifest의 130-file path/hash를 새 Git workspace로 복원하고, public R01~R08을 기존 `SS1PersistentAdapter`와 주입형 runtime에 연결하는 `realistic_phase_f_ss1.py`를 구현했다. model-free Fake는 한 persistent thread에서 8개 initial turn과 8개 passive boundary record를 만들었다.
+- 통합 과정에서 R04 이후 일부 declared input은 앞 Task가 생성하므로 Cell 시작 시점에 존재하지 않는다는 문제를 확인했다. 기존 Task 의미와 순서는 유지하고 선택형 `task_resolver`가 각 Task initial turn 직전에 declared input·predecessor artifact 존재와 SHA-256을 다시 계산하도록 했다. Task ID를 바꾸면 실패한다.
+- workspace observer는 turn 전후 file tree, changed/out-of-scope path, protected file hash와 공개 evidence를 계산한다. Fake clear telemetry는 model-free mode에서만 허용하며 live mode에는 사용할 수 없다. adapter outcome이 `completed`가 아니면 backend 성공 결과를 반환하지 않는다.
+- 표적 시험은 `5 passed`, SS1·routing·Phase F Controller·runtime v2 결합 회귀는 `57 passed`, 최종 SS1 backend와 기존 adapter 재검증은 `24 passed`다. 실제 SDK thread·Codex process·model turn은 0회다.
+- 상태는 `PHASE_F_PROFILE_R_SS1_BACKEND_MODEL_FREE_READY`다. Cell 1만 `SEALED`, Cell 2~4는 `PLANNED`, Cell 2 claim은 없다. 아직 live J/S telemetry, Docker Judge·Measurement·최종 Cell seal과 model-usage 승인이 남아 있어 실제 Cell 1은 실행하지 않았다.
+
+## Phase F Profile R Cell finalizer model-free 수직 조립
+
+- 작업일: 2026-08-12. 기존 Profile R SS1 backend 뒤에 주입형 Judge, 공통 `Measurement`, 최종 Cell seal과 독립 verifier를 연결하는 `realistic_phase_f_finalize.py`를 구현했다. 실제 Docker·SDK·Codex·model은 호출하지 않았다.
+- Fake Judge는 manifest/result만 결정론적으로 생성하고 model turn과 Docker 실행을 모두 0으로 기록한다. finalizer는 SS1 adapter Evidence, Judge 파일, Measurement를 한 seal에 결합하며 외부 seal 파일 hash부터 모든 파일 path·size·SHA-256과 Measurement identity를 다시 계산한다.
+- Fake 수직 시험에서 R01~R08 실행 뒤 Cell 1만 `SEALED`가 됐고 Cell 2~4는 `PLANNED`, Cell 2 claim은 없었다. Measurement에는 session 1, turn 8, Judge 성공과 자동 연속 실행 금지가 기록됐다. Judge result 사후 변조는 verifier가 거부했다.
+- 표적 수직 시험은 `2 passed`, Phase F Controller·SDK runtime·SS1·finalizer·기존 SS1 결합 회귀는 `45 passed`, Python compile은 통과했다. actual model turn·실제 SDK thread·Codex process·Docker 실행은 모두 0회다.
+- 상태는 `PHASE_F_PROFILE_R_CELL_FINALIZER_MODEL_FREE_READY`다. 다음은 변경된 Worker workspace를 기존 Docker property Judge에 전달하는 실제 Judge 포트를 model-free로 구현·검증하는 단계다. 그 뒤에만 사용자에게 실제 Cell 1 model 사용 승인을 다시 요청한다.
+
+## Phase F Profile R Docker Judge 포트 model-free 구현
+
+- 작업일: 2026-08-12. 기존 qualification Docker Judge 코드를 수정하지 않고, Phase F Worker가 수정한 workspace를 metadata-free W snapshot으로 복사해 기존 read-only W/J/O 경계에 전달하는 `realistic_phase_f_docker.py`를 추가했다.
+- 실제 W에서 `.git`, `.pytest_cache`, `__pycache__`를 제외하고 regular file만 새 raw run root로 복사한다. 기존 `prepare_realistic_judge_roots()`가 보호 J/O/S를 만들며 Docker에는 W/J read-only, O write, S 미마운트, network none 계약이 그대로 전달된다.
+- raw Docker manifest/result는 Git 밖에 남긴다. Cell evidence에는 host 경로를 제거한 public manifest/result와 raw 두 hash만 기록한다. 기존 `verify_docker_judge_result()`로 status를 재계산한 뒤에만 Phase F `JudgeObservation`을 만든다.
+- Fake Docker backend로 성공과 property 실패, 명령 경계, 경로 비공개를 확인했다. 포트+finalizer 표적 시험은 `5 passed`, 기존 Docker Judge와 Phase F 관련 결합 회귀는 `59 passed`, Python compile과 diff check는 통과했다. 실제 Docker·SDK·Codex·model 호출은 0회다.
+- Docker sandbox 밖 최초 smoke는 기존 pytest 공용 임시 상위 폴더의 ACL 접근 거부로 subject 시작 전에 실패했다. 코드나 Docker 실패로 합치지 않고 새 전용 `C:\lao-phase-f-smoke-r1-20260812` 경로와 cacheprovider 비활성화로 다시 실행했다.
+- 실제 Docker reference smoke는 `1 passed in 27.65s`로 통과했다. client/server `29.6.2`, 고정 image digest 일치, container 17.843초, `CHECKS_PASSED`, reason code 없음, model turn 0이다. public manifest/result SHA-256은 각각 `5716516f...c126f`, `ed48d290...75157`, raw result self-hash는 `8d86e0ad...42208`이다.
+- 상태는 `PHASE_F_PROFILE_R_DOCKER_JUDGE_SMOKE_PASSED`다. 다음은 live Worker의 J/S 접근 telemetry와 SDK runtime을 one-Cell finalizer에 model-free로 최종 조립하는 단계다. 그 뒤 실제 Cell 1 model 사용 승인을 다시 받는다.

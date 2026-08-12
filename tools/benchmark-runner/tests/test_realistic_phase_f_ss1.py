@@ -1,0 +1,266 @@
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from benchmark_runner.realistic_phase_f import (
+    PHASE_F_CELLS_DIRECTORY,
+    PHASE_F_CLAIM_FILENAME,
+    PhaseFCellLifecycle,
+    PhaseFRuntimeMode,
+    initialize_phase_f_execution,
+    phase_f_status,
+    run_next_phase_f_cell,
+)
+from benchmark_runner.realistic_phase_f_ss1 import (
+    PHASE_F_SS1_EVIDENCE_FILENAME,
+    PROFILE_R_EXPECTED_TASK_IDS,
+    PROFILE_R_WORKER_MANIFEST_RELATIVE,
+    PROFILE_R_WORKER_RELATIVE,
+    ModelFreeClearBoundaryTelemetry,
+    PhaseFSS1BackendError,
+    ProfileRPhaseFSS1Backend,
+    build_profile_r_ss1_tasks,
+    materialize_profile_r_workspace,
+    refresh_profile_r_ss1_task,
+)
+from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
+
+
+REPOSITORY = Path(__file__).resolve().parents[3]
+CANDIDATE_ROOT = (
+    REPOSITORY
+    / "benchmarks"
+    / "artifacts"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v1"
+)
+
+
+def _completed_result(task_id: str) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "status_claim": "completed",
+        "summary": f"model-free completion for {task_id}",
+        "artifacts": [],
+        "changed_paths": [],
+        "checks_run_by_worker": [],
+        "assumptions": [],
+        "warnings": [],
+        "requested_followup": None,
+        "needs_additional_review": False,
+        "additional_review_reason": None,
+    }
+
+
+def _runtime_factory(captured: list[FakeSdkRuntime]):
+    effects = {
+        "R02": (
+            (
+                "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+                "schema_version: 1\nstage_id: s2-intermediate\n",
+            ),
+            (
+                "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
+                "schema_version: 1\nstatus: fake\n",
+            ),
+        ),
+        "R05": (
+            (
+                "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
+                '"""Model-free fake S2 policy."""\n',
+            ),
+        ),
+        "R06": (
+            (
+                "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
+                '"""Model-free fake S2 posthoc."""\n',
+            ),
+        ),
+        "R07": (
+            (
+                "tools/benchmark-runner/tests/test_routing_s2.py",
+                "def test_model_free_placeholder():\n    assert True\n",
+            ),
+        ),
+    }
+
+    def create(workspace: Path) -> FakeSdkRuntime:
+        runtime = FakeSdkRuntime(
+            workspace,
+            {
+                task_id: FakeTurnScript(
+                    effects=effects.get(task_id, ()),
+                    result=_completed_result(task_id),
+                )
+                for task_id in PROFILE_R_EXPECTED_TASK_IDS
+            },
+        )
+        captured.append(runtime)
+        return runtime
+
+    return create
+
+
+def _initialize(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    return initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        state_root=tmp_path / "state",
+    )
+
+
+def test_materialized_profile_r_workspace_matches_manifest_and_has_clean_baseline(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    manifest = materialize_profile_r_workspace(REPOSITORY, workspace)
+    expected = json.loads(
+        (REPOSITORY / PROFILE_R_WORKER_MANIFEST_RELATIVE).read_text(encoding="utf-8")
+    )
+
+    assert manifest == expected
+    assert len(manifest["files"]) == 130
+    assert (
+        subprocess.run(
+            ["git", "-C", str(workspace), "status", "--porcelain=v1"],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        ).stdout
+        == ""
+    )
+
+
+def test_profile_r_task_compilation_preserves_order_and_classifies_predecessors() -> None:
+    workspace = REPOSITORY / PROFILE_R_WORKER_RELATIVE
+    tasks = build_profile_r_ss1_tasks(workspace)
+    by_id = {task.task_id: task for task in tasks}
+
+    assert tuple(task.task_id for task in tasks) == PROFILE_R_EXPECTED_TASK_IDS
+    assert [item.path for item in by_id["R01"].declared_inputs] == [
+        "profile-r/requirements/change-surface.json",
+        "profile-r/requirements/migration-contract.md",
+    ]
+    assert by_id["R01"].predecessor_artifacts == []
+    assert [item.path for item in by_id["R02"].predecessor_artifacts] == [
+        "profile-r/work/migration-ledger.json",
+        "profile-r/work/source-inventory.json",
+    ]
+    assert by_id["R02"].declared_inputs == []
+    assert by_id["R04"].predecessor_artifacts[0].sha256 != ""
+    assert all(task.read_scope == sorted(task.read_scope) for task in tasks)
+    assert all(task.write_scope == sorted(task.write_scope) for task in tasks)
+
+
+def test_profile_r_task_hashes_are_refreshed_after_predecessor_output_exists(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    materialize_profile_r_workspace(REPOSITORY, workspace)
+    task = build_profile_r_ss1_tasks(workspace)[3]
+    target = workspace / "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("schema_version: 1\n", encoding="utf-8", newline="\n")
+    manifest = workspace / "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text("schema_version: 1\n", encoding="utf-8", newline="\n")
+
+    refreshed = refresh_profile_r_ss1_task(workspace, task)
+
+    assert refreshed.predecessor_artifacts[0].sha256 != task.predecessor_artifacts[0].sha256
+
+
+def test_profile_r_ss1_fake_backend_runs_all_tasks_in_one_thread_and_stops_at_cell_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    runtimes: list[FakeSdkRuntime] = []
+    backend = ProfileRPhaseFSS1Backend(
+        repository=REPOSITORY,
+        artifact_root=tmp_path / "backend",
+        runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+        runtime_factory=_runtime_factory(runtimes),
+        telemetry=ModelFreeClearBoundaryTelemetry(),
+        environ={},
+    )
+
+    result = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+
+    assert result.executed_ordinal == 1
+    assert result.actual_model_turns == 0
+    assert result.next_execution_ordinal == 2
+    assert result.automatic_continuation is False
+    assert len(runtimes) == 1
+    runtime = runtimes[0]
+    assert runtime.actual_model_turns == 0
+    assert len(runtime.started_threads) == 1
+    assert [turn["task_id"] for turn in runtime.turns] == list(
+        PROFILE_R_EXPECTED_TASK_IDS
+    )
+    assert {turn["thread_id"] for turn in runtime.turns} == {
+        runtime.started_threads[0]
+    }
+    assert all('"check_names"' not in str(turn["prompt"]) for turn in runtime.turns)
+
+    cell_root = tmp_path / "backend" / result.executed_cell_id
+    evidence = json.loads(
+        (cell_root / PHASE_F_SS1_EVIDENCE_FILENAME).read_text(encoding="utf-8")
+    )
+    assert evidence["task_count"] == 8
+    assert evidence["actual_model_turns"] == 0
+    assert len(evidence["adapter_raw_payload"]["boundary_records"]) == 8
+    assert evidence["adapter_normalized_metrics"]["session_count"] == 1
+    assert evidence["adapter_normalized_metrics"]["turn_count"] == 8
+    assert (
+        evidence["task_template_sha256"][3]
+        != evidence["dispatched_task_semantics_sha256"][3]
+    )
+    assert evidence["judge_executed"] is False
+    assert evidence["automatic_continuation"] is False
+    assert evidence["worker_tree_initial_sha256"] != evidence["worker_tree_final_sha256"]
+
+    status = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert [item["lifecycle"] for item in status["cells"]] == [
+        PhaseFCellLifecycle.SEALED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+    ]
+    second = status["cells"][1]
+    assert not (
+        experiment_dir
+        / PHASE_F_CELLS_DIRECTORY
+        / second["cell_id"]
+        / PHASE_F_CLAIM_FILENAME
+    ).exists()
+
+
+def test_live_backend_refuses_model_free_clear_telemetry(tmp_path: Path) -> None:
+    with pytest.raises(PhaseFSS1BackendError, match="fake clear telemetry"):
+        ProfileRPhaseFSS1Backend(
+            repository=REPOSITORY,
+            artifact_root=tmp_path / "backend",
+            runtime_mode=PhaseFRuntimeMode.LIVE_CHATGPT,
+            runtime_factory=lambda workspace: FakeSdkRuntime(workspace, {}),
+            telemetry=ModelFreeClearBoundaryTelemetry(),
+            environ={},
+        )

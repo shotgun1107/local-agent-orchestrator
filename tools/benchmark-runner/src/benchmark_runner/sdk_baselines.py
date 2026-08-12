@@ -257,6 +257,7 @@ class SS1ObserverContext:
 
 
 SS1Observer = Callable[[SS1ObserverContext], PassiveBoundaryObservation]
+SS1TaskResolver = Callable[[Ss1TaskRequest], Ss1TaskRequest]
 
 
 @dataclass(frozen=True)
@@ -265,6 +266,7 @@ class SS1PersistentConfig:
     contract: WorkerContract
     runtime: SdkRuntime
     observer: SS1Observer
+    task_resolver: SS1TaskResolver | None = None
     forbidden_prompt_fragments: tuple[str, ...] = ()
     task_extra_turn_ceiling: Literal[1] = 1
     variant_extra_turn_ceiling: Literal[2] = 2
@@ -481,7 +483,30 @@ class SS1PersistentAdapter:
         global_turn_ordinal = 0
         boundary_ordinal = 0
 
-        for task in self.config.tasks:
+        for frozen_task in self.config.tasks:
+            try:
+                task = (
+                    frozen_task
+                    if self.config.task_resolver is None
+                    else self.config.task_resolver(frozen_task)
+                )
+                if type(task) is not Ss1TaskRequest or task.task_id != frozen_task.task_id:
+                    raise TypeError("SS1 Task resolver changed the Task identity")
+            except Exception as exc:
+                return self._evidence(
+                    context=context,
+                    outcome_state="infrastructure_error",
+                    failure_kind="ss1_task_resolution_failed",
+                    turns=turns,
+                    boundary_records=boundary_records,
+                    ceiling_denials=ceiling_denials,
+                    total_usage=total_usage,
+                    usage_status=usage_status,
+                    model_active_seconds=model_active_seconds,
+                    extra_turns_used=variant_extra_turns_used,
+                    session_count=session_count,
+                    error_kind=type(exc).__name__,
+                )
             task_turn_ordinal = 0
             next_kind: Literal["initial", "ss1_self_review"] = "initial"
             while True:
