@@ -441,7 +441,13 @@ class TaskEnvelope(StrictModel):
 
 
 class ResultArtifact(StrictModel):
-    path: str
+    path: str = Field(
+        description=(
+            "Project-relative path to one existing regular file. Directory paths "
+            "and glob patterns are invalid; represent a directory output with a "
+            "concrete manifest or index file."
+        )
+    )
     kind: str
     description: str
 

@@ -12,6 +12,7 @@
           "type": "string"
         },
         "path": {
+          "description": "Project-relative path to one existing regular file. Directory paths and glob patterns are invalid; represent a directory output with a concrete manifest or index file.",
           "title": "Path",
           "type": "string"
         }

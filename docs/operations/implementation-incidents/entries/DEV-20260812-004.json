@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-004",
+  "title": "B1 ResultEnvelope accepted directory-shaped artifact claims until final verification",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T06:46:26Z",
+  "resolved_at": "2026-08-12T06:46:26Z",
+  "discovered_by": "actual Phase F B1 R4 run",
+  "symptom": "R03 public work and diff checks passed post hoc, but B1 blocked before checks because two declared artifacts were directory paths",
+  "reproduction": [
+    "Return a completed ResultEnvelope whose artifacts.path names an existing directory"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "R4 attempt_finished recorded artifact_corrupt at declared_artifacts with message declared Artifact missing for the generated fixture directory"
+    }
+  ],
+  "root_cause": "The public Schema and Worker prompt described artifacts.path only as a relative path while final verification silently required an existing regular file",
+  "considered_options": [
+    {
+      "option": "add directory tree artifact hashing",
+      "decision": "rejected",
+      "reason": "expands the frozen Evidence contract and is unnecessary for this correction"
+    },
+    {
+      "option": "make the regular-file contract explicit and resume once with precise guidance",
+      "decision": "adopted",
+      "reason": "preserves file hashing while letting the Worker correct metadata"
+    }
+  ],
+  "resolution": "Document the regular-file-only rule in Pydantic Schema and prompt, detect an existing directory immediately after result parsing, and send retryable same-session guidance to use a concrete manifest or index file",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/contract.py",
+    "stages/b1-sequential/src/orchestrator/worker.py",
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "stages/b1-sequential/schemas/v1/result-envelope.schema.json"
+  ],
+  "regression_tests": [
+    "tests/integration/test_orchestrator.py::test_directory_artifact_gets_immediate_guidance_then_file_artifact_passes",
+    "tests/contract/test_worker.py::test_task_semantics_excludes_only_variant_identity_fields"
+  ],
+  "verification": [
+    "Targeted prompt, Schema, and Fake correction tests: 7 passed",
+    "B1 full regression: 75 passed",
+    "R4 post-hoc R03 public contract and diff checks both passed without a model turn"
+  ],
+  "remaining_risks": [
+    "The sealed R4 result remains blocked and is not rewritten; a fresh R5 live run needs separate model-use approval"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "C:/lao-phase-f-live-c36731c-r4"
+  ]
+}

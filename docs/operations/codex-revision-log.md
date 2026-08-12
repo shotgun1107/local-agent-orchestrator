@@ -1975,3 +1975,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - r3의 두 Check stderr는 모두 `ModuleNotFoundError: No module named 'yaml'`이었다. Windows에서 bare `python` 실행 파일 검색이 자식에게 전달한 정제 PATH가 아니라 부모 검색 경로의 전역 Python을 선택한 것이 원인이었다. Check 실행 전에 bare `python`을 현재 B1의 `sys.executable`, bare `git`을 발견된 절대경로로 결합하고, Evidence에는 원래 선언 argv를 그대로 보존하도록 정정했다. 구현 인시던트는 `DEV-20260812-003`이다.
 - 정정 뒤 B1 검증 표적 `7 passed`, B1 전체 `74 passed`를 통과했다. 실패한 r3 workspace 자체를 바꾸지 않고 같은 R01 Check만 model-free로 다시 실행해 exit 0과 `R01_PUBLIC_CONTRACT_OK`를 확인했다. 따라서 r3의 R01 Worker 결과는 공개 Check 기준으로 성공했지만 실행 당시 Controller 검사 환경 오류 때문에 실패로 기록된 것이다.
 - r1·r2·r3는 모두 원본 상태로 보존한다. 다음 실제 model 실행은 새 correction root r4에서 해야 하며, 반복 비용과 one-shot 측정 계약 때문에 별도 사용자 승인을 받기 전에는 실행하지 않는다.
+
+## Phase F Profile R B1 R4와 regular-file Artifact 계약 명시
+
+- 작업일: 2026-08-12. 새 correction root `C:\lao-phase-f-live-c36731c-r4`에서 r1의 동일한 sealed Cell 2 request를 직접 실행했다. R01과 R02는 각각 첫 model turn과 공개 Check 2개를 통과해 `SUCCEEDED`로 닫혔다. R03은 initial+resume 2 turns 뒤 `artifact_corrupt`로 `BLOCKED`됐고 R04~R08은 실행하지 않았다.
+- R4는 총 1,417.593초, model active 1,384.484초, session 3, turn 4, Attempt 3, token 3,028,785였다. Cell 3 자동 실행은 없었다. Measurement SHA-256은 `7a336fa7ba8a97e725ea9ded062f3bf61e139312d56f2784ea493b523b27a7cb`, Cell seal 파일 SHA-256은 `2e1e410f94f33faf2d51ce9a78db715a546f6d42222a35b5722e436498ca111b`다.
+- R03 Worker는 허용 범위 안에 두 fixture tree와 manifest를 생성했지만 `ResultEnvelope.artifacts`에 두 directory path를 기록했다. B1 final verifier는 regular file만 hash할 수 있어 이를 missing Artifact로 분류했다. 봉인 뒤 동일 workspace에서 model turn 없이 `r03_contract`와 `git diff --check`를 다시 실행한 결과 둘 다 exit 0, `R03_PUBLIC_CONTRACT_OK`였다. 따라서 코드 결과와 보고 metadata 실패를 분리했다.
+- 공개 Pydantic Schema의 `ResultArtifact.path` 설명과 Worker prompt에 “existing regular file만 허용하며 directory/glob은 금지, directory output은 concrete manifest/index file로 대표”를 명시했다. result parsing 직후 기존 directory를 발견하면 final blocking 전에 같은 session의 1회 resume로 정확한 교정 문구를 전달한다. missing path와 외부 경로에 대한 기존 final verifier는 유지했다.
+- FakeRuntime 관통 시험은 첫 turn의 directory artifact가 `result_schema` 교정 feedback을 받고, 두 번째 turn의 실제 file artifact가 독립 Check를 통과해 동일 Attempt `resume_count=1`, Run `COMPLETED`로 끝나는 것을 확인했다. prompt·Schema·관통 표적은 `7 passed`, B1 전체는 `75 passed`다. 구현 인시던트는 `DEV-20260812-004`다.
+- R4 원본과 seal은 수정하지 않는다. 다음 실제 실행은 별도 R5 root와 사용자 model-usage 승인 뒤에만 수행한다.

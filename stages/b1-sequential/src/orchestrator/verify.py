@@ -235,6 +235,26 @@ def validate_declared_artifacts(result: ResultEnvelope, workspace: GitWorkspace)
     return evidence
 
 
+def validate_result_artifact_path_types(
+    result: ResultEnvelope,
+    workspace: GitWorkspace,
+) -> None:
+    """Return retryable guidance before a directory claim reaches final verification."""
+
+    for artifact in result.artifacts:
+        path = (workspace.root / artifact.path).resolve()
+        if workspace.root in path.parents and path.is_dir():
+            raise VerificationError(
+                "result_schema",
+                (
+                    "ResultEnvelope artifacts.path must name one existing regular file; "
+                    f"directory paths are invalid: {artifact.path}. Use a concrete "
+                    "manifest or index file for a directory output."
+                ),
+                retryable=True,
+            )
+
+
 def build_check_environment(
     *,
     python_executable: Path | None = None,

@@ -8,6 +8,7 @@ import pytest
 
 from orchestrator.ledger import Ledger
 from orchestrator.recover import ControllerLock, ControllerLockError, backup_run, check_integrity, verify_backup
+from orchestrator.runtime import FakeRuntime
 from orchestrator.schedule import ConfigurationError, Orchestrator, load_project
 from tests.conftest import make_spec
 
@@ -106,6 +107,84 @@ def test_malformed_result_resumes_same_session_once(tmp_path: Path, project_fact
     result_paths = [artifact["relative_path"] for artifact in snapshot["artifacts"] if artifact["kind"] == "result_envelope"]
     assert any("turns/001/" in path for path in result_paths)
     assert any("turns/002/" in path for path in result_paths)
+
+
+def test_directory_artifact_gets_immediate_guidance_then_file_artifact_passes(
+    tmp_path: Path, project_factory
+) -> None:
+    root = project_factory()
+    result = {
+        "schema_version": 1,
+        "status_claim": "completed",
+        "summary": "generated artifact",
+        "artifacts": [
+            {
+                "path": "src",
+                "kind": "generated_tree",
+                "description": "generated directory",
+            }
+        ],
+        "changed_paths": ["src/generated.txt"],
+        "checks_run_by_worker": [],
+        "assumptions": [],
+        "warnings": [],
+        "requested_followup": None,
+    }
+    corrected = {
+        **result,
+        "artifacts": [
+            {
+                "path": "src/generated.txt",
+                "kind": "generated_file",
+                "description": "generated file",
+            }
+        ],
+    }
+    runtime = FakeRuntime(
+        workspace=root,
+        fixture={
+            "effects": [
+                {
+                    "type": "write_file",
+                    "path": "src/generated.txt",
+                    "content": "generated\n",
+                }
+            ],
+            "turns": [{"result": result}, {"result": corrected}],
+        },
+    )
+    state = tmp_path / "state"
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        runtime_kind="injected_fake",
+        runtime_port=runtime,
+        runtime_profile_override={"runtime": "fake"},
+        auth_method_override="none",
+    )
+    try:
+        run_id = orchestrator.start(
+            make_spec(
+                workspace_mode="shared_serial_write",
+                write_scope=["src/**"],
+            )
+        )
+    finally:
+        orchestrator.close()
+
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    feedback = [
+        handle.raw["feedback"]
+        for handle in runtime._handles.values()
+        if isinstance(handle.raw, dict) and "feedback" in handle.raw
+    ]
+    assert snapshot["run"]["state"] == "COMPLETED"
+    assert snapshot["tasks"][0]["state"] == "SUCCEEDED"
+    assert snapshot["tasks"][0]["attempts"][0]["resume_count"] == 1
+    assert len(feedback) == 1
+    assert feedback[0]["failure"] == "result_schema"
+    assert "directory paths are invalid: src" in feedback[0]["message"]
 
 
 @pytest.mark.parametrize(
