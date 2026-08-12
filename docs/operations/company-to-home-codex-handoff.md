@@ -192,3 +192,14 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - production `ProjectConfig`/B1 preflight 완화 금지
 - main merge·rebase·squash·branch 삭제 금지
 - reset·clean·stash로 집 작업 숨김 또는 폐기 금지
+
+## 10. 2026-08-13 회사 후속 갱신
+
+이 절은 위 §7의 stale 상태와 §8의 다음 작업을 대체하는 최신 상태다.
+
+- 회사 PC에서 동일 Dockerfile·lock·base image를 `--provenance=false`로 다시 빌드해 image digest `ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab`를 고정했다. 집의 `5610c2...` image는 회사에 없었고 registry에서도 받을 수 없었다.
+- Profile R qualification v3는 source commit `f4011108322cd261ef069ae3e765ad59695df199`, batch `profile-r-docker-matrix-r07-company-v4`에 결합됐다. 결과는 `9/9 matched`, `CHALLENGE_READY`, seal `22a81ac56709fc6ce5dc18230cc2d4aad88411832d5f5cbd3127e67305840781`이다.
+- 새 qualification은 `benchmarks/artifacts/profile-r-docker-judge-qualification-v3/qualification.json`에 있다. 기존 v2는 과거 기록이며 새 실행 입력으로 사용하지 않는다.
+- Phase E v3 0-turn 후보는 source commit `608044dfa8cdbed7520f722df80110f1ffa662de`, experiment `exp_20260812_4053943d_1`, Plan fingerprint `4053943dee4bb1748db8a90a3390c54ffee712f03e7468d39c8f42c9121dada2`, seal `2c66604e688c0db4229591bda7ec3b338617b6cf0cc09d8ef6bf453f3b0b4538`에 결합됐다.
+- qualification에서 Docker container 9개를 실행했다. Phase E 후보 생성에서는 SDK account/model-list 사전점검 1회만 실행했고 thread/start, turn/start와 actual model turn은 0회였다.
+- 다음 관문은 별도 사용자 승인 아래 Phase E v3의 Profile R B1 correction Cell 2 하나만 실행하는 것이다. 완료나 실패 뒤 멈추며 Cell 3으로 자동 진행하지 않는다.

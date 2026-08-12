@@ -2058,3 +2058,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - exact 회귀 3개는 통과했다. B1 전체는 `79 passed`, Phase F B1/finalizer/live model-free 묶음은 `8 passed, 2 skipped`였다. skip 2개는 실제 Docker dry-run과 실제 SDK preflight opt-in이므로 실행하지 않았다. R07/S2·Profile R fixture 묶음은 `30 passed, 1 failed`였고, 유일한 실패는 기존 회사 checkout의 Judge bundle manifest LF 크기 1,485 bytes와 working-tree CRLF 1,537 bytes 불일치다. 이번 변경 파일이나 R07 동작 실패로 분류하지 않고 qualification/줄바꿈 정본을 자동 수정하지 않았다.
 - 구현 인시던트는 `DEV-20260812-007`로 기록했다. 실제 model, SDK thread, Codex process, Docker와 network 호출은 모두 0회다. R7 raw/seal, P001~P015와 기존 qualification/candidate는 수정하지 않았다.
 - Worker 공개 source와 snapshot hash가 바뀌었으므로 Profile R Docker qualification v2와 이를 참조하는 Phase E v2 candidate는 새 실행 근거로 사용할 수 없는 `stale` 상태다. Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E 후보 재생성, 실제 R8/Cell 3/model turn은 사용자 별도 승인 전 수행하지 않는다.
+
+## 회사 PC Profile R Docker 재자격 v3와 Phase E v3 후보 동결
+
+- 작업일은 2026-08-13이다. 사용자의 후속 승인으로 stale 상태였던 Profile R qualification과 Phase E 후보를 새 revision으로 다시 만들었다. 과거 v2 artifact와 R7 raw/seal은 수정하지 않았다.
+- 집 PC image digest `5610c2a6...6ad89`는 회사 PC에 없고 원격 registry에서도 받을 수 없었다. 동일 Dockerfile, requirements lock, base image를 `--provenance=false`로 빌드한 회사 image digest `ba83a183...330ab`를 commit `0e6b87a`에서 고정했다.
+- 첫 재자격 준비는 긴 `%LOCALAPPDATA%` root에서 Windows path-length 오류로 Docker 실행 전에 중단됐다. 짧은 `C:\lao-r07-q3-20260813`에서 실행한 9개는 기능 결과는 전부 예상과 일치했지만, 공개 checker 변경 때문에 사전등록 workspace hash가 옛값이라 `CHALLENGE_NOT_READY`였다. 봉인된 before/after hash만 evidence에 재결합하고 commit `f401110`으로 고정했다.
+- 최종 `C:\lao-r07-q4-20260813` batch `profile-r-docker-matrix-r07-company-v4`는 reference 8/8 pass와 mutation 8개 목표 실패가 모두 일치해 `9/9 matched`, `CHALLENGE_READY`로 닫혔다. manifest는 `8f71be5e...2146e`, result는 `8e7b3711...3dbd8`, seal은 `22a81ac5...781`이며 model·SDK thread·Codex turn은 0이다. projection은 `profile-r-docker-judge-qualification-v3`에 보존했다.
+- qualification v3와 stage binding을 commit `608044d`로 고정한 뒤 ChatGPT account와 `gpt-5.6-sol` 노출만 SDK `0.144.4`로 확인하고 Phase E v3 0-turn 후보를 만들었다. thread/start와 turn/start는 0회다. experiment는 `exp_20260812_4053943d_1`, Plan fingerprint는 `4053943d...ada2`, candidate seal은 `2c66604e...4538`이다.
+- 기존 v2 qualification과 candidate는 과거 기록으로 보존된다. 새 실행 입력은 v3이며, 실제 Profile R B1 correction Cell은 사용자 별도 승인 전 실행하지 않는다. Cell 3 자동 진행은 계속 금지다.
