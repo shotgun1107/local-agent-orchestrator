@@ -2017,3 +2017,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Profile R source bundle의 기존 manifest가 LF Git blob 대신 과거 CRLF working bytes의 크기/hash를 보존한 불일치도 회귀에서 드러났다. 이 PC에서 끊어진 `.venv`의 Python 3.12 경로만 로컬 bundled 3.12로 복구하고 정본 builder를 재실행했다. 최초 의존성 없는 builder 결과 `CHALLENGE_NOT_READY`는 통과 근거에서 제외했으며, 최종 bundle은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, payload aggregate `4bb6e9f81bb67215eb28975dfeef236d09d76e6795b1f46a6c90acbd7df4fcd6`다.
 - 최종 model-free 검증은 routing S2와 Profile R fixture `30 passed`, B1 전체 `79 passed`, Phase F B1/finalizer/live 관련 `8 passed, 2 skipped`다. Phase F의 최초 세 실패는 Windows 긴 temp path에서 `git add`가 거부된 환경 실패였고 fresh `C:\lao-tests` root에서 세 시험 모두 통과했다. 실제 model, SDK, Codex, Docker, network 호출은 0회다. 구현 incident는 `DEV-20260812-006`이다.
 - R6 실패 seal은 그대로 유지한다. 이번 교정으로 Worker/Judge source hash가 과거 Phase E candidate와 Docker qualification의 바이트에서 달라졌으므로, 기존 후보를 새 R7 근거로 재사용하지 않는다. 새 source에 대한 필요한 qualification과 model-free Phase E candidate 재동결, 별도 사용자 model 승인 전 실제 R7과 Cell 3은 계속 `NO-GO`다.
+
+## R07 교정 source의 Profile R Docker Judge 재자격
+
+- 작업일: 2026-08-12. 과거 v1 qualification과 image 기록을 수정하지 않고, 집 PC의 동일 Dockerfile·dependency lock image를 새 digest `5610c2a6...6ad89`로 고정했다. image package 17개는 lock과 일치했고 Docker Engine은 `29.6.2`, Linux `x86_64`였다.
+- source commit `fd3d146097fe8c0cd41fc1e4a98ac32dd84ab223`에서 fresh root `C:\lao-r07-q2-20260812`를 사용해 reference 1개와 negative mutation 8개를 210.8초 실행했다. reference R-P01~R-P08은 8/8 pass, mutation은 각 target failure와 정확히 일치해 matrix는 `CHALLENGE_READY`, model turn 0으로 닫혔다.
+- 별도 process verifier가 9 cells와 47-file seal을 다시 계산했다. manifest self-hash는 `e16ab3d5...5aa27`, result는 `eac5a911...56f8a`, seal은 `9577dd5b...e6e1a`이며 잔여 container는 0개다. 공개 projection은 `profile-r-docker-judge-qualification-v2`에 보존하고 stage의 Profile R 입력을 v2로 전환한다.
+- 첫 단위시험은 공용 pytest temp root의 `WinError 5` 때문에 11개 setup error가 났고 6개만 통과했다. fresh 전용 basetemp에서 같은 시험은 `17 passed`였다. 환경 실패를 qualification 성공에 합치지 않았다.
+- 다음 관문은 이 v2 qualification과 기존 Profile I qualification을 결합한 새 model-free Phase E candidate 동결이다. 실제 R7, Cell 3, model turn은 여전히 별도 사용자 승인 전 `NO-GO`다.
