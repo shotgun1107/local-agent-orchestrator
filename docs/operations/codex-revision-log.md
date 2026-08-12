@@ -1993,3 +1993,17 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - B1 scope 검사 전에 Git에 추적되지 않은 regular `__pycache__/*.pyc`만 삭제하고 changed paths를 다시 계산하도록 정정했다. tracked bytecode, symlink·junction을 통과하는 경로, 다른 확장자는 삭제하지 않는다. 같은 `__pycache__` 안의 `injected.txt`는 계속 scope 위반으로 차단한다.
 - FakeRuntime 표적 시험은 자동 `.pyc` 정규화 성공과 일반 파일 차단을 각각 확인해 `2 passed`, B1 전체 회귀는 `77 passed`다. 정정 검증의 model·SDK·Codex·Docker·network 호출은 0회다. 구현 인시던트는 `DEV-20260812-005`다.
 - R5 원본과 seal은 수정하지 않는다. 전체 R01~R08 완료 여부를 다시 측정하려면 새 R6 root와 별도 사용자 model-usage 승인이 필요하다.
+
+## Phase F Profile R B1 R6와 R07 공개 회귀 실패
+
+- 작업일: 2026-08-12. 사용자 승인 뒤 새 root `C:\lao-phase-f-live-c36731c-r6`에서 동일한 봉인 Cell 2 request 하나만 실행했다. 실행 전 실제 SDK 0-turn preflight는 `1 passed in 1.86s`였고 ChatGPT 구독 인증만 사용했으며 API-key 환경 이름은 없었다. Cell 3은 자동 실행하지 않았다.
+- R6는 총 2,783.579초, model active 2,710.407초, session/turn/Attempt 8/8/8, token 11,136,599였다. R01~R06은 모두 첫 Attempt에 통과했다. R03도 첫 Attempt에 통과해 regular-file Artifact 계약과 `.pyc` 정규화가 실제 실행에서 작동함을 확인했다.
+- R07은 공개 `r07_contract`가 두 Attempt 모두 exit 1을 반환해 첫 시도 `RETRYABLE_FAILED`, 두 번째 시도 `FAILED`로 닫혔다. R08과 Cell 3은 실행되지 않았다. Worker 실패 때문에 Docker Judge는 실행되지 않았고 최종 실패 Cell은 정상 봉인됐다. Measurement SHA-256은 `68887d828e085a0ea81de5a271a813c13793d8a3c1e7fed58c0881bdb7056921`, sealed artifact SHA-256은 `fd4a7222d36390172837641b39188b2e268f0a38cc1744c36a931c21bf76dbb4`다.
+- 실패 workspace를 수정하지 않고 B1 전용 Python으로 R07 test file을 model-free 재실행한 결과 `3 passed, 1 failed`였다. 실패한 `test_s2_fake_four_cell_plan_judge_property_seal_export`는 S2 전용 manifest의 `stage_id`, `purpose`, `initial_cell_order`와 fixture `profile`을 extra field를 금지하는 구형 `FrozenManifest` 입력에 그대로 넣었다. 직접 원인은 Worker가 만든 test fixture 변환 오류이며 시스템 Python 의존성 부족으로 분류하지 않는다.
+- 공개 checker가 내부 pytest 원인을 버리고 `R07_PUBLIC_CONTRACT_FAILED` 한 줄만 출력해 B1의 한 번짜리 재시도가 조치 가능한 이유를 받지 못한 문제도 관측했다. 다음 수정은 model-free로 manifest 입력 경계를 바로잡고, 숨은 Judge 정보를 노출하지 않는 public bounded feedback을 확인·교정한 뒤 회귀를 통과시키는 것이다. 실제 R7은 별도 사용자 승인 전 실행하지 않는다.
+
+## R6 뒤 회사→집 exact-tree 인수인계
+
+- 작업일: 2026-08-12. 최신 회사→집 정본을 `docs/operations/company-to-home-codex-handoff.md` revision 4로 갱신하고, 같은 집 Codex 작업에 전달할 시작 프롬프트를 `docs/prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md`에 교체했다.
+- 집의 다음 필수 작업은 `codex/phase-d-artifacts` 최신 tip으로 ff-only 동기화한 뒤 R07 test fixture와 공개 Check feedback을 model-free로 최소 교정하고 표적·관련 회귀, 로그, commit·push까지 끝내는 것이다. P001~P015는 이미 tracked 정본이므로 다시 수집하지 않는다.
+- 회사 R1~R6 raw root, `.venv`, Docker local image와 로그인 상태는 Git 동기화 대상이 아니다. R6 결과와 hash는 인수 문서와 이 로그에 보존했다. 실제 model/SDK turn, R7 재실행과 Cell 3은 계속 별도 사용자 승인 대상이다.

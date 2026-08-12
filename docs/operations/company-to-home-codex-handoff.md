@@ -1,224 +1,218 @@
-# 회사 로컬 → 집 로컬 인수인계
+# 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 3
-- 작성일: 2026-08-11
+- revision: 4
+- 작성일: 2026-08-12
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
-- 최소 포함 qualification commit: `0112c20e6c59b1555ac444836b608af1e773d936`
-- 최소 포함 tree: `09b28fe9983bb43a1bb1b54a3db9b1b743f2dc48`
-- 시작 프롬프트: [집 Codex 동기화·P001~P015 원본 import 시작 프롬프트](../prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md)
+- 반드시 포함할 구현 commit: `2dab6f01acd8e202109b7d8cb83911247cf8ed65`
+- 해당 commit tree: `44a5996b352ba70e335b396ac7bf98dc372ab91f`
+- 시작 프롬프트: [집 Codex 동기화·R07 교정 시작 프롬프트](../prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md)
 
-> 이 문서를 commit한 원격 tip은 위 qualification commit의 후손이다. 집에서는 문서 안에 자기 자신의 commit을 기록하려 하지 말고 `git fetch` 후 `origin/codex/phase-d-artifacts`의 최신 tip을 정본으로 사용한다. 단, 최신 tip에 `0112c20e...`가 반드시 포함돼야 한다.
+> 이 문서를 포함하는 원격 tip은 위 구현 commit의 후손이다. 집에서는 이
+> 문서에 적힌 commit으로 hard reset하지 말고, `git fetch` 뒤
+> `origin/codex/phase-d-artifacts`의 최신 tip을 정본으로 사용한다. 단, 최신
+> tip에 `2dab6f0`이 반드시 포함돼야 한다.
 
-## 1. 인수 목적
+## 1. 이번 전달의 목적
 
-오늘 회사 PC에서 Profile R challenge를 실제 실험에 투입할 수 있는 수준까지 model-free 검증했다. 이제 집 PC의 기존 Codex 작업에 다음 상태를 그대로 넘긴다.
+집 PC에서 가져온 Phase B P001~P015 원본과 Profile I 작업을 회사 PC가 이어받아
+Profile I Judge, Phase E 동결, Phase F 실제 실행 경로까지 진행했다. 오늘 회사
+시간이 끝났으므로 다음 두 상태를 집의 같은 Codex 작업에 넘긴다.
 
-1. Git이 관리하는 코드·문서·fixture·검증 projection을 회사와 집에서 같은 commit/tree로 맞춘다.
-2. 집에만 있는 P001~P015 원본을 byte 그대로 Git 정본에 복사해 commit·push한다. 원본 위치의 파일은 이동·삭제·수정하지 않는다.
-3. 원본 push로 Profile I source gate와 model-free artifact 제작을 다시 진행할 수 있게 한다.
-4. Profile R과 Profile I가 모두 준비되고 실행계획과 사용자 승인이 끝나기 전에는 실제 Worker·SDK thread·model turn을 시작하지 않는다.
+1. Git이 관리하는 코드·문서·fixture를 회사와 집에서 같은 commit/tree로 맞춘다.
+2. 실패한 실제 R6을 다시 실행하지 않고, 모델 없는 시험으로 R07 공개 회귀시험과
+   재시도 피드백을 먼저 고친다.
 
-동일화 대상은 Git이 추적하는 파일뿐이다. 다음 PC별 자료는 자동 동기화되지 않는다.
+회사 PC의 R1~R6 실행 root, `.venv`, Docker image와 Codex 로그인 상태는 Git
+정본이 아니므로 집으로 자동 복사되지 않는다. 필요한 사실과 hash는 이 문서와
+작업 로그에 남긴다.
 
-- Codex 대화·세션·메모리
-- `.venv`, cache, 로컬 Python·Docker 설치
-- ChatGPT 로그인 상태
-- 집의 P001~P015 원본 위치 자체. 다만 집 작업에서 이 원본의 byte-exact 복사본을 Git tracked source로 추가해야 한다.
-- 회사의 raw qualification root `C:\lao-r\profile-r-docker-matrix-r5`
-- 회사 Docker Engine 안에만 있는 built image
+## 2. 과거 — 집에서 회사로 무엇을 넘겼는가
 
-## 2. 과거 — 오늘 어디서 시작했는가
+집 PC는 다음 작업을 완료해 `codex/phase-d-artifacts`에 push했다.
 
-회사 PC는 집에서 전달된 branch `codex/runtime-boundary-p01`, commit `04148441d8e18092b389a89e32a8117244b99328`에서 인수했다. dirty file, stash, local-only commit 없이 local/remote commit과 tree를 맞춘 뒤 작업을 시작했다.
+- P001~P015 원본 171개, 2,418,080 bytes를 byte-exact Git 정본으로 import
+- source/tracked copy 불일치 0
+- global aggregate SHA-256:
+  `4f9ba9961ccd3474735578c7e03079aae0884e1bd73c7f4d9cfc96a516653eaa`
+- Profile I source gate와 Worker-visible W·I01~I08 공개 Task/Check 완료
+- 실제 credential blocker 없음
+- reconstructed replay R3 폐기 유지
 
-당시 상태는 다음과 같았다.
+회사는 이를 바탕으로 다음을 끝냈다.
 
-- Phase B Candidate 015: Pro 심사 완료, exact identity 범위에서 `judge_only_verified`
-- Phase C: SS1 model-free adapter·observer·property/triage 구현 완료
-- Phase D revision 2: Pro 승인, artifact 제작 `GO`
-- Profile I: P001~P012 partial hash verified, P013/P014 protected-unverified, P015 sealed bundle verified
-- reconstructed replay R3: 원본 미동기화를 원본 소실로 오판해 만든 우회였고 폐기됨
-- Profile R: source intake와 91-path composition까지만 완료
-- Phase E live와 Phase F model turn: `NO-GO`
+- Profile I J/reference/checker/10개 mutation과 Docker qualification
+- Profile R·I 모두 `CHALLENGE_READY`
+- Phase E 4-Cell 실행 Plan 동결
+- Phase F one-Cell Controller, SDK runtime v2, SS1/B1 backend, Docker Judge,
+  Measurement와 최종 Cell seal 연결
+- 실제 호출 한 번에 다음 Cell 하나만 실행하고 자동으로 다음 Cell로 넘어가지 않는
+  경계 구현
 
-P013/P014는 집에 원본이 있다고 가정하고 Profile R과 독립된 미확인으로 남겼다. 없는 byte를 추측하거나 다시 만들지 않았다.
+동결된 비교 순서는 다음과 같다.
 
-## 3. 현재 — 회사 PC에서 실제로 한 일
+1. Profile R / SS1
+2. Profile R / B1
+3. Profile I / B1
+4. Profile I / SS1
 
-### 3.1 Profile R challenge 제작
+## 3. 현재 — 회사 PC에서 실제로 관측한 것
 
-Profile R base Git object를 사용해 익명화 Worker workspace와 8-Task graph를 만들었다. Worker가 볼 수 있는 공개 요구·검사와 Judge만 볼 수 있는 reference·negative mutation·property checker를 분리했다.
+### 3.1 Phase F 실행과 선행 오류 교정
 
-- Worker snapshot: 130 files
-- Task: R01~R08, 8개
-- reference solution: 1개
-- negative mutation: R-P01~R-P08, 8개
-- reference patch SHA-256: `0a33bc75420c7b7f0fa8a213654feff8572712689bb4606c06a97c040829de44`
-- Judge bundle manifest SHA-256: `80e173d4ac75d55c7082b87408d701361e3ec422f7de19b101e80115e0ff6561`
+Profile R B1 Cell 2를 실제로 여러 차례 실행하면서 다음 구현 경계를 교정했다.
 
-Reference는 공개 검사와 숨은 property 8개를 모두 통과하고, mutation 8개는 각각 사전 등록한 자기 목표 property를 실패하도록 구성했다.
+| 기록 | 발견 | 교정 결과 |
+|---|---|---|
+| R1 | 새 boundary Evidence 종류가 기존 SQLite 원장과 불일치 | 기존 `runtime_observation/controller` 계약 재사용 |
+| R2 | 두 번째 SDK thread에서 과거 `thread/started`까지 다시 셈 | 요청 직후 새 frame만 검증 |
+| R3 | bare `python`/`git` 실행 파일 정체성 불안정 | B1 검사 실행기에서 도구 경로 결합 |
+| R4 | Worker가 directory를 Result artifact로 보고 | 실제 regular file만 허용하고 같은 session 1회 교정 |
+| R5 | 공개 checker import가 만든 미추적 `.pyc`를 사용자 변경으로 오판 | 미추적 regular `__pycache__/*.pyc`만 scope 검사 전에 제거 |
 
-### 3.2 첫 경계 구현이 실패한 이유
+마지막 R5 교정은 commit `2dab6f0`에 있다. 자동 `.pyc`는 제거하지만 tracked
+bytecode, symlink/junction 경로와 같은 폴더의 일반 파일은 제거하지 않는다.
+Fake 표적 2개와 B1 전체 `77 passed`를 통과했다.
 
-처음에는 Codex의 Windows permission profile을 Judge 격리 경계로 사용했다. 파일 쓰기 제한은 일부 동작했지만 다음 요구를 만족하지 못했다.
+### 3.2 R6 실제 실행 결과
 
-- 공통 상위 디렉터리와 drive root 열거를 막지 못함
-- `network.enabled=false`인데도 Controller의 loopback listener에 연결됨
-- parent/child 경계 결과가 일치하지 않음
-- symlink 관련 계약도 현재 Windows 환경에서 성립하지 않음
+사용자 승인 뒤 새 root `C:\lao-phase-f-live-c36731c-r6`에서 동일한 봉인 Cell 2
+요청 하나만 실행했다.
 
-실제 결과는 `CHALLENGE_INVALID`였다. 이를 통과로 완화하거나 같은 실행을 반복해 유리한 결과를 고르지 않았다.
+- 인증: ChatGPT 구독 계정
+- API-key 환경 이름: 없음
+- model: `gpt-5.6-sol`, reasoning effort `high`
+- SDK: `0.144.4`
+- 실제 model turn: 8
+- session/Attempt: 8/8
+- 총 실행: 2,783.579초, 약 46분 24초
+- model active: 2,710.407초
+- token: input 11,032,753 / output 103,846 / total 11,136,599
+- R01~R06: 모두 첫 Attempt 성공
+- R07: 첫 Attempt `RETRYABLE_FAILED`, 두 번째 Attempt `FAILED`
+- R08: 미실행
+- Cell 3: 미실행, `automatic_continuation=false`
+- Docker Judge: Worker Check 실패 때문에 실행되지 않음
+- 최종 Cell: 실패 상태로 정상 봉인
+- Measurement SHA-256:
+  `68887d828e085a0ea81de5a271a813c13793d8a3c1e7fed58c0881bdb7056921`
+- sealed artifact SHA-256:
+  `fd4a7222d36390172837641b39188b2e268f0a38cc1744c36a931c21bf76dbb4`
+- run id: `run_56231b3916c04e149505ad96658ba5d6`
 
-### 3.3 해결·우회 방법
+R03은 이번에 첫 Attempt로 통과했다. 따라서 R4의 regular-file artifact 교정과
+R5의 `.pyc` 정규화는 실제 모델 실행에서도 원하는 효과가 확인됐다.
 
-Windows Codex sandbox를 억지로 고치지 않고 Judge 실행환경만 Docker Linux container로 교체했다. Worker 실행 방식이나 SS1/B1 비교 구조는 바꾸지 않았다.
+### 3.3 R07의 실제 실패 원인
 
-Docker Judge의 경계는 다음과 같다.
+R07 Worker는 요구된 네 시험 함수 이름을 모두 만들었다. 그러나 독립 공개
+검사는 두 Attempt 모두 `R07_PUBLIC_CONTRACT_FAILED`로 끝났다. Worker는 자기
+결과에 “pytest와 의존성이 없어 전체 시험을 실행하지 못했다”고 적었지만, 이
+완료 주장은 사실로 믿지 않는다.
 
-- W와 J는 read-only mount
-- O만 read/write mount
-- S는 container에 mount하지 않음
-- `--network none`
-- container root filesystem read-only
-- Linux capability 전부 제거
-- `no-new-privileges`
-- 비root UID/GID `65532:65532`
-- PID·CPU·memory 제한
-- 종료 뒤 W/J fingerprint, O 잔여, container 잔여 재검사
+실패 workspace를 수정하지 않고 B1 전용 Python에서 R07 파일만 model-free로
+재실행한 결과는 다음과 같다.
 
-여기서 image는 사진이 아니라 **같은 Judge 환경을 반복 생성하기 위한 고정 실행환경 원본**이다. Dockerfile과 dependency lock은 Git에 있으며, 실제 실행 중인 일회용 instance가 container다.
+```text
+3 passed, 1 failed
+```
 
-### 3.4 Docker qualification 중 발견한 문제와 교정
+실패한 시험은
+`test_s2_fake_four_cell_plan_judge_property_seal_export`다. 새 시험 helper가 S2
+전용 manifest의 다음 필드를 구형 `FrozenManifest` 입력에 그대로 넣었다.
 
-성공 근거는 최종 r5 한 번만 사용했다. 앞선 시도는 다음 원인으로 제외했다.
+- top-level: `stage_id`, `purpose`, `initial_cell_order`
+- fixture: `profile`
 
-1. AppData의 긴 경로가 Windows 260자 제한에 걸림 → fresh short root `C:\lao-r` 사용
-2. base image에 pytest·PyYAML·pydantic·jsonschema가 없음 → exact Python dependency lock 추가
-3. image에 git이 없음 → Dockerfile에 git 추가
-4. UID 65532에 passwd home이 없음 → `/tmp` home을 고정 등록
-5. full commit SHA를 한 번 잘못 입력함 → Git 추출 전에 중단하고 exact commit으로 새 batch 시작
+구형 model은 extra field를 금지하므로 Pydantic validation에서 실패했다. 즉 이번
+R07의 직접 원인은 오케스트레이터나 Python 설치가 아니라 **AI가 만든 회귀시험의
+fixture 입력 형식 오류**다.
 
-실패 결과를 성공 batch에 합치거나 판정식을 바꾸지 않았다.
+다만 공개 checker는 내부 pytest 실패 내용을 버리고
+`R07_PUBLIC_CONTRACT_FAILED` 한 줄만 반환한다. B1은 실패를 감지해 정확히 한 번
+재시도했지만, Worker에게 고칠 수 있는 구체적 이유가 전달되지 않아 같은 잘못을
+반복했다. 이것은 다음 model-free 수정에서 함께 확인해야 할 피드백 품질 문제다.
 
-### 3.5 최종 결과
+## 4. 현재 Git 정본과 로컬 전용 자료
 
-최종 실행은 다음 조건으로 184.8초 걸렸다.
+### GitHub에 있는 것
 
-- source commit: `5146ee0ba4ab9ff69f181ca9a13d20d7fb7e96a0`
-- batch: `profile-r-docker-matrix-r5`
-- image: `local-agent-orchestrator/profile-r-judge@sha256:fc6b0d42a14a88ccc23d9d5787913915feae988027a1c36926dfdf78493fbf98`
-- reference: `CHECKS_PASSED`, R-P01~R-P08 8/8 pass
-- mutation 8개: 각 `CHECKS_FAILED`, 사전 등록 목표 패턴 8/8 일치
-- 전체: 9/9 expectation matched
-- W/J 변경: 0
-- O 잔여: 0
-- container 잔여: 0
-- model·SDK·Codex thread: 0
-- 독립 verifier: `CHALLENGE_READY True 9`
-- 관련 회귀: `39 passed, 1 skipped`
+- P001~P015 byte-exact tracked source와 inventory
+- Profile R/I W·Task·공개 Check·J/reference/mutation·Docker qualification
+- Phase E 동결 Plan
+- Phase F Controller·runtime·SS1/B1·Docker Judge·Measurement·seal 코드
+- R1~R5에서 발견한 구현 오류와 교정 코드·회귀시험
+- 이 인수인계와 revision log
 
-봉인 identity는 다음과 같다.
+### 회사 PC에만 있는 것
 
-- batch manifest SHA-256: `a58d976156c0185ef425249d8924242db76c5b2e3506c66b722643fc2379f363`
-- batch result SHA-256: `b25c7ad441d8f91a63d02b2d1386f5802baa024b5c76e7727106058e08546ce4`
-- batch seal SHA-256: `56c1d2141b6b9999e14a6350f4a1ccc0ac02c0cb644a82249a8c22e416e553bb`
+- `C:\lao-phase-f-live-c36731c-r1`~`r6` 실행 root와 raw evidence
+- 회사의 Python `.venv`와 Docker local image/layer
+- ChatGPT/Codex 로그인 상태
+- ignored helper `benchmarks/.local-r6/**`
 
-결론은 `PROFILE_R_CHALLENGE_READY`, `challenge_ready=true`다.
+R6 raw를 집에서 찾거나 재구성할 필요는 없다. 위 사실과 hash가 현재 분석에
+필요한 전달 자료다. R6 원본은 회사 PC에서 수정·삭제하지 않는다.
 
-이 결론은 **시험 문제가 정답과 8종 오류를 구별할 수 있고 Judge 격리가 실제로 동작한다**는 뜻이다. B1이 SS1보다 좋다거나 오케스트레이션이 유용하다는 결론은 아직 아니다.
+## 5. 현재 판정
 
-## 4. Git 정본과 로컬 전용 자료
+- Profile R challenge: ready
+- Profile I challenge: ready
+- Phase E Plan: 동결됨
+- Phase F one-Cell 실행 경계: 실제로 Cell 3 자동 진행을 막음
+- B1 R01~R06: 이번 R6에서 실제 성공
+- B1 R07~R08 및 전체 Cell 2: 미완료
+- B1이 SS1보다 유용하다는 결론: 아직 없음
+- Cell 3 실제 model 실행: `NO-GO`
+- main 병합: 보류
 
-### 4.1 GitHub에 올라간 것
-
-- Profile R W snapshot과 8-Task 공개 pack
-- Judge source bundle, reference, mutation, checker
-- Docker Judge backend와 9종 matrix
-- Dockerfile과 exact Python dependency lock
-- 단위·회귀시험
-- 민감 경로를 제거한 qualification projection
-- 결과 문서와 revision log
-
-### 4.2 GitHub에 올라가지 않은 것
-
-- 회사 raw root `C:\lao-r\profile-r-docker-matrix-r5`의 47개 원시 evidence 파일
-- Docker Engine local image layer 자체
-- 집 P001~P015 원본. **이 항목은 집 후속 작업에서 반드시 Git에 byte 그대로 추가해 push해야 하는 미완료 전달물이다.**
-
-remote repository는 `PUBLIC`이다. 사용자는 P001~P015의 SID·절대경로·thread ID·실행 metadata를 익명화하지 않고 원본 그대로 올리는 것을 명시적으로 승인했다. 같은 repository에 raw·reference·원인 기록이 있어도 Worker 실행 시 W allowlist에서 이 tracked source root를 제외하므로 시험 정답 노출과 동일하지 않다.
-
-단, 실제로 사용 가능한 API key·token·password·cookie·private key 같은 인증 비밀은 공개 저장소에 push하지 않는다. 일회용 독립 AI가 값 자체를 응답에 출력하지 않고 secret scanner로 검사하며, 실제 credential 후보가 한 개라도 있으면 해당 파일을 임의 수정·삭제·익명화하지 말고 전체 raw import를 중단해 파일 상대경로와 검출 종류만 보고한다. SID·경로·thread ID는 이 중단 조건이 아니다.
-
-회사 raw qualification 결과와 Docker local image는 이번 P001~P015 import 대상이 아니다. 실제 Judge를 집에서 재실행할 때는 Dockerfile로 image를 새로 build하고 새 digest를 기록한다.
-
-## 5. branch 관계와 동기화 원칙
-
-현재 `codex/runtime-boundary-p01`은 `c5ae00fbbdd802356c54619e178bb58df485c658`이고, 전달 branch `codex/phase-d-artifacts`는 그 후손이다. qualification commit 기준으로 13 commits 앞선다.
-
-집에서는 `codex/runtime-boundary-p01`에 main을 merge하지 않는다. 현재 작업을 이어갈 branch는 `codex/phase-d-artifacts`다.
-
-다음 중 하나라도 있으면 pull·switch·stash·reset·clean하지 않고 보고 후 멈춘다.
-
-- modified, staged, untracked file
-- 기존 stash
-- remote에 없는 local-only commit
-- detached HEAD
-- 다른 origin
-- ignored P001~P015와 target tracked path의 충돌
-
-집 원본은 Git status에 나타나지 않는 ignored file일 수 있다. branch 전환 전 이름만 확인하고 target tree와 경로가 겹치면 전환하지 않는다. 원본을 옮겨서 문제를 숨기지 않는다.
+R6은 오케스트레이터가 여섯 Task를 연속 수행하고 실패를 봉인하는 데 성공했다.
+하지만 여덟 Task 전체 성공과 SS1↔B1 성능 비교는 아직 증명하지 못했다.
 
 ## 6. 집에서 바로 이어서 할 일
 
-### 6.1 첫 단계: exact sync
+### 6.1 exact Git 동기화
 
-집 local과 `origin/codex/phase-d-artifacts`의 HEAD·tree를 동일하게 만든다. 안전 절차는 시작 프롬프트에 고정했다.
+기존 집 clone과 원본 자료를 보존한 채
+`origin/codex/phase-d-artifacts` 최신 tip으로 ff-only 동기화한다. dirty file,
+stash, local-only commit이나 branch divergence가 있으면 숨기거나 버리지 말고
+보고 후 멈춘다.
 
-### 6.2 두 번째 단계: P001~P015 원본 byte-exact import와 push
+### 6.2 R07 model-free 교정
 
-동기화가 정상이고 working tree가 clean이면 현재 Codex는 P001~P015 내용을 직접 읽지 않는다. 프로젝트 대화·설계·reference 맥락을 넘기지 않은 일회용 독립 AI 하나를 호출해 다음 작업만 맡긴다.
+실제 모델을 다시 호출하기 전에 다음 순서로 한다.
 
-1. 집의 기존 inventory와 실제 원본을 읽기 전용으로 대조한다.
-2. P001~P015의 정확한 raw 파일 집합을 ordinal별로 식별한다.
-3. P013/P014는 ACL을 변경하지 않고 읽는다. OS가 거부하면 사용자에게 일회성 read-only 권한 승인을 요청하며 ACL을 재작성하지 않는다.
-4. 실제 credential을 값 출력 없이 검사한다. credential 후보가 있으면 import를 중단한다.
-5. credential 후보가 없으면 모든 raw byte를 수정·익명화·줄바꿈 변환 없이 `benchmarks/source-raw/runtime-boundary-phaseb-p001-p015-v1/raw/P001`~`P015`에 복사한다.
-6. `raw/** -text`를 적용해 Git 줄바꿈 변환을 막는다.
-7. ordinal·상대경로·크기·SHA-256·source inventory 결합을 기록한 index와 `files.sha256`을 만든다. 절대 source path는 새 index에 추가로 복제하지 않는다. 원본 파일 안에 이미 있는 절대경로는 수정하지 않는다.
-8. source와 tracked copy의 파일 집합·크기·SHA-256이 모두 같은지 독립 재계산한다.
-9. 응답에는 raw 내용, SID, thread ID, 절대경로 또는 인증 metadata 값을 출력하지 않고 ordinal별 파일 수·총 byte·aggregate hash·검증 결과만 반환한다.
+1. 실패한 공개 시험을 저장소 fixture에서 model-free로 재현한다.
+2. S2 manifest를 구형 `FrozenManifest`에 그대로 넣지 않도록 test helper의 입력
+   경계를 최소 수정한다. 검사를 삭제하거나 Pydantic extra 금지를 완화하지 않는다.
+3. B1 재시도에 전달되는 Check feedback 경로를 읽고, 공개 pytest 실패의 안전한
+   핵심 원인이 Worker에게 전달되는지 확인한다.
+4. 현재처럼 한 줄만 전달된다면 public source 범위 안에서 bounded·actionable한
+   실패 이유를 전달하는 최소 교정을 한다. 숨은 Judge 정보는 넣지 않는다.
+5. R07 표적, 관련 routing S2, B1 전체와 Phase F model-free 회귀를 실행한다.
+6. 구현 오류와 해결을 revision log/incident harness에 기록하고 commit·push한다.
 
-일회용 AI가 끝나면 현재 Codex는 raw 내용을 열어보지 않고 생성된 manifest/hash와 Git file set만 기계적으로 확인한다. exact import root만 `git add -f`하고, code·Profile R·원본 위치의 다른 파일이 섞이지 않았는지 확인한 뒤 `codex/phase-d-artifacts`에 commit·push한다. push 후 local/remote commit·tree와 remote tracked raw file count를 다시 확인한다.
+R6 workspace 파일을 가져와 정답처럼 patch하지 않는다. Git 정본의 fixture와
+공개 계약만 보고 일반화 가능한 수정으로 만든다.
 
-### 6.3 세 번째 단계: Profile I 재개
+### 6.3 다음 실제 실행 관문
 
-P001~P015 원본 commit이 원격에 존재하고 exact copy 검증이 끝난 뒤에만 원래 Phase D revision 2 명세를 따라 Profile I source intake를 재개한다. tracked raw root는 Controller/Judge source일 뿐 Worker W에 넣지 않는다. W에는 명세가 정한 Worker-visible 관측만 별도 투영하며, tracked raw root·reference·후속 원인 기록이 W에 포함되면 challenge를 거부한다.
+model-free 교정과 회귀가 끝나도 자동으로 실제 R7을 시작하지 않는다. 이전 R6은
+약 46분과 1,113만 token을 사용했다. 새 correction root, 실행 범위와 예상 비용을
+먼저 사용자에게 보고하고 별도 승인을 받는다.
 
-이번 집 후속의 필수 완료점은 **P001~P015 exact raw commit·push**다. 시간이 남으면 Profile I source intake와 model-free artifact 후보까지 진행할 수 있지만 실제 SS1/B1 Worker, SDK thread와 model turn은 사용자 승인을 받기 전 실행하지 않는다.
+실제 재실행이 승인되면 기존 R1~R6을 덮어쓰지 않고 새 root를 사용한다. Cell 2
+하나만 실행하고 Cell 3으로 자동 진행하지 않는다.
 
-## 7. 아직 남은 일
+## 7. 중단선
 
-- P001~P015 exact raw import commit·push
-- Profile I P013/P014 source 확인과 source gate closure
-- Profile I W/J·8 Task·reference·checker·Docker qualification
-- Profile R과 Profile I가 모두 ready인 뒤 SS1↔B1 실행계획 작성·검토·동결
-- 별도 사용자 승인 뒤 Profile R `SS1 → B1`, Profile I `B1 → SS1` 실행
-- 두 독립 profile 전에는 일반 route 결론이나 B1 채택 결론을 내리지 않음
-- Phase 결과와 branch 안정화 뒤 main 병합 검토
-
-## 8. 중단선
-
-집 동기화·원본 import 작업 중 다음은 금지한다.
-
-- 집 P001~P015 원본 위치의 파일 이동·수정·삭제·재실행. Git tracked import root로 byte-exact 복사하는 것은 필수 허용 작업이다.
-- reconstructed replay R3 부활
-- 회사 raw qualification 결과를 Git projection으로 재구성
-- P001~P015 익명화·요약·문서 기반 재구성
-- 실제 credential이 검출된 상태에서 public remote push
-- 실제 SS1/B1 Worker 실행
-- SDK thread·Codex model turn
-- API key 생성·요구·입력·출력
-- main merge·rebase·squash·branch 삭제
-- 동기화 문제를 reset·clean·stash로 숨기기
+- R1~R6 raw root 수정·삭제·재사용 금지
+- 실패한 R6을 성공으로 재분류 금지
+- 실제 model/SDK turn 자동 재실행 금지
+- Cell 3 자동 진행 금지
+- API key 생성·요구·입력·출력 금지
+- ChatGPT 구독 인증만 허용
+- main merge·rebase·squash·branch 삭제 금지
+- reset·clean·stash로 집 작업 숨김 또는 폐기 금지
+- R07 검사 완화, 요구 시험 삭제, 실패 무시 금지
