@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+
+from benchmark_runner.realistic_phase_e import (
+    PHASE_E_STAGE_RELATIVE,
+    PINNED_MODEL,
+    PhaseECandidateError,
+    PhaseEPreflightEvidence,
+    PhaseEStageManifest,
+    _git_source_tree_sha256,
+    build_phase_e_plan,
+    create_phase_e_candidate,
+    verify_phase_e_candidate,
+)
+from benchmark_runner.runner import _source_tree_sha256
+
+
+REPOSITORY = Path(__file__).resolve().parents[3]
+
+
+def _head() -> str:
+    return subprocess.run(
+        ["git", "-C", str(REPOSITORY), "rev-parse", "HEAD"],
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
+        encoding="ascii",
+    ).stdout.strip()
+
+
+def _preflight() -> PhaseEPreflightEvidence:
+    return PhaseEPreflightEvidence(
+        account_type="chatgpt",
+        sdk_version="0.144.4",
+        model=PINNED_MODEL,
+        reasoning_effort="high",
+        model_visible=True,
+        actual_model_turns=0,
+        api_key_environment_names_present=[],
+        permission_profile_id="runtime-boundary-worker",
+        legacy_sandbox_arguments=False,
+    )
+
+
+def test_stage_manifest_has_exact_four_cell_contract() -> None:
+    stage = PhaseEStageManifest.model_validate_json(
+        (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes()
+    )
+    assert [(item.ordinal, item.variant_id) for item in stage.cell_order] == [
+        (1, "ss1"),
+        (2, "b1"),
+        (3, "b1"),
+        (4, "ss1"),
+    ]
+    assert stage.budget.total_initial_turns == 32
+    assert stage.budget.total_turn_ceiling == 40
+    assert stage.dispatch.automatic_continuation is False
+
+
+def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
+    included = (
+        "src/benchmark_runner/sdk_baselines.py",
+        "src/benchmark_runner/sdk_common.py",
+    )
+    committed = _git_source_tree_sha256(
+        REPOSITORY,
+        _head(),
+        "tools/benchmark-runner",
+        included,
+    )
+    worktree = _source_tree_sha256(REPOSITORY / "tools/benchmark-runner", included)
+    assert committed == worktree
+
+
+def test_plan_and_candidate_are_reproducible_and_tamper_evident(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    source_commit = _head()
+    created_at = datetime(2026, 8, 12, 0, 0, tzinfo=timezone.utc)
+    plan, bindings = build_phase_e_plan(
+        REPOSITORY,
+        source_commit=source_commit,
+        created_at=created_at,
+    )
+    assert [cell.variant_id for cell in plan.cells] == ["ss1", "b1", "b1", "ss1"]
+    assert len(bindings.profiles) == 2
+    candidate = tmp_path / "candidate"
+    seal = create_phase_e_candidate(
+        REPOSITORY,
+        candidate,
+        source_commit=source_commit,
+        preflight=_preflight(),
+        created_at=created_at,
+    )
+    assert seal.actual_model_turns == 0
+    assert verify_phase_e_candidate(REPOSITORY, candidate) == seal
+    with (candidate / "stage-manifest.json").open("ab") as stream:
+        stream.write(b"\n")
+    with pytest.raises(PhaseECandidateError, match="payload bytes changed"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
