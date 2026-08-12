@@ -32,6 +32,17 @@ def _public_pytest_failure_feedback(
     combined = "\n".join((result.stdout or "", result.stderr or ""))
     if (
         "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
+        and "b1 preflight failed: B1 run validate failed" in combined
+    ):
+        message = (
+            "the prepared S2 B1 fixture still uses legacy project.yaml fields purpose, "
+            "requirements, and task_order. Before B1 preflight, replace them with the "
+            "current public ProjectConfig fields core_compat, repository_root, "
+            "default_capability_profile, and default_policy while preserving "
+            "schema_version and project_id."
+        )
+    elif (
+        "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
         and "FrozenManifest" in combined
         and "extra_forbidden" in combined
     ):
@@ -355,6 +366,7 @@ def check_r07() -> None:
         "test_s2_stage_discriminator_rejects_cross_branch_bytes",
         "test_s2_posthoc_fixture_outputs_and_label_parity",
         "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
+        "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
         "test_s2_fake_four_cell_plan_judge_property_seal_export",
     }
     if not required <= names:

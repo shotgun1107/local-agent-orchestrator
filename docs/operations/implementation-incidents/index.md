@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 49건
-- 해결: 47건
+- 전체: 50건
+- 해결: 48건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -62,6 +62,7 @@
 | DEV-20260812-004 | resolved | phase-f-profile-r-b1 | integration | B1 ResultEnvelope accepted directory-shaped artifact claims until final verification |
 | DEV-20260812-005 | resolved | phase-f-profile-r-b1 | integration | B1 scope verification treated untracked Python bytecode as a Worker source change |
 | DEV-20260812-006 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback |
+| DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2949,3 +2950,71 @@ State the strict FrozenManifest and FrozenFixtureSpec construction rule in the p
 - 관련 커밋: 기록 없음
 - 출처: docs/operations/company-to-home-codex-handoff.md
 - 출처: docs/operations/codex-revision-log.md
+
+## DEV-20260812-007 — Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T23:33:02Z / sealed R7 model-free post-run reproduction
+- 해결: 2026-08-12T23:33:25Z
+
+### 증상
+
+R07 4-Cell 공개 시험의 첫 B1 Cell이 legacy .orchestrator/project.yaml 때문에 run validate preflight에서 중단됨
+
+### 재현
+
+- legacy purpose requirements task_order 필드를 가진 S2 fixture를 현재 strict ProjectConfig B1 preflight에 전달한다
+
+### 증거
+
+- `reproducible-test`: exact model-free regression reproduces legacy fields then verifies canonical current ProjectConfig fields before B1 preflight
+
+### 근본 원인
+
+R07 public 4-Cell test prepared a legacy S2 project pack but did not convert its project.yaml to the strict current ProjectConfig before freezing the fixture source and B1 preflight; the bounded feedback classifier also recognized only the earlier FrozenManifest failure
+
+### 검토한 해결안
+
+- `rejected` relax production ProjectConfig or B1 preflight — would weaken the frozen runtime contract for one public test fixture
+- `rejected` forward the complete pytest traceback — would create an unbounded Worker information channel
+- `adopted` canonicalize only the model-free prepared S2 fixture and classify the exact public preflight failure — preserves production validation and gives one retry actionable public fields
+
+### 채택한 해결
+
+The S2 regression now creates the observed legacy project pack, converts it before committing the prepared fixture to the six strict ProjectConfig fields derived from public capability and policy documents, and emits bounded WORKER_FEEDBACK naming the missing current and forbidden legacy fields only for the exact public preflight failure
+
+### 수정 파일
+
+- tools/benchmark-runner/tests/test_routing_s2.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_routing_s2.py::test_s2_b1_preflight_canonicalizes_legacy_project_pack
+- tools/benchmark-runner/tests/test_routing_s2.py::test_s2_fake_four_cell_plan_judge_property_seal_export
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback
+
+### 검증 결과
+
+- Exact R07 regressions: 3 passed
+- B1 full regression: 79 passed
+- Phase F B1/finalizer/live model-free regressions: 8 passed, 2 explicit live opt-in tests skipped
+- R07/S2 and Profile R fixture group: 30 passed; one existing company-checkout CRLF manifest byte mismatch remained outside this change
+
+### 남은 위험
+
+- Profile R Docker qualification v2 and Phase E v2 candidate are stale because Worker public source and snapshot hashes changed; they were not regenerated
+- Actual Worker behavior is unproven until a separately approved live correction run
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r7-result.md
+- 출처: docs/operations/home-to-company-codex-handoff.md

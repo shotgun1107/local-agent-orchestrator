@@ -329,12 +329,33 @@ def _git(repository: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def _write_legacy_b1_project(workspace: Path) -> None:
+    project_path = workspace / ".orchestrator" / "project.yaml"
+    project = yaml.safe_load(project_path.read_text(encoding="utf-8"))
+    project_path.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": project["schema_version"],
+                "project_id": project["project_id"],
+                "purpose": "legacy S2 model-free fixture",
+                "requirements": ["preserve the public S2 contract"],
+                "task_order": ["T1", "T2", "T3"],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 def _create_s2_source_repository(tmp_path: Path) -> tuple[Path, Path, Path]:
     source = tmp_path / "source"
     for fixture_id in (CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID):
         target = source / "benchmarks" / "fixtures" / "routing-v1" / "intermediate" / fixture_id
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(FIXTURE_ROOT / fixture_id, target)
+        _write_legacy_b1_project(target)
+        _canonicalize_prepared_b1_project(target)
     _git(source, "init", "-q", "-b", "main")
     _git(source, "config", "user.name", "routing-s2-test")
     _git(source, "config", "user.email", "routing-s2@test.invalid")
@@ -446,6 +467,65 @@ def _create_s2_source_repository(tmp_path: Path) -> tuple[Path, Path, Path]:
         newline="\n",
     )
     return source, suite_path, stage_path
+
+
+def _canonicalize_prepared_b1_project(workspace: Path) -> dict[str, object]:
+    project_path = workspace / ".orchestrator" / "project.yaml"
+    legacy = yaml.safe_load(project_path.read_text(encoding="utf-8"))
+    assert set(legacy) == {
+        "schema_version",
+        "project_id",
+        "purpose",
+        "requirements",
+        "task_order",
+    }
+    capabilities = yaml.safe_load(
+        (workspace / ".orchestrator" / "capabilities.yaml").read_text(encoding="utf-8")
+    )["profiles"]
+    policies = yaml.safe_load(
+        (workspace / ".orchestrator" / "policies.yaml").read_text(encoding="utf-8")
+    )["policies"]
+    assert len(capabilities) == len(policies) == 1
+    canonical = {
+        "schema_version": legacy["schema_version"],
+        "project_id": legacy["project_id"],
+        "core_compat": ">=0.1,<0.2",
+        "repository_root": ".",
+        "default_capability_profile": next(iter(capabilities)),
+        "default_policy": next(iter(policies)),
+    }
+    project_path.write_text(
+        yaml.safe_dump(canonical, sort_keys=False),
+        encoding="utf-8",
+        newline="\n",
+    )
+    return canonical
+
+
+def test_s2_b1_preflight_canonicalizes_legacy_project_pack(tmp_path: Path) -> None:
+    for fixture_id in (CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID):
+        workspace = tmp_path / fixture_id
+        shutil.copytree(FIXTURE_ROOT / fixture_id, workspace)
+        _write_legacy_b1_project(workspace)
+        legacy = yaml.safe_load(
+            (workspace / ".orchestrator" / "project.yaml").read_text(encoding="utf-8")
+        )
+        assert set(legacy) == {
+            "schema_version",
+            "project_id",
+            "purpose",
+            "requirements",
+            "task_order",
+        }
+        canonical = _canonicalize_prepared_b1_project(workspace)
+        assert set(canonical) == {
+            "schema_version",
+            "project_id",
+            "core_compat",
+            "repository_root",
+            "default_capability_profile",
+            "default_policy",
+        }
 
 
 def _completed_result(paths: list[str]) -> dict[str, object]:

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-007",
+  "title": "Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T23:33:02Z",
+  "resolved_at": "2026-08-12T23:33:25Z",
+  "discovered_by": "sealed R7 model-free post-run reproduction",
+  "symptom": "R07 4-Cell 공개 시험의 첫 B1 Cell이 legacy .orchestrator/project.yaml 때문에 run validate preflight에서 중단됨",
+  "reproduction": [
+    "legacy purpose requirements task_order 필드를 가진 S2 fixture를 현재 strict ProjectConfig B1 preflight에 전달한다"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "exact model-free regression reproduces legacy fields then verifies canonical current ProjectConfig fields before B1 preflight"
+    }
+  ],
+  "root_cause": "R07 public 4-Cell test prepared a legacy S2 project pack but did not convert its project.yaml to the strict current ProjectConfig before freezing the fixture source and B1 preflight; the bounded feedback classifier also recognized only the earlier FrozenManifest failure",
+  "considered_options": [
+    {
+      "option": "relax production ProjectConfig or B1 preflight",
+      "decision": "rejected",
+      "reason": "would weaken the frozen runtime contract for one public test fixture"
+    },
+    {
+      "option": "forward the complete pytest traceback",
+      "decision": "rejected",
+      "reason": "would create an unbounded Worker information channel"
+    },
+    {
+      "option": "canonicalize only the model-free prepared S2 fixture and classify the exact public preflight failure",
+      "decision": "adopted",
+      "reason": "preserves production validation and gives one retry actionable public fields"
+    }
+  ],
+  "resolution": "The S2 regression now creates the observed legacy project pack, converts it before committing the prepared fixture to the six strict ProjectConfig fields derived from public capability and policy documents, and emits bounded WORKER_FEEDBACK naming the missing current and forbidden legacy fields only for the exact public preflight failure",
+  "affected_files": [
+    "tools/benchmark-runner/tests/test_routing_s2.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark-run.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_b1_preflight_canonicalizes_legacy_project_pack",
+    "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_fake_four_cell_plan_judge_property_seal_export",
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback"
+  ],
+  "verification": [
+    "Exact R07 regressions: 3 passed",
+    "B1 full regression: 79 passed",
+    "Phase F B1/finalizer/live model-free regressions: 8 passed, 2 explicit live opt-in tests skipped",
+    "R07/S2 and Profile R fixture group: 30 passed; one existing company-checkout CRLF manifest byte mismatch remained outside this change"
+  ],
+  "remaining_risks": [
+    "Profile R Docker qualification v2 and Phase E v2 candidate are stale because Worker public source and snapshot hashes changed; they were not regenerated",
+    "Actual Worker behavior is unproven until a separately approved live correction run"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r7-result.md",
+    "docs/operations/home-to-company-codex-handoff.md"
+  ]
+}
