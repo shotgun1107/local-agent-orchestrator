@@ -18,7 +18,8 @@ def present_api_key_environment_names(
     environ: Mapping[str, str] | None = None,
 ) -> tuple[str, ...]:
     source = os.environ if environ is None else environ
-    return tuple(name for name in API_KEY_ENV_NAMES if name in source)
+    present = {str(name).upper() for name in source.keys()}
+    return tuple(name for name in API_KEY_ENV_NAMES if name in present)
 
 
 def utc_now() -> datetime:

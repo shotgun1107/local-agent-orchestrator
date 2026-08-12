@@ -41,6 +41,29 @@ class PhaseFSdkContractError(RuntimeError):
     """Raised before or at the exact SDK boundary when v2 is violated."""
 
 
+def build_phase_f_config_overrides(workspace: Path) -> tuple[str, ...]:
+    """Bind runtime-v2 root-deny policy to one exact Worker workspace."""
+
+    root = Path(workspace).resolve(strict=True)
+    if not root.is_dir():
+        raise PhaseFSdkContractError("Phase F workspace is not a directory")
+    encoded = json.dumps(str(root), ensure_ascii=False)
+    filesystem = (
+        '{":minimal"="read",":root"="deny",'
+        + encoded
+        + '="write"}'
+    )
+    return validate_phase_f_config_overrides(
+        (
+            'default_permissions="runtime-boundary-worker"',
+            'permissions.runtime-boundary-worker.extends=":workspace"',
+            "permissions.runtime-boundary-worker.filesystem=" + filesystem,
+            "permissions.runtime-boundary-worker.network.enabled=false",
+            'windows.sandbox="elevated"',
+        )
+    )
+
+
 @dataclass(frozen=True)
 class PhaseFThreadStartObservation:
     """Raw facts required to accept one persistent SS1 thread."""
