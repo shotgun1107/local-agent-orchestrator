@@ -2049,3 +2049,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 인수 문서는 R07 공개 회귀와 bounded feedback 교정, 집 Docker Judge 재자격, Phase E v2 0-turn 후보, 실제 R7 한 번의 봉인 결과와 model-free 사후 진단을 하나의 계보로 묶는다. 집 Docker image와 raw qualification/R7 root는 로컬 전용이고 Git 동기화 대상이 아님을 분리했다.
 - 회사의 다음 작업은 실제 model 실행이 아니라 공개 S2 test helper가 복사하는 legacy `.orchestrator/project.yaml`을 현재 B1 `ProjectConfig` 형식으로 canonicalize하고, `B1 run validate failed`의 공개 원인을 bounded feedback으로 전달하는 model-free 최소 수정이다. production validation과 필수 assertion은 완화하지 않는다.
 - 관련 R07/S2, B1 전체, Phase F model-free 회귀와 incident/revision 기록, commit·push 뒤 멈춘다. source 변경으로 기존 qualification/candidate가 stale해지는지만 보고하며 Docker 재자격, 후보 재생성, R8, Cell 3과 다른 model turn은 별도 사용자 승인 전 `NO-GO`다.
+
+## Phase F Profile R R07 legacy project-pack model-free 교정
+
+- 작업일: 2026-08-13. 회사 clone을 `origin/codex/phase-d-artifacts`의 `ee877eb2e947e1d2af4d36f845166a358aad8927`로 ff-only 동기화했다. 시작 전 dirty file, stash, local-only commit과 incoming tracked path/ignored file 충돌은 없었고 local/remote tree `a96799f8b4f32046b162d9cd5ecf1018a0e12ce7`가 일치했다.
+- R7 사후 진단의 exact gap을 model-free 회귀로 고정했다. S2 test helper는 legacy `project.yaml`의 `purpose`, `requirements`, `task_order`를 실제로 만든 뒤 fixture source를 commit하기 전에 공개 capabilities/policies에서 `default_capability_profile`과 `default_policy`를 선택하고 현재 strict `ProjectConfig`의 여섯 필드로 canonicalize한다. production `ProjectConfig`와 B1 preflight는 변경하거나 완화하지 않았다.
+- 보호 checker는 정확히 `test_s2_fake_four_cell_plan_judge_property_seal_export`의 `b1 preflight failed: B1 run validate failed`가 관측된 경우에만 누락된 현재 필드와 금지된 legacy 필드를 bounded `WORKER_FEEDBACK`으로 반환한다. 전체 traceback, Judge, reference와 mutation 정보는 전달하지 않는다. R07 goal/criterion과 Worker snapshot 130-file manifest도 결정론적으로 갱신했다.
+- exact 회귀 3개는 통과했다. B1 전체는 `79 passed`, Phase F B1/finalizer/live model-free 묶음은 `8 passed, 2 skipped`였다. skip 2개는 실제 Docker dry-run과 실제 SDK preflight opt-in이므로 실행하지 않았다. R07/S2·Profile R fixture 묶음은 `30 passed, 1 failed`였고, 유일한 실패는 기존 회사 checkout의 Judge bundle manifest LF 크기 1,485 bytes와 working-tree CRLF 1,537 bytes 불일치다. 이번 변경 파일이나 R07 동작 실패로 분류하지 않고 qualification/줄바꿈 정본을 자동 수정하지 않았다.
+- 구현 인시던트는 `DEV-20260812-007`로 기록했다. 실제 model, SDK thread, Codex process, Docker와 network 호출은 모두 0회다. R7 raw/seal, P001~P015와 기존 qualification/candidate는 수정하지 않았다.
+- Worker 공개 source와 snapshot hash가 바뀌었으므로 Profile R Docker qualification v2와 이를 참조하는 Phase E v2 candidate는 새 실행 근거로 사용할 수 없는 `stale` 상태다. Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E 후보 재생성, 실제 R8/Cell 3/model turn은 사용자 별도 승인 전 수행하지 않는다.

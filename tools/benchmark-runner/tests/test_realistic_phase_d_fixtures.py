@@ -364,6 +364,23 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
     assert "stage_id, purpose, initial_cell_order" in feedback
     assert len(feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
 
+    project_config_feedback = checker._public_pytest_failure_feedback(
+        subprocess.CompletedProcess(
+            [sys.executable, "-m", "pytest"],
+            1,
+            (
+                "FAILED tools/benchmark-runner/tests/test_routing_s2.py::"
+                "test_s2_fake_four_cell_plan_judge_property_seal_export\n"
+                "RuntimeError: b1 preflight failed: B1 run validate failed\n"
+            ),
+            "",
+        )
+    )
+    assert "legacy project.yaml fields purpose, requirements, and task_order" in project_config_feedback
+    assert "core_compat, repository_root" in project_config_feedback
+    assert "default_capability_profile, and default_policy" in project_config_feedback
+    assert len(project_config_feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
+
     undecodable_stream_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(
             [sys.executable, "-m", "pytest"],
