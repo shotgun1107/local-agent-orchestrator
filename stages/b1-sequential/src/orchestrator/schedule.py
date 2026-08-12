@@ -803,8 +803,11 @@ class Orchestrator:
             ]
             if corrupt:
                 raise VerificationError("artifact_integrity", f"Artifact hash mismatch: {corrupt}")
-            validate_declared_artifacts(result, self.workspace)
             changed = self.workspace.changed_paths(baseline)
+            normalized_bytecode = self.workspace.normalize_untracked_python_bytecode(changed)
+            if normalized_bytecode:
+                changed = self.workspace.changed_paths(baseline)
+            validate_declared_artifacts(result, self.workspace)
             validate_write_scope(spec, changed)
             current_fingerprint = self.workspace.fingerprint_inputs(spec)
             if external_changed_paths:
@@ -885,7 +888,11 @@ class Orchestrator:
                     raise VerificationError("completion_criteria", f"criterion not proven: {criterion.id}")
             ledger.finish_attempt(
                 attempt_id, AttemptState.SUCCEEDED, TaskState.SUCCEEDED, None,
-                {"changed_paths": changed, "checks": sorted(passed)},
+                {
+                    "changed_paths": changed,
+                    "checks": sorted(passed),
+                    "normalized_transient_paths": normalized_bytecode,
+                },
             )
         except VerificationError as exc:
             failure_kind = {

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-005",
+  "title": "B1 scope verification treated untracked Python bytecode as a Worker source change",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T07:18:18Z",
+  "resolved_at": "2026-08-12T07:18:18Z",
+  "discovered_by": "actual Phase F B1 R5 run",
+  "symptom": "R03 created only allowed fixture outputs, but B1 blocked before public Checks because importing a public checker generated benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc outside the Task write scope",
+  "reproduction": [
+    "Use FakeRuntime to create an untracked benchmark_checks/__pycache__/*.pyc beside an allowed src/** change"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "R5 attempt_finished recorded scope_violation with the sole out-of-scope path benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc"
+    }
+  ],
+  "root_cause": "The independent Judge normalized untracked Python bytecode before scope evaluation, but the B1 scheduler applied scope validation directly to Git changes without the same transient-file normalization",
+  "considered_options": [
+    {
+      "option": "ignore every file under __pycache__",
+      "decision": "rejected",
+      "reason": "would hide arbitrary non-bytecode files written outside the Task scope"
+    },
+    {
+      "option": "rely only on PYTHONDONTWRITEBYTECODE",
+      "decision": "rejected",
+      "reason": "the Worker can invoke its own Python subprocess before Controller Checks and the scope verifier must classify observed files safely"
+    },
+    {
+      "option": "remove only untracked regular __pycache__/*.pyc files without symlink or junction components",
+      "decision": "adopted",
+      "reason": "removes the observed interpreter byproduct while preserving tracked bytecode and arbitrary-file scope enforcement"
+    }
+  ],
+  "resolution": "Normalize only untracked regular __pycache__/*.pyc files before B1 declared-artifact and write-scope verification, then recalculate changed paths; keep ordinary files in the same directory visible to scope validation",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py"
+  ],
+  "regression_tests": [
+    "tests/integration/test_orchestrator.py::test_untracked_python_bytecode_is_normalized_before_scope_validation",
+    "tests/integration/test_orchestrator.py::test_non_bytecode_file_inside_pycache_remains_a_scope_violation"
+  ],
+  "verification": [
+    "Fake bytecode normalization and ordinary-file rejection tests: 2 passed",
+    "B1 full regression: 77 passed",
+    "No model, SDK, Codex, Docker, or network call was used for the correction verification"
+  ],
+  "remaining_risks": [
+    "The sealed R5 result remains blocked and is not rewritten; a fresh R6 live run needs separate model-use approval"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "C:/lao-phase-f-live-c36731c-r5"
+  ]
+}

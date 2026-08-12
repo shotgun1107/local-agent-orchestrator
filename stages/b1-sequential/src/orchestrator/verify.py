@@ -117,6 +117,39 @@ class GitWorkspace:
         after = {entry.path: (entry.sha256, entry.size) for entry in current.files}
         return sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path))
 
+    def normalize_untracked_python_bytecode(self, changed_paths: Iterable[str]) -> list[str]:
+        """Remove only untracked ``__pycache__/*.pyc`` execution byproducts."""
+
+        tracked = {
+            path
+            for path in self._git("ls-files", "--cached", "-z").stdout.split("\0")
+            if path
+        }
+        normalized: list[str] = []
+        for raw_path in changed_paths:
+            relative_path = PurePosixPath(raw_path).as_posix()
+            path = PurePosixPath(relative_path)
+            if (
+                "__pycache__" not in path.parts
+                or path.suffix != ".pyc"
+                or relative_path in tracked
+            ):
+                continue
+            candidate = self.root.joinpath(*path.parts)
+            current = self.root
+            unsafe_component = False
+            for part in path.parts:
+                current /= part
+                is_junction = getattr(current, "is_junction", lambda: False)
+                if current.is_symlink() or is_junction():
+                    unsafe_component = True
+                    break
+            if unsafe_component or not candidate.is_file():
+                continue
+            candidate.unlink()
+            normalized.append(relative_path)
+        return sorted(normalized)
+
     def fingerprint_inputs(self, task: TaskSpec) -> InputFingerprint:
         scopes = [*task.read_scope, *(item.path for item in task.inputs)]
         entries = [_file_entry(self.root, path) for path in self.list_files(scopes)]

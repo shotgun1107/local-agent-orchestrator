@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 47건
-- 해결: 45건
+- 전체: 48건
+- 해결: 46건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -60,6 +60,7 @@
 | DEV-20260812-002 | resolved | phase-f-profile-r-b1 | integration | Phase F B1 second thread used cumulative notifications |
 | DEV-20260812-003 | resolved | phase-f-profile-r-b1 | integration | B1 Check resolved bare python to the global interpreter |
 | DEV-20260812-004 | resolved | phase-f-profile-r-b1 | integration | B1 ResultEnvelope accepted directory-shaped artifact claims until final verification |
+| DEV-20260812-005 | resolved | phase-f-profile-r-b1 | integration | B1 scope verification treated untracked Python bytecode as a Worker source change |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2813,3 +2814,62 @@ Document the regular-file-only rule in Pydantic Schema and prompt, detect an exi
 
 - 관련 커밋: 기록 없음
 - 출처: C:/lao-phase-f-live-c36731c-r4
+
+## DEV-20260812-005 — B1 scope verification treated untracked Python bytecode as a Worker source change
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T07:18:18Z / actual Phase F B1 R5 run
+- 해결: 2026-08-12T07:18:18Z
+
+### 증상
+
+R03 created only allowed fixture outputs, but B1 blocked before public Checks because importing a public checker generated benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc outside the Task write scope
+
+### 재현
+
+- Use FakeRuntime to create an untracked benchmark_checks/__pycache__/*.pyc beside an allowed src/** change
+
+### 증거
+
+- `direct-observation`: R5 attempt_finished recorded scope_violation with the sole out-of-scope path benchmark_checks/__pycache__/check_profile_r.cpython-312.pyc
+
+### 근본 원인
+
+The independent Judge normalized untracked Python bytecode before scope evaluation, but the B1 scheduler applied scope validation directly to Git changes without the same transient-file normalization
+
+### 검토한 해결안
+
+- `rejected` ignore every file under __pycache__ — would hide arbitrary non-bytecode files written outside the Task scope
+- `rejected` rely only on PYTHONDONTWRITEBYTECODE — the Worker can invoke its own Python subprocess before Controller Checks and the scope verifier must classify observed files safely
+- `adopted` remove only untracked regular __pycache__/*.pyc files without symlink or junction components — removes the observed interpreter byproduct while preserving tracked bytecode and arbitrary-file scope enforcement
+
+### 채택한 해결
+
+Normalize only untracked regular __pycache__/*.pyc files before B1 declared-artifact and write-scope verification, then recalculate changed paths; keep ordinary files in the same directory visible to scope validation
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+
+### 회귀시험
+
+- tests/integration/test_orchestrator.py::test_untracked_python_bytecode_is_normalized_before_scope_validation
+- tests/integration/test_orchestrator.py::test_non_bytecode_file_inside_pycache_remains_a_scope_violation
+
+### 검증 결과
+
+- Fake bytecode normalization and ordinary-file rejection tests: 2 passed
+- B1 full regression: 77 passed
+- No model, SDK, Codex, Docker, or network call was used for the correction verification
+
+### 남은 위험
+
+- The sealed R5 result remains blocked and is not rewritten; a fresh R6 live run needs separate model-use approval
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: C:/lao-phase-f-live-c36731c-r5
