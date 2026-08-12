@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Iterator, Mapping
 
 import pytest
 from pydantic import ValidationError
@@ -26,6 +27,22 @@ def test_api_key_environment_detection_reports_names_not_values() -> None:
     assert present_api_key_environment_names(environment) == (
         "OPENAI_API_KEY",
         "CODEX_API_KEY",
+    )
+
+
+def test_api_key_environment_detection_never_reads_values() -> None:
+    class NameOnlyMapping(Mapping[str, str]):
+        def __iter__(self) -> Iterator[str]:
+            return iter(("OPENAI_API_KEY",))
+
+        def __len__(self) -> int:
+            return 1
+
+        def __getitem__(self, key: str) -> str:
+            raise AssertionError(f"secret value was read: {key}")
+
+    assert present_api_key_environment_names(NameOnlyMapping()) == (
+        "OPENAI_API_KEY",
     )
 
 

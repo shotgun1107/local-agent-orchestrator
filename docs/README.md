@@ -56,6 +56,7 @@ docs/
 - [현실 고난도 Phase F Profile R SS1 backend](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-backend-result.md) — 동결 Worker snapshot·8개 Task·SS1·observer를 한 Cell backend로 연결한 model-free 수직 경로
 - [현실 고난도 Phase F Cell finalizer](./experiments/sdk-routing-realistic-high-difficulty-phase-f-finalizer-model-free-result.md) — SS1 Worker 결과를 Judge·Measurement·최종 Cell seal까지 연결한 model-free 수직 경로
 - [현실 고난도 Phase F Docker Judge 포트](./experiments/sdk-routing-realistic-high-difficulty-phase-f-docker-judge-port-model-free-result.md) — 수정된 Worker W를 기존 Docker property Judge에 전달하는 model-free 포트 계약
+- [현실 고난도 Phase F live stack preflight](./experiments/sdk-routing-realistic-high-difficulty-phase-f-live-stack-preflight-result.md) — Fake Worker→실제 Docker 전체 dry-run과 실제 SDK 0-turn preflight 결과
 
 ### `reviews/`
 
@@ -108,6 +109,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F one-Cell Controller, SDK runtime v2, Profile R SS1 backend, Judge·Measurement·최종 Cell seal과 Docker Judge 포트를 연결했고 실제 reference Docker smoke도 통과했다. live telemetry와 실제 Worker/model turn은 계속 `NO-GO`다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F one-Cell Controller, SDK runtime v2, Profile R SS1, Docker Judge·Measurement·seal을 연결했고 실제 full Docker dry-run과 SDK 0-turn preflight를 통과했다. Profile R SS1 Cell 1 실제 model turn만 사용자 승인 대기 중이다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

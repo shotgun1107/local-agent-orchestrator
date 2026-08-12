@@ -1950,3 +1950,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Docker sandbox 밖 최초 smoke는 기존 pytest 공용 임시 상위 폴더의 ACL 접근 거부로 subject 시작 전에 실패했다. 코드나 Docker 실패로 합치지 않고 새 전용 `C:\lao-phase-f-smoke-r1-20260812` 경로와 cacheprovider 비활성화로 다시 실행했다.
 - 실제 Docker reference smoke는 `1 passed in 27.65s`로 통과했다. client/server `29.6.2`, 고정 image digest 일치, container 17.843초, `CHECKS_PASSED`, reason code 없음, model turn 0이다. public manifest/result SHA-256은 각각 `5716516f...c126f`, `ed48d290...75157`, raw result self-hash는 `8d86e0ad...42208`이다.
 - 상태는 `PHASE_F_PROFILE_R_DOCKER_JUDGE_SMOKE_PASSED`다. 다음은 live Worker의 J/S 접근 telemetry와 SDK runtime을 one-Cell finalizer에 model-free로 최종 조립하는 단계다. 그 뒤 실제 Cell 1 model 사용 승인을 다시 받는다.
+
+## Phase F Profile R live stack 최종 dry-run과 0-turn preflight
+
+- 작업일: 2026-08-12. Fake SS1 Worker→실제 고정 Docker Judge→Measurement→Cell seal 전체 경로를 저장소 밖 `C:\lao-phase-f-full-dry-run-r1-20260812`에서 실행해 `1 passed in 28.16s`를 확인했다. Fake의 최소 변경은 R-P02/R-P05 실패와 `scope_ok=false`였고, 시스템은 이를 `completed + independent_judge_failed`로 봉인했다. Cell 1만 `SEALED`, Cell 2~4는 `PLANNED`, model turn은 0이다.
+- dry-run Measurement SHA-256은 `30102171...2765b`, Cell seal self-hash는 `1e283abc...1e068`, 외부 seal 파일 SHA-256은 `1457952c...689b5`다. 실패 결과가 Measurement와 seal을 관통하고 사라지지 않는 것을 확인했다.
+- 실제 live 조립기 `realistic_phase_f_live.py`를 추가했다. runtime v2 permission profile은 root deny와 exact W write만 결합하고 network를 끈다. telemetry는 같은 policy hash에 묶인 W changed-file secret scan과 J/S 비노출 capability를 기록한다. 모든 OS open syscall을 관측했다고 과장하지 않는다.
+- 이 과정에서 공통 API-key 이름 검사 함수가 임의 `Mapping`에서 값 조회를 시도할 수 있음을 발견했다. `source.keys()`만 순회하도록 바꾸고 값 접근 시 실패하는 회귀를 추가했다. 실제 preflight 직전 API-key 환경 변수 이름은 없었고 값은 읽지 않았다.
+- 실제 사용자 인증 경계의 SDK 0-turn preflight를 `C:\lao-phase-f-sdk-preflight-r1-20260812`에서 실행해 `1 passed in 1.83s`를 확인했다. ChatGPT 인증, `gpt-5.6-sol`, `runtime-boundary-worker` allowed를 확인했고 thread/start·turn/start·model turn은 모두 0회다.
+- 관련 최종 회귀는 `75 passed, 3 skipped`다. skip 3건은 opt-in 실제 실행이며 이번 작업에서 full Docker dry-run과 SDK preflight를 각각 별도 실행해 통과했다. 상태는 `PHASE_F_PROFILE_R_LIVE_STACK_PREFLIGHT_PASSED`이며 다음은 사용자 model-usage 승인 뒤 Profile R SS1 Cell 1 하나만 실제 실행하는 단계다.
