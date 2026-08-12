@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-002",
+  "title": "Phase F B1 second thread used cumulative notifications",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T06:00:21Z",
+  "resolved_at": "2026-08-12T06:00:21Z",
+  "discovered_by": "manual R2 correction run",
+  "symptom": "Attempt 2 ended DISPATCH_UNCERTAIN before its model turn",
+  "reproduction": [
+    "Run the same R01 task after Attempt 1 fails its Check and B1 opens a second thread"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "The second thread/start saw both the old and new thread/started notifications and rejected the count of two"
+    }
+  ],
+  "root_cause": "The concrete SDK port filtered the entire cumulative app-server transcript instead of only frames produced by the current thread/start request",
+  "considered_options": [
+    {
+      "option": "scope notification matching to a transcript offset",
+      "decision": "adopted",
+      "reason": "preserves persistent transport while binding each response to only its new frames"
+    }
+  ],
+  "resolution": "Capture the transcript length before thread/start and validate exactly one new matching thread/started notification after that offset",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py"
+  ],
+  "regression_tests": [
+    "test_concrete_port_scopes_thread_notification_to_each_request"
+  ],
+  "verification": [
+    "Phase F SDK plus B1 target tests: 16 passed",
+    "Actual ChatGPT-auth two-thread zero-turn preflight created two distinct threads and zero model turns"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "C:/lao-phase-f-live-c36731c-r2"
+  ]
+}

@@ -365,22 +365,25 @@ class CodexPhaseFAppServerPort:
         notification_timeout_seconds: float,
     ) -> PhaseFThreadStartObservation:
         client = self._require_client()
+        transcript_offset = len(client.transcript())
         result = client._request_raw("thread/start", params)
         if not isinstance(result, Mapping):
             raise PhaseFSdkContractError("thread/start response is invalid")
-        if not client.wait_for_notification(
-            "thread/started",
-            notification_timeout_seconds,
-        ):
-            raise PhaseFSdkContractError("thread/started notification timed out")
-        frames = client.transcript()
-        notifications = [
-            frame
-            for direction, frame in frames
-            if direction == "server_to_client"
-            and frame.get("method") == "thread/started"
-            and "id" not in frame
-        ]
+        deadline = time.monotonic() + notification_timeout_seconds
+        while True:
+            frames = client.transcript()
+            notifications = [
+                frame
+                for direction, frame in frames[transcript_offset:]
+                if direction == "server_to_client"
+                and frame.get("method") == "thread/started"
+                and "id" not in frame
+            ]
+            if notifications:
+                break
+            if time.monotonic() >= deadline:
+                raise PhaseFSdkContractError("thread/started notification timed out")
+            time.sleep(0.01)
         if len(notifications) != 1:
             raise PhaseFSdkContractError("thread/started notification count differs")
         return PhaseFThreadStartObservation(

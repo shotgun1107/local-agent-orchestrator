@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 43건
-- 해결: 41건
+- 전체: 46건
+- 해결: 44건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -56,6 +56,9 @@
 | DEV-20260807-006 | resolved | sdk-routing-suite-v1 | implementation | S1 model-free export verifier가 Plan과 provenance를 완전 재검증하지 않음 |
 | DEV-20260808-001 | resolved | sdk-routing-suite-v1 | implementation | S2 frozen manifest model controls exceeded verifier contract |
 | DEV-20260808-002 | resolved | sdk-routing-suite-v1 | implementation | S2 reverse Plan retained unselected fixture identity |
+| DEV-20260812-001 | resolved | phase-f-profile-r-b1 | integration | Phase F B1 boundary Evidence가 원장 제약에 의해 Cell을 조기 차단 |
+| DEV-20260812-002 | resolved | phase-f-profile-r-b1 | integration | Phase F B1 second thread used cumulative notifications |
+| DEV-20260812-003 | resolved | phase-f-profile-r-b1 | integration | B1 Check resolved bare python to the global interpreter |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2581,3 +2584,170 @@ Filtered reverse Plan fixture identities to the selected profile and made freeze
 - 관련 커밋: faecb246ec442b79d375ad4ebd51a230dca11c1e
 - 출처: benchmarks/artifacts/sdk-routing-s2-reverse-faecb24-r3
 - 출처: tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+
+## DEV-20260812-001 — Phase F B1 boundary Evidence가 원장 제약에 의해 Cell을 조기 차단
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T05:40:15Z / 실제 Phase F Cell 2 최초 실행
+- 해결: 2026-08-12T05:40:15Z
+
+### 증상
+
+R01 모델 작업은 완료됐지만 B1이 Check 전에 BLOCKED되고 Attempt가 RUNNING으로 남았다
+
+### 재현
+
+- Profile R B1 Cell 2에서 첫 terminal 뒤 passive boundary Evidence를 원장에 등록한다
+
+### 증거
+
+- `direct-observation`: sealed Cell 2는 actual model turn 1, checks 0, run_verification_boundary_failed stage=boundary_observer를 기록했다
+
+### 근본 원인
+
+새 관찰 hook이 기존 SQLite artifacts CHECK 제약에 없는 kind=boundary_observation과 producer=observer를 등록했다
+
+### 검토한 해결안
+
+- `rejected` 원장 migration으로 새 enum을 추가 — Phase F 연결에 불필요한 저장 계약 변경을 만든다
+- `adopted` 기존 runtime_observation/controller 분류를 재사용 — 관찰 의미를 보존하면서 동결 원장 계약을 바꾸지 않는다
+
+### 채택한 해결
+
+boundary Evidence를 기존 runtime_observation 종류와 controller 생산자로 등록하도록 수정했다
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py::test_model_free_b1_cell_uses_scheduler_and_variant_artifact
+
+### 검증 결과
+
+- Phase F B1 target 1 passed; B1 full regression 74 passed
+
+### 남은 위험
+
+- 최초 Cell 2 BLOCKED artifact는 원본으로 보존됐고 자동 재시도하지 않았다; 정정 구현의 실제 모델 재실행은 별도 수동 revision 승인이 필요하다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: C:/lao-phase-f-live-c36731c-r1 (local non-versioned evidence root)
+- 출처: stages/b1-sequential/src/orchestrator/schedule.py
+
+## DEV-20260812-002 — Phase F B1 second thread used cumulative notifications
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T06:00:21Z / manual R2 correction run
+- 해결: 2026-08-12T06:00:21Z
+
+### 증상
+
+Attempt 2 ended DISPATCH_UNCERTAIN before its model turn
+
+### 재현
+
+- Run the same R01 task after Attempt 1 fails its Check and B1 opens a second thread
+
+### 증거
+
+- `direct-observation`: The second thread/start saw both the old and new thread/started notifications and rejected the count of two
+
+### 근본 원인
+
+The concrete SDK port filtered the entire cumulative app-server transcript instead of only frames produced by the current thread/start request
+
+### 검토한 해결안
+
+- `adopted` scope notification matching to a transcript offset — preserves persistent transport while binding each response to only its new frames
+
+### 채택한 해결
+
+Capture the transcript length before thread/start and validate exactly one new matching thread/started notification after that offset
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py
+
+### 회귀시험
+
+- test_concrete_port_scopes_thread_notification_to_each_request
+
+### 검증 결과
+
+- Phase F SDK plus B1 target tests: 16 passed
+- Actual ChatGPT-auth two-thread zero-turn preflight created two distinct threads and zero model turns
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: C:/lao-phase-f-live-c36731c-r2
+
+## DEV-20260812-003 — B1 Check resolved bare python to the global interpreter
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T06:00:21Z / manual R3 correction run
+- 해결: 2026-08-12T06:00:21Z
+
+### 증상
+
+Both R01 attempts failed their independent Check with ModuleNotFoundError for yaml even though the B1 environment contained PyYAML
+
+### 재현
+
+- Run the Profile R r01_contract whose declared argv begins with the bare name python on Windows
+
+### 증거
+
+- `direct-observation`: R3 recorded two check_failed attempts whose stderr was ModuleNotFoundError: No module named yaml
+
+### 근본 원인
+
+On Windows the bare executable search used the parent process search path before the sanitized child PATH, so python resolved to the global interpreter rather than the running B1 virtual environment
+
+### 검토한 해결안
+
+- `rejected` install PyYAML into the global interpreter — hides interpreter drift and makes the Check host-dependent
+- `adopted` bind bare python and git names to resolved absolute executables before spawn — makes the executable identity deterministic across hosts
+
+### 채택한 해결
+
+Resolve bare python to sys.executable and bare git to its discovered absolute path while preserving the original declared argv in Check evidence
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/tests/unit/test_verify.py
+
+### 회귀시험
+
+- test_command_check_uses_argv_shell_false_and_deterministic_env
+
+### 검증 결과
+
+- B1 verification target: 7 passed; B1 full regression: 74 passed
+- The unchanged R3 workspace R01 Check passed with R01_PUBLIC_CONTRACT_OK and no model turn
+
+### 남은 위험
+
+- R3 remains a preserved failed measurement; a fresh R4 model run requires separate approval
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: C:/lao-phase-f-live-c36731c-r3

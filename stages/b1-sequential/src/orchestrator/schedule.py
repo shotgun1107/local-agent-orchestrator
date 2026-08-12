@@ -7,7 +7,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 from pydantic import ValidationError
@@ -66,6 +66,32 @@ from .verify import (
 
 class ConfigurationError(ValueError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class TurnBoundaryContext:
+    """Public-safe facts available immediately after one B1 terminal turn.
+
+    The hook runs before ResultEnvelope validation and before Controller Checks.
+    It observes the workspace but does not decide scheduling, retry, or Check
+    outcomes; those remain owned by the B1 scheduler.
+    """
+
+    run_id: str
+    task_spec: TaskSpec
+    task_envelope: TaskEnvelope
+    attempt_id: str
+    attempt_no: int
+    raw_session_id: str
+    raw_turn_id: str
+    turn_ordinal: int
+    turn_kind: str
+    terminal_status: str
+    error_kind: str | None
+    workspace_baseline: Any
+
+
+TurnBoundaryObserver = Callable[[TurnBoundaryContext], Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +202,10 @@ class Orchestrator:
         fake_fixture: dict[str, Any] | None = None,
         runtime_profiles_path: Path | None = None,
         max_turns_override: int | None = None,
+        runtime_port: RuntimePort | None = None,
+        runtime_profile_override: Any | None = None,
+        auth_method_override: str | None = None,
+        turn_boundary_observer: TurnBoundaryObserver | None = None,
     ) -> None:
         self.loaded = loaded
         self.state_root = Path(state_root or state_root_for(loaded.pack.project.project_id)).resolve()
@@ -190,7 +220,16 @@ class Orchestrator:
             )
         self.runtime_kind = runtime_kind
         self.runtime_profiles_path = runtime_profiles_path
-        if runtime_kind == "fake":
+        self.turn_boundary_observer = turn_boundary_observer
+        if runtime_port is not None:
+            if runtime_profile_override is None or auth_method_override is None:
+                raise ConfigurationError(
+                    "injected runtime requires explicit profile and auth method"
+                )
+            self.runtime = runtime_port
+            self.runtime_profile = runtime_profile_override
+            self.auth_method = auth_method_override
+        elif runtime_kind == "fake":
             self.runtime: RuntimePort = FakeRuntime(
                 fake_scenario,
                 workspace=loaded.project_root,
@@ -511,6 +550,53 @@ class Orchestrator:
                 relative_path=f"{base}/runtime/turns/{turn_no:03d}-terminal.json",
                 value=outcome.terminal_evidence, kind="terminal_evidence", producer="runtime",
             )
+            if self.turn_boundary_observer is not None:
+                try:
+                    observation = self.turn_boundary_observer(
+                        TurnBoundaryContext(
+                            run_id=run_id,
+                            task_spec=spec,
+                            task_envelope=TaskEnvelope.model_validate_json(
+                                attempt["task_contract_json"]
+                            ),
+                            attempt_id=attempt["attempt_id"],
+                            attempt_no=int(attempt["attempt_no"]),
+                            raw_session_id=str(session_handle.id),
+                            raw_turn_id=str(turn.id),
+                            turn_ordinal=int(ledger.get("run", run_id)["turns_used"]),
+                            turn_kind=(
+                                "b1_resume"
+                                if turn_no > 1
+                                else "b1_retry"
+                                if int(attempt["attempt_no"]) > 1
+                                else "initial"
+                            ),
+                            terminal_status=str(outcome.terminal_status),
+                            error_kind=(
+                                None
+                                if outcome.failure is None
+                                else outcome.failure.source_exception_type
+                            ),
+                            workspace_baseline=baseline,
+                        )
+                    )
+                    self._persist(
+                        ledger,
+                        run_id=run_id,
+                        task_id=task["task_id"],
+                        attempt_id=attempt["attempt_id"],
+                        relative_path=(
+                            f"{base}/runtime/turns/{turn_no:03d}-boundary.json"
+                        ),
+                        value=observation,
+                        kind="runtime_observation",
+                        producer="controller",
+                    )
+                except Exception as exc:
+                    raise VerificationError(
+                        "boundary_observer",
+                        f"B1 turn boundary observer failed: {type(exc).__name__}",
+                    ) from exc
             if outcome.terminal_status != TerminalStatus.COMPLETED:
                 self._handle_runtime_outcome_failure(ledger, run_id, task, attempt, session, outcome)
                 return

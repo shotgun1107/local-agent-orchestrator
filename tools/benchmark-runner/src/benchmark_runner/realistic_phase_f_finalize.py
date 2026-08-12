@@ -42,10 +42,6 @@ from benchmark_runner.realistic_phase_f import (
     PhaseFDispatchRequest,
     PhaseFRuntimeMode,
 )
-from benchmark_runner.realistic_phase_f_ss1 import (
-    PHASE_F_SS1_EVIDENCE_FILENAME,
-    ProfileRPhaseFSS1Backend,
-)
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.runner import sha256_bytes, sha256_file
 
@@ -128,6 +124,14 @@ class PhaseFJudgePort(Protocol):
         output_root: Path,
         request: PhaseFDispatchRequest,
     ) -> PhaseFJudgeObservation: ...
+
+
+class PhaseFWorkerBackend(Protocol):
+    artifact_root: Path
+    runtime_mode: PhaseFRuntimeMode
+    evidence_filename: str
+
+    def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult: ...
 
 
 class FakePhaseFJudgePort:
@@ -279,6 +283,7 @@ def _measurement(
     adapter_payload: Mapping[str, object],
     judge: PhaseFJudgeObservation,
     evidence: list[EvidenceRef],
+    adapter_evidence_filename: str,
     worker_seconds: float,
     total_seconds: float,
 ) -> Measurement:
@@ -287,15 +292,15 @@ def _measurement(
     raw = adapter_payload.get("adapter_raw_payload")
     metrics = adapter_payload.get("adapter_normalized_metrics")
     if not isinstance(raw, dict) or not isinstance(metrics, dict):
-        raise PhaseFFinalizationError("SS1 adapter Evidence shape differs")
+        raise PhaseFFinalizationError("Phase F adapter Evidence shape differs")
     records = raw.get("boundary_records")
     if not isinstance(records, list):
-        raise PhaseFFinalizationError("SS1 boundary records are unavailable")
+        raise PhaseFFinalizationError("Phase F boundary records are unavailable")
     scope_ok = True
     secret_findings: list[str] = []
     for record in records:
         if not isinstance(record, dict) or not isinstance(record.get("observation"), dict):
-            raise PhaseFFinalizationError("SS1 boundary record is invalid")
+            raise PhaseFFinalizationError("Phase F boundary record is invalid")
         observation = record["observation"]
         if observation.get("outside_task_scope_paths") or observation.get(
             "outside_run_scope_paths"
@@ -303,7 +308,7 @@ def _measurement(
             scope_ok = False
         protected = observation.get("protected_files")
         if not isinstance(protected, list):
-            raise PhaseFFinalizationError("SS1 protected file Evidence is invalid")
+            raise PhaseFFinalizationError("Phase F protected file Evidence is invalid")
         if any(isinstance(item, dict) and item.get("changed") is True for item in protected):
             scope_ok = False
         secret_scan = observation.get("secret_scan")
@@ -312,6 +317,7 @@ def _measurement(
     not_applicable_count = _metric(MetricStatus.NOT_APPLICABLE, "count")
     not_applicable_seconds = _metric(MetricStatus.NOT_APPLICABLE, "seconds")
     token_metric = _metric(MetricStatus.NOT_APPLICABLE, "tokens")
+    adapter_source = f"{request.variant_id}_adapter"
     if request.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT:
         usage = metrics.get("token_usage")
         token_metric = (
@@ -319,15 +325,22 @@ def _measurement(
                 MetricStatus.MEASURED,
                 "tokens",
                 value=usage,
-                source="ss1_adapter",
-                evidence_ref=PHASE_F_SS1_EVIDENCE_FILENAME,
+                source=adapter_source,
+                evidence_ref=adapter_evidence_filename,
             )
             if isinstance(usage, dict)
             else _metric(MetricStatus.UNKNOWN, "tokens")
         )
     final_tree = adapter_payload.get("worker_tree_final_sha256")
     if not isinstance(final_tree, str) or len(final_tree) != 64:
-        raise PhaseFFinalizationError("SS1 final Worker tree hash is invalid")
+        raise PhaseFFinalizationError("Phase F final Worker tree hash is invalid")
+    outcome_state = worker.outcome_state
+    failure_kind = adapter_payload.get("adapter_failure_kind")
+    if outcome_state == "completed" and not judge.check_success:
+        outcome_state = "failed"
+        failure_kind = "independent_judge_failed"
+    elif outcome_state == "completed":
+        failure_kind = None
     return Measurement(
         created_at=utc_now(),
         identity=MeasurementIdentity(
@@ -345,7 +358,7 @@ def _measurement(
             fixture_tree_before=fixture.git_tree,
             fixture_tree_after=final_tree,
             runner_commit=plan.runner.version,
-            variant_version="phase-f-profile-r-ss1/v1",
+            variant_version=f"phase-f-profile-r-{request.variant_id}/v1",
             variant_artifact_sha256=worker.sealed_artifact_sha256,
         ),
         environment=MeasurementEnvironment(
@@ -366,7 +379,7 @@ def _measurement(
                 if request.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT
                 else "not_applicable_nonlive"
             ),
-            surface_kind="phase_f_profile_r_ss1",
+            surface_kind=f"phase_f_profile_r_{request.variant_id}",
             approval_mode=(
                 "deny_all"
                 if request.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT
@@ -381,8 +394,8 @@ def _measurement(
             ),
         ),
         outcome=MeasurementOutcome(
-            state="completed",
-            failure_kind=None if judge.check_success else "independent_judge_failed",
+            state=outcome_state,
+            failure_kind=(None if failure_kind is None else str(failure_kind)),
             check_success=judge.check_success,
         ),
         effort=MeasurementEffort(
@@ -415,22 +428,22 @@ def _measurement(
                 MetricStatus.MEASURED,
                 "count",
                 value=int(metrics.get("session_count", 0)),
-                source="ss1_adapter",
-                evidence_ref=PHASE_F_SS1_EVIDENCE_FILENAME,
+                source=adapter_source,
+                evidence_ref=adapter_evidence_filename,
             ),
             turn_count=_metric(
                 MetricStatus.MEASURED,
                 "count",
                 value=int(metrics.get("turn_count", 0)),
-                source="ss1_adapter",
-                evidence_ref=PHASE_F_SS1_EVIDENCE_FILENAME,
+                source=adapter_source,
+                evidence_ref=adapter_evidence_filename,
             ),
             attempt_count=_metric(
                 MetricStatus.MEASURED,
                 "count",
                 value=int(adapter_payload.get("adapter_attempt_count", 1)),
-                source="ss1_adapter",
-                evidence_ref=PHASE_F_SS1_EVIDENCE_FILENAME,
+                source=adapter_source,
+                evidence_ref=adapter_evidence_filename,
             ),
             token_usage=token_metric,
         ),
@@ -467,14 +480,14 @@ def _measurement(
 
 
 class ProfileRPhaseFCellFinalizerBackend:
-    """Wrap Profile R SS1 with an injected Judge and reproducible final seal."""
+    """Wrap one Profile R variant with an injected Judge and final seal."""
 
     def __init__(
         self,
         *,
         repository: Path,
         candidate_root: Path,
-        worker_backend: ProfileRPhaseFSS1Backend,
+        worker_backend: PhaseFWorkerBackend,
         judge: PhaseFJudgePort,
     ) -> None:
         self.repository = repository.resolve()
@@ -507,12 +520,12 @@ class ProfileRPhaseFCellFinalizerBackend:
         worker_seconds = time.monotonic() - worker_started
         cell_root = self.worker_backend.artifact_root / request.cell_id
         workspace = cell_root / "workspace"
-        adapter_path = cell_root / PHASE_F_SS1_EVIDENCE_FILENAME
+        adapter_path = cell_root / self.worker_backend.evidence_filename
         if worker.sealed_artifact_sha256 != sha256_file(adapter_path):
-            raise PhaseFFinalizationError("SS1 worker artifact hash differs")
+            raise PhaseFFinalizationError("Phase F worker artifact hash differs")
         adapter_payload = json.loads(adapter_path.read_text(encoding="utf-8"))
         if not isinstance(adapter_payload, dict):
-            raise PhaseFFinalizationError("SS1 adapter Evidence is invalid")
+            raise PhaseFFinalizationError("Phase F adapter Evidence is invalid")
         final_root = cell_root / PHASE_F_FINAL_DIRECTORY
         judge_root = final_root / PHASE_F_JUDGE_DIRECTORY
         observation = self.judge.run(
@@ -533,6 +546,7 @@ class ProfileRPhaseFCellFinalizerBackend:
             adapter_payload=adapter_payload,
             judge=observation,
             evidence=evidence,
+            adapter_evidence_filename=self.worker_backend.evidence_filename,
             worker_seconds=worker_seconds,
             total_seconds=time.monotonic() - total_started,
         )
@@ -565,7 +579,7 @@ class ProfileRPhaseFCellFinalizerBackend:
         )
         return worker.model_copy(
             update={
-                "outcome_state": "completed",
+                "outcome_state": measurement.outcome.state,
                 "sealed_artifact_sha256": sha256_bytes(seal_bytes),
                 "public_summary": {
                     **worker.public_summary,

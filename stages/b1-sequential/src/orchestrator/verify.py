@@ -269,14 +269,29 @@ def build_check_environment(
     return environment
 
 
+def resolve_check_argv(argv: list[str]) -> list[str]:
+    """Bind bare tool names whose identity is part of the Check contract."""
+
+    resolved = list(argv)
+    if resolved[0].casefold() in {"python", "python.exe"}:
+        resolved[0] = str(Path(sys.executable).resolve())
+    elif resolved[0].casefold() in {"git", "git.exe"}:
+        discovered = shutil.which("git", path=os.environ.get("PATH"))
+        if not discovered:
+            raise VerificationError("check_environment", "Git executable is unavailable")
+        resolved[0] = str(Path(discovered).resolve())
+    return resolved
+
+
 def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorkspace) -> CheckResult:
     cwd = (workspace.root / check.cwd).resolve()
     if workspace.root not in cwd.parents and cwd != workspace.root:
         raise VerificationError("check", f"Check cwd escaped repository: {check.cwd}")
     started = utc_now()
     try:
+        execution_argv = resolve_check_argv(check.argv)
         completed = subprocess.run(
-            check.argv,
+            execution_argv,
             cwd=cwd,
             text=True,
             encoding="utf-8",

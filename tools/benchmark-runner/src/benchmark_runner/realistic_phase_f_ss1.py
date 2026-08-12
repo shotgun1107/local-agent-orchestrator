@@ -99,6 +99,13 @@ class PhaseFBoundarySignals:
 
 
 class PhaseFBoundaryTelemetry(Protocol):
+    def observe_task(
+        self,
+        task_id: str,
+        *,
+        changed_paths: tuple[str, ...],
+    ) -> PhaseFBoundarySignals: ...
+
     def observe(
         self,
         context: SS1ObserverContext,
@@ -110,17 +117,28 @@ class PhaseFBoundaryTelemetry(Protocol):
 class ModelFreeClearBoundaryTelemetry:
     """Explicit fake-only telemetry used by contract tests, never live Cells."""
 
+    def observe_task(
+        self,
+        task_id: str,
+        *,
+        changed_paths: tuple[str, ...],
+    ) -> PhaseFBoundarySignals:
+        del task_id, changed_paths
+        return PhaseFBoundarySignals(
+            secret_scan=SecretScanObservation(status="clear", finding_ids=[]),
+            judge_access=BoundaryAccessObservation(status="clear", event_ids=[]),
+            state_access=BoundaryAccessObservation(status="clear", event_ids=[]),
+        )
+
     def observe(
         self,
         context: SS1ObserverContext,
         *,
         changed_paths: tuple[str, ...],
     ) -> PhaseFBoundarySignals:
-        del context, changed_paths
-        return PhaseFBoundarySignals(
-            secret_scan=SecretScanObservation(status="clear", finding_ids=[]),
-            judge_access=BoundaryAccessObservation(status="clear", event_ids=[]),
-            state_access=BoundaryAccessObservation(status="clear", event_ids=[]),
+        return self.observe_task(
+            context.task.task_id,
+            changed_paths=changed_paths,
         )
 
 
@@ -442,69 +460,97 @@ class _ProfileRObserver:
         self.next_record += 1
         if record.task_id != context.task.task_id:
             raise PhaseFSS1BackendError("Profile R observer Task identity differs")
-        paths = sorted(
-            set(record.before) | set(record.after), key=lambda value: value.encode("utf-8")
+        return build_profile_r_boundary_observation(
+            task=context.task,
+            before=record.before,
+            after=record.after,
+            run_write_scopes=self.run_write_scopes,
+            telemetry=self.telemetry,
+            observer_implementation_sha256=self.implementation_sha256,
         )
-        changed = tuple(
-            path for path in paths if record.before.get(path) != record.after.get(path)
+
+
+def build_profile_r_boundary_observation(
+    *,
+    task: Ss1TaskRequest,
+    before: Mapping[str, str],
+    after: Mapping[str, str],
+    run_write_scopes: Iterable[str],
+    telemetry: PhaseFBoundaryTelemetry,
+    observer_implementation_sha256: str,
+) -> PassiveBoundaryObservation:
+    """Build the identical passive observation used by SS1 and B1."""
+
+    paths = sorted(
+        set(before) | set(after), key=lambda value: value.encode("utf-8")
+    )
+    changed = tuple(path for path in paths if before.get(path) != after.get(path))
+    changed_models = [
+        ChangedPath(
+            path=path,
+            change_kind=(
+                "added"
+                if path not in before
+                else "deleted"
+                if path not in after
+                else "modified"
+            ),
         )
-        changed_models = [
-            ChangedPath(
-                path=path,
-                change_kind=(
-                    "added"
-                    if path not in record.before
-                    else "deleted"
-                    if path not in record.after
-                    else "modified"
-                ),
+        for path in changed
+    ]
+    protected_paths = sorted(
+        {
+            path
+            for path in paths
+            if any(
+                path_matches_write_scope(path, scope)
+                for scope in PROFILE_R_PROTECTED_SCOPES
             )
-            for path in changed
-        ]
-        protected_paths = sorted(
-            {
+        },
+        key=lambda value: value.encode("utf-8"),
+    )
+    protected = [
+        ProtectedFileObservation(
+            path=path,
+            before_sha256=before.get(path, MISSING_PATH_SHA256),
+            after_sha256=after.get(path, MISSING_PATH_SHA256),
+            changed=before.get(path) != after.get(path),
+        )
+        for path in protected_paths
+    ]
+    signals = telemetry.observe_task(task.task_id, changed_paths=changed)
+    run_scopes = tuple(run_write_scopes)
+    return PassiveBoundaryObservation.from_input(
+        PassiveBoundaryInput(
+            declared_read_scope=task.read_scope,
+            declared_write_scope=task.write_scope,
+            changed_paths=changed_models,
+            outside_task_scope_paths=[
                 path
-                for path in paths
-                if self._matches(path, PROFILE_R_PROTECTED_SCOPES)
-            },
-            key=lambda value: value.encode("utf-8"),
+                for path in changed
+                if not any(
+                    path_matches_write_scope(path, scope)
+                    for scope in task.write_scope
+                )
+            ],
+            outside_run_scope_paths=[
+                path
+                for path in changed
+                if not any(
+                    path_matches_write_scope(path, scope) for scope in run_scopes
+                )
+            ],
+            protected_files=protected,
+            declared_inputs=task.declared_inputs,
+            predecessor_artifacts=task.predecessor_artifacts,
+            workspace_tree_before_sha256=_tree_sha256(before),
+            workspace_tree_after_sha256=_tree_sha256(after),
+            secret_scan=signals.secret_scan,
+            judge_access=signals.judge_access,
+            state_access=signals.state_access,
+            observer_implementation_sha256=observer_implementation_sha256,
         )
-        protected = [
-            ProtectedFileObservation(
-                path=path,
-                before_sha256=record.before.get(path, MISSING_PATH_SHA256),
-                after_sha256=record.after.get(path, MISSING_PATH_SHA256),
-                changed=record.before.get(path) != record.after.get(path),
-            )
-            for path in protected_paths
-        ]
-        signals = self.telemetry.observe(context, changed_paths=changed)
-        return PassiveBoundaryObservation.from_input(
-            PassiveBoundaryInput(
-                declared_read_scope=context.task.read_scope,
-                declared_write_scope=context.task.write_scope,
-                changed_paths=changed_models,
-                outside_task_scope_paths=[
-                    path
-                    for path in changed
-                    if not self._matches(path, context.task.write_scope)
-                ],
-                outside_run_scope_paths=[
-                    path
-                    for path in changed
-                    if not self._matches(path, self.run_write_scopes)
-                ],
-                protected_files=protected,
-                declared_inputs=context.task.declared_inputs,
-                predecessor_artifacts=context.task.predecessor_artifacts,
-                workspace_tree_before_sha256=_tree_sha256(record.before),
-                workspace_tree_after_sha256=_tree_sha256(record.after),
-                secret_scan=signals.secret_scan,
-                judge_access=signals.judge_access,
-                state_access=signals.state_access,
-                observer_implementation_sha256=self.implementation_sha256,
-            )
-        )
+    )
 
 
 def _forbidden_prompt_fragments(repository: Path) -> tuple[str, ...]:
@@ -519,6 +565,8 @@ def _forbidden_prompt_fragments(repository: Path) -> tuple[str, ...]:
 
 class ProfileRPhaseFSS1Backend:
     """Run exactly Profile R/SS1 Cell 1 through existing Phase C machinery."""
+
+    evidence_filename = PHASE_F_SS1_EVIDENCE_FILENAME
 
     def __init__(
         self,

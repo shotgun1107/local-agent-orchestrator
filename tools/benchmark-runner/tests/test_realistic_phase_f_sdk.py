@@ -21,6 +21,7 @@ from benchmark_runner.realistic_phase_f_sdk import (
     phase_f_thread_start_params,
     phase_f_turn_start_params,
     validate_phase_f_config_overrides,
+    verify_phase_f_thread_start,
 )
 
 
@@ -131,6 +132,7 @@ class FakeRawClient:
         self.workspace = workspace
         self.calls: list[tuple[str, Any]] = []
         self.frames: list[tuple[str, Mapping[str, Any]]] = []
+        self.thread_count = 0
 
     def start(self) -> None:
         self.calls.append(("start", None))
@@ -158,11 +160,14 @@ class FakeRawClient:
                 "data": [{"id": PHASE_F_PERMISSION_PROFILE, "allowed": True}]
             }
         if method == "thread/start":
-            request = {"id": "request-1", "method": method, "params": dict(params or {})}
+            self.thread_count += 1
+            request_id = f"request-{self.thread_count}"
+            thread_id = f"raw-thread-{self.thread_count}"
+            request = {"id": request_id, "method": method, "params": dict(params or {})}
             response = {
-                "id": "request-1",
+                "id": request_id,
                 "result": {
-                    "thread": {"id": "raw-thread-1"},
+                    "thread": {"id": thread_id},
                     "activePermissionProfile": {"id": PHASE_F_PERMISSION_PROFILE},
                     "approvalPolicy": "never",
                     "cwd": str(self.workspace),
@@ -170,7 +175,7 @@ class FakeRawClient:
             }
             notification = {
                 "method": "thread/started",
-                "params": {"thread": {"id": "raw-thread-1"}},
+                "params": {"thread": {"id": thread_id}},
             }
             self.frames.extend(
                 [
@@ -398,6 +403,33 @@ def test_concrete_port_uses_raw_profile_request_and_injected_turn_handle(
     assert "sandboxPolicy" not in raw_turn["params"]
     assert result.terminal_status == "completed"
     assert runtime.actual_model_turns == 1
+
+
+def test_concrete_port_scopes_thread_notification_to_each_request(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    client = FakeRawClient(workspace)
+    port = CodexPhaseFAppServerPort(
+        workspace,
+        config_overrides=_config_overrides(),
+        client_factory=lambda _path, _overrides: client,
+    )
+
+    port.open()
+    first = port.start_thread(
+        phase_f_thread_start_params(workspace),
+        notification_timeout_seconds=2.0,
+    )
+    second = port.start_thread(
+        phase_f_thread_start_params(workspace),
+        notification_timeout_seconds=2.0,
+    )
+    port.close()
+
+    assert verify_phase_f_thread_start(first, workspace=workspace) == "raw-thread-1"
+    assert verify_phase_f_thread_start(second, workspace=workspace) == "raw-thread-2"
 
 
 @pytest.mark.parametrize(

@@ -111,6 +111,17 @@ class PolicyAttestedPhaseFBoundaryTelemetry:
         *,
         changed_paths: tuple[str, ...],
     ) -> PhaseFBoundarySignals:
+        return self.observe_task(
+            context.task.task_id,
+            changed_paths=changed_paths,
+        )
+
+    def observe_task(
+        self,
+        task_id: str,
+        *,
+        changed_paths: tuple[str, ...],
+    ) -> PhaseFBoundarySignals:
         workspace = self._workspace
         if workspace is None or self._config_sha256 is None:
             raise PhaseFSS1BackendError("live boundary telemetry is not bound")
@@ -136,7 +147,7 @@ class PolicyAttestedPhaseFBoundaryTelemetry:
                 if literal.casefold() in folded:
                     token = hashlib.sha256(literal.encode("utf-8")).hexdigest()[:16]
                     findings.add(
-                        f"phase-f-secret-{context.task.task_id.lower()}-{token}"
+                        f"phase-f-secret-{task_id.lower()}-{token}"
                     )
         secret = (
             SecretScanObservation(status="finding", finding_ids=sorted(findings))
@@ -181,7 +192,7 @@ class PhaseFZeroTurnPreflightEvidence(StrictModel):
 class ProfileRPhaseFLiveStack:
     backend: ProfileRPhaseFCellFinalizerBackend
     telemetry: PolicyAttestedPhaseFBoundaryTelemetry
-    runtime_factory: Callable[[Path], PhaseFSdkRuntimeV2]
+    runtime_factory: Callable[[Path], object]
 
 
 def _default_app_server_port_factory(
@@ -267,6 +278,78 @@ def build_profile_r_phase_f_live_stack(
         )
 
     worker = ProfileRPhaseFSS1Backend(
+        repository=repository,
+        artifact_root=artifact_root,
+        runtime_mode="live_chatgpt",
+        runtime_factory=runtime_factory,
+        telemetry=telemetry,
+        environ=environ,
+    )
+    judge = PhaseFDockerJudgePort(
+        repository=repository,
+        raw_root=docker_raw_root,
+        source_commit=source_commit,
+        docker_executable=docker_executable,
+        execution_backend=(
+            docker_execution_backend or SubprocessDockerExecutionBackend()
+        ),
+        source_environment=(
+            os.environ if source_environment is None else source_environment
+        ),
+        limits=docker_limits,
+        roots_factory=judge_roots_factory,
+    )
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=repository,
+        candidate_root=candidate_root,
+        worker_backend=worker,
+        judge=judge,
+    )
+    return ProfileRPhaseFLiveStack(
+        backend=backend,
+        telemetry=telemetry,
+        runtime_factory=runtime_factory,
+    )
+
+
+def build_profile_r_phase_f_b1_live_stack(
+    *,
+    repository: Path,
+    candidate_root: Path,
+    artifact_root: Path,
+    docker_raw_root: Path,
+    docker_executable: Path,
+    source_commit: str,
+    environ: Mapping[str, str] | None = None,
+    source_environment: Mapping[str, str] | None = None,
+    app_server_port_factory: AppServerPortFactory = _default_app_server_port_factory,
+    docker_execution_backend: DockerExecutionBackend | None = None,
+    judge_roots_factory: PhaseFJudgeRootsFactory | None = None,
+    docker_limits: DockerJudgeLimits | None = None,
+) -> ProfileRPhaseFLiveStack:
+    """Assemble the production-shaped B1 Cell 2 backend without executing it."""
+
+    from benchmark_runner.realistic_phase_f_b1 import (
+        PhaseFB1RuntimeV2,
+        ProfileRPhaseFB1Backend,
+    )
+
+    repository = repository.resolve(strict=True)
+    if present_api_key_environment_names(environ):
+        raise PhaseFSS1BackendError("API key environment names are present")
+    telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
+
+    def runtime_factory(workspace: Path) -> PhaseFB1RuntimeV2:
+        overrides = build_phase_f_config_overrides(workspace)
+        telemetry.bind(workspace, overrides)
+        port = app_server_port_factory(workspace, overrides)
+        return PhaseFB1RuntimeV2(
+            workspace,
+            port=port,
+            environ=environ,
+        )
+
+    worker = ProfileRPhaseFB1Backend(
         repository=repository,
         artifact_root=artifact_root,
         runtime_mode="live_chatgpt",
