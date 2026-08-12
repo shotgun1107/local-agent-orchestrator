@@ -77,7 +77,8 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     result = run_command_check("unit", check, GitWorkspace(root))
     assert result.state == "PASSED"
     assert captured["shell"] is False
-    assert captured["argv"] == ["python", "-V"]
+    assert captured["argv"] == [str(Path(os.sys.executable).resolve()), "-V"]
+    assert result.argv == ["python", "-V"]
     assert "OPENAI_API_KEY" not in captured["env"]
     assert "CODEX_API_KEY" not in captured["env"]
     assert "UNRELATED_USER_SETTING" not in captured["env"]

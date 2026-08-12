@@ -1959,3 +1959,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 이 과정에서 공통 API-key 이름 검사 함수가 임의 `Mapping`에서 값 조회를 시도할 수 있음을 발견했다. `source.keys()`만 순회하도록 바꾸고 값 접근 시 실패하는 회귀를 추가했다. 실제 preflight 직전 API-key 환경 변수 이름은 없었고 값은 읽지 않았다.
 - 실제 사용자 인증 경계의 SDK 0-turn preflight를 `C:\lao-phase-f-sdk-preflight-r1-20260812`에서 실행해 `1 passed in 1.83s`를 확인했다. ChatGPT 인증, `gpt-5.6-sol`, `runtime-boundary-worker` allowed를 확인했고 thread/start·turn/start·model turn은 모두 0회다.
 - 관련 최종 회귀는 `75 passed, 3 skipped`다. skip 3건은 opt-in 실제 실행이며 이번 작업에서 full Docker dry-run과 SDK preflight를 각각 별도 실행해 통과했다. 상태는 `PHASE_F_PROFILE_R_LIVE_STACK_PREFLIGHT_PASSED`이며 다음은 사용자 model-usage 승인 뒤 Profile R SS1 Cell 1 하나만 실제 실행하는 단계다.
+## Phase F Profile R B1 Cell 2 최초 실행과 boundary hook 정정
+
+- 작업일: 2026-08-12. 기존 Experiment `exp_20260812_77e111e8_1`에서 명시 승인된 Cell 2 `cell_phase-e_2_realistic-compat-migration-001_b1` 하나만 실행했다. ChatGPT 구독 인증, `gpt-5.6-sol`, reasoning effort `high`, SDK `0.144.4`, `runtime-boundary-worker`를 사용했고 API-key 환경 이름은 없었다. Cell 3은 자동 실행하지 않고 `PLANNED`로 남겼다.
+- 실행 전 model-free 검증은 B1 전체 `74 passed`, Phase F 관련 `35 passed, 3 skipped`, 새 B1 관통 시험 `1 passed`였다. 실제 사용자 인증 경계의 B1 0-turn preflight도 session 0, model turn 0으로 통과했다.
+- 최초 실제 Cell 2는 149.688초, model turn 1, token 합계 157,880에서 `blocked`로 봉인됐다. Worker는 R01의 두 공개 파일을 허용 범위 안에서 수정했지만 Check 실행 전 Controller boundary hook이 중단됐다. 독립 Docker Judge 결과는 `R-P02-STAGE-DISCRIMINATOR`, `R-P05-LIFECYCLE-REUSE` 실패였다.
+- 직접 원인은 새 boundary Evidence를 기존 SQLite 원장이 허용하지 않는 `kind=boundary_observation`, `producer=observer`로 등록한 것이다. 기존 동결 원장 Schema를 넓히지 않고 `kind=runtime_observation`, `producer=controller`를 재사용하도록 정정했고, 관통 시험에서 Attempt가 `RUNNING`으로 남지 않음을 추가 검증했다. 정정 뒤 B1 전체 `74 passed`, B1 Phase F 관통 `1 passed`, 구현 로그 `44 entries` 검사와 하네스 `10 tests`를 통과했다.
+- 최초 실패 Cell 2와 seal은 삭제·수정·자동 재시도하지 않았다. 기록은 `DEV-20260812-001`에 남겼다. 정정 구현으로 실제 B1을 다시 측정하려면 one-shot 계약을 보존하는 별도 수동 revision을 먼저 정해야 한다.
+
+## Phase F Profile R B1 수동 correction run과 검사 실행기 정정
+
+- 작업일: 2026-08-12. 최초 Cell 2를 덮어쓰지 않고 동일한 sealed dispatch request로 로컬 correction root `C:\lao-phase-f-live-c36731c-r2`, `C:\lao-phase-f-live-c36731c-r3`를 각각 새로 만들었다. 두 실행 모두 Controller의 다음 Cell 자동 실행 경로를 사용하지 않았으므로 Cell 3은 실행되지 않았다.
+- r2에서는 첫 Attempt Check 실패 뒤 두 번째 SDK thread를 열 때 concrete app-server port가 누적 transcript 전체의 `thread/started`를 세어 `DISPATCH_UNCERTAIN`으로 닫혔다. 요청 직전 transcript offset 이후의 새 frame만 검증하도록 수정했고, Phase F SDK/B1 표적 시험 `16 passed`와 실제 ChatGPT 인증 2-thread/0-turn preflight로 서로 다른 thread 2개와 model turn 0을 확인했다. 구현 인시던트는 `DEV-20260812-002`다.
+- r3에서는 시스템 경계 오류 없이 B1이 새 session 2개, model turn 2개, Attempt 2개와 Check 재시도 1회를 실행했다. 총 217.344초, model active 194.162초, token 300,285였으며 R01에서 두 Check가 실패해 R02~R08은 실행하지 않았다. 최종 Cell seal은 `3169273c7e85333018a4e9bcda26f8cabcb6b64756c083a2592d9ef2574dd1c0`, Measurement hash는 `5ad90ced2e314402b52048afe396a93eaaf4978d6c2d018134ef001c7d1e68ce`다.
+- r3의 두 Check stderr는 모두 `ModuleNotFoundError: No module named 'yaml'`이었다. Windows에서 bare `python` 실행 파일 검색이 자식에게 전달한 정제 PATH가 아니라 부모 검색 경로의 전역 Python을 선택한 것이 원인이었다. Check 실행 전에 bare `python`을 현재 B1의 `sys.executable`, bare `git`을 발견된 절대경로로 결합하고, Evidence에는 원래 선언 argv를 그대로 보존하도록 정정했다. 구현 인시던트는 `DEV-20260812-003`이다.
+- 정정 뒤 B1 검증 표적 `7 passed`, B1 전체 `74 passed`를 통과했다. 실패한 r3 workspace 자체를 바꾸지 않고 같은 R01 Check만 model-free로 다시 실행해 exit 0과 `R01_PUBLIC_CONTRACT_OK`를 확인했다. 따라서 r3의 R01 Worker 결과는 공개 Check 기준으로 성공했지만 실행 당시 Controller 검사 환경 오류 때문에 실패로 기록된 것이다.
+- r1·r2·r3는 모두 원본 상태로 보존한다. 다음 실제 model 실행은 새 correction root r4에서 해야 하며, 반복 비용과 one-shot 측정 계약 때문에 별도 사용자 승인을 받기 전에는 실행하지 않는다.

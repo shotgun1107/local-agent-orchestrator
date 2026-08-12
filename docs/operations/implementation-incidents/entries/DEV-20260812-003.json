@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-003",
+  "title": "B1 Check resolved bare python to the global interpreter",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T06:00:21Z",
+  "resolved_at": "2026-08-12T06:00:21Z",
+  "discovered_by": "manual R3 correction run",
+  "symptom": "Both R01 attempts failed their independent Check with ModuleNotFoundError for yaml even though the B1 environment contained PyYAML",
+  "reproduction": [
+    "Run the Profile R r01_contract whose declared argv begins with the bare name python on Windows"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "R3 recorded two check_failed attempts whose stderr was ModuleNotFoundError: No module named yaml"
+    }
+  ],
+  "root_cause": "On Windows the bare executable search used the parent process search path before the sanitized child PATH, so python resolved to the global interpreter rather than the running B1 virtual environment",
+  "considered_options": [
+    {
+      "option": "install PyYAML into the global interpreter",
+      "decision": "rejected",
+      "reason": "hides interpreter drift and makes the Check host-dependent"
+    },
+    {
+      "option": "bind bare python and git names to resolved absolute executables before spawn",
+      "decision": "adopted",
+      "reason": "makes the executable identity deterministic across hosts"
+    }
+  ],
+  "resolution": "Resolve bare python to sys.executable and bare git to its discovered absolute path while preserving the original declared argv in Check evidence",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "stages/b1-sequential/tests/unit/test_verify.py"
+  ],
+  "regression_tests": [
+    "test_command_check_uses_argv_shell_false_and_deterministic_env"
+  ],
+  "verification": [
+    "B1 verification target: 7 passed; B1 full regression: 74 passed",
+    "The unchanged R3 workspace R01 Check passed with R01_PUBLIC_CONTRACT_OK and no model turn"
+  ],
+  "remaining_risks": [
+    "R3 remains a preserved failed measurement; a fresh R4 model run requires separate approval"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "C:/lao-phase-f-live-c36731c-r3"
+  ]
+}

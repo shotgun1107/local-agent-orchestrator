@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260812-001",
+  "title": "Phase F B1 boundary Evidence가 원장 제약에 의해 Cell을 조기 차단",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-12T05:40:15Z",
+  "resolved_at": "2026-08-12T05:40:15Z",
+  "discovered_by": "실제 Phase F Cell 2 최초 실행",
+  "symptom": "R01 모델 작업은 완료됐지만 B1이 Check 전에 BLOCKED되고 Attempt가 RUNNING으로 남았다",
+  "reproduction": [
+    "Profile R B1 Cell 2에서 첫 terminal 뒤 passive boundary Evidence를 원장에 등록한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "sealed Cell 2는 actual model turn 1, checks 0, run_verification_boundary_failed stage=boundary_observer를 기록했다"
+    }
+  ],
+  "root_cause": "새 관찰 hook이 기존 SQLite artifacts CHECK 제약에 없는 kind=boundary_observation과 producer=observer를 등록했다",
+  "considered_options": [
+    {
+      "option": "원장 migration으로 새 enum을 추가",
+      "decision": "rejected",
+      "reason": "Phase F 연결에 불필요한 저장 계약 변경을 만든다"
+    },
+    {
+      "option": "기존 runtime_observation/controller 분류를 재사용",
+      "decision": "adopted",
+      "reason": "관찰 의미를 보존하면서 동결 원장 계약을 바꾸지 않는다"
+    }
+  ],
+  "resolution": "boundary Evidence를 기존 runtime_observation 종류와 controller 생산자로 등록하도록 수정했다",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py::test_model_free_b1_cell_uses_scheduler_and_variant_artifact"
+  ],
+  "verification": [
+    "Phase F B1 target 1 passed; B1 full regression 74 passed"
+  ],
+  "remaining_risks": [
+    "최초 Cell 2 BLOCKED artifact는 원본으로 보존됐고 자동 재시도하지 않았다; 정정 구현의 실제 모델 재실행은 별도 수동 revision 승인이 필요하다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "C:/lao-phase-f-live-c36731c-r1 (local non-versioned evidence root)",
+    "stages/b1-sequential/src/orchestrator/schedule.py"
+  ]
+}
