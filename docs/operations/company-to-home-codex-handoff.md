@@ -203,3 +203,4 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - Phase E v3 0-turn 후보는 source commit `608044dfa8cdbed7520f722df80110f1ffa662de`, experiment `exp_20260812_4053943d_1`, Plan fingerprint `4053943dee4bb1748db8a90a3390c54ffee712f03e7468d39c8f42c9121dada2`, seal `2c66604e688c0db4229591bda7ec3b338617b6cf0cc09d8ef6bf453f3b0b4538`에 결합됐다.
 - qualification에서 Docker container 9개를 실행했다. Phase E 후보 생성에서는 SDK account/model-list 사전점검 1회만 실행했고 thread/start, turn/start와 actual model turn은 0회였다.
 - 다음 관문은 별도 사용자 승인 아래 Phase E v3의 Profile R B1 correction Cell 2 하나만 실행하는 것이다. 완료나 실패 뒤 멈추며 Cell 3으로 자동 진행하지 않는다.
+- 관련 model-free 회귀는 `34 passed, 3 skipped`다. 실제 model turn은 0회다. SDK는 후보 동결 시 account/model-list 사전점검 1회만 사용했고 thread/start와 turn/start는 0회다.

@@ -24,3 +24,5 @@ ChatGPT 구독 로그인과 `gpt-5.6-sol` 노출을 SDK `0.144.4`로 확인했�
 별도 verifier가 exact 6-file candidate, source commit, stage, Profile R/I qualification, Phase B runtime-boundary binding, Plan fingerprint와 모든 payload hash를 다시 계산했다. files manifest SHA-256은 `1265629a234c86ab58dec563a96bdb9de42b0ba0fe63e417419fbdb84dddb8c8`이다.
 
 이 후보는 실제 실행 계획의 0-turn 동결본이다. 실제 Profile R B1 correction Cell 실행, Cell 3 자동 진행 또는 B1 우위 결론을 승인하지 않는다.
+
+관련 Docker Judge·Phase E·Phase F model-free 회귀는 `34 passed, 3 skipped`다. skip 3개는 명시적 opt-in이 필요한 Docker smoke, full Docker dry-run, SDK preflight다.
