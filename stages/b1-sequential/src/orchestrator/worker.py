@@ -72,6 +72,8 @@ def render_worker_prompt(
     instructions = (
         "Execute only the TaskEnvelope below. Respect read_scope and write_scope. "
         "Do not perform external actions. Return only JSON matching the supplied ResultEnvelope schema. "
+        "Every artifacts.path must name one existing regular file; directory paths and glob patterns "
+        "are invalid, so represent a directory output with a concrete manifest or index file. "
         "Your completed claim is evidence only; the controller will independently verify it."
     )
     if feedback:

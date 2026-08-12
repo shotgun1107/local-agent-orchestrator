@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from orchestrator.contract import RunSpec
+from orchestrator.contract import ResultArtifact, RunSpec
 from orchestrator.worker import (
     build_oneshot_envelope,
     build_task_envelope,
@@ -60,6 +60,9 @@ def test_task_semantics_excludes_only_variant_identity_fields() -> None:
     assert task_semantics_sha256(first) == task_semantics_sha256(second)
     assert render_worker_prompt(first) != render_worker_prompt(second)
     assert "completed claim is evidence only" in render_worker_prompt(first)
+    assert "artifacts.path must name one existing regular file" in render_worker_prompt(first)
+    artifact_path = ResultArtifact.model_json_schema()["properties"]["path"]
+    assert "Directory paths and glob patterns are invalid" in artifact_path["description"]
 
 
 def test_c0_oneshot_preserves_all_task_information_without_task_boundaries() -> None:

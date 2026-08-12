@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 46건
-- 해결: 44건
+- 전체: 47건
+- 해결: 45건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -59,6 +59,7 @@
 | DEV-20260812-001 | resolved | phase-f-profile-r-b1 | integration | Phase F B1 boundary Evidence가 원장 제약에 의해 Cell을 조기 차단 |
 | DEV-20260812-002 | resolved | phase-f-profile-r-b1 | integration | Phase F B1 second thread used cumulative notifications |
 | DEV-20260812-003 | resolved | phase-f-profile-r-b1 | integration | B1 Check resolved bare python to the global interpreter |
+| DEV-20260812-004 | resolved | phase-f-profile-r-b1 | integration | B1 ResultEnvelope accepted directory-shaped artifact claims until final verification |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -2751,3 +2752,64 @@ Resolve bare python to sys.executable and bare git to its discovered absolute pa
 
 - 관련 커밋: 기록 없음
 - 출처: C:/lao-phase-f-live-c36731c-r3
+
+## DEV-20260812-004 — B1 ResultEnvelope accepted directory-shaped artifact claims until final verification
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-12T06:46:26Z / actual Phase F B1 R4 run
+- 해결: 2026-08-12T06:46:26Z
+
+### 증상
+
+R03 public work and diff checks passed post hoc, but B1 blocked before checks because two declared artifacts were directory paths
+
+### 재현
+
+- Return a completed ResultEnvelope whose artifacts.path names an existing directory
+
+### 증거
+
+- `direct-observation`: R4 attempt_finished recorded artifact_corrupt at declared_artifacts with message declared Artifact missing for the generated fixture directory
+
+### 근본 원인
+
+The public Schema and Worker prompt described artifacts.path only as a relative path while final verification silently required an existing regular file
+
+### 검토한 해결안
+
+- `rejected` add directory tree artifact hashing — expands the frozen Evidence contract and is unnecessary for this correction
+- `adopted` make the regular-file contract explicit and resume once with precise guidance — preserves file hashing while letting the Worker correct metadata
+
+### 채택한 해결
+
+Document the regular-file-only rule in Pydantic Schema and prompt, detect an existing directory immediately after result parsing, and send retryable same-session guidance to use a concrete manifest or index file
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/contract.py
+- stages/b1-sequential/src/orchestrator/worker.py
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/schemas/v1/result-envelope.schema.json
+
+### 회귀시험
+
+- tests/integration/test_orchestrator.py::test_directory_artifact_gets_immediate_guidance_then_file_artifact_passes
+- tests/contract/test_worker.py::test_task_semantics_excludes_only_variant_identity_fields
+
+### 검증 결과
+
+- Targeted prompt, Schema, and Fake correction tests: 7 passed
+- B1 full regression: 75 passed
+- R4 post-hoc R03 public contract and diff checks both passed without a model turn
+
+### 남은 위험
+
+- The sealed R4 result remains blocked and is not rewritten; a fresh R5 live run needs separate model-use approval
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: C:/lao-phase-f-live-c36731c-r4

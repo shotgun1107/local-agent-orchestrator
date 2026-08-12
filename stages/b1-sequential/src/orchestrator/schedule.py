@@ -58,6 +58,7 @@ from .verify import (
     hash_project_pack,
     run_command_check,
     validate_declared_artifacts,
+    validate_result_artifact_path_types,
     validate_freshness,
     validate_result_schema,
     validate_write_scope,
@@ -633,6 +634,7 @@ class Orchestrator:
                 return
             try:
                 result = validate_result_schema(outcome.raw_result)
+                validate_result_artifact_path_types(result, self.workspace)
             except VerificationError as exc:
                 current_attempt = ledger.get("attempt", attempt["attempt_id"])
                 if (
@@ -646,7 +648,7 @@ class Orchestrator:
                     turn = self.runtime.resume_session(
                         session_handle,
                         {
-                            "failure": "result_schema",
+                            "failure": exc.stage,
                             "message": str(exc),
                             "allowed_write_scope": spec.write_scope,
                             "remaining_completion_criteria": [criterion.text for criterion in spec.completion_criteria],
