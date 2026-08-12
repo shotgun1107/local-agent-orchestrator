@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..ffa42e7c6ee2ace8dadbeea0731fc9e19c6d37cc 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -3982,7 +3982,7 @@ def write_runtime_boundary_bundle(
+     return seal
+ 
+ 
+-def verify_runtime_boundary_bundle(
++def verify_runtime_boundary_bundle_mutated(
+     bundle_root: Path,
+ ) -> tuple[RuntimeBoundaryProbeManifest, RuntimeBoundaryProbeResult, RuntimeBoundaryBundleSeal]:
+     root = Path(bundle_root)

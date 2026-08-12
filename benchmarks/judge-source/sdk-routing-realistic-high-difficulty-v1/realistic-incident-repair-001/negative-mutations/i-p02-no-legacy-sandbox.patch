@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/tests/test_runtime_boundary.py b/tools/benchmark-runner/tests/test_runtime_boundary.py
+index 4c63a303752af9aa0fe65bc9bdd39f8f694b502f..359fe30176e79974a499e5d022908c91955f50ea 100644
+--- a/tools/benchmark-runner/tests/test_runtime_boundary.py
++++ b/tools/benchmark-runner/tests/test_runtime_boundary.py
+@@ -563,7 +563,7 @@ def test_complete_zero_turn_transcript_is_recomputed(tmp_path: Path) -> None:
+     assert verify_sdk_profile_provenance(manifest, evidence) is True
+ 
+ 
+-def test_manifest_builds_exact_profile_commands_without_legacy_sandbox(
++def test_manifest_builds_profile_commands_mutated(
+     tmp_path: Path,
+ ) -> None:
+     fixture = _manifest(tmp_path)

@@ -1,0 +1,77 @@
+{
+  "profile": "I",
+  "properties": [
+    {
+      "prerequisite_ids": [],
+      "property_id": "I-P01-ACTIVE-PROFILE",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "I-P02-NO-LEGACY-SANDBOX",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "I-P03-ELEVATED-IDENTITY",
+      "severity": "major"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "property_id": "I-P04-W-ACL-BOUNDARY",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "property_id": "I-P05-JS-CONTROLLER-ONLY",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P06-LINK-ESCAPE-CLEANUP",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P07-CHILD-SECRET-BOUNDARY",
+      "severity": "safety"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P08-STATE-NONDISCLOSURE",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [
+        "I-P01-ACTIVE-PROFILE",
+        "I-P02-NO-LEGACY-SANDBOX",
+        "I-P03-ELEVATED-IDENTITY",
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY",
+        "I-P06-LINK-ESCAPE-CLEANUP",
+        "I-P07-CHILD-SECRET-BOUNDARY",
+        "I-P08-STATE-NONDISCLOSURE"
+      ],
+      "property_id": "I-P09-BUNDLE-RECALCULATION",
+      "severity": "integrity"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "I-P10-EVIDENCE-CLAIM-ALIGNMENT",
+      "severity": "major"
+    }
+  ],
+  "schema_version": 1
+}

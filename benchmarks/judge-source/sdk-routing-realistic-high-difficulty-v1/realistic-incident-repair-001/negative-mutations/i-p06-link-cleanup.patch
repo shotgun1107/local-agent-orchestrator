@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/scripts/probe_runtime_boundary.py b/tools/benchmark-runner/scripts/probe_runtime_boundary.py
+index ebb4254605079b12286bfe668b5f237c34eb3d57..786a0a5e5c15bc96c7aaeafbab1d26d72428e141 100644
+--- a/tools/benchmark-runner/scripts/probe_runtime_boundary.py
++++ b/tools/benchmark-runner/scripts/probe_runtime_boundary.py
+@@ -285,7 +285,7 @@ def _path_entry_exists(path: Path) -> bool:
+     """Observe a link or junction entry without reading its target."""
+ 
+     try:
+-        os.lstat(path)
++        path.exists()
+     except OSError:
+         return False
+     return True

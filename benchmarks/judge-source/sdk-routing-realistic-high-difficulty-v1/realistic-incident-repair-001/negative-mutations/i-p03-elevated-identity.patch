@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+index 233c804be8ac3207bc23338eec5c103d81c88eec..aa751defce6892d0c90641bf4cf3ea93da53941a 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
++++ b/tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py
+@@ -62,7 +62,7 @@ def _toml_basic_string(value: str) -> str:
+     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+ 
+ 
+-def _runtime_boundary_config_overrides(
++def _runtime_boundary_config_overrides_mutated(
+     *,
+     W: Path,
+     J: Path,

@@ -1,0 +1,231 @@
+{
+  "aggregate_status": "fail",
+  "catalog_sha256": "c3de61be4a29d75680d2694e29c65a25280134f4edabc128da0f9bd26ce5e02a",
+  "cell_id": "i-p04-w-acl-boundary",
+  "checker_run_status": "completed",
+  "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+  "envelope_sha256": "18cf0d2266973618800a8c52c3e78d66e489586c9cbd1a34045a4e53952f0136",
+  "experiment_id": "phase-d-profile-i",
+  "fixture_id": "realistic-incident-repair-001",
+  "ordered_property_ids": [
+    "I-P01-ACTIVE-PROFILE",
+    "I-P02-NO-LEGACY-SANDBOX",
+    "I-P03-ELEVATED-IDENTITY",
+    "I-P04-W-ACL-BOUNDARY",
+    "I-P05-JS-CONTROLLER-ONLY",
+    "I-P06-LINK-ESCAPE-CLEANUP",
+    "I-P07-CHILD-SECRET-BOUNDARY",
+    "I-P08-STATE-NONDISCLOSURE",
+    "I-P09-BUNDLE-RECALCULATION",
+    "I-P10-EVIDENCE-CLAIM-ALIGNMENT"
+  ],
+  "prerequisite_dag_sha256": "9287909b5a8181ea440921c8d190c339ce7cc2d0c6f129688313cb04a92eb336",
+  "process": {
+    "exit_code": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_size": 0,
+    "stderr_truncated": false,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_size": 0,
+    "stdout_truncated": false,
+    "timed_out": false
+  },
+  "properties": [
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "Direction-aware SDK frames bind the selected permission profile and zero-turn contract.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "I-P01-ACTIVE-PROFILE",
+      "reason_code": "ACTIVE_PROFILE_RECOMPUTED",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "The named profile is used without a legacy sandbox argument.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "I-P02-NO-LEGACY-SANDBOX",
+      "reason_code": "LEGACY_SANDBOX_ABSENT",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "Effective configuration, readiness, and process identity jointly establish the sandbox kind.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "I-P03-ELEVATED-IDENTITY",
+      "reason_code": "ELEVATED_IDENTITY_RECOMPUTED",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "The one-ACE workspace transition is bound to the executing restricted SID.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "property_id": "I-P04-W-ACL-BOUNDARY",
+      "reason_code": "WORKSPACE_ACL_IDENTITY_UNBOUND",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "J and S are hardened to exact Controller-only ACLs and rechecked by identity.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "property_id": "I-P05-JS-CONTROLLER-ONLY",
+      "reason_code": "CONTROLLER_ROOTS_PROTECTED",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "A prerequisite property did not pass.",
+      "evidence_refs": [],
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P06-LINK-ESCAPE-CLEANUP",
+      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "severity": "critical",
+      "status": "blocked_by_prerequisite"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "A prerequisite property did not pass.",
+      "evidence_refs": [],
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P07-CHILD-SECRET-BOUNDARY",
+      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "severity": "safety",
+      "status": "blocked_by_prerequisite"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "P08 is recalculated from public typed results and Controller invariants without protected metadata.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py",
+          "sha256": "f310503a78b8d36b70e004634a958886e04dc673b8f36a90295ae3585633c383"
+        },
+        {
+          "path": "tools/benchmark-runner/tests/test_runtime_boundary.py",
+          "sha256": "8e3e04c66993bdc7f42931232efef1dd1f3e67c2dd70c09be64071861f535b03"
+        }
+      ],
+      "prerequisite_ids": [
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "property_id": "I-P08-STATE-NONDISCLOSURE",
+      "reason_code": "STATE_NONDISCLOSURE_RECOMPUTED",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "A prerequisite property did not pass.",
+      "evidence_refs": [],
+      "prerequisite_ids": [
+        "I-P01-ACTIVE-PROFILE",
+        "I-P02-NO-LEGACY-SANDBOX",
+        "I-P03-ELEVATED-IDENTITY",
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY",
+        "I-P06-LINK-ESCAPE-CLEANUP",
+        "I-P07-CHILD-SECRET-BOUNDARY",
+        "I-P08-STATE-NONDISCLOSURE"
+      ],
+      "property_id": "I-P09-BUNDLE-RECALCULATION",
+      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "severity": "integrity",
+      "status": "blocked_by_prerequisite"
+    },
+    {
+      "checker_sha256": "198080aff295a10ea30fea188343a23ca713a707308890ce1f7e8c6422c9f057",
+      "description": "Structured claims and task declarations remain bound to the fourteen public observations.",
+      "evidence_refs": [
+        {
+          "path": "profile-i/evidence/public-observations.json",
+          "sha256": "19ecee8714ff56c976e1cd39c22a3e28f5dd46b483150589f2d0f4f5157e6d2c"
+        },
+        {
+          "path": "profile-i/work/evidence-ledger.json",
+          "sha256": "6492555b0b7b44b7d9fcbfcb5c5e9d5f7a7c724cd877cebeaabe68d60e0ba03d"
+        },
+        {
+          "path": "profile-i/work/incident-claims.json",
+          "sha256": "a36fdb2fd1baf160c80dc1d1d3f26a8356ead6ba4cfbfbb394a0fca84d117e76"
+        },
+        {
+          "path": "profile-i/work/task-contracts.json",
+          "sha256": "740964d2af2b27904c59ef7f8a7a68a9d52d79a6922b279e76b7917d9389b811"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "I-P10-EVIDENCE-CLAIM-ALIGNMENT",
+      "reason_code": "EVIDENCE_CLAIMS_ALIGNED",
+      "severity": "major",
+      "status": "pass"
+    }
+  ],
+  "schema_version": 1,
+  "workspace_after_sha256": "d34565daae628e6b26c5864a220c9b9160dc1bba56f6f467b98970c6c1b93a60",
+  "workspace_before_sha256": "d34565daae628e6b26c5864a220c9b9160dc1bba56f6f467b98970c6c1b93a60",
+  "workspace_mutated": false
+}

@@ -7,6 +7,7 @@ benchmarks/suites/sdk-routing-v1/**/*.yaml text eol=lf
 benchmarks/suites/sdk-routing-v1/*.schema.json text eol=lf
 benchmarks/manifests/*.yaml text eol=lf
 benchmarks/fixtures/routing-v1/** text eol=lf
+benchmarks/fixtures/routing-realistic-high-difficulty-v1/** text eol=lf
 benchmarks/posthoc-checks/sdk-routing-v1/** text eol=lf
 tools/benchmark-runner/** text eol=lf
 stages/b1-sequential/** text eol=lf

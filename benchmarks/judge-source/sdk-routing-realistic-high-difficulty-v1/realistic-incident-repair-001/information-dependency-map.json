@@ -1,0 +1,115 @@
+{
+  "properties": [
+    {
+      "property_id": "I-P01-ACTIVE-PROFILE",
+      "source_evidence_sha256": "6b48734ce28c0ed720f34b22dadbe24bcbcc9b7a3a649af9458a860d96599b11",
+      "task_ids": [
+        "I02"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P02-NO-LEGACY-SANDBOX",
+      "source_evidence_sha256": "8bb8a503a60796e655cecc50e118ad62640b4c627e167af86345fc3a5f5d8a31",
+      "task_ids": [
+        "I03"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P03-ELEVATED-IDENTITY",
+      "source_evidence_sha256": "b2861151275784e489b4010a22aa9c04a3285e4d62253b5c3bef423aa50ebfc6",
+      "task_ids": [
+        "I04"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P04-W-ACL-BOUNDARY",
+      "source_evidence_sha256": "4e4adcef49b45ca7e21c6f37425568d8d4af33cc2c991fda1eda7bde14ec9247",
+      "task_ids": [
+        "I05"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P05-JS-CONTROLLER-ONLY",
+      "source_evidence_sha256": "50864f927204f77da7b1793f8260f3b12c8106f9791c91a559cf4d485b365bc3",
+      "task_ids": [
+        "I06"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P06-LINK-ESCAPE-CLEANUP",
+      "source_evidence_sha256": "163e738f6d01137ccd98445c0f05c324563d5185144984912e06f30a80e53839",
+      "task_ids": [
+        "I07"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P07-CHILD-SECRET-BOUNDARY",
+      "source_evidence_sha256": "3c2d873a3cb066a909dbf2ced1e591759fa55c8be23bc65fbecefdb1786a22d3",
+      "task_ids": [
+        "I08"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P08-STATE-NONDISCLOSURE",
+      "source_evidence_sha256": "929ddf21b96f6d467b65199df5fd625c5ec5e29366db898cb292c0e4f3e63641",
+      "task_ids": [
+        "I08"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P09-BUNDLE-RECALCULATION",
+      "source_evidence_sha256": "f8096f34641610fab368d13d635453a6e3d88484eb34ed0fc15f59fc76d095d3",
+      "task_ids": [
+        "I08"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    },
+    {
+      "property_id": "I-P10-EVIDENCE-CLAIM-ALIGNMENT",
+      "source_evidence_sha256": "9782e688fff1c93cbabccfb75bdcbfd80d4f770a3619fffe48da1d9066f635e6",
+      "task_ids": [
+        "I01"
+      ],
+      "worker_readable_paths": [
+        "profile-i/requirements/boundary-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/runtime_boundary.py"
+      ]
+    }
+  ],
+  "schema_version": 1
+}

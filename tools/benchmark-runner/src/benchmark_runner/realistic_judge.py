@@ -393,8 +393,15 @@ def prepare_realistic_judge_roots(
     base_root: Path,
     source_commit: str,
     run_token: str | None = None,
+    worker_prefix: str = WORKER_PREFIX,
+    judge_source_prefix: str = JUDGE_SOURCE_PREFIX,
+    run_label: str = "profile-r-judge",
 ) -> PreparedJudgeRoots:
-    """Extract frozen W/J and create fresh O/S roots without running Codex."""
+    """Extract frozen W/J and create fresh O/S roots without running Codex.
+
+    The optional prefixes let another approved realistic fixture reuse the same
+    protected-root implementation without copying its lifecycle.
+    """
 
     if os.name != "nt":
         raise RealisticJudgeError("Profile R Judge boundary is Windows-only")
@@ -403,7 +410,9 @@ def prepare_realistic_judge_roots(
     token = run_token or uuid.uuid4().hex[:12]
     if not token or any(value not in "abcdefghijklmnopqrstuvwxyz0123456789-" for value in token):
         raise RealisticJudgeError("run token is not path-safe")
-    run_root = parent / f"profile-r-judge-{token}"
+    if not run_label or any(value not in "abcdefghijklmnopqrstuvwxyz0123456789-" for value in run_label):
+        raise RealisticJudgeError("Judge run label is not path-safe")
+    run_root = parent / f"{run_label}-{token}"
     if run_root.exists():
         raise RealisticJudgeError("Judge run root already exists")
     run_root.mkdir()
@@ -414,10 +423,10 @@ def prepare_realistic_judge_roots(
     S_parent = run_root / f".state-private-{uuid.uuid4().hex}"
     S = S_parent / "state"
     worker_tree_oid, worker_source = _extract_git_prefix(
-        repository, source_commit, WORKER_PREFIX, W
+        repository, source_commit, worker_prefix, W
     )
     j_tree_oid, j_source = _extract_git_prefix(
-        repository, source_commit, JUDGE_SOURCE_PREFIX, J
+        repository, source_commit, judge_source_prefix, J
     )
     O.mkdir()
     if not J.exists():
