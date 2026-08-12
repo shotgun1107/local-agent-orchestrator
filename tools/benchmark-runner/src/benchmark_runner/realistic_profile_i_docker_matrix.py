@@ -171,10 +171,13 @@ def _cell_result(variant: PreparedVariant, manifest: DockerJudgeManifest, result
 
 def _payload_records(root: Path) -> list[dict[str, Any]]:
     records = []
-    for path in sorted((item for item in root.rglob("*") if item.is_file()), key=lambda item: item.relative_to(root).as_posix().encode("utf-8")):
+    paths = [root / "batch-manifest.json", root / "batch-result.json"]
+    for run_root in sorted((root / "cells").iterdir(), key=lambda item: item.name.encode("utf-8")):
+        paths.extend(run_root / relative for relative in EVIDENCE_FILES)
+    for path in sorted(paths, key=lambda item: item.relative_to(root).as_posix().encode("utf-8")):
+        if not path.is_file():
+            raise ProfileIDockerMatrixError("matrix evidence file is missing")
         relative = path.relative_to(root).as_posix()
-        if relative in {"files.sha256", "batch-seal.json"}:
-            continue
         records.append({"path": relative, "size": path.stat().st_size, "sha256": sha256_file(path)})
     return records
 
@@ -266,7 +269,10 @@ def verify_profile_i_docker_matrix(root: Path) -> dict[str, Any]:
         docker_manifest = DockerJudgeManifest.model_validate_json((run_root / "docker-judge-manifest.json").read_bytes())
         docker_result = DockerJudgeResult.model_validate_json((run_root / "docker-judge-result.json").read_bytes())
         verify_docker_judge_result(docker_manifest, docker_result)
-        expected = _load(run_root / "runtime" / ("evidence/reference.json" if plan["variant_id"] == "reference" else f"evidence/mutations/{plan['variant_id']}.json"))
+        judge_roots = list(run_root.glob(".judge-private-*/runtime"))
+        if len(judge_roots) != 1:
+            raise ProfileIDockerMatrixError("cell does not contain exactly one protected runtime J")
+        expected = _load(judge_roots[0] / ("evidence/reference.json" if plan["variant_id"] == "reference" else f"evidence/mutations/{plan['variant_id']}.json"))
         variant = PreparedVariant(plan["ordinal"], plan["variant_id"], plan["target_property_id"], None, plan["run_id"], expected, tuple(plan["patch_paths"]), tuple(plan["patch_sha256s"]))
         cells.append(_cell_result(variant, docker_manifest, docker_result))
     result_values = {key: value for key, value in stored.items() if key != "result_sha256"}
