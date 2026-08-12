@@ -34,7 +34,7 @@ Profile R은 R07 교정 뒤 다시 봉인한 `profile-r-docker-judge-qualificati
 - `files.sha256`
 - `candidate-seal.json`
 
-files manifest SHA-256은 `50b74e9ab58ec10364845aa7b97284ae858b0c212b81adffd9370d927583fa04`다. 관련 Phase E·Docker Judge 회귀는 `21 passed`다.
+files manifest SHA-256은 `50b74e9ab58ec10364845aa7b97284ae858b0c212b81adffd9370d927583fa04`다. checked-in v2 candidate verifier를 포함한 관련 Phase E·Docker Judge 회귀는 clean record commit에서 `22 passed`다.
 
 처음 현재 checkout에서 만든 후보 1개는 직전 pytest 임시 폴더가 남은 상태임을 뒤늦게 확인해 성공 근거에서 제외하고 삭제했다. 최종 후보는 위 fresh worktree에서 새로 만들었으며 첫 후보의 seal을 재사용하지 않았다.
 
