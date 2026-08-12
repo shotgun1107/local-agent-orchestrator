@@ -2033,3 +2033,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 최종 experiment는 `exp_20260812_bd0b7fe5_1`, Plan fingerprint는 `bd0b7fe5...57c02`, files manifest는 `50b74e9a...3fa04`, candidate seal은 `59d059aa...0efde`다. 별도 process verifier가 exact 6-file set과 source/qualification/runtime binding을 다시 계산해 같은 결과를 냈다.
 - 직전 pytest temp가 남은 current checkout에서 처음 생성한 후보는 clean-source 근거로 사용하지 않고 삭제했다. 최종 후보만 `sdk-routing-realistic-high-difficulty-phase-e-v2`에 보존한다. checked-in v2 candidate verifier를 포함한 관련 회귀는 clean record commit에서 `22 passed`다.
 - 상태는 `PHASE_E_ZERO_TURN_CANDIDATE_FROZEN`이다. 실제 R7 또는 Cell 3, model turn은 이번 작업에서 실행하지 않았고 별도 사용자 승인 전 계속 `NO-GO`다.
+
+## Phase F Profile R B1 R7과 S2 project-pack fixture 결손
+
+- 작업일: 2026-08-12. 사용자 승인 뒤 새 root `C:\lao-phase-f-live-bd0b7fe5-r7`에서 v2 Experiment의 Profile R B1 Cell 2 하나만 실행했다. 실제 SDK 0-turn preflight는 ChatGPT 구독, `gpt-5.6-sol`, SDK `0.144.4`, `runtime-boundary-worker`를 확인했고 API-key 환경 이름과 thread/model turn은 0이었다. Cell 3은 실행하지 않았다.
+- R01~R06은 첫 Attempt에 성공했다. R07 첫 공개 Check 실패 뒤 새 feedback 경로로 test 이름이 전달돼 두 번째 Attempt가 실행됐지만 같은 test가 실패했다. R08은 미실행이다. 총 session/turn/Attempt는 8/8/8, 공개 Check는 12 pass/2 fail, token은 11,675,629, sealed total wall은 2,823.687초다.
+- 봉인 뒤 같은 workspace의 실패 test 하나를 model-free로 재실행했다. 첫 S2 B1 Cell preflight가 구형 `.orchestrator/project.yaml` 때문에 중단됐다. fixture에는 현재 B1이 요구하는 `core_compat`, `repository_root`, `default_capability_profile`, `default_policy`가 없고 구형 `purpose`, `requirements`, `task_order`가 있어 strict `ProjectConfig`가 거부했다.
+- 따라서 R7 실패는 R07 기능 구현의 직접 실패가 아니라 공개 S2 test helper의 B1 project-pack fixture 변환 결손이다. feedback 통로는 작동했지만 test 이름만 전달해 실제 validation 원인이 두 번째 Worker에게 가지 않은 문제도 남았다.
+- Docker Judge는 R-P05/R-P06 실패를 검출했고 Measurement는 `failed`, `scope_ok=false`로 봉인됐다. Cell seal file SHA는 `a2d1a35e...ac3ee`, Measurement는 `442d0f47...ea86`, self seal은 `17f39aa1...5dbc`다. 독립 finalization verifier는 통과했고 잔여 container는 0이다.
+- R7 raw와 seal은 수정·삭제·자동 재시도하지 않는다. 다음은 model-free fixture/helper와 bounded assertion feedback 최소 교정이다. 회귀와 qualification/candidate 영향 판단 전 R8 model 실행과 Cell 3은 `NO-GO`다.
