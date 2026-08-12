@@ -1,9 +1,10 @@
-# 집 Codex 동기화·P001~P015 원본 import 시작 프롬프트
+# 집 Codex 동기화·R07 model-free 교정 시작 프롬프트
 
-> 대상: 오늘 집→회사 인수를 담당했던 **같은 집 Codex 작업**에 후속 메시지로 전달한다. 새 작업을 만들 필요가 없다.
+> 대상: 오늘 집→회사 인수를 담당했던 **같은 집 Codex 작업**에 후속 메시지로
+> 전달한다. 새 작업을 만들 필요가 없다.
 
 ```text
-오늘 회사 PC에서 이어간 local-agent-orchestrator 작업을 다시 집 PC의 현재 Codex 작업으로 인수하라. 이전 대화 맥락은 참고하되 Git 정본과 아래 인수 문서를 우선한다. 명령을 문자 그대로 고집해 로컬 원본을 위험하게 만들지 말고, 실제 branch·경로가 다르면 같은 보존 원칙 안에서 합리적으로 적응하라.
+오늘 회사 PC에서 이어간 local-agent-orchestrator 작업을 집 PC의 현재 Codex 작업으로 다시 인수하라. 이전 대화는 참고하되 Git 정본과 최신 인수인계 문서를 우선한다. 문장을 기계적으로 실행하지 말고, 실제 경로·branch 상태가 다르면 사용자 작업을 보존하는 방향으로 합리적으로 적응하라.
 
 repository:
 https://github.com/shotgun1107/local-agent-orchestrator.git
@@ -11,22 +12,22 @@ https://github.com/shotgun1107/local-agent-orchestrator.git
 전달 branch:
 codex/phase-d-artifacts
 
-반드시 포함돼야 하는 qualification commit:
-0112c20e6c59b1555ac444836b608af1e773d936
+반드시 포함돼야 하는 최소 구현 commit:
+2dab6f01acd8e202109b7d8cb83911247cf8ed65
 
-이 프롬프트를 포함한 실제 인수 정본은 origin/codex/phase-d-artifacts의 최신 tip이다.
+이 프롬프트와 인수인계 문서를 포함한 origin/codex/phase-d-artifacts 최신 tip이 실제 정본이다.
 
-목표는 다음 세 가지다.
+이번 세션 목표는 세 가지다.
 
-1. 집의 기존 저장소와 P001~P015 원본을 보존하면서 전달 branch의 최신 commit/tree로 안전하게 동기화한다.
-2. 맥락 없는 일회용 독립 AI를 호출해 P001~P015 원본을 byte 그대로 Git tracked source로 가져오고 commit·push한다.
-3. 원본 push가 끝난 뒤 Profile I model-free artifact 작업을 재개할 수 있는 상태를 보고한다.
+1. 집의 기존 clone과 P001~P015 원본을 보존하면서 전달 branch 최신 commit/tree로 ff-only 동기화한다.
+2. 실제 model을 호출하지 않고 Profile R B1 R07 회귀시험 입력 오류와 공개 Check 피드백 부족을 최소 수정한다.
+3. 표적·관련 model-free 회귀를 통과시키고 작업 로그를 갱신한 뒤 현재 branch에 commit·push한다.
 
-실제 Worker·SDK thread·Codex model turn은 사용자 별도 승인 전 실행하지 마라. 인증은 ChatGPT 구독 계정만 허용하며 API key를 생성·요구·입력·출력하지 마라.
+실제 Worker, SDK thread, Codex model turn, Docker live 비교는 실행하지 마라. 인증은 ChatGPT 구독 계정만 허용하며 API key를 생성·요구·입력·출력하지 마라.
 
 ## 1. 집 로컬 보존 확인
 
-새 clone이나 기초 설치를 반복하지 말고 기존 repository 경로부터 확인하라.
+새 clone이나 기초 설치를 반복하지 말고 기존 repository에서 먼저 확인하라.
 
 Get-Location
 git remote get-url origin
@@ -48,29 +49,20 @@ origin은 다음 중 하나여야 한다.
 - modified, staged 또는 untracked file
 - 기존 stash
 
-P001~P015 원본은 ignored file이거나 repository 밖에 있을 수 있다. 원본 내용을 출력하지 말고 알려진 보존 root의 이름·상대경로만 읽기 전용으로 확인하라. SID, 사용자 절대경로, thread ID, 인증 관련 값은 채팅에 노출하지 마라.
-
-branch 전환 전에 ignored path가 target branch의 tracked path와 충돌하는지 확인하라. 충돌하면 원본을 이동·삭제하지 말고 보고 후 멈춰라.
+P001~P015 원본 위치와 tracked import는 수정·이동·삭제하지 마라. 이미 Git 정본화가 끝났으므로 다시 import·익명화·hash 계산하지 마라.
 
 ## 2. 원격과 집 고유 작업 확인
 
-보존 문제가 없을 때만 실행하라.
+working tree가 깨끗할 때만 실행하라.
 
 git fetch origin
 git log --oneline --branches --not --remotes
 git rev-parse origin/codex/phase-d-artifacts
-git merge-base --is-ancestor 0112c20e6c59b1555ac444836b608af1e773d936 origin/codex/phase-d-artifacts
-git rev-list --left-right --count origin/codex/runtime-boundary-p01...origin/codex/phase-d-artifacts
+git merge-base --is-ancestor 2dab6f01acd8e202109b7d8cb83911247cf8ed65 origin/codex/phase-d-artifacts
 
-통과 조건:
+local-only commit이 있거나 ancestor 검사가 실패하면 임의 병합·rebase하지 말고 실제 commit 관계를 보고한 뒤 멈춰라.
 
-- local-only commit이 없음
-- qualification commit ancestor 검사가 성공
-- runtime-boundary branch는 phase-d-artifacts의 조상이며 main-only 병합이 끼어 있지 않음
-
-하나라도 다르면 임의 병합·rebase하지 말고 실제 commit 관계를 보고한 뒤 멈춰라.
-
-## 3. 전달 branch 동기화
+## 3. 전달 branch ff-only 동기화
 
 집에 local codex/phase-d-artifacts branch가 없으면:
 
@@ -83,7 +75,7 @@ git pull --ff-only origin codex/phase-d-artifacts
 
 main merge·rebase·squash·PR·branch 삭제는 하지 마라.
 
-## 4. local/remote 동일성 확인
+다음으로 local/remote 동일성을 확인하라.
 
 git rev-parse HEAD
 git rev-parse origin/codex/phase-d-artifacts
@@ -94,105 +86,108 @@ git diff --exit-code origin/codex/phase-d-artifacts -- .
 
 local/remote HEAD와 tree가 각각 같고 status 출력이 없으며 diff가 성공해야 한다. 하나라도 다르면 직접 고치지 말고 보고 후 멈춰라.
 
-## 5. 현재 정본 읽기
+## 4. 최신 정본 읽기
 
 다음 순서로 읽어라.
 
 1. docs/operations/company-to-home-codex-handoff.md
-2. docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-qualification-result.md
-3. benchmarks/artifacts/profile-r-docker-judge-qualification-v1/qualification.json
-4. docs/design/sdk-routing-realistic-high-difficulty-comparison-spec.md의 SS1/B1 자원·순서·판정 절
-5. docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md의 Profile R과 Phase D~F 경계
-6. docs/experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md
-7. docs/operations/codex-revision-log.md의 'Phase D Profile R 익명화 base W snapshot 후보' 이후 절
+2. docs/operations/home-to-company-codex-handoff.md
+3. docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-result.md
+4. docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-live-stack-preflight-result.md
+5. benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/benchmark_checks/check_profile_r.py의 R07
+6. tools/benchmark-runner/tests/test_routing_s2.py
+7. stages/b1-sequential/src/orchestrator/verify.py의 Check 실행·재시도 feedback 경계
+8. docs/operations/codex-revision-log.md의 “Phase F Profile R B1 Cell 2 최초 실행” 이후 절
 
-과거 home-codex-handoff.md의 S1/S2 재개 지시와 reconstructed replay R3는 현재 작업 지시로 사용하지 마라. 기존 P001~P015 inventory를 버리고 처음부터 다시 추정하지 말고, 실제 raw와의 대조 기준으로 사용하라.
+과거 reconstructed replay R3, P001~P015 재수집 지시와 Phase E 이전 NO-GO 상태를 현재 지시로 사용하지 마라.
 
-현재 상태는 다음과 같다.
+현재 사실은 다음과 같다.
 
-- Phase B Candidate 015: judge_only_verified
-- Phase C: model-free 구현 완료
-- Phase D revision 2: Pro 승인
-- Profile R: PROFILE_R_CHALLENGE_READY, challenge_ready=true
-- Docker reference 1개 + negative mutation 8개: 9/9 expectation matched
-- 실제 Worker·SDK·model turn: 0
-- SS1/B1 우위: 아직 미검증
-- Profile I P013/P014: protected-unverified 상태 유지
-- Phase E live와 Phase F model turn: 아직 NO-GO
-- main 병합: 보류
+- P001~P015 exact raw Git import와 Profile I source gate 완료
+- Profile R·I challenge 모두 ready
+- Phase E 4-Cell Plan 동결
+- Phase F one-Cell 실행 경계 구현
+- R6에서 Profile R B1 R01~R06 실제 성공
+- R07은 두 Attempt 모두 공개 Check 실패, R08 미실행
+- Cell 3 자동 진행 없음
+- R6 실패 결과는 정상 봉인
+- B1 우위·route 결론은 아직 없음
 
-회사 raw root C:\lao-r\profile-r-docker-matrix-r5와 회사 Docker local image는 Git에 포함되지 않는다. Git에는 Dockerfile/lock, 코드, test, 민감 경로를 제거한 qualification projection과 결과 문서가 있다. raw가 없다는 이유로 qualification을 다시 실행하거나 reconstructed replay를 만들지 마라.
+## 5. R07 model-free 재현
 
-## 6. P001~P015 exact raw import — 필수
+회사에서 실패 workspace를 수정하지 않고 B1 전용 Python으로 R07 test file만 재실행했을 때 `3 passed, 1 failed`였다. 실패한 함수는 다음이다.
 
-동기화와 정본 이해가 모두 통과하면 P001~P015 원본을 이번 branch에 commit·push하라. 이 repository는 PUBLIC이고, 사용자는 SID·절대경로·thread ID·실행 metadata를 포함한 원본 byte를 익명화하지 않고 공개 Git에 올리는 것을 명시적으로 승인했다.
+test_s2_fake_four_cell_plan_judge_property_seal_export
 
-현재 Codex가 raw 내용을 직접 검토하지 않도록 프로젝트 대화·설계·reference 맥락을 상속하지 않은 일회용 독립 AI 하나를 호출하라. 가능한 경우 fork_turns="none" 또는 그와 동등한 clean-context 방식으로 만들고, 작업 완료 뒤 재사용하지 마라.
+새 test helper가 S2 전용 manifest의 `stage_id`, `purpose`, `initial_cell_order`와 fixture `profile`을 구형 `FrozenManifest` 입력에 그대로 넣어 Pydantic extra-forbidden validation에서 실패했다.
 
-그 독립 AI에는 다음 좁은 작업만 준다.
+집 Git 정본의 같은 공개 fixture/test를 model-free로 재현하라. 회사 R6 raw root는 집에 없고 필요하지 않다. 모델·SDK·Docker를 호출하지 말고 Python 3.12 테스트만 사용한다.
 
-1. docs/operations/phase-b-p001-p015-source-inventory.md와 versioned inventory를 읽는다.
-2. 집 원본을 읽기 전용으로 찾아 P001~P015 exact file set을 ordinal별로 식별한다.
-3. P013/P014는 ACL을 바꾸지 않는다. 읽기 거부 시 사용자에게 일회성 read-only 권한을 요청하고 임의 우회·ACL 재작성은 하지 않는다.
-4. raw 값이나 내용을 응답에 출력하지 않는다.
-5. 실제 API key·token·password·cookie·private key 같은 credential을 값 출력 없이 검사한다. 실제 credential 후보가 있으면 파일 상대경로와 종류만 보고하고 전체 import를 중단한다. SID·절대경로·thread ID는 중단 사유가 아니다.
-6. credential 후보가 없으면 원본 byte를 수정·익명화·요약·줄바꿈 변환 없이 아래로 복사한다.
-   benchmarks/source-raw/runtime-boundary-phaseb-p001-p015-v1/raw/P001
-   ...
-   benchmarks/source-raw/runtime-boundary-phaseb-p001-p015-v1/raw/P015
-7. raw/**에 Git text conversion이 적용되지 않도록 -text 규칙을 추가한다.
-8. ordinal, relative path, size, SHA-256과 기존 inventory 결합을 기록한 source-index.json과 files.sha256을 만든다.
-9. source와 tracked copy의 exact file set·size·SHA-256을 두 번째 계산으로 대조한다.
-10. 마지막 응답에는 ordinal별 파일 수·총 byte·aggregate hash·verified/unverified와 blocker만 적고 원문 값은 적지 않는다.
+## 6. 최소 수정 범위
 
-일회용 AI가 작업을 끝내면 그 AI는 종료하고 다시 사용하지 않는다. 현재 Codex는 raw 파일 내용을 열지 말고 manifest/hash와 Git 경로만 기계적으로 검사한다.
+다음 원칙으로 구현하라.
 
-다음 조건을 확인하라.
+1. S2 manifest를 구형 `FrozenManifest`에 그대로 넣지 않도록 test helper의 입력 변환을 고친다.
+2. 기존 production Pydantic model의 extra-forbidden 규칙을 완화하지 않는다.
+3. R07 요구 시험 4개를 삭제·skip·xfail하거나 assertion을 약화하지 않는다.
+4. 공개 checker가 내부 pytest 실패를 한 줄짜리 `R07_PUBLIC_CONTRACT_FAILED`로 지워 B1 재시도가 원인을 받지 못하는 경로를 확인한다.
+5. B1 retry prompt가 Check stdout/stderr를 전달할 수 있는데 checker가 버리는 것이 원인이라면, public source에 한해 bounded하고 조치 가능한 실패 분류 또는 출력 일부를 전달하는 최소 교정을 한다.
+6. 숨은 Judge 값, reference, negative mutation 정답 또는 비공개 경로는 Worker feedback에 넣지 않는다.
+7. R6 workspace의 완성 파일을 정답처럼 복사하지 않는다. Git 정본의 공개 계약에서 일반화 가능한 수정만 한다.
 
-- P001~P015 15개 ordinal이 정확히 한 번씩 존재
-- source-index와 files.sha256이 tracked raw bytes와 일치
-- source와 tracked copy가 byte-identical
-- tracked raw root 밖의 기존 코드·문서·Profile R 파일은 변경되지 않음
-- 실제 credential scan blocker 없음
-- raw source root는 향후 Worker W allowlist에 포함되지 않음
+새 아키텍처, 새 Schema 계층 또는 범용 tamper-proof 추상화를 만들지 마라. 이번 목표는 R07 공개 회귀와 재시도 피드백의 최소 교정이다.
 
-통과하면 exact import root와 이 작업에 필요한 manifest만 `git add -f`로 stage하고 commit하라.
+## 7. 검증
 
-commit message:
-data: import Phase B P001-P015 raw evidence
+Python 3.12와 프로젝트의 기존 가상환경을 사용해 다음을 순서대로 실행하라. 실제 로컬 경로와 기존 명령을 확인해 맞게 적응하라.
 
-그다음 현재 branch `codex/phase-d-artifacts`에 push하고 local/remote HEAD·tree 일치와 remote tracked raw file count를 확인하라. 이 prompt는 해당 raw import commit·push를 명시적으로 허용하며 필수 완료조건으로 둔다.
+1. R07 공개 test file 표적
+2. R07 공개 checker 관통 시험
+3. 관련 routing S2 회귀
+4. B1 전체 회귀
+5. Phase F B1 model-free 관통 회귀
+6. 구현 로그 index/harness 검사
+7. git diff --check
 
-## 7. push 뒤 다음 위치
+테스트 실행 중 실제 SDK/Codex/model/Docker/network가 호출되지 않았음을 확인하라. 테스트 수와 실패·skip을 실제 출력 그대로 보고하고, 실행하지 않은 것은 미확인으로 남겨라.
 
-원본 push 성공 뒤 원래 Phase D revision 2 명세에 따라 Profile I source gate와 model-free W/J artifact 제작을 재개한다. tracked raw source 전체를 Worker W에 복사하면 안 된다. 같은 Git repository에 원본이 있는 것은 허용되지만 실제 Worker runtime의 W allowlist에서 raw/reference/후속 원인 자료를 제외해야 한다.
+## 8. 기록·commit·push
 
-이번 작업에서 시간이 부족하면 raw commit·push와 상태 보고까지만 끝내고 멈춘다. 실제 SS1/B1 Worker·SDK thread·model turn은 실행하지 않는다.
+원인과 교정을 다음에 기록하라.
 
-완료 보고에는 다음을 포함하라.
+- docs/operations/codex-revision-log.md
+- 프로젝트의 기존 implementation incident/log와 index/harness가 요구하는 파일
 
-- 동기화 전 branch/HEAD와 dirty·stash·local-only 여부
-- 동기화 후 local/remote HEAD·tree 일치
-- 집 P001~P015 원본 위치의 bytes를 수정·이동·삭제하지 않았고 tracked root에는 byte-exact copy만 만들었음
-- 15개 ordinal의 실제 발견·copy·hash 검증 결과
-- raw import commit과 push 결과, remote tracked file count
-- 회사 raw/image가 Git 비정본임을 이해했음
-- Profile R challenge_ready가 뜻하는 것과 뜻하지 않는 것
-- P013/P014 read-only 접근 결과와 남은 blocker
-- Profile I source gate의 다음 model-free 작업
-- 실제 model turn 전 사용자에게 받아야 할 승인
+기존 R1~R6 기록과 봉인 hash는 수정하지 않는다.
+
+변경 범위와 테스트가 정상이고 unrelated file이 없으면 현재 branch에 의도적으로 commit하고 push하라. commit message는 실제 수정 내용을 반영해 작성하되 R07 공개 회귀와 actionable feedback 교정임이 드러나게 한다.
+
+push 뒤 local/remote HEAD·tree 일치와 clean status를 확인한다.
+
+## 9. 실제 재실행 전 중단
+
+commit·push와 보고 뒤 멈춰라. R6는 약 46분 24초, model turn 8회, total token 11,136,599를 사용했다. 실제 R7을 자동으로 시작하지 말고 다음을 사용자에게 먼저 보고한다.
+
+- model-free 수정·검증 결과
+- 새 실제 correction root 제안
+- Cell 2 하나만 실행하고 Cell 3은 실행하지 않는다는 경계
+- 예상 시간과 model 사용량
+- ChatGPT 구독 인증 확인 방식
+
+별도 사용자 승인을 받은 뒤에만 새 root에서 실제 Profile R B1 Cell 2를 실행한다.
 
 금지:
 
 - reset·clean·stash·rebase로 집 작업 숨김 또는 폐기
-- P001~P015 원본 위치의 파일 이동·수정·삭제·재실행. tracked import root로 byte-exact 복사하는 것은 허용이 아니라 필수다.
-- P001~P015 익명화·요약·문서 기반 재구성
-- 실제 credential 후보가 검출된 상태에서 public remote push
-- reconstructed replay R3 부활
-- Docker qualification 반복
-- 실제 SS1/B1 Worker 실행
-- SDK thread·Codex model turn
+- P001~P015 원본 또는 tracked raw 수정·이동·삭제·재수집
+- R1~R6 raw 수정·성공 재분류
+- 공개 검사 완화·삭제·skip
+- 실제 Worker·SDK thread·Codex model turn
+- Docker live 비교
 - API key 생성·요구·입력·출력
-- main 병합·PR·branch 삭제
-- 위 P001~P015 확인·copy 전용 일회용 독립 AI 외의 하위 에이전트 호출
+- Cell 3 자동 진행
+- main merge·PR·branch 삭제
+- 사용자가 요청하지 않은 하위 에이전트 호출
+
+최종 보고는 과거·현재·미래 순으로 쉽게 작성하라.
 ```
