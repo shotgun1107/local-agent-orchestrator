@@ -10,7 +10,7 @@
 4. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 다음 구현·비교 기준
 5. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
 6. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase B/C 완료와 Phase D 이후 경계의 현재 정본
-7. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 closure 재심사 후보, artifact 미승인
+7. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작을 완료한 기준
 8. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
 
 ## 디렉터리 역할
@@ -41,7 +41,7 @@ docs/
 - [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — Claude 심사를 반영해 baseline 교정·intermediate 라우팅·조건부 complex·telemetry를 단계화한 판본 2 동결 설계
 - [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사와 사용자 승인을 마친 revision 2 구현 정본
 - [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase B/C 완료와 Phase D~F의 분리된 관문을 기록한 revision 14
-- [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — Pro revision 1 지적을 반영한 revision 2 외부 재심 후보
+- [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — Pro revision 2 승인과 Profile R·I artifact 제작의 기준
 
 ### `experiments/`
 
@@ -50,6 +50,7 @@ docs/
 - [`codex exec` 명시적 세션 재개 사전검증](./experiments/codex-exec-explicit-resume-preflight.md) — JSONL·usage·명시적 resume은 통과, standalone 쓰기 도구 경계는 실패
 - [현실 고난도 Phase B runtime-boundary 결과](./experiments/sdk-routing-realistic-high-difficulty-runtime-boundary-result.md) — Candidate 015와 model-free 경계 증거
 - [현실 고난도 Phase C 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-c-result.md) — Schema·SS1 Fake Adapter·observer·property/triage 구현과 시험 기록
+- [현실 고난도 Phase E 0-turn 후보](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-result.md) — Profile R·I 네 Cell의 순서·예산·모델·권한과 source 결합을 model turn 0회로 봉인한 결과
 
 ### `reviews/`
 
@@ -102,6 +103,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015는 외부 closure에서 `judge_only_verified=YES`, Phase C model-free 구현 완료. Phase D revision 2는 Pro 재심 승인으로 artifact 제작 `GO`다. Profile R은 source intake·91-path composition까지 완료했고, Profile I는 P001~P012 partial verified·P013/P014 protected-unverified·P015 sealed bundle verified 상태다. Phase E/F는 계속 `NO-GO`다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F 실제 Worker/model turn은 계속 `NO-GO`이며 Cell 1의 별도 사용자 승인이 필요하다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

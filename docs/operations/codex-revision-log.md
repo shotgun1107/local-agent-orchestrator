@@ -1898,3 +1898,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - fresh r2 `profile-i-docker-matrix-r2`는 reference 10/10 pass, negative mutation 10개가 각각 사전 등록 목표 실패 패턴과 일치해 11/11 matched, `CHALLENGE_READY`가 됐다. manifest `69a5d27...f5b39`, result `6f4f322e...e03c2`, seal `4b70211b...3841f`, model turn 0이다.
 - 최종 표적 회귀는 ASCII 임시 경로에서 `33 passed, 1 skipped`, 새 LF clone의 source gate·Worker byte 재현은 `14 passed`다. 회사 `core.autocrlf=true`가 만든 첫 byte 차이는 fixture `.gitattributes` LF 고정으로 닫았다.
 - Profile I 상태를 `PROFILE_I_CHALLENGE_READY`로 판정한다. 이는 challenge artifact 준비 완료이지 B1 우위 증명이 아니다. Phase E/F live·model turn과 main 병합은 별도 승인 전 `NO-GO`다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-i-docker-judge-qualification-result.md`에 기록했다.
+
+## Phase E 0-turn 실행 후보 동결
+
+- 작업일: 2026-08-12. 사용자 Phase E 승인에 따라 실제 Worker나 model turn을 열지 않고 Profile R·I의 SS1/B1 네 Cell 실행계획만 만들었다. 순서는 R SS1 → R B1 → I B1 → I SS1이며 한 번에 Cell 하나, Cell별 명시 승인, 자동 연속 실행·자동 재시도 금지다.
+- 모델은 `gpt-5.6-sol`, reasoning effort `high`, ChatGPT 구독 인증, `openai-codex==0.144.4`로 고정했다. 최초 계획 32 turns, 전체 상한 40 turns이고 runtime contract v2의 `runtime-boundary-worker`, `deny_all`/`never`, legacy sandbox 인자 생략을 Plan에 결합했다.
+- 첫 구현 시험에서 source binding과 candidate seal의 자동 기본값 `schema_version`·`kind`를 해시 입력에서 누락한 오류를 발견했다. commit `79f9100125e2d5f6cecb3fe00b93e461afe1cdfd`에서 기본값을 명시해 자기검증과 재현 검증을 통과시켰다.
+- Codex sandbox OS 사용자는 실제 Windows 사용자의 CLI 로그인 저장소를 보지 못해 최초 preflight가 `requires auth`로 중단됐다. ChatGPT 로그인을 실제 사용자 경계에서 완료한 뒤 같은 경계에서 account/model-list만 조회했고, 후보 검증은 로그인 없는 일반 경계에서 다시 수행했다. API key 환경 변수 이름은 없었고 값은 조회하지 않았으며 actual model turn은 0회다.
+- 후보 experiment는 `exp_20260812_77e111e8_1`, Plan fingerprint `77e111e868b03e5ff1267c736031cb2a5588e6bcaf420e4388724eb0e9aea57d`, candidate seal `1e93ef12f11f7f05902ba7f0e25708f72dc9ed2e65ccea74956938caa5e57fc7`다. exact file set·hash·source commit/tree·R/I qualification·P015 runtime-boundary 결합을 별도 verifier가 재계산했다.
+- Phase E 표적 시험은 회사 checkout과 clean short clone에서 각각 `3 passed`다. 회사 checkout 전체 회귀는 `351 passed, 1 skipped, 2 failed`였고 실패 2건은 기존 Profile I source-intake의 CRLF working-tree bytes가 LF 정본과 달라진 동일 원인이다. clean clone 전체 회귀는 긴 경로로 인한 불완전 checkout 1회와, Git 비정본 frozen wheel 결손 및 저장소 내부 pytest state root 계약 위반 1회로 환경이 무효였으므로 코드 회귀 숫자에 합치지 않았다.
+- 상태는 `PHASE_E_ZERO_TURN_CANDIDATE_FROZEN`이다. 네 Cell은 아직 전부 미실행이며 SS1/B1 우위·route·일반화·기본 채택 주장은 없다. Phase F는 계속 `NO-GO`이고 첫 R SS1 Cell도 별도 사용자 승인을 받아야 한다.
