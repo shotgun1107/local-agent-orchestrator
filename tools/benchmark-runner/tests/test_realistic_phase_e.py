@@ -136,3 +136,20 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
         stream.write(b"\n")
     with pytest.raises(PhaseECandidateError, match="payload bytes changed"):
         verify_phase_e_candidate(REPOSITORY, candidate)
+
+
+def test_checked_in_r07_candidate_verifies_against_its_source_commit() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v2"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+
+    assert seal.source_commit == "ca7cd1e29d52d71385e73b9c8607efad7fa87174"
+    assert seal.experiment_id == "exp_20260812_bd0b7fe5_1"
+    assert seal.plan_fingerprint == (
+        "bd0b7fe5b62ff24c1c5fa6e404cdc19e9d9765de0e2938949da9012bfc557c02"
+    )
+    assert seal.actual_model_turns == 0

@@ -2025,3 +2025,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 별도 process verifier가 9 cells와 47-file seal을 다시 계산했다. manifest self-hash는 `e16ab3d5...5aa27`, result는 `eac5a911...56f8a`, seal은 `9577dd5b...e6e1a`이며 잔여 container는 0개다. 공개 projection은 `profile-r-docker-judge-qualification-v2`에 보존하고 stage의 Profile R 입력을 v2로 전환한다.
 - 첫 단위시험은 공용 pytest temp root의 `WinError 5` 때문에 11개 setup error가 났고 6개만 통과했다. fresh 전용 basetemp에서 같은 시험은 `17 passed`였다. 환경 실패를 qualification 성공에 합치지 않았다.
 - 다음 관문은 이 v2 qualification과 기존 Profile I qualification을 결합한 새 model-free Phase E candidate 동결이다. 실제 R7, Cell 3, model turn은 여전히 별도 사용자 승인 전 `NO-GO`다.
+
+## R07 교정 뒤 Phase E v2 0-turn 후보 동결
+
+- 작업일: 2026-08-12. source commit `ca7cd1e29d52d71385e73b9c8607efad7fa87174`에서 Profile R qualification v2와 기존 Profile I qualification v1을 결합해 새 Phase E 후보를 만들었다. 4-Cell 순서 R SS1→R B1→I B1→I SS1, 모델·reasoning·budget·one-cell confirmation 계약은 유지했다.
+- current checkout의 ignored pytest cache 경고를 후보 근거에서 배제하기 위해 fresh short worktree에서 생성했다. ChatGPT 구독, SDK `0.144.4`, `gpt-5.6-sol` 가시성을 0-turn으로 확인했고 API-key 환경 이름, thread/start, turn/start, model turn은 모두 0이었다.
+- 최종 experiment는 `exp_20260812_bd0b7fe5_1`, Plan fingerprint는 `bd0b7fe5...57c02`, files manifest는 `50b74e9a...3fa04`, candidate seal은 `59d059aa...0efde`다. 별도 process verifier가 exact 6-file set과 source/qualification/runtime binding을 다시 계산해 같은 결과를 냈다.
+- 직전 pytest temp가 남은 current checkout에서 처음 생성한 후보는 clean-source 근거로 사용하지 않고 삭제했다. 최종 후보만 `sdk-routing-realistic-high-difficulty-phase-e-v2`에 보존한다. 관련 회귀는 `21 passed`다.
+- 상태는 `PHASE_E_ZERO_TURN_CANDIDATE_FROZEN`이다. 실제 R7 또는 Cell 3, model turn은 이번 작업에서 실행하지 않았고 별도 사용자 승인 전 계속 `NO-GO`다.
