@@ -95,3 +95,15 @@ def test_profile_i_docker_comparison_rejects_property_drift() -> None:
     cell = _cell_result(variant, manifest, result)
     assert cell["matched_expectation"] is False
     assert cell["mismatch_codes"] == ["AGGREGATE_STATUS_MISMATCH", "PROPERTY_STATUS_MISMATCH", "REFERENCE_NOT_ALL_PASS"]
+
+
+def test_profile_i_versioned_qualification_is_exact_eleven_cell_projection() -> None:
+    path = REPOSITORY / "benchmarks/artifacts/profile-i-docker-judge-qualification-v1/qualification.json"
+    if not path.is_file():
+        return
+    payload = _load(path)
+    assert payload["status"] == "CHALLENGE_READY"
+    assert payload["challenge_ready"] is True
+    assert payload["model_turns"] == 0
+    assert [row["variant_id"] for row in payload["cells"]] == list(ORDERED_VARIANTS)
+    assert all(row["matched_expectation"] is True for row in payload["cells"])

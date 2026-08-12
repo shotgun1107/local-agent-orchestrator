@@ -1889,3 +1889,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 전달 branch는 `codex/phase-d-artifacts`이며 반드시 포함할 작업 commit은 `a66386dea97681d68dc51975c28586ba9627a5a0`이다. 회사는 fetch 뒤 이 commit을 포함한 원격 latest tip과 exact tree로 ff-only 동기화한다.
 - 새 회사 시작 프롬프트는 이미 통과한 raw import·source gate·W build를 반복하지 않고 Profile I versioned J source bundle, reference, property checker, negative mutation과 model-free Docker qualification부터 이어가도록 고정했다.
 - 실제 SS1/B1 Worker, SDK thread, live Plan, Codex model turn과 main 병합은 여전히 금지한다. Profile I artifact가 준비돼도 별도 artifact 심사와 사용자 Phase E 승인 전에는 live 비교를 시작하지 않는다.
+
+## Phase D Profile I J source bundle과 Docker qualification
+
+- 작업일: 2026-08-12. P015 reference source를 Worker 익명화 규칙으로 투영하고 공개 원장·claim·Task 계약을 완성한 `reference.patch`, I-P01~I-P10 property catalog/DAG/checker, 10개 negative mutation과 evidence를 versioned J source bundle로 만들었다. reference 10/10 pass, pristine fail, mutation 10/10 목표 실패·의존 차단 일치로 `PROFILE_I_SOURCE_BUNDLE_VERIFIED`를 확인했다.
+- 기존 `realistic_judge.py`의 Git-object W/J 추출과 보호 root 경계를 profile별 prefix 인자로 재사용하고, 기존 Docker Judge backend 위에 Profile I 11셀 matrix만 추가했다. 새 Controller·seal·live lifecycle을 만들지 않았고 실제 model·SDK·Codex thread는 0회다.
+- 첫 r1은 11셀 결과가 일치했지만 보호 J의 임의 디렉터리를 고정 경로로 읽은 verifier 오류와 W/J까지 포함한 706-file 과대 봉인 때문에 최종 근거에서 제외했다. verifier를 exact-one protected J 탐색으로 바꾸고 봉인 범위를 batch 2 + 11×5 evidence = 57개로 제한했다.
+- fresh r2 `profile-i-docker-matrix-r2`는 reference 10/10 pass, negative mutation 10개가 각각 사전 등록 목표 실패 패턴과 일치해 11/11 matched, `CHALLENGE_READY`가 됐다. manifest `69a5d27...f5b39`, result `6f4f322e...e03c2`, seal `4b70211b...3841f`, model turn 0이다.
+- 최종 표적 회귀는 ASCII 임시 경로에서 `33 passed, 1 skipped`, 새 LF clone의 source gate·Worker byte 재현은 `14 passed`다. 회사 `core.autocrlf=true`가 만든 첫 byte 차이는 fixture `.gitattributes` LF 고정으로 닫았다.
+- Profile I 상태를 `PROFILE_I_CHALLENGE_READY`로 판정한다. 이는 challenge artifact 준비 완료이지 B1 우위 증명이 아니다. Phase E/F live·model turn과 main 병합은 별도 승인 전 `NO-GO`다. 상세 결과는 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-i-docker-judge-qualification-result.md`에 기록했다.
