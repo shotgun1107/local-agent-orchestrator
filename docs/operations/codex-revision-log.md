@@ -2157,3 +2157,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - API-key 환경 이름은 없었다. ChatGPT 구독 account/model-list로 SDK `0.144.4`와 `gpt-5.6-sol` 노출만 확인했으며 thread/start, turn/start와 actual model turn은 0회다.
 - experiment는 `exp_20260813_a79e6015_1`, Plan fingerprint는 `a79e6015...1718d`, files manifest는 `b03610d5...eb3d`, candidate seal은 `9efcc97c...2c89`다. 별도 verifier가 exact 6-file set과 모든 binding을 재계산해 통과했다.
 - 후보는 R SS1→R B1→I B1→I SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다. 실제 SS1/B1과 다른 model turn은 별도 사용자 승인 전 시작하지 않는다.
+
+## Phase F Profile R SS1 v5 실제 실행
+
+- 사용자 승인 뒤 Phase E v5의 Cell 1 SS1 하나를 fresh root `C:\lao-phase-f-live-a79e6015-pair-1`에서 실행했다. zero-turn preflight는 ChatGPT 구독, SDK `0.144.4`, `gpt-5.6-sol`을 확인했고 API-key 환경 이름은 없었다.
+- 한 thread에서 R01~R08을 처리했고 R02·R03 자기검토 2회를 포함해 model turn 10회, session 1회, Attempt 1회였다. token은 input 17,433,659, output 124,194, total 17,557,853이며 model active 3,140.396초, sealed wall 3,170.578초다.
+- Worker는 completed를 보고했지만 Docker Judge는 R-P02 `STAGE_DISCRIMINATOR_FAILED`와 R-P05 `DUPLICATE_OR_MISSING_LIFECYCLE`를 실패로 판정했다. Measurement는 `failed / independent_judge_failed`로 봉인됐다.
+- Measurement hash는 `a120e193...b647`, Cell seal file hash는 `5fc0be74...3367`이며 별도 verifier가 통과했다. 잔여 container는 0개, Cell 2 B1과 Cell 3은 실행하지 않았고 automatic continuation은 false다.
+- 다른 프로젝트가 같은 PC와 ChatGPT 계정에서 동시에 실행돼 wall time은 참고값이다. 현재 source의 B1 대조 Cell이 없으므로 `ROUTING_INCONCLUSIVE`를 유지한다.
