@@ -4,7 +4,7 @@
   "cell_id": "r-p06-export-roundtrip",
   "checker_run_status": "completed",
   "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "616520b54900f5cccb7eac63c4858ef24910b5b78053d7c9607d3876d019aa5a",
+  "envelope_sha256": "e2cd101eb16322fc547c6613df40fb45f551fa746f7c34b7bd7ca7a895dd5e7d",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -193,7 +193,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "020b37f3fccdc599ba99fed6d1b9a9331b087e84cbad571a717906bb0c0a934a",
-  "workspace_before_sha256": "020b37f3fccdc599ba99fed6d1b9a9331b087e84cbad571a717906bb0c0a934a",
+  "workspace_after_sha256": "0311562ae0e72e0cc1ebdb8dd6a5f5756ff46a1ba7a5664495eee35b1a5dd1db",
+  "workspace_before_sha256": "0311562ae0e72e0cc1ebdb8dd6a5f5756ff46a1ba7a5664495eee35b1a5dd1db",
   "workspace_mutated": false
 }
