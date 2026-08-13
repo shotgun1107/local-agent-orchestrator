@@ -2190,3 +2190,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 공식 fresh batch `C:\q8\profile-r-docker-matrix-q8`은 reference R-P01~R-P08 8/8 pass와 negative mutation 8개의 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`로 닫혔다. seal self-hash는 `167d8813...c04b`, projection SHA-256은 `acfc13f5...476c`이며 별도 process verifier는 `CHALLENGE_READY True 9 9 0`을 재계산했다. 잔여 container는 0개이고 model·SDK thread·Codex turn은 0회다.
 - 새 projection은 기존 v1~v5를 덮지 않고 `profile-r-docker-judge-qualification-v6`에 추가했고 stage도 v6를 가리킨다. 다음 관문은 새 Phase E 0-turn 후보 생성이며 이번 승인 범위에서는 자동 생성하거나 실제 Worker/model을 실행하지 않는다.
 - projection과 stage binding을 clean commit으로 고정한 뒤 Docker Judge·Phase F Docker port·Phase E binding 관련 회귀는 `22 passed, 1 opt-in skipped`로 통과했다. skip은 실제 Docker smoke opt-in이며 공식 9-cell matrix는 별도 Docker 실행으로 완료됐다.
+
+## Profile R qualification v6 기반 Phase E v6 0-turn 후보
+
+- 작업일: 2026-08-13. qualification v6와 stage binding을 포함한 clean source commit `b61994bc6ebb57370b59a03fa24543c4bf836354`에서 기존 v1~v5 후보를 덮지 않고 `sdk-routing-realistic-high-difficulty-phase-e-v6` 후보를 생성했다.
+- API-key 환경 이름은 없었다. SDK account/model-list로 ChatGPT 구독, SDK `0.144.4`, `gpt-5.6-sol` 노출을 확인했으며 thread/start, turn/start와 actual model turn은 0회다. 별도 `codex login status` CLI는 WindowsApps 실행 권한 거부로 시작되지 않았지만 SDK account 확인은 정상 통과했다.
+- experiment는 `exp_20260813_a686cd22_1`, Plan fingerprint는 `a686cd22...30ce`, files manifest는 `fffebb68...8918`, candidate seal은 `20f1d3d8...45d2`다. 별도 process verifier가 exact 6-file set과 source/qualification/stage/runtime binding을 다시 계산해 같은 결과를 확인했다.
+- 후보는 Profile R SS1→B1, Profile I B1→SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다. 실제 Worker·SDK thread/turn·Codex model·Cell 3은 별도 사용자 승인 전 실행하지 않는다.
