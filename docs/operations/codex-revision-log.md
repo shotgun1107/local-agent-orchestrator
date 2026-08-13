@@ -2197,3 +2197,4 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - API-key 환경 이름은 없었다. SDK account/model-list로 ChatGPT 구독, SDK `0.144.4`, `gpt-5.6-sol` 노출을 확인했으며 thread/start, turn/start와 actual model turn은 0회다. 별도 `codex login status` CLI는 WindowsApps 실행 권한 거부로 시작되지 않았지만 SDK account 확인은 정상 통과했다.
 - experiment는 `exp_20260813_a686cd22_1`, Plan fingerprint는 `a686cd22...30ce`, files manifest는 `fffebb68...8918`, candidate seal은 `20f1d3d8...45d2`다. 별도 process verifier가 exact 6-file set과 source/qualification/stage/runtime binding을 다시 계산해 같은 결과를 확인했다.
 - 후보는 Profile R SS1→B1, Profile I B1→SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다. 실제 Worker·SDK thread/turn·Codex model·Cell 3은 별도 사용자 승인 전 실행하지 않는다.
+- 후보를 Git에 고정한 clean commit에서 checked-in verifier가 동일 seal을 재계산했고 Phase E model-free 회귀는 `8 passed`였다.

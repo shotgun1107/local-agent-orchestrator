@@ -53,6 +53,9 @@ SDK `0.144.4`, `gpt-5.6-sol` 노출을 확인했다. `thread/start`, `turn/start
 별도 process verifier가 같은 후보를 다시 열어 payload hash와 seal을 재계산해 동일 결과를
 확인했다.
 
+후보를 Git에 고정한 clean commit에서 checked-in verifier를 다시 실행했고 Phase E 관련
+model-free 회귀는 `8 passed`였다.
+
 ## 판정 범위와 중단선
 
 이 후보는 회사의 B1 시험환경 교정과 집 Profile R qualification v6를 결합한 실행계획이다.
