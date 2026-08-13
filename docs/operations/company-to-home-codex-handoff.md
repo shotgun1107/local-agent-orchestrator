@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 6
+- revision: 7
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -226,3 +226,11 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - Worker snapshot은 130 files, aggregate `5e87ebb4b762b5e0c0d988505dc1828c69f542dd94a3ed75d66e40aa422393b4`로 재생성했다. Judge source bundle은 32 files, aggregate `24baf48f6ecb1ceac21ad4adb8cd26809d6f89e3f94792121389cde14203201d`, `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다.
 - model-free 검증은 관련 38 passed, B1 79 passed, Phase F B1/finalizer/live 8 passed와 명시적 opt-in 2 skipped다. 실제 model, SDK thread, Codex process, Docker와 network 호출은 0회다.
 - 이 source 변경으로 qualification v3와 Phase E v3 candidate는 과거 기록으로만 유효하고 R9 입력으로는 stale하다. 다음 순서는 Profile R Docker 재자격 새 revision, Phase E 0-turn candidate 새 revision, 별도 사용자 승인 뒤 R9 Cell 2 한 번이다. R8 raw/seal과 Cell 3은 건드리지 않는다.
+
+## 13. 2026-08-13 Profile R Docker 재자격 v4
+
+- source commit `dd84c9b4665940a63f64923485c8c55ed353b8ef`의 현재 Profile R 공개 입력을 기존 회사 Docker image `ba83a183...330ab`에서 다시 검사했다.
+- 공식 batch `profile-r-docker-matrix-r08-company-v5`는 reference와 negative mutation 8개가 모두 기대와 일치해 `9/9`, `CHALLENGE_READY`로 닫혔다. manifest는 `7612c0b9...6984`, result는 `88c54498...ff8e`, seal은 `07377e76...4413`이다.
+- 공개 projection은 기존 v1~v3을 덮지 않고 `profile-r-docker-judge-qualification-v4`에 추가했다. stage의 Profile R 입력도 v4로 전환했다.
+- 제어 도구 timeout을 실제 process 실패로 오인해 v6 중복 batch를 한 번 시작했다. v6 raw도 `9/9`, `CHALLENGE_READY`로 봉인됐지만 versioned projection 쓰기는 fresh-output 규칙으로 거부됐다. 공식 근거는 먼저 완료된 v5 하나이며 v6를 표본으로 합산하지 않는다.
+- 실제 model, SDK thread와 Codex turn은 0회다. 다음은 Phase E 후보 생성이 아니라, 현재 시험환경 전체를 새 독립 AI가 model-free로 감사하는 관문이다. 감사에서 실제 실행 차단 오류가 나오면 한 차례만 교정하고 같은 범위로 한 번 재검증한다. 그 뒤에만 Phase E 새 0-turn 후보와 R9 여부를 결정한다.
