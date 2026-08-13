@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 51건
-- 해결: 48건
+- 해결: 49건
 - 조사 중: 2건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -63,7 +63,7 @@
 | DEV-20260812-005 | resolved | phase-f-profile-r-b1 | integration | B1 scope verification treated untracked Python bytecode as a Worker source change |
 | DEV-20260812-006 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback |
 | DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
-| DEV-20260813-001 | open | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
+| DEV-20260813-001 | resolved | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3022,11 +3022,11 @@ The S2 regression now creates the observed legacy project pack, converts it befo
 
 ## DEV-20260813-001 — R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-b1`
 - 분류: `integration`
 - 발견: 2026-08-13T00:54:17Z / sealed Phase F Profile R B1 R8 live run
-- 해결: 미해결
+- 해결: 2026-08-13T01:32:42Z
 
 ### 증상
 
@@ -3041,35 +3041,51 @@ R07 첫 Attempt와 자동 교정 Attempt가 같은 두 공개 pytest node의 ERR
 - `direct-observation`: sealed R8 B1 report records R01~R06 SUCCEEDED, R07 attempts 1 and 2 check_failed, R08 PENDING, and actual model turns 8
 - `direct-observation`: both R07 public checker results expose only the same two pytest node IDs and exit code while the Worker reports that pytest and project dependencies are unavailable in its own Python environment
 - `direct-observation`: the independent Docker Judge records R-P05-LIFECYCLE-REUSE and R-P06-EXPORT-ROUNDTRIP failures
+- `reproducible-test`: the two public R07 pytest nodes reproduced against the sealed workspace and both first failed at git show with Filename too long; forcing core.longpaths=true allowed the project-pack test to pass and exposed the separate Fake four-Cell output defect
 
 ### 근본 원인
 
-미확인
+The shared frozen-object Git reader did not force core.longpaths on Windows, so both public tests failed before their assertions. After that boundary was controlled, the R8-authored four-Cell regression was also shown to use empty Fake effects while claiming completed result envelopes, so three of four model-free Cells did not materialize the expected golden files. The bounded feedback fallback retained only pytest node IDs and exit code, hiding both actionable causes from the retry.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` shorten or skip the public regression on Windows — would avoid rather than verify the shared frozen-object contract
+- `rejected` treat completed Fake result envelopes as file effects — would make the model-free baseline claim workspace changes that never occurred
+- `adopted` force long-path Git reads and preserve explicit golden write effects with bounded cause-specific feedback — keeps the public test meaningful and gives the one retry enough public information without exposing Judge-only material
 
 ### 채택한 해결
 
-미해결
+The shared routing-suite Git subprocess now passes -c core.longpaths=true, with a direct argv regression. The R07 public task contract now preserves the existing GOLDEN_ROOT/_golden_turns implementation and requires explicit write_file effects for every C2 and B1 Fake turn. The public feedback classifier emits bounded actionable messages for Windows long-path failure and missing Fake effects. The Worker snapshot and Profile R Judge source bundle were deterministically rebuilt.
 
 ### 수정 파일
 
-- 기록 없음
+- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+- tools/benchmark-runner/tests/test_routing_suite.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/bundle-manifest.json
 
 ### 회귀시험
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_routing_suite.py::test_frozen_git_reads_force_windows_long_path_support
+- tools/benchmark-runner/tests/test_routing_s2.py::test_s2_fake_four_cell_plan_judge_property_seal_export
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback
 
 ### 검증 결과
 
-- 기록 없음
+- R07/S2, Profile R fixture, and legacy S1 group: 38 passed
+- B1 full regression: 79 passed
+- Phase F B1/finalizer/live model-free group: 8 passed, 2 explicit opt-in tests skipped
+- Profile R Judge source bundle: PROFILE_R_SOURCE_BUNDLE_VERIFIED with 32 files and payload aggregate 24baf48f6ecb1ceac21ad4adb8cd26809d6f89e3f94792121389cde14203201d
 
 ### 남은 위험
 
-- the exact pytest setup error is not yet reproduced outside the sealed R8 root
-- R8 remains a sealed failed result and R9 requires separate model-use approval
+- Profile R qualification v3 and Phase E v3 candidate are stale because their bound source bytes predate this correction
+- R8 remains a sealed failed result and R9 requires new qualification, candidate freezing, and separate model-use approval
 
 ### 추적 정보
 

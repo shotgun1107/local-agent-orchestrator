@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 5
+- revision: 6
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -217,3 +217,12 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 새 열린 incident는 `DEV-20260813-001`이다. bounded feedback이 두 test 이름과 exit code는 전달했지만 setup error의 정확한 원인은 전달하지 못했고 Worker Python은 필요한 시험 의존성을 직접 실행할 수 없었다.
 - 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r8-company-v3-result.md`에 있다. R8 raw와 seal은 Git 동기화 대상이 아니며 수정·삭제·재봉인하지 않는다.
 - 다음 관문은 별도 사용자 승인 아래 sealed R8 workspace와 공개 Check만 model-free로 분석해 두 setup error의 원인을 밝히는 것이다. R9, Cell 3과 다른 model turn은 자동 실행하지 않는다.
+
+## 12. 2026-08-13 R8 R07 실패 원인 교정
+
+- sealed R8 workspace를 수정하지 않고 두 공개 pytest node만 model-free로 재현했다. 두 시험은 먼저 Windows 긴 경로 때문에 `git show ... Filename too long`에서 중단됐다. 공통 frozen-object Git 읽기에 `-c core.longpaths=true`를 고정하자 project-pack canonicalization 시험은 통과했다.
+- 이어서 드러난 별도 결함은 R8 Worker가 작성한 4-Cell Fake regression이 빈 effects로 완료 envelope만 반환했다는 점이다. 파일이 실제로 생성되지 않아 config C2 acceptance와 두 B1 Cell이 실패했다. 정본의 `GOLDEN_ROOT/_golden_turns` 및 explicit `write_file` 효과를 R07 공개 goal에 보존 조건으로 추가했다.
+- bounded feedback은 이제 긴 경로와 누락된 Fake file effects를 각각 공개 정보만으로 설명한다. 전체 traceback, Judge/reference/mutation 정보는 Worker에게 전달하지 않는다.
+- Worker snapshot은 130 files, aggregate `5e87ebb4b762b5e0c0d988505dc1828c69f542dd94a3ed75d66e40aa422393b4`로 재생성했다. Judge source bundle은 32 files, aggregate `24baf48f6ecb1ceac21ad4adb8cd26809d6f89e3f94792121389cde14203201d`, `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다.
+- model-free 검증은 관련 38 passed, B1 79 passed, Phase F B1/finalizer/live 8 passed와 명시적 opt-in 2 skipped다. 실제 model, SDK thread, Codex process, Docker와 network 호출은 0회다.
+- 이 source 변경으로 qualification v3와 Phase E v3 candidate는 과거 기록으로만 유효하고 R9 입력으로는 stale하다. 다음 순서는 Profile R Docker 재자격 새 revision, Phase E 0-turn candidate 새 revision, 별도 사용자 승인 뒤 R9 Cell 2 한 번이다. R8 raw/seal과 Cell 3은 건드리지 않는다.

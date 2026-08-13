@@ -30,7 +30,13 @@ def _public_pytest_failure_feedback(
     result: subprocess.CompletedProcess[str],
 ) -> str:
     combined = "\n".join((result.stdout or "", result.stderr or ""))
-    if (
+    if "Filename too long" in combined:
+        message = (
+            "the isolated S2 Git repository exceeded the Windows path limit. Preserve "
+            "core.longpaths=true for the temporary repository and the shared frozen-object "
+            "Git reads; shortening or skipping the regression is not an acceptable fix."
+        )
+    elif (
         "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
         and "b1 preflight failed: B1 run validate failed" in combined
     ):
@@ -51,6 +57,20 @@ def _public_pytest_failure_feedback(
             "FrozenManifest/FrozenFixtureSpec input with S2-only extra fields. Convert "
             "only the fields declared by those public models; stage_id, purpose, "
             "initial_cell_order, and fixture profile are not valid frozen-manifest fields."
+        )
+    elif (
+        "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
+        and (
+            "assert all(result.check_success" in combined
+            or "test_cli_success_json" in combined
+            or "JSONDecodeError" in combined
+        )
+    ):
+        message = (
+            "the Fake four-Cell regression claimed completion without materializing every "
+            "Task output. Preserve the existing GOLDEN_ROOT/_golden_turns flow and give each "
+            "C2 FakeTurnScript and B1 fake turn explicit write_file effects for the exact "
+            "golden bytes; result envelopes alone do not change the workspace."
         )
     else:
         summaries = [
