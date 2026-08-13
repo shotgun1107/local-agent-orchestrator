@@ -1,12 +1,13 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 15
+- revision: 16
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
 - 반드시 포함할 집→회사 인수 commit: `db83a5b9ea1981a8716b47df57fe112c72e6a61c`
 - 회사가 인수한 원격 기준 commit: `ee877eb2e947e1d2af4d36f845166a358aad8927`
+- 이번 B1 시험환경 수정 commit: `ed1e1602d8df546e016ba94405f8143088070709`
 
 > 이 문서를 포함하는 원격 tip이 집에서 받을 정본이다. 집에서는 이 문서의 고정
 > commit으로 hard reset하지 말고 `git fetch` 뒤
@@ -321,3 +322,62 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 독립 Judge는 부분 workspace에서 R-P05와 R-P06을 실패로 판정했다. Measurement hash는 `7ee05a99...21ee`, Cell seal file hash는 `f49fca89...673`이고 별도 verifier가 통과했다. 잔여 container는 0개다.
 - 최신 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 같은 오염 상태로 live를 반복하지 말고, 다음 작업은 TEMP 격리와 줄바꿈 독립적인 fixture 계약을 model-free로 고치는 것이다.
 - 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md`에 있다. `C:\lao-phase-f-live-a79e6015-pair-1` raw/seal은 Git 대상이 아니며 수정·삭제·재봉인하지 않는다.
+
+## 24. 2026-08-13 B1 v5 시험환경 결손 교정과 집 인계
+
+이 절은 §23의 “TEMP 격리와 줄바꿈 계약을 고친다”는 다음 작업을 수행한 최신
+상태다. 수정 정본은 commit `ed1e1602d8df546e016ba94405f8143088070709`다.
+
+### 과거 — 왜 B1 v5가 무효가 됐는가
+
+- R07 첫 Attempt는 B1 Check가 회사 호스트의 `TEMP/TMP`를 상속해, 다른 Windows
+  sandbox identity가 만든 `pytest-of-unknown` 폴더에 접근하다 `WinError 5`로
+  중단됐다.
+- 재시도 Worker는 상세 traceback을 정상적으로 받았지만, 이어서 Windows Git의 전역
+  `core.autocrlf=true`가 `git archive` 복원 바이트를 LF에서 CRLF로 바꿔 기능 검사
+  전에 exact-byte assertion이 실패했다.
+- 앞선 독립 clean-room 감사가 통과했던 이유는 정본 checkout에서 model-free 경로를
+  검사했기 때문이다. 실제 B1 Worker의 호스트 TEMP와 전역 Git 설정을 그대로 통과하는
+  시험은 아니었다. 따라서 감사 판정이 거짓이었다기보다 실제 실행 환경의 두 입력을
+  시험 범위에서 빠뜨렸다.
+
+### 현재 — 회사에서 고친 내용
+
+- B1은 매 Check마다 해당 workspace의 실제 Git metadata 아래에 fresh 임시 폴더를
+  만든다. `TEMP`, `TMP`, `TMPDIR`은 모두 이 폴더만 가리키고 Check 종료 뒤 제거된다.
+- 새 Run과 resume은 model dispatch 전에 같은 환경으로 Python 임시 파일 쓰기 probe를
+  통과해야 한다. 실패하면 AI를 부르기 전에 `check_environment` 오류로 중단한다.
+- 모든 B1 Check 자식 프로세스에 `core.autocrlf=false`를 환경으로 강제했다. 따라서
+  Worker 안의 기존 공개 pytest가 내부에서 Git 저장소와 `git archive`를 만들더라도
+  호스트의 전역 줄바꿈 설정에 영향을 받지 않는다.
+- 공통 `FixtureRestorer`의 archive 입력도 `core.autocrlf=false`로 고정했고, Profile R
+  workspace의 초기 Git baseline 역시 같은 설정을 사용한다. 공개 assertion이나
+  production Schema를 느슨하게 만들지는 않았다.
+- 재시도 뒤 후속 Task가 미실행 상태일 때 B1 보고 어댑터가 빈 Attempt 목록을 읽다가
+  `IndexError`로 죽던 별도 결함도 고쳤다. 실제 실패가 보고 도구 오류로 가려지지 않는다.
+- `DEV-20260813-003`은 위 원인·해결·회귀 근거를 포함해 `resolved`로 닫았다.
+
+검증 결과:
+
+- B1 전체: `80 passed`
+- 관련 Runner 경로: `76 passed, 2 opt-in skipped`
+- 실제 B1 v5 Worker 복사본에서 실패했던 R07 canonicalization 회귀: `1 passed`
+- 구현 로그 하네스: `53 entries checked`
+- 실제 model·SDK thread/turn·Codex·Docker 호출: `0`
+
+### 미래 — 집에서 이어서 할 일
+
+1. 집의 기존 clone, raw root, Docker image, `.venv`, 로그인과 cache를 보존한 채
+   `origin/codex/phase-d-artifacts` 최신 tip으로 ff-only 동기화한다.
+2. `ed1e1602...`가 원격 branch의 조상인지 확인하고 이 절 및
+   `DEV-20260813-003`을 읽는다. 회사에서 이미 통과시킨 회귀를 불신한다는 이유만으로
+   반복하지 않는다.
+3. 이번 source 변경으로 Profile R qualification v5와 Phase E v5 candidate는 과거
+   기록으로는 유효하지만 새 live 입력으로는 stale하다. 다음 실제 실행 전에 새 revision의
+   Docker qualification과 Phase E 0-turn candidate가 필요하다.
+4. 다만 자동으로 qualification, candidate 또는 live SS1/B1을 시작하지 않는다. 먼저
+   동기화·정본 확인 결과와 stale 경계를 사용자에게 보고하고 승인을 기다린다.
+
+회사에만 있는 `C:\lao-phase-f-live-a79e6015-pair-1`의 SS1/B1 raw와 seal은 Git
+동기화 대상이 아니다. 집에 없다고 복사·재현·재봉인하지 않는다. R7~R9, P001~P015,
+기존 qualification/candidate도 수정하거나 성공으로 재분류하지 않는다.
