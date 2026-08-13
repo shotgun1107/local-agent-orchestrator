@@ -204,3 +204,16 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - qualification에서 Docker container 9개를 실행했다. Phase E 후보 생성에서는 SDK account/model-list 사전점검 1회만 실행했고 thread/start, turn/start와 actual model turn은 0회였다.
 - 다음 관문은 별도 사용자 승인 아래 Phase E v3의 Profile R B1 correction Cell 2 하나만 실행하는 것이다. 완료나 실패 뒤 멈추며 Cell 3으로 자동 진행하지 않는다.
 - 관련 model-free 회귀는 `34 passed, 3 skipped`다. 실제 model turn은 0회다. SDK는 후보 동결 시 account/model-list 사전점검 1회만 사용했고 thread/start와 turn/start는 0회다.
+
+## 11. 2026-08-13 회사 R8 실제 실행 결과
+
+이 절은 §10의 다음 관문을 수행한 최신 상태다.
+
+- Phase E v3의 Profile R B1 Cell 2 하나를 `C:\lao-phase-f-live-4053943d-r8`에서 실행했다. zero-turn preflight 뒤 actual model turn은 8회였고 Cell 3은 실행하지 않았다.
+- R01~R06은 첫 Attempt에 성공했다. R07은 공개 pytest node 두 개의 `ERROR`로 첫 Attempt와 자동 교정 Attempt가 모두 실패했다. R08은 `PENDING`이다.
+- 독립 Docker Judge는 R-P01~R-P04를 통과시키고 R-P05와 R-P06을 실패로 판정했다. R-P07과 R-P08은 선행 조건 때문에 blocked됐다. 최종 결과는 `SEALED_FAILED`다.
+- Measurement SHA는 `4cf05079df42b7547433410f7e35cb19e5a9300abdf0946d601741d27db02e9e`, Cell seal file SHA는 `3f46bea331e00de560e405e9079b0307bd4af44a646cdfea45c0f94e525dbfef`다. 독립 finalization verifier는 통과했고 잔여 Docker container는 없다.
+- measured token은 input 15,103,169, output 114,030, total 15,217,199다. 이 한 번의 실패 결과를 B1 일반 효율이나 variant 우열로 확대하지 않는다.
+- 새 열린 incident는 `DEV-20260813-001`이다. bounded feedback이 두 test 이름과 exit code는 전달했지만 setup error의 정확한 원인은 전달하지 못했고 Worker Python은 필요한 시험 의존성을 직접 실행할 수 없었다.
+- 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r8-company-v3-result.md`에 있다. R8 raw와 seal은 Git 동기화 대상이 아니며 수정·삭제·재봉인하지 않는다.
+- 다음 관문은 별도 사용자 승인 아래 sealed R8 workspace와 공개 Check만 model-free로 분석해 두 setup error의 원인을 밝히는 것이다. R9, Cell 3과 다른 model turn은 자동 실행하지 않는다.

@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 50건
+- 전체: 51건
 - 해결: 48건
 - 조사 중: 2건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -63,6 +63,7 @@
 | DEV-20260812-005 | resolved | phase-f-profile-r-b1 | integration | B1 scope verification treated untracked Python bytecode as a Worker source change |
 | DEV-20260812-006 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback |
 | DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
+| DEV-20260813-001 | open | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3018,3 +3019,59 @@ The S2 regression now creates the observed legacy project pack, converts it befo
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r7-result.md
 - 출처: docs/operations/home-to-company-codex-handoff.md
+
+## DEV-20260813-001 — R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함
+
+- 상태: `open`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `integration`
+- 발견: 2026-08-13T00:54:17Z / sealed Phase F Profile R B1 R8 live run
+- 해결: 미해결
+
+### 증상
+
+R07 첫 Attempt와 자동 교정 Attempt가 같은 두 공개 pytest node의 ERROR로 실패했고 R08이 실행되지 않음
+
+### 재현
+
+- Phase E v3의 Profile R B1 Cell 2를 fresh R8 root에서 실행하고 R07 public checker까지 진행한다
+
+### 증거
+
+- `direct-observation`: sealed R8 B1 report records R01~R06 SUCCEEDED, R07 attempts 1 and 2 check_failed, R08 PENDING, and actual model turns 8
+- `direct-observation`: both R07 public checker results expose only the same two pytest node IDs and exit code while the Worker reports that pytest and project dependencies are unavailable in its own Python environment
+- `direct-observation`: the independent Docker Judge records R-P05-LIFECYCLE-REUSE and R-P06-EXPORT-ROUNDTRIP failures
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- the exact pytest setup error is not yet reproduced outside the sealed R8 root
+- R8 remains a sealed failed result and R9 requires separate model-use approval
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r8-company-v3-result.md
