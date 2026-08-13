@@ -499,7 +499,7 @@ def load_routing_stage(path: Path) -> RoutingStage:
 
 def _git(repository: Path, *args: str) -> bytes:
     result = subprocess.run(
-        ["git", "-C", str(repository), *args],
+        ["git", "-c", "core.longpaths=true", "-C", str(repository), *args],
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

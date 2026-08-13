@@ -313,6 +313,9 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
     assert "FrozenManifest and FrozenFixtureSpec" in r07["goal"]
     assert "strict models only" in r07["goal"]
     assert "do not forward S2 stage or profile dictionaries" in r07["goal"]
+    assert "Preserve Windows long-path support" in r07["goal"]
+    assert "GOLDEN_ROOT/_golden_turns" in r07["goal"]
+    assert "completed result envelope without file effects is invalid" in r07["goal"]
 
     checks = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
@@ -380,6 +383,33 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
     assert "core_compat, repository_root" in project_config_feedback
     assert "default_capability_profile, and default_policy" in project_config_feedback
     assert len(project_config_feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
+
+    long_path_feedback = checker._public_pytest_failure_feedback(
+        subprocess.CompletedProcess(
+            [sys.executable, "-m", "pytest"],
+            1,
+            "RoutingSuiteError: git show failed: Filename too long\n",
+            "",
+        )
+    )
+    assert "Windows path limit" in long_path_feedback
+    assert "core.longpaths=true" in long_path_feedback
+
+    missing_effect_feedback = checker._public_pytest_failure_feedback(
+        subprocess.CompletedProcess(
+            [sys.executable, "-m", "pytest"],
+            1,
+            (
+                "FAILED tools/benchmark-runner/tests/test_routing_s2.py::"
+                "test_s2_fake_four_cell_plan_judge_property_seal_export\n"
+                "E assert all(result.check_success for result in results)\n"
+            ),
+            "",
+        )
+    )
+    assert "GOLDEN_ROOT/_golden_turns" in missing_effect_feedback
+    assert "write_file effects" in missing_effect_feedback
+    assert "result envelopes alone do not change the workspace" in missing_effect_feedback
 
     undecodable_stream_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(

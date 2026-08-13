@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +12,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
+import benchmark_runner.routing_suite as routing_suite_module
 from benchmark_runner.adapter import B1AdapterConfig, B1SequentialAdapter
 from benchmark_runner.contract import ArtifactIdentity, CellStateRecord, Measurement
 from benchmark_runner.failure_scenarios import CONFIG_SOURCE, NORMALIZATION_SOURCE
@@ -97,6 +99,32 @@ def _git() -> Path:
     executable = shutil.which("git")
     assert executable is not None
     return Path(executable)
+
+
+def test_frozen_git_reads_force_windows_long_path_support(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[list[str]] = []
+
+    def fake_run(arguments, **kwargs):
+        captured.append([str(value) for value in arguments])
+        return subprocess.CompletedProcess(arguments, 0, stdout=b"frozen-bytes", stderr=b"")
+
+    monkeypatch.setattr(routing_suite_module.subprocess, "run", fake_run)
+
+    assert routing_suite_module._git(tmp_path, "show", "HEAD:deep/path") == b"frozen-bytes"
+    assert captured == [
+        [
+            "git",
+            "-c",
+            "core.longpaths=true",
+            "-C",
+            str(tmp_path),
+            "show",
+            "HEAD:deep/path",
+        ]
+    ]
 
 
 def _artifacts() -> tuple[ArtifactIdentity, list[ArtifactIdentity]]:

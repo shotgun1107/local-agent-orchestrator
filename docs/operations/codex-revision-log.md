@@ -2079,3 +2079,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Cell seal file SHA는 `3f46bea3...fef`, Measurement는 `4cf05079...e9e`, Judge public result는 `0b7d50b6...69d`, adapter evidence는 `068432f9...523`이다. 독립 finalization verifier는 통과했고 Cell 3 경로와 잔여 Docker container는 0개였다.
 - bounded feedback 통로는 동작했지만 이번에는 pytest node ID와 exit code만 전달했다. Worker Python에는 pytest와 project dependencies가 없어 setup error의 구체 원인을 자체 확인하지 못했다. 이 관측은 열린 incident `DEV-20260813-001`에 기록한다.
 - R8 raw와 seal은 수정·삭제·재봉인·자동 재시도하지 않는다. 다음은 별도 사용자 승인 아래 R8 workspace와 공개 Check를 model-free로 분석하는 단계다. R9, Cell 3과 다른 model turn은 계속 `NO-GO`다.
+
+## R8 R07 공개 시험의 Windows path·Fake effect 원인 교정
+
+- 작업일은 2026-08-13이다. sealed R8 workspace와 raw/seal은 수정하지 않고 실패한 공개 pytest node 두 개를 Python 3.12에서 model-free로 다시 실행했다. 두 node 모두 `git show`의 `Filename too long`에서 먼저 실패했다. `core.longpaths=true`를 같은 subprocess에 강제하자 project-pack canonicalization node는 통과했다.
+- 긴 경로 결손 뒤에는 별도 4-Cell fixture 문제가 드러났다. R8 Worker가 만든 Fake adapter가 Task별 golden 파일을 쓰지 않고 빈 effects와 completed envelope만 반환해 config C2와 두 B1 Cell이 실패했다. 현재 정본에 있던 `GOLDEN_ROOT/_golden_turns`와 explicit C2/B1 file effects를 R07 goal의 보존 조건으로 고정했다.
+- `routing_suite._git`은 매 호출에 `-c core.longpaths=true`를 전달한다. 공개 feedback은 `Filename too long`과 Fake 결과 파일 미생성을 각각 bounded 공개 문구로 분류한다. production B1 validation, Judge, 필수 assertion과 reference/mutation 경계는 완화하지 않았다.
+- 정본 builder로 Worker snapshot을 130 files, aggregate `5e87ebb4b762b5e0c0d988505dc1828c69f542dd94a3ed75d66e40aa422393b4`로 갱신했다. Profile R Judge source bundle도 32 files, aggregate `24baf48f6ecb1ceac21ad4adb8cd26809d6f89e3f94792121389cde14203201d`, `PROFILE_R_SOURCE_BUNDLE_VERIFIED`로 재생성했다.
+- 최종 검증은 R07/S2·Profile R·legacy S1 `38 passed`, B1 전체 `79 passed`, Phase F B1/finalizer/live `8 passed, 2 skipped`다. skip은 명시적 Docker/SDK opt-in이고 실행하지 않았다. model, SDK thread, Codex, Docker, network 호출은 0회다. incident `DEV-20260813-001`을 resolved로 닫았다.
+- source와 Worker/Judge bundle bytes가 바뀌어 Profile R qualification v3와 Phase E v3 candidate는 R9 입력으로 stale하다. 다음은 별도 승인 아래 새 qualification과 0-turn candidate를 만든 뒤 R9 Cell 2를 결정하는 것이다. Cell 3 자동 진행은 계속 금지다.

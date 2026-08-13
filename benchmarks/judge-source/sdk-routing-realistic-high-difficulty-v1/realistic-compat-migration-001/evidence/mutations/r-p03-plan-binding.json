@@ -4,7 +4,7 @@
   "cell_id": "r-p03-plan-binding",
   "checker_run_status": "completed",
   "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "98f2cc5e573b326ca602005d4bbec096c5f801828b8ae612e727447da2f7796b",
+  "envelope_sha256": "abcafec961db439ca80731df8a29abc8b68ab3929a1e20d9b89b21274ccefd58",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -175,7 +175,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "fb404eabcdd5790d554767a24e10a9f1121bdd69682f3189b32b6baec748fe8e",
-  "workspace_before_sha256": "fb404eabcdd5790d554767a24e10a9f1121bdd69682f3189b32b6baec748fe8e",
+  "workspace_after_sha256": "f4f274813cf63de39f81807538a5f9f28954491791b740de189dd9e04c52f838",
+  "workspace_before_sha256": "f4f274813cf63de39f81807538a5f9f28954491791b740de189dd9e04c52f838",
   "workspace_mutated": false
 }
