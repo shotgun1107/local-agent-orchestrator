@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 8
+- revision: 9
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -242,3 +242,11 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 작업 준비와 fixture, B1 preflight, Fake 결과 생성, 공개 Check/Judge, Phase E 후보 생성·검증, Phase F Measurement/finalization 경로가 통과했다. skip 2개는 실제 Docker full dry-run과 실제 SDK zero-turn preflight opt-in이다.
 - 실제 R9 차단 오류가 없어 수정 단계는 0건으로 끝났다. 감사 중 model·SDK thread/turn·Codex·Docker·network 호출과 파일 수정은 모두 0회다.
 - 다음 관문은 새 Phase E 0-turn 후보 동결이다. 그 뒤 R9 Cell 2 실제 실행은 별도 사용자 승인을 받아 한 번만 수행하며, 성공·실패와 무관하게 Cell 3으로 자동 진행하지 않는다.
+
+## 15. 2026-08-13 Phase E v4 0-turn 후보 동결
+
+- 독립 감사가 끝난 clean commit `5a6790a69891ec4e48326bcfbab82306496f9d99`에서 `sdk-routing-realistic-high-difficulty-phase-e-v4` 후보를 만들었다.
+- ChatGPT 구독 account/model-list 사전점검은 SDK `0.144.4`와 `gpt-5.6-sol` 노출을 확인했다. thread/start, turn/start와 actual model turn은 0회다.
+- experiment는 `exp_20260813_44b11b86_1`, Plan fingerprint는 `44b11b86...68c3c`, files manifest는 `9c531bd6...c524`, candidate seal은 `2fefd981...ce7d`다.
+- Profile R qualification v4와 기존 Profile I qualification v1, runtime-boundary 정본, 4-Cell 순서와 32/40 turn 예산이 후보에 결합됐다. 별도 process verifier가 exact 6-file set과 모든 binding을 다시 계산해 통과했다.
+- 다음 관문은 별도 사용자 승인 아래 v4 후보의 Profile R B1 Cell 2를 R9으로 한 번 실행하는 것이다. R9이 성공하거나 실패하면 실험 실행을 멈추고 결론을 작성한다. Cell 3 자동 진행과 추가 R10 반복은 승인되지 않았다.
