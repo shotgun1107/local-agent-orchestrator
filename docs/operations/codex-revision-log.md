@@ -2142,3 +2142,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 같은 Phase F 상태에서 Cell 1 SS1과 Cell 2 B1을 실제 model 없이 순서대로 실행하는 회귀를 추가했다. SS1은 Fake SDK thread 하나에서 R01~R08 여덟 Task를 처리하고, 별도 명시 dispatch 전에는 B1 artifact가 생성되지 않는다.
 - 두 번째 명시 dispatch 뒤 B1이 실행되고 SS1과 B1 각각 Fake Judge·Measurement·Cell seal을 만든다. 종료 뒤 상태는 Cell 1·2 `SEALED`, Cell 3·4 `PLANNED`이며 Cell 3 claim과 artifact는 없다.
 - 새 연결 시험은 `1 passed`, SS1·B1 관련 파일 묶음은 `7 passed`다. model, SDK, Codex, Docker 호출은 0회다. 이는 실행 통로 점검이며 SS1/B1의 품질·시간·비용 우열 근거가 아니다.
+
+## B1 공개 traceback 변경 뒤 Profile R Docker 재자격 v5
+
+- B1 공개 feedback 변경으로 Worker snapshot bytes가 달라졌지만 첫 qualification batch `profile-r-docker-matrix-r09-company-v7`은 변경 전 Judge workspace hash를 사용했다. 기능 판정은 reference pass와 8개 mutation target fail로 맞았으나 9개 모두 before/after hash mismatch가 되어 `CHALLENGE_NOT_READY`로 봉인됐다.
+- 현재 snapshot에서 Profile R Judge source bundle을 다시 생성해 `32 files`, aggregate `79d1cf4f...58320`, `PROFILE_R_SOURCE_BUNDLE_VERIFIED`로 닫았고 표적 시험 `30 passed`를 확인했다. 이를 commit `2062def`로 고정했다.
+- 공식 batch `profile-r-docker-matrix-r09-company-v8`은 기존 image `ba83a183...330ab`에서 reference 8/8 pass와 negative mutation 8개 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`였다.
+- manifest `bd74f9d5...59a2`, result `5da28bc9...a941`, seal `48673955...7042`이며 별도 verifier가 같은 결과를 재계산했다. 잔여 container는 0개, model·SDK thread·Codex turn은 0회다.
+- 공개 projection은 기존 v1~v4를 덮지 않고 `profile-r-docker-judge-qualification-v5`에 추가하고 stage의 Profile R 입력을 v5로 전환한다. 실패한 v7 raw는 보존하지만 qualification 표본으로 합산하지 않는다.

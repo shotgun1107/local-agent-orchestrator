@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 11
+- revision: 12
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -286,3 +286,12 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 현재 수정본에서 실제 AI 없이 Phase F Cell 1 SS1과 Cell 2 B1을 같은 상태에 순서대로 연결했다. SS1은 한 session에서 R01~R08을 처리한 뒤 멈췄고, B1은 별도의 명시 dispatch 뒤에만 시작했다.
 - SS1과 B1은 각각 Fake Judge·Measurement·seal까지 생성했다. 두 Cell 뒤 Cell 3은 `PLANNED`이고 dispatch claim이나 artifact가 없어 자동 진행되지 않았음을 확인했다.
 - 연결 시험 `1 passed`, SS1·B1 관련 묶음 `7 passed`, model·SDK·Codex·Docker 호출 0회다. 이는 실행 구조 점검일 뿐 실제 성능 비교는 아니다.
+
+## 20. 2026-08-13 Profile R Docker 재자격 v5
+
+- B1 공개 traceback 변경으로 Worker snapshot bytes가 달라져 과거 qualification v4와 Phase E v4 후보는 현재 source의 새 실행 입력으로 사용할 수 없다.
+- 첫 batch `profile-r-docker-matrix-r09-company-v7`은 검사 결과 자체는 맞았지만 Judge의 예상 workspace hash가 옛값이라 `CHALLENGE_NOT_READY`였다. 실패 raw는 `C:\lao-r09-q7-20260813`에 보존하고 공식 결과로 사용하지 않는다.
+- Judge 근거를 현재 snapshot에 다시 결합한 commit은 `2062deff42f052f1dad79a0ffdd8e5b57fd155c7`이다. 관련 model-free 시험은 `30 passed`였다.
+- 공식 batch `profile-r-docker-matrix-r09-company-v8`은 reference와 8개 negative mutation이 모두 기대와 일치해 `9/9`, `CHALLENGE_READY`다. seal은 `48673955d95db1e2c2c34ccd27efcfcaee7462053e39431826d038bd26717042`다.
+- 새 projection은 `benchmarks/artifacts/profile-r-docker-judge-qualification-v5/qualification.json`이고 stage도 v5를 사용한다. 기존 v1~v4와 R7~R9 raw/seal은 수정하지 않는다.
+- 실제 model·SDK thread·Codex turn은 0회다. 다음 작업은 clean commit에서 새 Phase E 0-turn 후보를 만들고 검증하는 것이며 실제 SS1/B1 실행은 자동으로 시작하지 않는다.
