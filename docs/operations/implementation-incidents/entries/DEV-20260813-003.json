@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260813-003",
+  "title": "Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함",
+  "status": "open",
+  "stage": "phase-f-profile-r",
+  "category": "test",
+  "discovered_at": "2026-08-13T07:51:04Z",
+  "resolved_at": null,
+  "discovered_by": "sealed Phase F Profile R B1 v5 live run",
+  "symptom": "R07 기능 검사 전에 pytest tmp_path 접근 거부가 발생했고 재시도에서는 legacy project.yaml의 LF/CRLF byte 비교가 실패했다",
+  "reproduction": [
+    "v5 Cell 2 B1의 R07 attempt 1·2 public_check_feedback을 확인한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "attempt 1은 pytest-of-unknown 디렉터리 WinError 5, attempt 2는 project.yaml CRLF 대 LF byte assertion 실패로 봉인됐다"
+    }
+  ],
+  "root_cause": "investigating: 실제 sandboxed B1 Check가 사용할 수 없는 pytest TEMP 경로를 상속했고, Git에서 복원한 legacy project.yaml의 Windows CRLF bytes를 source의 LF bytes와 직접 비교하는 시험 계약이 함께 존재했다.",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [
+    "tools/benchmark-runner/tests/test_routing_s2.py",
+    "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+  ],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [
+    "R07 기능 검사가 시작되기 전에 환경 검사가 실패해 v5 B1 결과를 SS1/B1 품질 비교에 사용할 수 없다",
+    "TEMP와 줄바꿈 계약을 고치지 않은 live 반복은 같은 종류의 무효 결과를 다시 만들 수 있다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md"
+  ]
+}

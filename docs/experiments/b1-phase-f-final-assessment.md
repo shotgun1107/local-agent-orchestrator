@@ -2,7 +2,7 @@
 
 - 판정일: 2026-08-13
 - 대상: 범용 순차 세션 오케스트레이터 B1과 Profile R Phase F 실행 계열
-- 공식 판정: `B1_CONTROL_FLOW_VERIFIED / B1_REPAIR_UNVERIFIED / ROUTING_INCONCLUSIVE`
+- 공식 판정: `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`
 - 기본 route 채택: 보류
 - 폐기 여부: 폐기하지 않고 실험용 구현과 재사용 가능한 핵심 기능을 보존
 - 추가 R10·Cell 3 실행: 하지 않음
@@ -10,13 +10,15 @@
 ## 결론
 
 B1은 여러 Task를 순서대로 실행하고, 각 결과를 독립 검사하며, 실패 시 다음 Task를 막고,
-전체 Evidence를 봉인하는 **제어 장치**로는 실제 작동했다. 그러나 R9에서 공개 Check의
-traceback과 예외 문장을 재시도 Worker에게 전달하지 못한 구현 결함이 확인됐으므로,
-자동 교정 기능까지 검증됐다고 표현하지 않는다.
+전체 Evidence를 봉인하는 **제어 장치**로 실제 작동했다. R9 뒤 수정한 공개 오류 전달
+경로도 v5 live에서 traceback과 예외 문장 `12,126 bytes`를 재시도 Worker에게 전달해
+실제 작동을 확인했다. 다만 이번 재시도 대상은 제품 결함이 아니라 pytest TEMP 권한과
+LF/CRLF byte 비교라는 시험환경 결손이어서 자동 교정 능력은 평가할 수 없었다.
 
 그러나 B1이 단일 세션 방식보다 품질·시간·비용 면에서 더 낫다는 증거는 얻지 못했다.
-Profile R의 SS1 대조 Cell을 실행하지 않았고, 자격 있는 독립 snapshot 두 개도 없으며,
-환경 관문을 통과한 R9 B1 자체도 최종 성공하지 못했다. 따라서 공식 설계의 판정표에 따라
+같은 v5 candidate에서 SS1과 B1을 순서대로 실행했지만 SS1은 독립 Judge에 실패했고
+B1은 시험환경 결손으로 R07 기능 검사까지 도달하지 못했다. 또한 wall time에는 같은 PC의
+다른 프로젝트 실행이 섞였다. 따라서 공식 설계의 판정표에 따라
 `ROUTING_INCONCLUSIVE`로 닫는다. `ADOPT_B1`, `REJECT_B1_PROFILE`,
 `ROUTE_B1_PROVISIONAL` 중 어느 것도 발행하지 않는다.
 
@@ -41,13 +43,14 @@ ID와 exit code만 전달되고 공개 traceback이 빠졌으므로, 재시도 �
 
 - SS1과 B1 중 어느 쪽이 Profile R에서 더 좋은가
 - B1이 사람이나 단일 세션보다 빠르거나 저렴한가
-- B1의 재시도가 최종 성공률을 높이는가
+- B1의 재시도가 실제 코드 결함의 최종 성공률을 높이는가
 - 다른 프로젝트와 다른 종류의 작업에서도 같은 결과가 나오는가
 - B2·B3처럼 병렬성이나 팀 계층을 추가할 가치가 있는가
 
-R9의 한 번뿐인 해석 가능한 live 결과에서 B1은 실패했다. 그러나 SS1 성공과의 paired
-비교가 없으므로 `INSTANCE_SS1_ADVANTAGE_OBSERVED`도 발행할 수 없다. R7과 R8은 실제
-시험환경 결손을 포함하므로 R9와 합쳐 반복 가능한 B1 품질 회귀라고 주장하지 않는다.
+v5에서 SS1과 B1을 같은 candidate로 실행했지만 성공한 variant가 없고 B1에는 새
+시험환경 결손이 섞였다. 따라서 `INSTANCE_SS1_ADVANTAGE_OBSERVED`도 발행할 수 없다.
+R7, R8과 v5 B1은 실제 시험환경 결손을 포함하므로 반복 가능한 B1 품질 회귀라고
+주장하지 않는다.
 
 ## 실행 비용에서 얻은 경고
 
@@ -103,9 +106,22 @@ Phase F 실행 계열은 여기서 종료한다. 다음 단계는 새 benchmark�
 “B1 기본 채택”이 아니라 **검증된 기반 코드와 실패 증거를 정본에 보존하는 작업**으로
 별도 수행한다.
 
+## v5 SS1 → B1 실제 대조 추가
+
+Phase E v5의 같은 experiment에서 Cell 1 SS1과 Cell 2 B1을 별도 승인으로 순서대로
+실행했다. SS1은 1 session/10 turn, 17,557,853 token을 사용하고 독립 Judge에서
+R-P02와 R-P05를 실패했다. B1은 8 session/8 turn, 13,770,614 token을 사용했지만
+R07 공개 Check가 TEMP 접근 거부와 LF/CRLF byte 차이로 실패해 R08까지 진행하지 못했다.
+
+B1의 상세 공개 feedback 전달, bounded retry, downstream 차단, Judge·Measurement·seal과
+Cell 3 자동 진행 금지는 직접 확인됐다. 그러나 시험환경 결손 때문에 repair와 품질 비교는
+평가하지 않는다. 자세한 Evidence는
+`docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md`에
+있다.
+
 ## 종료 선언
 
-- R7~R9 raw와 seal을 수정·삭제·재분류하지 않는다.
+- R7~R9와 v5 SS1/B1 raw·seal을 수정·삭제·재분류하지 않는다.
 - R10, Cell 3과 같은 Experiment의 추가 model turn을 실행하지 않는다.
 - 이번 결과를 B1 일반 효용 또는 무용의 증명으로 표현하지 않는다.
 - 다음 의사결정은 branch 통합과 실제 프로젝트용 최소 오케스트레이터 범위다.

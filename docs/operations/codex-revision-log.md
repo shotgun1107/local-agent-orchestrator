@@ -2165,3 +2165,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Worker는 completed를 보고했지만 Docker Judge는 R-P02 `STAGE_DISCRIMINATOR_FAILED`와 R-P05 `DUPLICATE_OR_MISSING_LIFECYCLE`를 실패로 판정했다. Measurement는 `failed / independent_judge_failed`로 봉인됐다.
 - Measurement hash는 `a120e193...b647`, Cell seal file hash는 `5fc0be74...3367`이며 별도 verifier가 통과했다. 잔여 container는 0개, Cell 2 B1과 Cell 3은 실행하지 않았고 automatic continuation은 false다.
 - 다른 프로젝트가 같은 PC와 ChatGPT 계정에서 동시에 실행돼 wall time은 참고값이다. 현재 source의 B1 대조 Cell이 없으므로 `ROUTING_INCONCLUSIVE`를 유지한다.
+
+## Phase F Profile R B1 v5 실행과 시험환경 결손 확인
+
+- 같은 v5 experiment의 Cell 2 B1을 별도 승인으로 한 번 실행했다. R01~R06은 첫 Attempt에 성공했고 R07은 한 번 재시도한 뒤 `FAILED`, R08은 `PENDING`, Cell 3은 `PLANNED`로 끝났다. actual model turn은 8회다.
+- B1 공개 feedback 수정은 실제로 작동했다. 첫 R07 실패에서 재실행 명령, traceback과 예외를 포함한 공개 진단 12,126 bytes가 잘리지 않고 재시도 Worker에게 전달됐다.
+- 첫 실패 원인은 `pytest-of-unknown` TEMP 디렉터리 접근 거부였고, 재시도에서는 기능 검사 전에 legacy `project.yaml`의 CRLF/LF byte equality가 실패했다. 따라서 이번 Cell은 `TEST_ENVIRONMENT_CONTAMINATED`이며 repair와 variant 품질 비교에 사용하지 않는다. incident `DEV-20260813-003`을 열었다.
+- 독립 Judge는 부분 workspace에서 R-P05와 R-P06을 실패로 판정했다. Measurement hash는 `7ee05a99...21ee`, Cell seal file hash는 `f49fca89...673`이며 별도 verifier가 통과했다. 잔여 Docker container와 Cell 3 실행은 0이다.
+- token은 input 13,639,888, output 130,726, total 13,770,614, model active 3,785.305초, sealed wall 3,859.203초다. 다른 프로젝트가 동시에 실행돼 시간은 참고값이다.
+- 공식 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 같은 환경으로 live를 반복하지 않고 TEMP 격리와 줄바꿈 독립 fixture 계약을 model-free로 고치기 전까지 추가 실행을 중단한다.
