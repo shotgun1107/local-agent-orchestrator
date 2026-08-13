@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 13
+- revision: 14
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -303,3 +303,11 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - ChatGPT account/model-list만 확인했고 실제 thread/start, turn/start와 model turn은 0회다. 별도 verifier도 exact 6-file set과 source/qualification/stage binding을 재계산해 통과했다.
 - Cell 순서는 Profile R SS1→B1, Profile I B1→SS1이고 자동 연속 실행은 꺼져 있다. 이 후보가 존재한다고 실제 SS1 또는 B1을 자동 실행하지 않는다.
 - 다음 관문은 실제 비교를 다시 할지, 여기서 B1 수정을 보존하고 B2/B3 설계로 넘어갈지 사용자가 결정하는 것이다.
+
+## 22. 2026-08-13 Profile R SS1 v5 실제 실행
+
+- Phase E v5의 Cell 1 SS1만 `C:\lao-phase-f-live-a79e6015-pair-1`에서 실행했다. 한 session에서 R01~R08을 처리했고 자기검토 2회를 포함해 실제 model turn은 10회였다.
+- 실행기는 completed였지만 독립 Judge가 R-P02 stage 구분과 R-P05 실행 흐름 재사용을 실패로 판정해 최종 상태는 `SEALED_FAILED`다.
+- token은 총 `17,557,853`, model active는 `3,140.396초`, sealed wall은 `3,170.578초`다. 다른 프로젝트가 동시에 실행돼 wall time은 참고값으로만 본다.
+- Measurement hash는 `a120e193...b647`, Cell seal file hash는 `5fc0be74...3367`이며 별도 verifier가 통과했다. 잔여 Docker container는 0개다.
+- Cell 2 B1과 Cell 3은 실행하지 않았고 상태는 계속 `PLANNED`다. 현재 source의 SS1/B1 비교를 끝내려면 같은 experiment의 Cell 2 B1을 별도 승인해 실행해야 한다.
