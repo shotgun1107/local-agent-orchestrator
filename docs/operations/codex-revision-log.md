@@ -2104,3 +2104,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 첫 결과를 전달받지 않은 두 번째 Daybreak Blue 감사자도 같은 commit과 범위를 실행해 `62 passed, 0 failed, 2 skipped` (`130.05s`)와 `GO`를 냈다. 두 번 모두 시작·종료 tree는 clean이었다.
 - 두 감사가 확인한 경로는 작업 준비·fixture/manifest, canonical ProjectConfig와 B1 preflight, Fake worker 결과, 공개 Check/Judge, Phase E 생성·검증, Phase F Measurement/seal/finalization이다. skip은 실제 Docker full dry-run과 실제 SDK zero-turn preflight opt-in이다.
 - 재현 가능한 R9 차단 결함이 0건이므로 production 수정과 새 테스트 작성은 0건으로 종료했다. 실제 model, SDK thread/turn, Codex process/CLI, Docker와 network 호출도 0회다. 다음은 새 Phase E 0-turn 후보 동결이며 실제 R9 Cell 2는 별도 사용자 승인 전 실행하지 않는다.
+
+## 독립 감사 통과 뒤 Phase E v4 0-turn 후보 동결
+
+- clean source commit `5a6790a69891ec4e48326bcfbab82306496f9d99`에서 기존 v1~v3 후보를 덮지 않고 `sdk-routing-realistic-high-difficulty-phase-e-v4`를 새로 만들었다.
+- API-key 환경 이름은 없었다. 로그인된 ChatGPT 구독과 SDK `0.144.4`, `gpt-5.6-sol` 노출을 account/model-list 사전점검으로 확인했다. thread/start, turn/start와 actual model turn은 0회다.
+- experiment는 `exp_20260813_44b11b86_1`, Plan fingerprint는 `44b11b86...68c3c`, files manifest는 `9c531bd6...c524`, candidate seal은 `2fefd981...ce7d`다. 별도 verifier가 exact 6-file set, source commit/tree, stage, Profile R qualification v4와 Profile I qualification v1, runtime-boundary binding과 모든 payload hash를 재계산해 통과했다.
+- 후보는 4-Cell 순서 R SS1→R B1→I B1→I SS1, initial/ceiling turn 32/40, one-cell confirmation과 automatic continuation 금지 계약을 유지한다.
+- 이 작업은 실제 R9이나 Cell 3을 실행하지 않았다. 다음 관문은 별도 사용자 승인 아래 Profile R B1 Cell 2 하나를 R9으로 실행하고 성공·실패 뒤 실험 실행을 종료하는 것이다. 자동 R10 반복은 하지 않는다.
