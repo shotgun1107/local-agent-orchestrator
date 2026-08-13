@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 9
+- revision: 10
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -250,3 +250,16 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - experiment는 `exp_20260813_44b11b86_1`, Plan fingerprint는 `44b11b86...68c3c`, files manifest는 `9c531bd6...c524`, candidate seal은 `2fefd981...ce7d`다.
 - Profile R qualification v4와 기존 Profile I qualification v1, runtime-boundary 정본, 4-Cell 순서와 32/40 turn 예산이 후보에 결합됐다. 별도 process verifier가 exact 6-file set과 모든 binding을 다시 계산해 통과했다.
 - 다음 관문은 별도 사용자 승인 아래 v4 후보의 Profile R B1 Cell 2를 R9으로 한 번 실행하는 것이다. R9이 성공하거나 실패하면 실험 실행을 멈추고 결론을 작성한다. Cell 3 자동 진행과 추가 R10 반복은 승인되지 않았다.
+
+## 16. 2026-08-13 Phase F Profile R B1 R9 회사 v4 실행과 종료
+
+이 절은 §15의 다음 관문을 실제로 수행한 최신 상태이며, 더 이상 R9 실행을 기다리는
+상태가 아니다.
+
+- 회사는 Phase E v4의 Profile R B1 Cell 2 하나를 `C:\lao-phase-f-live-44b11b86-r9`에서 한 번 실행했다. 0-turn 사전점검은 정상 통과했고 actual model turn은 8회였다.
+- R01~R06은 첫 시도에 성공했다. R07은 공개 pytest node 두 개가 첫 시도와 자동 교정 시도에서 모두 `ERROR`가 되어 실패했고 R08은 시작하지 않았다. 공개 Check 합계는 12 pass/2 fail이다.
+- 독립 Docker Judge는 R-P01~P04, P06, P07을 통과시키고 R-P05 lifecycle reuse와 R-P08 operator contract를 실패로 판정했다. 최종 상태는 `SEALED_FAILED`다.
+- Measurement SHA-256은 `4ed937aa2e9dc9fafc4946bdd18cca557b4e8d2d64ec3c49db146a6d6707a7de`, Cell seal file SHA-256은 `edad83081a80289e5c6eaf26b58094890c66f11f9ba0ee0e7edd216e740c90f8`다. 별도 process verifier가 통과했고 잔여 Docker container는 0개다.
+- Cell 3은 실행하지 않았다. 사전 합의대로 R10도 만들지 않으며 이 실험 실행 계열은 R9에서 끝났다. 이 결과 하나만으로 B1의 일반 효용이나 다른 variant와의 우열을 주장하지 않는다.
+- 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r9-company-v4-result.md`에 있다. R9 raw/seal은 Git 동기화 대상이 아니며 회사 PC에 그대로 보존한다.
+- 집에서는 이 commit을 ff-only로 인수한 뒤 결과 문서와 로그를 읽으면 된다. R9 재실행, Cell 3, R10, raw 수정·복사·재봉인을 하지 않는다. 다음 일은 새 실행이 아니라 지금까지의 실험 설계와 R9 결과를 해석해 프로젝트의 다음 개발 방향을 정하는 것이다.

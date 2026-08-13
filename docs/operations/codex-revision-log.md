@@ -2112,3 +2112,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - experiment는 `exp_20260813_44b11b86_1`, Plan fingerprint는 `44b11b86...68c3c`, files manifest는 `9c531bd6...c524`, candidate seal은 `2fefd981...ce7d`다. 별도 verifier가 exact 6-file set, source commit/tree, stage, Profile R qualification v4와 Profile I qualification v1, runtime-boundary binding과 모든 payload hash를 재계산해 통과했다.
 - 후보는 4-Cell 순서 R SS1→R B1→I B1→I SS1, initial/ceiling turn 32/40, one-cell confirmation과 automatic continuation 금지 계약을 유지한다.
 - 이 작업은 실제 R9이나 Cell 3을 실행하지 않았다. 다음 관문은 별도 사용자 승인 아래 Profile R B1 Cell 2 하나를 R9으로 실행하고 성공·실패 뒤 실험 실행을 종료하는 것이다. 자동 R10 반복은 하지 않는다.
+
+## Phase F Profile R B1 R9 회사 v4 실제 실행과 실험 종료
+
+- 작업일은 2026-08-13이다. 사용자 승인 뒤 Phase E v4의 Profile R B1 Cell 2 하나를 fresh root `C:\lao-phase-f-live-44b11b86-r9`에서 exactly once로 실행했다. 실행 전 SDK 0-turn preflight는 ChatGPT 구독, `gpt-5.6-sol`, SDK `0.144.4`, `runtime-boundary-worker`를 확인했고 API-key 환경 이름, thread와 model turn은 0이었다. request SHA-256은 `942493968e37cb0d18362461bc83299fb8d9d1d1b3821156bb4c9975b7338075`이며 `automatic_continuation=false`였다.
+- R01~R06은 첫 Attempt에 성공했다. R07 첫 Attempt는 공개 pytest node 두 개의 `ERROR`로 `RETRYABLE_FAILED`가 됐고 bounded feedback 뒤 두 번째 Attempt도 같은 node에서 실패했다. R07은 `FAILED`, R08은 `PENDING`으로 끝났다. 총 session/turn/Attempt는 8/8/8, retry는 1, 공개 Check는 12 pass/2 fail, token은 input 22,291,455, output 154,160, total 22,445,615였다. sealed total wall은 3,472.000초다.
+- 독립 Docker Judge는 R-P01~P04, P06, P07을 통과시키고 R-P05 `DUPLICATE_OR_MISSING_LIFECYCLE`, R-P08 `OPERATOR_CONTRACT_DRIFT`를 실패로 판정했다. Measurement는 `failed / b1_failed / check_success=false`, `scope_ok=true`, Evidence hash 정상, secret finding 없음으로 봉인됐다. 공개 feedback에는 pytest traceback이 없으므로 두 `ERROR`의 더 좁은 예외 원인은 미확인으로 남긴다.
+- Measurement SHA-256은 `4ed937aa2e9dc9fafc4946bdd18cca557b4e8d2d64ec3c49db146a6d6707a7de`, Cell seal file SHA-256은 `edad83081a80289e5c6eaf26b58094890c66f11f9ba0ee0e7edd216e740c90f8`다. 별도 Python 3.12 process의 finalization verifier가 통과했고 종료 뒤 Docker container는 0개, backend Cell 디렉터리는 Cell 2 하나였다. Cell 3은 실행하지 않았다.
+- 사전 합의한 종료선에 따라 성공·실패와 무관하게 R9에서 실험 실행을 종료한다. R10과 Cell 3은 실행하지 않는다. R9 raw/seal은 수정·삭제·재봉인하지 않는다. 이 단일 실패를 B1의 일반 효용이나 다른 variant와의 우열로 확대하지 않는다.
