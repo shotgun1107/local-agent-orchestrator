@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 10
+- revision: 11
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -263,3 +263,12 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - Cell 3은 실행하지 않았다. 사전 합의대로 R10도 만들지 않으며 이 실험 실행 계열은 R9에서 끝났다. 이 결과 하나만으로 B1의 일반 효용이나 다른 variant와의 우열을 주장하지 않는다.
 - 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r9-company-v4-result.md`에 있다. R9 raw/seal은 Git 동기화 대상이 아니며 회사 PC에 그대로 보존한다.
 - 집에서는 이 commit을 ff-only로 인수한 뒤 결과 문서와 로그를 읽으면 된다. R9 재실행, Cell 3, R10, raw 수정·복사·재봉인을 하지 않는다. 다음 일은 새 실행이 아니라 지금까지의 실험 설계와 R9 결과를 해석해 프로젝트의 다음 개발 방향을 정하는 것이다.
+
+## 17. 2026-08-13 B1 최종 판정
+
+- R7~R9를 합친 공식 판정은 `B1_MECHANICS_VERIFIED / ROUTING_INCONCLUSIVE`다.
+- B1은 AI의 완료 보고를 그대로 믿지 않고 별도 Check로 다시 확인했다. R07이 끝내 실패하자 R08을 막고 실패 결과를 봉인했으므로 기본 안전 장치는 실제로 작동했다.
+- 반면 SS1 대조 실행이 없고 R9 B1도 성공하지 못했으므로 B1이 더 좋거나 더 나쁘다는 route 결론은 낼 수 없다. B1은 폐기하지 않지만 모든 프로젝트의 기본 실행기로 채택하지도 않는다.
+- 세 live 실행의 운영 합계는 model turn 24회, token 49,338,443, 약 2시간 36분이다. 서로 다른 source revision이라 성능 통계로 합치지 않으며, 같은 합성시험을 더 반복하지 않는다는 비용 경고로만 쓴다.
+- 최종 판정 전문은 `docs/experiments/b1-phase-f-final-assessment.md`다. R10·Cell 3·새 Phase F 실행은 없다.
+- 다음 작업은 `codex/phase-d-artifacts`의 검증된 기반 코드와 실패 기록을 main에 어떻게 통합할지 확인한 뒤, 실제 프로젝트 1개에서 B1을 선택적으로 쓰며 자연 사용 자료를 모을 최소 범위를 정하는 것이다. B2·B3는 보류한다.
