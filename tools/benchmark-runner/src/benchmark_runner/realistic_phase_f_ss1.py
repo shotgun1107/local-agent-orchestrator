@@ -258,6 +258,7 @@ def materialize_profile_r_workspace(repository: Path, target: Path) -> dict[str,
     if len(records) != manifest.get("file_count") or set(_file_state(target)) != seen:
         raise PhaseFSS1BackendError("Profile R Worker file set differs")
     _run_git(target, "init", "-q")
+    _run_git(target, "config", "core.autocrlf", "false")
     _run_git(target, "add", "--all")
     _run_git(target, "commit", "-q", "-m", "Profile R Worker baseline")
     return manifest

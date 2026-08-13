@@ -988,6 +988,7 @@ class B1SequentialAdapter:
                     "failure_kind": task["attempts"][0]["failure_kind"],
                 }
                 for task in report["tasks"]
+                if task["attempts"]
             ]
             normalized_metrics["full_orchestrated_outcome"] = {
                 "state": outcome,

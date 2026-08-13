@@ -2174,3 +2174,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 독립 Judge는 부분 workspace에서 R-P05와 R-P06을 실패로 판정했다. Measurement hash는 `7ee05a99...21ee`, Cell seal file hash는 `f49fca89...673`이며 별도 verifier가 통과했다. 잔여 Docker container와 Cell 3 실행은 0이다.
 - token은 input 13,639,888, output 130,726, total 13,770,614, model active 3,785.305초, sealed wall 3,859.203초다. 다른 프로젝트가 동시에 실행돼 시간은 참고값이다.
 - 공식 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 같은 환경으로 live를 반복하지 않고 TEMP 격리와 줄바꿈 독립 fixture 계약을 model-free로 고치기 전까지 추가 실행을 중단한다.
+## 2026-08-13 B1 v5 시험환경 결손 구조 교정
+
+- B1 v5의 R07 첫 Attempt는 호스트 `TEMP/TMP` 아래 pytest 디렉터리의 Windows 권한 충돌로, 두 번째 Attempt는 `core.autocrlf=true`가 `git archive` 복원 바이트를 LF에서 CRLF로 바꿔 기능 검사 전에 실패했다. 기존 clean-room 감사가 통과한 것은 model-free 정본 checkout에서 실행됐기 때문이며, 실제 B1 Worker의 임시 경로와 Git 환경을 그대로 관통하지 못했다.
+- B1 Check는 이제 실제 Git metadata 아래에 매 Check마다 새 임시 디렉터리를 만들고 `TEMP`, `TMP`, `TMPDIR`을 그 위치로 고정한다. Run 시작·재개 전 같은 환경에서 안전한 Python 쓰기 probe를 통과해야 하며 실패하면 model dispatch 전에 중단한다.
+- Check 자식 프로세스에는 Git environment override로 `core.autocrlf=false`를 강제하고, `FixtureRestorer`의 `git archive`에도 같은 설정을 적용했다. Profile R workspace 자체도 초기 commit 전에 `core.autocrlf=false`를 고정한다. exact-byte assertion이나 production ProjectConfig는 완화하지 않았다.
+- B1 보고 어댑터가 재시도 뒤 미실행 후속 Task의 빈 Attempt 목록을 인덱싱하던 결함도 고쳐, 실제 실패가 별도 `IndexError`로 가려지지 않게 했다.
+- 검증은 B1 전체 `80 passed`, 관련 Runner `76 passed, 2 opt-in skipped`, 실제 B1 v5 Worker 복사본의 R07 canonicalization 회귀 `1 passed`다. model·SDK·Codex·Docker 호출은 0회다. `DEV-20260813-003`은 `resolved`로 닫았다.
+- source identity가 바뀌었으므로 Profile R qualification v5와 Phase E v5 candidate는 역사 기록으로만 보존하고 새 live 입력으로 사용하지 않는다. 다음 live 전에 새 qualification과 candidate가 필요하며, 자동 재실행은 승인하지 않았다.

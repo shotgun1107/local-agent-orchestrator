@@ -9,9 +9,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 
 from pydantic import ValidationError
 
@@ -142,6 +143,15 @@ class GitWorkspace:
             return {"healthy": False, "reason": "not_git_repository"}
         actual = Path(result.stdout.strip()).resolve()
         return {"healthy": actual == self.root, "repository_root": str(actual)}
+
+    def git_directory(self) -> Path:
+        result = self._git("rev-parse", "--absolute-git-dir", check=False)
+        if result.returncode != 0:
+            raise VerificationError("check_environment", "Git directory is unavailable")
+        directory = Path(result.stdout.strip()).resolve()
+        if not directory.is_dir():
+            raise VerificationError("check_environment", "Git directory is not a directory")
+        return directory
 
     def head_revision(self) -> str:
         result = self._git("rev-parse", "HEAD", check=False)
@@ -353,8 +363,31 @@ def validate_result_artifact_path_types(
             )
 
 
+@contextmanager
+def isolated_check_temp_directory(workspace: GitWorkspace) -> Iterator[Path]:
+    """Create a fresh Check-only temp directory hidden inside the Git metadata.
+
+    Host TEMP directories can be owned by a different Windows sandbox identity.
+    A fresh directory under this workspace's Git metadata is writable by the
+    Controller, does not appear in the worktree, and is removed after the Check.
+    """
+
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="lao-check-",
+            dir=workspace.git_directory(),
+        ) as raw_directory:
+            yield Path(raw_directory).resolve()
+    except OSError as exc:
+        raise VerificationError(
+            "check_environment",
+            "workspace-private Check temp directory is unavailable",
+        ) from exc
+
+
 def build_check_environment(
     *,
+    temp_directory: Path,
     python_executable: Path | None = None,
     git_executable: Path | None = None,
     environ: dict[str, str] | None = None,
@@ -370,7 +403,13 @@ def build_check_environment(
             raise VerificationError("check_environment", "Git executable is unavailable")
         resolved_git = Path(discovered)
     git_path = Path(resolved_git).resolve()
-    keep = ("SystemRoot", "WINDIR", "COMSPEC", "TEMP", "TMP", "PATHEXT")
+    temp_path = Path(temp_directory).resolve()
+    if not temp_path.is_dir():
+        raise VerificationError(
+            "check_environment",
+            "workspace-private Check temp directory is missing",
+        )
+    keep = ("SystemRoot", "WINDIR", "COMSPEC", "PATHEXT")
     environment = {key: source[key] for key in keep if key in source}
     path_parts = [str(python_path.parent), str(git_path.parent)]
     if "SystemRoot" in environment:
@@ -382,9 +421,51 @@ def build_check_environment(
             "PYTHONHASHSEED": "0",
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.autocrlf",
+            "GIT_CONFIG_VALUE_0": "false",
+            "TEMP": str(temp_path),
+            "TMP": str(temp_path),
+            "TMPDIR": str(temp_path),
         }
     )
     return environment
+
+
+def preflight_check_environment(workspace: GitWorkspace) -> None:
+    """Fail before model dispatch unless a Check subprocess can use its temp root."""
+
+    with isolated_check_temp_directory(workspace) as temp_directory:
+        environment = build_check_environment(temp_directory=temp_directory)
+        probe = (
+            "import os,tempfile;"
+            "p=tempfile.NamedTemporaryFile(delete=True);"
+            "assert os.path.commonpath([os.path.realpath(p.name),os.path.realpath(os.environ['TEMP'])])"
+            "==os.path.realpath(os.environ['TEMP']);"
+            "p.close()"
+        )
+        try:
+            completed = subprocess.run(
+                [str(Path(sys.executable).resolve()), "-c", probe],
+                cwd=workspace.root,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10,
+                shell=False,
+                env=environment,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise VerificationError(
+                "check_environment",
+                "workspace-private Check temp probe could not run",
+            ) from exc
+        if completed.returncode != 0:
+            raise VerificationError(
+                "check_environment",
+                "workspace-private Check temp probe failed",
+            )
 
 
 def resolve_check_argv(argv: list[str]) -> list[str]:
@@ -408,18 +489,19 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
     started = utc_now()
     try:
         execution_argv = resolve_check_argv(check.argv)
-        completed = subprocess.run(
-            execution_argv,
-            cwd=cwd,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            capture_output=True,
-            timeout=check.timeout_seconds,
-            shell=False,
-            env=build_check_environment(),
-            check=False,
-        )
+        with isolated_check_temp_directory(workspace) as temp_directory:
+            completed = subprocess.run(
+                execution_argv,
+                cwd=cwd,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                capture_output=True,
+                timeout=check.timeout_seconds,
+                shell=False,
+                env=build_check_environment(temp_directory=temp_directory),
+                check=False,
+            )
         state = CheckState.PASSED if completed.returncode in check.expected_exit_codes else CheckState.FAILED
         return CheckResult(
             check_name=check_name,

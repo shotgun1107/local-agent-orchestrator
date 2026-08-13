@@ -11,6 +11,7 @@ import pytest
 from benchmark_runner.workspace import (
     ChecksFile,
     FixtureRestorer,
+    FrozenFixtureSpec,
     WorkspaceError,
     _safe_extract_fixture,
     load_frozen_manifest,
@@ -65,6 +66,49 @@ def test_restore_from_source_commit_reproduces_clean_tree(
     assert tree == EXPECTED_TREES[fixture_id] == fixture.git_tree
     assert status == ""
     assert longpaths == "true"
+
+
+def test_restore_is_independent_of_windows_autocrlf(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    fixture_root = source / "fixture"
+    shutil.copytree(REPOSITORY_ROOT / "benchmarks" / "fixtures" / "code-change", fixture_root)
+    project_path = fixture_root / ".orchestrator" / "project.yaml"
+    expected = project_path.read_bytes().replace(b"\r\n", b"\n")
+    project_path.write_bytes(expected)
+
+    git = _git()
+    subprocess.run([git, "-C", str(source), "init", "-q", "-b", "main"], check=True)
+    subprocess.run([git, "-C", str(source), "config", "core.autocrlf", "true"], check=True)
+    subprocess.run([git, "-C", str(source), "config", "user.name", "fixture-test"], check=True)
+    subprocess.run(
+        [git, "-C", str(source), "config", "user.email", "fixture-test@example.invalid"],
+        check=True,
+    )
+    subprocess.run([git, "-C", str(source), "add", "-A"], check=True)
+    subprocess.run([git, "-C", str(source), "commit", "-q", "-m", "fixture"], check=True)
+    commit = subprocess.run(
+        [git, "-C", str(source), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        [git, "-C", str(source), "rev-parse", f"{commit}:fixture"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    fixture = FrozenFixtureSpec(
+        id="autocrlf-regression",
+        path="fixture",
+        commit=commit,
+        git_tree=tree,
+        success_check="acceptance",
+    )
+
+    prepared = FixtureRestorer(source, git).restore(fixture, tmp_path / "restored")
+
+    assert (prepared.workspace / ".orchestrator" / "project.yaml").read_bytes() == expected
 
 
 def test_restore_rejects_manifest_tree_mismatch(tmp_path: Path) -> None:

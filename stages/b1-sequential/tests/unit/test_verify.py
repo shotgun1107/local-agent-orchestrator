@@ -15,6 +15,7 @@ from orchestrator.verify import (
     extract_public_check_feedback,
     hash_project_pack,
     path_matches,
+    preflight_check_environment,
     run_command_check,
     scan_state_for_secrets,
     validate_write_scope,
@@ -68,11 +69,20 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     def fake_run(argv, **kwargs):
         captured["argv"] = argv
         captured.update(kwargs)
+        temp_path = Path(kwargs["env"]["TEMP"])
+        assert temp_path.is_dir()
+        assert temp_path.parent == (root / ".git").resolve()
+        (temp_path / "write-probe.txt").write_text("ok", encoding="utf-8")
         return subprocess.CompletedProcess(argv, 0, "ok", "")
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret-value")
     monkeypatch.setenv("CODEX_API_KEY", "must-not-be-forwarded")
     monkeypatch.setenv("UNRELATED_USER_SETTING", "must-not-be-forwarded")
+    monkeypatch.setattr(
+        GitWorkspace,
+        "git_directory",
+        lambda self: (root / ".git").resolve(),
+    )
     monkeypatch.setattr(subprocess, "run", fake_run)
     check = CommandCheck(kind="command", argv=["python", "-V"], cwd=".", timeout_seconds=3, expected_exit_codes=[0])
     result = run_command_check("unit", check, GitWorkspace(root))
@@ -87,6 +97,9 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     assert captured["env"]["PYTHONHASHSEED"] == "0"
     assert captured["env"]["PYTHONIOENCODING"] == "utf-8"
     assert captured["env"]["PYTHONUTF8"] == "1"
+    assert captured["env"]["TEMP"] == captured["env"]["TMP"]
+    assert captured["env"]["TEMP"] == captured["env"]["TMPDIR"]
+    assert not Path(captured["env"]["TEMP"]).exists()
 
 
 def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> None:
@@ -102,8 +115,11 @@ def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> Non
         "OPENAI_API_KEY": "secret",
         "UNRELATED": "value",
     }
+    check_temp = tmp_path / "check-temp"
+    check_temp.mkdir()
 
     environment = build_check_environment(
+        temp_directory=check_temp,
         python_executable=python,
         git_executable=git_executable,
         environ=source,
@@ -113,8 +129,9 @@ def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> Non
         "SystemRoot": source["SystemRoot"],
         "WINDIR": source["WINDIR"],
         "COMSPEC": source["COMSPEC"],
-        "TEMP": source["TEMP"],
-        "TMP": source["TMP"],
+        "TEMP": str(check_temp.resolve()),
+        "TMP": str(check_temp.resolve()),
+        "TMPDIR": str(check_temp.resolve()),
         "PATHEXT": source["PATHEXT"],
         "PATH": os.pathsep.join(
             [str(python.resolve().parent), str(git_executable.resolve().parent), str(tmp_path / "Windows" / "System32")]
@@ -123,7 +140,25 @@ def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> Non
         "PYTHONHASHSEED": "0",
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.autocrlf",
+        "GIT_CONFIG_VALUE_0": "false",
     }
+
+
+def test_check_environment_preflight_ignores_inaccessible_host_temp(
+    monkeypatch,
+    project_factory,
+) -> None:
+    root = project_factory()
+    inaccessible = root.parent / "host-temp-that-must-not-be-used"
+    monkeypatch.setenv("TEMP", str(inaccessible))
+    monkeypatch.setenv("TMP", str(inaccessible))
+    monkeypatch.setenv("TMPDIR", str(inaccessible))
+
+    preflight_check_environment(GitWorkspace(root))
+
+    assert not inaccessible.exists()
 
 
 def test_public_check_feedback_requires_marker_and_is_bounded() -> None:

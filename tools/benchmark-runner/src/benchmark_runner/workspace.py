@@ -315,7 +315,15 @@ class FixtureRestorer:
         archive = _run_git(
             self.git_executable,
             self.source_repository,
-            ["archive", "--format=tar", fixture.commit, "--", fixture.path],
+            [
+                "-c",
+                "core.autocrlf=false",
+                "archive",
+                "--format=tar",
+                fixture.commit,
+                "--",
+                fixture.path,
+            ],
         )
         _safe_extract_fixture(archive, fixture.path, workspace)
 
