@@ -77,7 +77,12 @@ def render_worker_prompt(
         "Your completed claim is evidence only; the controller will independently verify it."
     )
     if feedback:
-        instructions += " Correct only the listed verification failure; do not broaden scope."
+        instructions += (
+            " The resume_feedback contains only Controller-approved public Check diagnostics. "
+            "Use the reported traceback and assertion details, rerun the named public Check, "
+            "and correct only that failure without broadening scope. Do not claim success merely "
+            "because a local command was not independently verified."
+        )
         payload["resume_feedback"] = feedback
     return f"{instructions}\n\n{canonical_json(payload)}"
 

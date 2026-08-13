@@ -135,7 +135,8 @@ def test_public_check_feedback_requires_marker_and_is_bounded() -> None:
         stdout=(
             "unmarked private diagnostic\n"
             "WORKER_FEEDBACK:fix the public fixture boundary\n"
-            f"WORKER_FEEDBACK:{'x' * 3000}\n"
+            "WORKER_FEEDBACK:    File public_test.py, line 42\n"
+            f"WORKER_FEEDBACK:{'x' * 20_000}\n"
         ),
         stderr="unmarked stderr\nWORKER_FEEDBACK:ignored after the byte cap\n",
         started_at="2026-08-12T00:00:00Z",
@@ -144,10 +145,12 @@ def test_public_check_feedback_requires_marker_and_is_bounded() -> None:
 
     feedback = extract_public_check_feedback(result)
 
-    assert feedback[0] == "fix the public fixture boundary"
-    assert sum(len(message.encode("utf-8")) for message in feedback) == 2048
-    assert "private diagnostic" not in " ".join(feedback)
-    assert "unmarked stderr" not in " ".join(feedback)
+    assert feedback.messages[0] == "fix the public fixture boundary"
+    assert feedback.messages[1] == "    File public_test.py, line 42"
+    assert feedback.transmitted_bytes == 16_384
+    assert feedback.truncated is True
+    assert "private diagnostic" not in " ".join(feedback.messages)
+    assert "unmarked stderr" not in " ".join(feedback.messages)
 
 
 def test_secret_scan_finds_token_values_but_not_benign_words(tmp_path: Path) -> None:

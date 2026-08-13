@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 51건
-- 해결: 49건
+- 전체: 52건
+- 해결: 50건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -64,6 +64,7 @@
 | DEV-20260812-006 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 retry repeated a strict manifest fixture error without actionable public feedback |
 | DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
 | DEV-20260813-001 | resolved | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
+| DEV-20260813-002 | resolved | b1-sequential | integration | B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3091,3 +3092,69 @@ The shared routing-suite Git subprocess now passes -c core.longpaths=true, with 
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r8-company-v3-result.md
+
+## DEV-20260813-002 — B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함
+
+- 상태: `resolved`
+- 단계: `b1-sequential`
+- 분류: `integration`
+- 발견: 2026-08-13T04:08:39Z / sealed Phase F Profile R B1 R9 live run
+- 해결: 2026-08-13T04:09:22Z
+
+### 증상
+
+R07 첫 Attempt의 공개 pytest 두 건이 실패했지만 재시도 Worker는 node ID와 exit code만 받아 원인을 추측했고 같은 Check가 다시 실패했다
+
+### 재현
+
+- R9의 R07 r07_contract stdout과 두 번째 Attempt에 전달된 resume_feedback을 대조한다
+
+### 증거
+
+- `direct-observation`: R9 두 r07_contract stdout에는 ERROR node 두 개와 exit code만 있고 traceback과 예외 문장은 없다
+
+### 근본 원인
+
+B1은 WORKER_FEEDBACK 표식이 붙은 공개 출력만 전달하도록 안전 경계를 뒀지만 총량을 2 KiB로 제한했고, Profile R 공개 checker가 pytest stdout과 stderr를 두 node 요약 한 줄로 축소했다. 그 결과 공개 정보임에도 수정에 필요한 traceback과 예외 문장이 재시도 Worker에게 도달하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` Check stdout과 stderr 전체를 그대로 전달 — 숨은 검사나 비공개 진단까지 Worker에게 누출할 수 있다
+- `rejected` 알려진 오류별 문구를 계속 하드코딩 — 새로운 공개 실패에서는 다시 node ID만 남아 일반적인 교정이 불가능하다
+- `adopted` 명시적으로 공개된 여러 줄 진단만 제한된 크기로 전달 — 공개 traceback을 보존하면서 Judge 전용 정보 경계와 크기 제한을 유지한다
+
+### 채택한 해결
+
+B1 공개 feedback 한도를 16 KiB로 늘리고 여러 줄, 들여쓰기, 전송 byte 수와 잘림 여부를 resume_feedback에 보존했다. Profile R checker는 공개 pytest 재실행 명령, 원인 힌트, stdout과 stderr 진단을 12 KiB head-tail 방식으로 WORKER_FEEDBACK 여러 줄에 공개한다. Worker prompt는 해당 traceback을 사용해 명시된 public Check를 재실행하고 독립 검증 전 성공을 주장하지 않도록 요구한다.
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/src/orchestrator/worker.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+- stages/b1-sequential/tests/unit/test_verify.py
+- stages/b1-sequential/tests/integration/test_orchestrator.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/unit/test_verify.py::test_public_check_feedback_requires_marker_and_is_bounded
+- stages/b1-sequential/tests/integration/test_orchestrator.py::test_retry_prompt_receives_only_explicit_public_check_feedback
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback
+
+### 검증 결과
+
+- B1 표적 31 passed; Profile R fixture 13 passed; B1 전체 79 passed; 관련 Phase F model-free 13 passed, 2 opt-in skipped; model, SDK, Codex, Docker 호출 0회
+
+### 남은 위험
+
+- 실제 model 재실행 전이므로 개선된 traceback을 받은 Worker가 R07을 성공적으로 교정하는지는 아직 미확인이다
+- Worker 공개 overlay와 snapshot bytes가 바뀌어 기존 Profile R qualification v4와 Phase E v4 candidate는 새 실행 입력으로 stale하다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r9-company-v4-result.md

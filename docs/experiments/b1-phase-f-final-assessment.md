@@ -2,16 +2,17 @@
 
 - 판정일: 2026-08-13
 - 대상: 범용 순차 세션 오케스트레이터 B1과 Profile R Phase F 실행 계열
-- 공식 판정: `B1_MECHANICS_VERIFIED / ROUTING_INCONCLUSIVE`
+- 공식 판정: `B1_CONTROL_FLOW_VERIFIED / B1_REPAIR_UNVERIFIED / ROUTING_INCONCLUSIVE`
 - 기본 route 채택: 보류
 - 폐기 여부: 폐기하지 않고 실험용 구현과 재사용 가능한 핵심 기능을 보존
 - 추가 R10·Cell 3 실행: 하지 않음
 
 ## 결론
 
-B1은 여러 Task를 순서대로 실행하고, 각 결과를 독립 검사하며, 실패 시 한 번 교정하고,
-끝내 통과하지 못하면 다음 Task를 막고, 전체 Evidence를 봉인하는 **오케스트레이터의 기본
-기계 장치**로는 실제 작동했다.
+B1은 여러 Task를 순서대로 실행하고, 각 결과를 독립 검사하며, 실패 시 다음 Task를 막고,
+전체 Evidence를 봉인하는 **제어 장치**로는 실제 작동했다. 그러나 R9에서 공개 Check의
+traceback과 예외 문장을 재시도 Worker에게 전달하지 못한 구현 결함이 확인됐으므로,
+자동 교정 기능까지 검증됐다고 표현하지 않는다.
 
 그러나 B1이 단일 세션 방식보다 품질·시간·비용 면에서 더 낫다는 증거는 얻지 못했다.
 Profile R의 SS1 대조 Cell을 실행하지 않았고, 자격 있는 독립 snapshot 두 개도 없으며,
@@ -33,7 +34,8 @@ R7, R8, R9 모두 다음 실행 흐름을 직접 보였다.
 
 특히 R9에서는 두 번째 Worker가 관련 시험을 통과했다고 보고했지만 독립 Check가 같은 두
 오류를 다시 검출했다. 이는 B1을 만든 핵심 이유인 **“AI의 완료 보고를 믿지 않고 별도
-검증 결과를 따른다”**가 실제로 작동했다는 직접 증거다.
+검증 결과를 따른다”**가 실제로 작동했다는 직접 증거다. 반대로 교정 Worker에게는 node
+ID와 exit code만 전달되고 공개 traceback이 빠졌으므로, 재시도 정보 전달 구조는 실패했다.
 
 ## 확인하지 못한 것
 
@@ -68,7 +70,7 @@ benchmark를 계속 교정·재실행하는 방식은 이 프로젝트의 다음
 - append-only 원장과 Attempt 기록
 - Task별 read/write scope
 - Worker 완료 주장과 분리된 Check
-- 제한된 retry와 공개 feedback
+- 제한된 retry 횟수와 공개 feedback 경계. 단, R9의 정보 전달 결함은 이후 구현에서 교정함
 - 실패 시 downstream 차단
 - Judge → Measurement → seal → 별도 verifier 경로
 - API key 없이 ChatGPT 구독 인증을 쓰는 SDK 경계
@@ -94,8 +96,8 @@ Phase F 실행 계열은 여기서 종료한다. 다음 단계는 새 benchmark�
 2. 여러 Task, 독립 검사, 실패 전파 차단이 실제로 필요한 작업에만 B1을 선택적으로 쓴다.
 3. 합성 fixture 재실행 대신 사용자의 실제 프로젝트 1개에서 일상 작업 로그를 수집한다.
 4. 성공률, 사람이 다시 손본 횟수, 실제 소요시간과 token을 자연 사용 자료로 측정한다.
-5. B1의 검증·복구가 실제 결함을 막고 최종 성공으로 이어진 사례가 쌓일 때만 B2·B3를
-   설계한다.
+5. B1은 향후 B2·B3가 공통으로 재사용할 안전 실행 기반이다. 병렬 처리와 Brain 합성은
+   B1의 우월성을 기다리는 보상이 아니라 원래 목표를 검증하기 위해 별도 설계·시험할 대상이다.
 
 현재 브랜치의 코드와 실험 자료는 구현·검증 이력으로 보존할 가치가 있다. main 병합은
 “B1 기본 채택”이 아니라 **검증된 기반 코드와 실패 증거를 정본에 보존하는 작업**으로
@@ -107,3 +109,15 @@ Phase F 실행 계열은 여기서 종료한다. 다음 단계는 새 benchmark�
 - R10, Cell 3과 같은 Experiment의 추가 model turn을 실행하지 않는다.
 - 이번 결과를 B1 일반 효용 또는 무용의 증명으로 표현하지 않는다.
 - 다음 의사결정은 branch 통합과 실제 프로젝트용 최소 오케스트레이터 범위다.
+
+## 수정 후 SS1 → B1 model-free 연결 점검
+
+B1 공개 오류 전달 구조를 교정한 현재 source에서 실제 model 없이 Phase F의 첫 두 Cell을
+연속으로 점검했다. SS1은 한 session에서 R01~R08 여덟 turn을 처리하고 Cell 1만
+봉인했다. B1은 별도의 명시 dispatch 뒤에만 Cell 2로 시작해 자체 결과와 최종 seal을
+남겼다. 두 실행 뒤 Cell 3 dispatch claim과 artifact 디렉터리는 생성되지 않았다.
+
+이 결과는 SS1 → B1 실행 순서, 명시 승인 경계, 개별 Judge·Measurement·seal과 자동 진행
+금지가 연결된 상태에서 작동한다는 뜻이다. 실제 AI 품질·시간·비용 비교 결과는 아니다.
+표적 연결 시험은 `1 passed`, SS1·B1 관련 묶음은 `7 passed`이며 model·SDK·Codex·Docker
+호출은 0회다.

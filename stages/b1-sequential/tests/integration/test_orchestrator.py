@@ -100,6 +100,9 @@ def test_retry_prompt_receives_only_explicit_public_check_feedback(
         (
             "print('unmarked private diagnostic'); "
             "print('WORKER_FEEDBACK:rerun the public regression and fix its strict input'); "
+            "print('WORKER_FEEDBACK:Traceback (most recent call last):'); "
+            "print('WORKER_FEEDBACK:    File public_test.py, line 42'); "
+            "print('WORKER_FEEDBACK:ValueError: missing public field'); "
             "raise SystemExit(1)"
         ),
     ]
@@ -128,8 +131,21 @@ def test_retry_prompt_receives_only_explicit_public_check_feedback(
         "check_name": "test_check",
         "exit_code": 1,
         "public_feedback": [
-            "rerun the public regression and fix its strict input"
+            "rerun the public regression and fix its strict input",
+            "Traceback (most recent call last):",
+            "    File public_test.py, line 42",
+            "ValueError: missing public field",
         ],
+        "public_feedback_truncated": False,
+        "public_feedback_bytes": sum(
+            len(message.encode("utf-8"))
+            for message in (
+                "rerun the public regression and fix its strict input",
+                "Traceback (most recent call last):",
+                "    File public_test.py, line 42",
+                "ValueError: missing public field",
+            )
+        ),
         "allowed_write_scope": [],
         "remaining_completion_criteria": ["Check passes"],
     }

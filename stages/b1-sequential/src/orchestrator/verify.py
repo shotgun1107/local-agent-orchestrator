@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
@@ -32,7 +33,16 @@ from .contract import (
 
 
 PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
-PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 2048
+PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 16_384
+
+
+@dataclass(frozen=True, slots=True)
+class PublicCheckFeedback:
+    """Explicitly published Check diagnostics that are safe to show a retry Worker."""
+
+    messages: tuple[str, ...]
+    transmitted_bytes: int
+    truncated: bool
 
 
 class VerificationError(RuntimeError):
@@ -50,20 +60,29 @@ class VerificationError(RuntimeError):
         self.public_feedback = public_feedback
 
 
-def extract_public_check_feedback(result: CheckResult) -> list[str]:
-    """Return only explicitly marked, UTF-8-bounded Worker-safe Check feedback."""
+def extract_public_check_feedback(result: CheckResult) -> PublicCheckFeedback:
+    """Return explicitly marked, UTF-8-bounded Worker-safe Check feedback.
+
+    Unmarked stdout/stderr remains verifier-only.  Marked lines keep indentation so
+    public tracebacks and assertion details remain useful to the retry Worker.
+    """
 
     messages: list[str] = []
     remaining = PUBLIC_CHECK_FEEDBACK_MAX_BYTES
+    truncated = False
     for stream in (result.stdout, result.stderr):
         for line in stream.splitlines():
             if not line.startswith(PUBLIC_CHECK_FEEDBACK_PREFIX):
                 continue
-            message = line[len(PUBLIC_CHECK_FEEDBACK_PREFIX):].strip()
-            if not message or remaining <= 0:
+            message = line[len(PUBLIC_CHECK_FEEDBACK_PREFIX):].rstrip()
+            if not message.strip():
+                continue
+            if remaining <= 0:
+                truncated = True
                 continue
             encoded = message.encode("utf-8")
             if len(encoded) > remaining:
+                truncated = True
                 encoded = encoded[:remaining]
                 while encoded:
                     try:
@@ -76,7 +95,12 @@ def extract_public_check_feedback(result: CheckResult) -> list[str]:
             if message:
                 messages.append(message)
                 remaining -= len(message.encode("utf-8"))
-    return messages
+    transmitted = PUBLIC_CHECK_FEEDBACK_MAX_BYTES - remaining
+    return PublicCheckFeedback(
+        messages=tuple(messages),
+        transmitted_bytes=transmitted,
+        truncated=truncated,
+    )
 
 
 def path_matches(path: str, patterns: Iterable[str]) -> bool:

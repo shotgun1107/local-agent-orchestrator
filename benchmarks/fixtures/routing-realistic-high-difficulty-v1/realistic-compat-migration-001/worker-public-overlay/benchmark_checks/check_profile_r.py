@@ -17,21 +17,60 @@ SOURCE_ROOT = ROOT / "tools" / "benchmark-runner" / "src"
 REQUIREMENTS = ROOT / "profile-r" / "requirements"
 WORK = ROOT / "profile-r" / "work"
 WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
-WORKER_FEEDBACK_MAX_CHARS = 1600
+WORKER_FEEDBACK_MAX_BYTES = 12_288
 
 
 class PublicContractError(RuntimeError):
-    def __init__(self, message: str, *, public_feedback: str | None = None) -> None:
+    def __init__(self, message: str, *, public_feedback: list[str] | None = None) -> None:
         super().__init__(message)
         self.public_feedback = public_feedback
 
 
+def _decode_utf8_prefix(data: bytes, limit: int) -> str:
+    chunk = data[:limit]
+    while chunk:
+        try:
+            return chunk.decode("utf-8")
+        except UnicodeDecodeError:
+            chunk = chunk[:-1]
+    return ""
+
+
+def _decode_utf8_suffix(data: bytes, limit: int) -> str:
+    chunk = data[-limit:]
+    while chunk:
+        try:
+            return chunk.decode("utf-8")
+        except UnicodeDecodeError:
+            chunk = chunk[1:]
+    return ""
+
+
+def _bounded_public_feedback(lines: list[str]) -> list[str]:
+    text = "\n".join(line.rstrip() for line in lines).strip()
+    encoded = text.encode("utf-8")
+    if len(encoded) <= WORKER_FEEDBACK_MAX_BYTES:
+        return text.splitlines()
+    marker = "\n...[public pytest diagnostic truncated by byte limit]...\n"
+    marker_bytes = marker.encode("utf-8")
+    remaining = WORKER_FEEDBACK_MAX_BYTES - len(marker_bytes)
+    head_limit = remaining // 2
+    tail_limit = remaining - head_limit
+    bounded = (
+        _decode_utf8_prefix(encoded, head_limit)
+        + marker
+        + _decode_utf8_suffix(encoded, tail_limit)
+    )
+    return bounded.splitlines()
+
+
 def _public_pytest_failure_feedback(
     result: subprocess.CompletedProcess[str],
-) -> str:
+) -> list[str]:
     combined = "\n".join((result.stdout or "", result.stderr or ""))
+    hint: str | None = None
     if "Filename too long" in combined:
-        message = (
+        hint = (
             "the isolated S2 Git repository exceeded the Windows path limit. Preserve "
             "core.longpaths=true for the temporary repository and the shared frozen-object "
             "Git reads; shortening or skipping the regression is not an acceptable fix."
@@ -40,7 +79,7 @@ def _public_pytest_failure_feedback(
         "test_s2_fake_four_cell_plan_judge_property_seal_export" in combined
         and "b1 preflight failed: B1 run validate failed" in combined
     ):
-        message = (
+        hint = (
             "the prepared S2 B1 fixture still uses legacy project.yaml fields purpose, "
             "requirements, and task_order. Before B1 preflight, replace them with the "
             "current public ProjectConfig fields core_compat, repository_root, "
@@ -52,7 +91,7 @@ def _public_pytest_failure_feedback(
         and "FrozenManifest" in combined
         and "extra_forbidden" in combined
     ):
-        message = (
+        hint = (
             "test_s2_fake_four_cell_plan_judge_property_seal_export built the strict "
             "FrozenManifest/FrozenFixtureSpec input with S2-only extra fields. Convert "
             "only the fields declared by those public models; stage_id, purpose, "
@@ -66,21 +105,30 @@ def _public_pytest_failure_feedback(
             or "JSONDecodeError" in combined
         )
     ):
-        message = (
+        hint = (
             "the Fake four-Cell regression claimed completion without materializing every "
             "Task output. Preserve the existing GOLDEN_ROOT/_golden_turns flow and give each "
             "C2 FakeTurnScript and B1 fake turn explicit write_file effects for the exact "
             "golden bytes; result envelopes alone do not change the workspace."
         )
+    workspace_variants = {
+        str(ROOT),
+        str(ROOT).replace("\\", "/"),
+    }
+    diagnostic = combined.replace("\x00", "\\0")
+    for workspace in sorted(workspace_variants, key=len, reverse=True):
+        diagnostic = diagnostic.replace(workspace, "<WORKSPACE>")
+    lines = [
+        f"public S2 pytest exited {result.returncode}",
+        "rerun: python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py",
+    ]
+    if hint:
+        lines.append(f"controller hint: {hint}")
+    if diagnostic.strip():
+        lines.extend(["public pytest diagnostic:", *diagnostic.splitlines()])
     else:
-        summaries = [
-            line.strip()
-            for line in combined.splitlines()
-            if line.startswith(("FAILED ", "ERROR "))
-        ][:4]
-        detail = "; ".join(summaries) or "rerun the public pytest command to inspect the failing test"
-        message = f"public S2 pytest exited {result.returncode}: {detail}"
-    return message[:WORKER_FEEDBACK_MAX_CHARS]
+        lines.append("public pytest produced no decodable stdout or stderr")
+    return _bounded_public_feedback(lines)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -472,7 +520,8 @@ def main(argv: list[str]) -> int:
     except PublicContractError as exc:
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
         if exc.public_feedback:
-            print(f"{WORKER_FEEDBACK_PREFIX}{exc.public_feedback}")
+            for line in exc.public_feedback:
+                print(f"{WORKER_FEEDBACK_PREFIX}{line}")
         return 1
     except (OSError, subprocess.SubprocessError):
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
