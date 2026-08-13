@@ -2182,3 +2182,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - B1 보고 어댑터가 재시도 뒤 미실행 후속 Task의 빈 Attempt 목록을 인덱싱하던 결함도 고쳐, 실제 실패가 별도 `IndexError`로 가려지지 않게 했다.
 - 검증은 B1 전체 `80 passed`, 관련 Runner `76 passed, 2 opt-in skipped`, 실제 B1 v5 Worker 복사본의 R07 canonicalization 회귀 `1 passed`다. model·SDK·Codex·Docker 호출은 0회다. `DEV-20260813-003`은 `resolved`로 닫았다.
 - source identity가 바뀌었으므로 Profile R qualification v5와 Phase E v5 candidate는 역사 기록으로만 보존하고 새 live 입력으로 사용하지 않는다. 다음 live 전에 새 qualification과 candidate가 필요하며, 자동 재실행은 승인하지 않았다.
+
+## B1 v5 시험환경 교정 뒤 집 Profile R Docker 재자격 v6
+
+- 작업일: 2026-08-13. 회사의 B1 시험환경 교정 source를 집에 ff-only로 인수한 뒤, 집에 존재하는 동일 Dockerfile·lock image `5610c2a6...6ad89`에 Judge runtime을 다시 결합했다. image binding 표적 시험은 `14 passed, 1 opt-in skipped`였고 source commit은 `3f79bb2f8e26bc8db34fa5380239dd95cdba8640`이다.
+- 긴 raw 경로로 인한 patch precheck 중단, 회사 image 부재로 9개 Cell이 모두 runtime error가 된 `C:\q6`의 `CHALLENGE_NOT_READY`, 짧은 source hash 입력 거부는 성공 결과에서 제외했다. `C:\q6` 실패 raw/seal은 보존하고 재분류하지 않는다.
+- 공식 fresh batch `C:\q8\profile-r-docker-matrix-q8`은 reference R-P01~R-P08 8/8 pass와 negative mutation 8개의 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`로 닫혔다. seal self-hash는 `167d8813...c04b`, projection SHA-256은 `acfc13f5...476c`이며 별도 process verifier는 `CHALLENGE_READY True 9 9 0`을 재계산했다. 잔여 container는 0개이고 model·SDK thread·Codex turn은 0회다.
+- 새 projection은 기존 v1~v5를 덮지 않고 `profile-r-docker-judge-qualification-v6`에 추가했고 stage도 v6를 가리킨다. 다음 관문은 새 Phase E 0-turn 후보 생성이며 이번 승인 범위에서는 자동 생성하거나 실제 Worker/model을 실행하지 않는다.
