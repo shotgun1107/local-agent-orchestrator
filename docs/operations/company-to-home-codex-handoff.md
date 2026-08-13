@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 14
+- revision: 15
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -311,3 +311,13 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - token은 총 `17,557,853`, model active는 `3,140.396초`, sealed wall은 `3,170.578초`다. 다른 프로젝트가 동시에 실행돼 wall time은 참고값으로만 본다.
 - Measurement hash는 `a120e193...b647`, Cell seal file hash는 `5fc0be74...3367`이며 별도 verifier가 통과했다. 잔여 Docker container는 0개다.
 - Cell 2 B1과 Cell 3은 실행하지 않았고 상태는 계속 `PLANNED`다. 현재 source의 SS1/B1 비교를 끝내려면 같은 experiment의 Cell 2 B1을 별도 승인해 실행해야 한다.
+
+## 23. 2026-08-13 Profile R B1 v5 실행과 시험환경 결손 확인
+
+- §22와 같은 candidate·experiment에서 Cell 2 B1을 별도 승인으로 한 번 실행했다. R01~R06은 첫 시도에 성공했고 R07은 한 번 재시도한 뒤 실패했으며 R08은 `PENDING`, Cell 3은 `PLANNED`로 남았다.
+- session/turn/Attempt는 8/8/8, retry는 1회다. token은 input 13,639,888, output 130,726, total 13,770,614이고 model active는 3,785.305초, sealed wall은 3,859.203초다.
+- R9 뒤 고친 공개 feedback 경로는 실제로 작동했다. 첫 실패의 pytest traceback·예외·재실행 명령 12,126 bytes가 잘리지 않고 재시도 Worker에게 전달됐다.
+- 그러나 첫 실패는 pytest 임시 폴더 `pytest-of-unknown` 접근 거부였고, 재시도에서는 기능 검사 전 `project.yaml`의 CRLF/LF byte 비교가 실패했다. 따라서 B1 repair 능력과 SS1/B1 품질 비교는 평가할 수 없다. 새 incident는 `DEV-20260813-003`이다.
+- 독립 Judge는 부분 workspace에서 R-P05와 R-P06을 실패로 판정했다. Measurement hash는 `7ee05a99...21ee`, Cell seal file hash는 `f49fca89...673`이고 별도 verifier가 통과했다. 잔여 container는 0개다.
+- 최신 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 같은 오염 상태로 live를 반복하지 말고, 다음 작업은 TEMP 격리와 줄바꿈 독립적인 fixture 계약을 model-free로 고치는 것이다.
+- 결과 전문은 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md`에 있다. `C:\lao-phase-f-live-a79e6015-pair-1` raw/seal은 Git 대상이 아니며 수정·삭제·재봉인하지 않는다.

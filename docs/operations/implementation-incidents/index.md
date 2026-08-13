@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 52건
+- 전체: 53건
 - 해결: 50건
 - 조사 중: 2건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -65,6 +65,7 @@
 | DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
 | DEV-20260813-001 | resolved | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
 | DEV-20260813-002 | resolved | b1-sequential | integration | B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함 |
+| DEV-20260813-003 | open | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3158,3 +3159,58 @@ B1 공개 feedback 한도를 16 KiB로 늘리고 여러 줄, 들여쓰기, 전�
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r9-company-v4-result.md
+
+## DEV-20260813-003 — Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함
+
+- 상태: `open`
+- 단계: `phase-f-profile-r`
+- 분류: `test`
+- 발견: 2026-08-13T07:51:04Z / sealed Phase F Profile R B1 v5 live run
+- 해결: 미해결
+
+### 증상
+
+R07 기능 검사 전에 pytest tmp_path 접근 거부가 발생했고 재시도에서는 legacy project.yaml의 LF/CRLF byte 비교가 실패했다
+
+### 재현
+
+- v5 Cell 2 B1의 R07 attempt 1·2 public_check_feedback을 확인한다
+
+### 증거
+
+- `direct-observation`: attempt 1은 pytest-of-unknown 디렉터리 WinError 5, attempt 2는 project.yaml CRLF 대 LF byte assertion 실패로 봉인됐다
+
+### 근본 원인
+
+investigating: 실제 sandboxed B1 Check가 사용할 수 없는 pytest TEMP 경로를 상속했고, Git에서 복원한 legacy project.yaml의 Windows CRLF bytes를 source의 LF bytes와 직접 비교하는 시험 계약이 함께 존재했다.
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- tools/benchmark-runner/tests/test_routing_s2.py
+- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- R07 기능 검사가 시작되기 전에 환경 검사가 실패해 v5 B1 결과를 SS1/B1 품질 비교에 사용할 수 없다
+- TEMP와 줄바꿈 계약을 고치지 않은 live 반복은 같은 종류의 무효 결과를 다시 만들 수 있다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md
