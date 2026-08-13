@@ -2198,3 +2198,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - experiment는 `exp_20260813_a686cd22_1`, Plan fingerprint는 `a686cd22...30ce`, files manifest는 `fffebb68...8918`, candidate seal은 `20f1d3d8...45d2`다. 별도 process verifier가 exact 6-file set과 source/qualification/stage/runtime binding을 다시 계산해 같은 결과를 확인했다.
 - 후보는 Profile R SS1→B1, Profile I B1→SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다. 실제 Worker·SDK thread/turn·Codex model·Cell 3은 별도 사용자 승인 전 실행하지 않는다.
 - 후보를 Git에 고정한 clean commit에서 checked-in verifier가 동일 seal을 재계산했고 Phase E model-free 회귀는 `8 passed`였다.
+
+## Phase F Profile R SS1 v6 실제 실행
+
+- 작업일: 2026-08-13. 사용자 승인 뒤 Phase E v6의 Profile R SS1 Cell 1 하나를 fresh root `C:\lao-phase-f-live-a686cd22-pair-1`에서 실행했다. 실제 SDK 0-turn preflight는 ChatGPT 구독, `gpt-5.6-sol`, SDK `0.144.4`, `runtime-boundary-worker`를 확인했고 API-key 환경 이름, thread와 model turn은 0이었다.
+- 한 thread에서 R01~R08을 처리했고 자기검토 2회를 포함해 model turn 10회, session 1회, Attempt 1회였다. token은 input 16,094,090, output 128,926, total 16,223,016이며 model active 2,975.439초, sealed total wall 3,017.047초다. 추가 자기검토 6회는 turn 상한으로 거부됐다.
+- Worker adapter는 `completed`였지만 독립 Docker Judge는 R-P05 lifecycle reuse, R-P07 cross-checkout repro, R-P08 operator contract를 실패로 판정했다. Measurement는 `failed / independent_judge_failed`, Evidence hash와 scope 정상, secret finding 없음으로 봉인됐다.
+- Measurement SHA-256은 `3519083e...7e6`, Cell seal file SHA-256은 `f878291e...e4e`, seal self-hash는 `aea6f9e3...fcd`다. 별도 finalization verifier가 통과했고 잔여 container는 0개다. Cell 2~4는 `PLANNED`, automatic continuation은 false다.
+- backend public summary에는 Worker 단계의 `judge_executed=false`가 남았지만 봉인된 Judge Evidence와 Measurement는 실제 Docker Judge 실행을 증명한다. 결과를 바꾸지 않는 summary 표현 불일치로 기록한다. 현재 source의 B1 Cell 2는 아직 실행하지 않았으므로 route 판정은 계속 보류하며 별도 사용자 승인 전 다음 Cell을 시작하지 않는다.
