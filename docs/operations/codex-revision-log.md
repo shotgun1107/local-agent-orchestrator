@@ -2088,3 +2088,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 정본 builder로 Worker snapshot을 130 files, aggregate `5e87ebb4b762b5e0c0d988505dc1828c69f542dd94a3ed75d66e40aa422393b4`로 갱신했다. Profile R Judge source bundle도 32 files, aggregate `24baf48f6ecb1ceac21ad4adb8cd26809d6f89e3f94792121389cde14203201d`, `PROFILE_R_SOURCE_BUNDLE_VERIFIED`로 재생성했다.
 - 최종 검증은 R07/S2·Profile R·legacy S1 `38 passed`, B1 전체 `79 passed`, Phase F B1/finalizer/live `8 passed, 2 skipped`다. skip은 명시적 Docker/SDK opt-in이고 실행하지 않았다. model, SDK thread, Codex, Docker, network 호출은 0회다. incident `DEV-20260813-001`을 resolved로 닫았다.
 - source와 Worker/Judge bundle bytes가 바뀌어 Profile R qualification v3와 Phase E v3 candidate는 R9 입력으로 stale하다. 다음은 별도 승인 아래 새 qualification과 0-turn candidate를 만든 뒤 R9 Cell 2를 결정하는 것이다. Cell 3 자동 진행은 계속 금지다.
+
+## Profile R Docker Judge 재자격 v4와 독립 감사 관문
+
+- 작업일은 2026-08-13이다. source commit `dd84c9b4665940a63f64923485c8c55ed353b8ef`의 Profile R 공개 입력을 기존 회사 Docker image `ba83a183...330ab`에서 다시 검사했다.
+- 공식 v5 batch는 reference 8/8 pass와 negative mutation 8개의 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`였다. manifest `7612c0b9...6984`, result `88c54498...ff8e`, seal `07377e76...4413`이며 별도 verifier가 같은 결과를 재계산했다.
+- 첫 호출의 제어 도구 timeout 뒤 실제 process가 계속 실행 중인 것을 늦게 확인해 v6를 중복 실행했다. v6도 raw seal과 `9/9`를 완성했지만 v5가 먼저 projection을 생성해 v6의 projection 쓰기는 fresh-output 규칙으로 거부됐다. v6를 공식 qualification이나 추가 표본으로 사용하지 않고 두 raw root를 모두 보존했다.
+- v4 projection을 새 artifact로 추가하고 stage의 Profile R qualification 경로를 v4로 전환했다. 기존 v1~v3 qualification과 Phase E 후보, R1~R8 raw/seal, Profile I 및 P001~P015는 수정하지 않았다.
+- 이 시점까지 실제 model, SDK thread와 Codex turn은 0회다. R7·R8에서 시험환경 결손을 실제 model 실행 중에 발견한 절차상 문제를 인정하고, 다음 관문을 `현재 동결 환경의 독립 AI model-free end-to-end 감사 → 차단 오류 한 차례 교정 → 동일 범위 재감사 한 차례`로 고정했다. 새 기능·위협모델 확대나 반복 감사는 허용하지 않는다.
