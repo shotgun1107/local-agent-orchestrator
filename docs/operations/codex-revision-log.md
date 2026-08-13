@@ -2069,3 +2069,13 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 기존 v2 qualification과 candidate는 과거 기록으로 보존된다. 새 실행 입력은 v3이며, 실제 Profile R B1 correction Cell은 사용자 별도 승인 전 실행하지 않는다. Cell 3 자동 진행은 계속 금지다.
 - 재자격 첫 호출 하나는 존재하지 않는 수기 source hash를 넘겨 Git object 확인 단계에서 중단됐고 Docker는 실행되지 않았다. 다음 긴-root 호출도 patch precheck의 Windows path-length 오류로 Docker 전에 중단됐다. 원인 확인 뒤 source나 patch를 완화하지 않고 짧은 새 root를 사용했다.
 - 최종 관련 model-free 회귀는 Docker Judge, Phase E, Phase F Docker/B1/finalizer/live 묶음에서 `34 passed, 3 skipped`다. skip은 명시적 opt-in이 필요한 Docker smoke, full Docker dry-run, SDK preflight이며 자동 실행하지 않았다.
+
+## Phase F Profile R B1 R8 회사 v3 실제 실행
+
+- 작업일은 2026-08-13이다. 사용자 승인 뒤 Phase E v3의 Profile R B1 Cell 2 하나만 fresh root `C:\lao-phase-f-live-4053943d-r8`에서 실행했다. 실행 전 SDK 0-turn preflight는 ChatGPT 구독, `gpt-5.6-sol`, SDK `0.144.4`, `runtime-boundary-worker`를 확인했고 API-key 환경 이름, thread와 model turn은 0이었다.
+- R01~R06은 첫 Attempt에 성공했다. R07 첫 Attempt는 공개 test 두 개의 `ERROR`로 `check_failed`가 됐고 bounded `WORKER_FEEDBACK`을 받은 두 번째 Attempt도 같은 두 test에서 실패했다. R07은 `FAILED`, R08은 `PENDING`으로 끝났고 Cell 3은 실행하지 않았다.
+- 총 session/turn/Attempt는 8/8/8, retry는 1, 공개 Check는 12 pass/2 fail이다. model active는 3,003.537초, B1 wall은 3,055.683초, sealed total wall은 3,076.000초다. token은 input 15,103,169, output 114,030, total 15,217,199로 측정됐다. 한 번의 실패 Cell 수치이므로 일반 효율이나 variant 우열로 확대하지 않는다.
+- 독립 Docker Judge는 R-P01~R-P04를 통과시키고 R-P05-LIFECYCLE-REUSE와 R-P06-EXPORT-ROUNDTRIP을 실패로 판정했다. R-P07/R-P08은 선행 조건 때문에 blocked됐다. 최종 Measurement는 `failed / b1_failed / check_success=false`, integrity `scope_ok=true`로 봉인됐다.
+- Cell seal file SHA는 `3f46bea3...fef`, Measurement는 `4cf05079...e9e`, Judge public result는 `0b7d50b6...69d`, adapter evidence는 `068432f9...523`이다. 독립 finalization verifier는 통과했고 Cell 3 경로와 잔여 Docker container는 0개였다.
+- bounded feedback 통로는 동작했지만 이번에는 pytest node ID와 exit code만 전달했다. Worker Python에는 pytest와 project dependencies가 없어 setup error의 구체 원인을 자체 확인하지 못했다. 이 관측은 열린 incident `DEV-20260813-001`에 기록한다.
+- R8 raw와 seal은 수정·삭제·재봉인·자동 재시도하지 않는다. 다음은 별도 사용자 승인 아래 R8 workspace와 공개 Check를 model-free로 분석하는 단계다. R9, Cell 3과 다른 model turn은 계속 `NO-GO`다.

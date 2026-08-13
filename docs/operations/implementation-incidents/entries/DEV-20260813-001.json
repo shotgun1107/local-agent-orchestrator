@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260813-001",
+  "title": "R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함",
+  "status": "open",
+  "stage": "phase-f-profile-r-b1",
+  "category": "integration",
+  "discovered_at": "2026-08-13T00:54:17Z",
+  "resolved_at": null,
+  "discovered_by": "sealed Phase F Profile R B1 R8 live run",
+  "symptom": "R07 첫 Attempt와 자동 교정 Attempt가 같은 두 공개 pytest node의 ERROR로 실패했고 R08이 실행되지 않음",
+  "reproduction": [
+    "Phase E v3의 Profile R B1 Cell 2를 fresh R8 root에서 실행하고 R07 public checker까지 진행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "sealed R8 B1 report records R01~R06 SUCCEEDED, R07 attempts 1 and 2 check_failed, R08 PENDING, and actual model turns 8"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "both R07 public checker results expose only the same two pytest node IDs and exit code while the Worker reports that pytest and project dependencies are unavailable in its own Python environment"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "the independent Docker Judge records R-P05-LIFECYCLE-REUSE and R-P06-EXPORT-ROUNDTRIP failures"
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [
+    "the exact pytest setup error is not yet reproduced outside the sealed R8 root",
+    "R8 remains a sealed failed result and R9 requires separate model-use approval"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-r8-company-v3-result.md"
+  ]
+}
