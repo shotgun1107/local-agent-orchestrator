@@ -2096,3 +2096,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 첫 호출의 제어 도구 timeout 뒤 실제 process가 계속 실행 중인 것을 늦게 확인해 v6를 중복 실행했다. v6도 raw seal과 `9/9`를 완성했지만 v5가 먼저 projection을 생성해 v6의 projection 쓰기는 fresh-output 규칙으로 거부됐다. v6를 공식 qualification이나 추가 표본으로 사용하지 않고 두 raw root를 모두 보존했다.
 - v4 projection을 새 artifact로 추가하고 stage의 Profile R qualification 경로를 v4로 전환했다. 기존 v1~v3 qualification과 Phase E 후보, R1~R8 raw/seal, Profile I 및 P001~P015는 수정하지 않았다.
 - 이 시점까지 실제 model, SDK thread와 Codex turn은 0회다. R7·R8에서 시험환경 결손을 실제 model 실행 중에 발견한 절차상 문제를 인정하고, 다음 관문을 `현재 동결 환경의 독립 AI model-free end-to-end 감사 → 차단 오류 한 차례 교정 → 동일 범위 재감사 한 차례`로 고정했다. 새 기능·위협모델 확대나 반복 감사는 허용하지 않는다.
+
+## Profile R R9 전 Daybreak Blue 독립 감사와 재감사
+
+- qualification v4와 stage binding을 commit `44341acfded453ab71cbfa654bd7ad91a3ad46be`로 먼저 고정했다. 관련 Docker Judge/matrix/Phase E 표적 시험은 clean commit에서 `23 passed`였다.
+- 첫 `gpt-daybreak-blue-latest` clean-room 감사자는 지정된 routing S2, Profile R fixture, Docker Judge/matrix, Phase E, Phase F B1/finalizer/live model-free 묶음을 실행해 `62 passed, 0 failed, 2 skipped` (`132.70s`)와 `GO`를 보고했다. 첫 120초 도구 대기 제한 중단은 같은 명령의 실패 출력 없이 발생했고, 600초 제한 최종 실행만 판정 근거로 사용했다.
+- 첫 결과를 전달받지 않은 두 번째 Daybreak Blue 감사자도 같은 commit과 범위를 실행해 `62 passed, 0 failed, 2 skipped` (`130.05s`)와 `GO`를 냈다. 두 번 모두 시작·종료 tree는 clean이었다.
+- 두 감사가 확인한 경로는 작업 준비·fixture/manifest, canonical ProjectConfig와 B1 preflight, Fake worker 결과, 공개 Check/Judge, Phase E 생성·검증, Phase F Measurement/seal/finalization이다. skip은 실제 Docker full dry-run과 실제 SDK zero-turn preflight opt-in이다.
+- 재현 가능한 R9 차단 결함이 0건이므로 production 수정과 새 테스트 작성은 0건으로 종료했다. 실제 model, SDK thread/turn, Codex process/CLI, Docker와 network 호출도 0회다. 다음은 새 Phase E 0-turn 후보 동결이며 실제 R9 Cell 2는 별도 사용자 승인 전 실행하지 않는다.
