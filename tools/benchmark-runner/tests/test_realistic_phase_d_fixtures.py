@@ -363,9 +363,11 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
         "",
     )
     feedback = checker._public_pytest_failure_feedback(pytest_result)
-    assert "FrozenManifest/FrozenFixtureSpec" in feedback
-    assert "stage_id, purpose, initial_cell_order" in feedback
-    assert len(feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
+    feedback_text = "\n".join(feedback)
+    assert "FrozenManifest/FrozenFixtureSpec" in feedback_text
+    assert "stage_id, purpose, initial_cell_order" in feedback_text
+    assert "extra_forbidden" in feedback_text
+    assert len(feedback_text.encode("utf-8")) <= checker.WORKER_FEEDBACK_MAX_BYTES
 
     project_config_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(
@@ -379,10 +381,12 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
             "",
         )
     )
-    assert "legacy project.yaml fields purpose, requirements, and task_order" in project_config_feedback
-    assert "core_compat, repository_root" in project_config_feedback
-    assert "default_capability_profile, and default_policy" in project_config_feedback
-    assert len(project_config_feedback) <= checker.WORKER_FEEDBACK_MAX_CHARS
+    project_config_text = "\n".join(project_config_feedback)
+    assert "legacy project.yaml fields purpose, requirements, and task_order" in project_config_text
+    assert "core_compat, repository_root" in project_config_text
+    assert "default_capability_profile, and default_policy" in project_config_text
+    assert "RuntimeError: b1 preflight failed" in project_config_text
+    assert len(project_config_text.encode("utf-8")) <= checker.WORKER_FEEDBACK_MAX_BYTES
 
     long_path_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(
@@ -392,8 +396,9 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
             "",
         )
     )
-    assert "Windows path limit" in long_path_feedback
-    assert "core.longpaths=true" in long_path_feedback
+    long_path_text = "\n".join(long_path_feedback)
+    assert "Windows path limit" in long_path_text
+    assert "core.longpaths=true" in long_path_text
 
     missing_effect_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(
@@ -407,9 +412,31 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
             "",
         )
     )
-    assert "GOLDEN_ROOT/_golden_turns" in missing_effect_feedback
-    assert "write_file effects" in missing_effect_feedback
-    assert "result envelopes alone do not change the workspace" in missing_effect_feedback
+    missing_effect_text = "\n".join(missing_effect_feedback)
+    assert "GOLDEN_ROOT/_golden_turns" in missing_effect_text
+    assert "write_file effects" in missing_effect_text
+    assert "result envelopes alone do not change the workspace" in missing_effect_text
+
+    r9_style_feedback = checker._public_pytest_failure_feedback(
+        subprocess.CompletedProcess(
+            [sys.executable, "-m", "pytest"],
+            1,
+            (
+                "ERROR tools/benchmark-runner/tests/test_routing_s2.py::"
+                "test_s2_b1_preflight_canonicalizes_legacy_project_pack\n"
+                "Traceback (most recent call last):\n"
+                "  File \"tools/benchmark-runner/tests/test_routing_s2.py\", line 731\n"
+                "    prepared = prepare_fixture()\n"
+                "ValueError: missing required field core_compat\n"
+            ),
+            "public stderr detail\n",
+        )
+    )
+    r9_style_text = "\n".join(r9_style_feedback)
+    assert "Traceback (most recent call last)" in r9_style_text
+    assert "line 731" in r9_style_text
+    assert "ValueError: missing required field core_compat" in r9_style_text
+    assert "public stderr detail" in r9_style_text
 
     undecodable_stream_feedback = checker._public_pytest_failure_feedback(
         subprocess.CompletedProcess(
@@ -419,7 +446,7 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
             None,
         )
     )
-    assert "public S2 pytest exited 1" in undecodable_stream_feedback
+    assert "public S2 pytest exited 1" in "\n".join(undecodable_stream_feedback)
     source = (
         WORKER_ROOT / "benchmark_checks" / "check_profile_r.py"
     ).read_text(encoding="utf-8")
@@ -432,7 +459,7 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
     assert checker.main(["check_profile_r.py", "R07"]) == 1
     assert capsys.readouterr().out.splitlines() == [
         "R07_PUBLIC_CONTRACT_FAILED",
-        f"WORKER_FEEDBACK:{feedback}",
+        *(f"WORKER_FEEDBACK:{line}" for line in feedback),
     ]
 
 

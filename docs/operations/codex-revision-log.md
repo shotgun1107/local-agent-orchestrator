@@ -2128,3 +2128,17 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - R7~R9의 실제 운영 합계는 model turn 24회, token 49,338,443, sealed wall 9,371.687초다. source revision과 환경 상태가 달라 성능 통계로 합치지 않지만, 같은 synthetic benchmark의 반복 교정 비용이 크다는 운영 경고로 보존한다.
 - B1은 폐기하지 않고 검증된 안전 실행 기반으로 보존한다. 기본 route로는 채택하지 않으며 단순 실행을 fallback으로 둔다. Task 의존·독립 검사·실패 차단이 필요한 실제 작업에만 선택적으로 적용한다.
 - R10과 Cell 3을 포함한 Phase F 추가 실행은 종료했다. 다음은 새 benchmark가 아니라 현재 branch를 정본에 통합할 범위와 실제 프로젝트 1개에서 자연 사용 telemetry를 수집할 최소 오케스트레이터 범위를 정하는 것이다. B2·B3는 B1의 검증·복구가 실제 최종 성공을 만든 자료가 생기기 전까지 보류한다.
+
+## R9에서 확인된 B1 공개 Check 재시도 정보 전달 결함 교정
+
+- R9의 R07 두 Check artifact를 다시 대조해, B1이 재시도 Worker에게 공개 pytest node 두 개와 exit code만 전달하고 traceback·예외 문장을 전달하지 않았음을 구현 결함으로 확정했다. R08 차단은 정상 동작이지만 자동 교정 경로는 검증되지 않은 상태로 재분류했다.
+- B1은 `WORKER_FEEDBACK:`가 붙은 공개 진단만 통과시키는 경계를 유지하면서 한도를 16 KiB로 늘리고, 여러 줄과 들여쓰기, 전송 byte 수, 잘림 여부를 `resume_feedback`에 보존한다. Profile R 공개 checker는 재실행 명령, 공개 원인 힌트와 pytest stdout/stderr를 12 KiB head-tail 진단으로 내보낸다. 숨은 Judge 출력은 계속 전달하지 않는다.
+- 검증 결과는 B1 표적 `31 passed`, Profile R fixture `13 passed`, B1 전체 `79 passed`, 관련 Phase F model-free `13 passed, 2 skipped`다. skip은 실제 Docker와 SDK opt-in이며 model·SDK·Codex·Docker 호출은 0회다. incident는 `DEV-20260813-002`에 기록했다.
+- Worker 공개 overlay와 snapshot hash가 바뀌어 기존 Profile R qualification v4와 Phase E v4 candidate는 새 live 실행 입력으로 stale하다. R9 raw/seal은 과거 사실로 보존하며 자동 R10·Cell 3·재자격·후보 재생성은 하지 않았다.
+- 공식 표현은 `B1_CONTROL_FLOW_VERIFIED / B1_REPAIR_UNVERIFIED / ROUTING_INCONCLUSIVE`로 좁힌다. B2·B3는 B1 우월성의 보상이 아니라 원래 목표인 병렬 실행과 Brain 합성을 별도로 검증할 후속 단계다.
+
+## 현재 source의 SS1 → B1 model-free 연속 실행 점검
+
+- 같은 Phase F 상태에서 Cell 1 SS1과 Cell 2 B1을 실제 model 없이 순서대로 실행하는 회귀를 추가했다. SS1은 Fake SDK thread 하나에서 R01~R08 여덟 Task를 처리하고, 별도 명시 dispatch 전에는 B1 artifact가 생성되지 않는다.
+- 두 번째 명시 dispatch 뒤 B1이 실행되고 SS1과 B1 각각 Fake Judge·Measurement·Cell seal을 만든다. 종료 뒤 상태는 Cell 1·2 `SEALED`, Cell 3·4 `PLANNED`이며 Cell 3 claim과 artifact는 없다.
+- 새 연결 시험은 `1 passed`, SS1·B1 관련 파일 묶음은 `7 passed`다. model, SDK, Codex, Docker 호출은 0회다. 이는 실행 통로 점검이며 SS1/B1의 품질·시간·비용 우열 근거가 아니다.

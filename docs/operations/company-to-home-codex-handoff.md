@@ -272,3 +272,17 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 세 live 실행의 운영 합계는 model turn 24회, token 49,338,443, 약 2시간 36분이다. 서로 다른 source revision이라 성능 통계로 합치지 않으며, 같은 합성시험을 더 반복하지 않는다는 비용 경고로만 쓴다.
 - 최종 판정 전문은 `docs/experiments/b1-phase-f-final-assessment.md`다. R10·Cell 3·새 Phase F 실행은 없다.
 - 다음 작업은 `codex/phase-d-artifacts`의 검증된 기반 코드와 실패 기록을 main에 어떻게 통합할지 확인한 뒤, 실제 프로젝트 1개에서 B1을 선택적으로 쓰며 자연 사용 자료를 모을 최소 범위를 정하는 것이다. B2·B3는 보류한다.
+
+## 18. 2026-08-13 B1 재시도 공개 오류 전달 구조 교정
+
+- R9의 R07은 재시도 Worker에게 공개 pytest node와 exit code만 전달했고 traceback과 예외 문장은 빠졌다. 따라서 R08 차단 등 제어 흐름은 정상이나 자동 교정 기능은 검증되지 않은 것으로 판정을 좁혔다.
+- B1은 공개 표식이 있는 진단만 전달하는 보안 경계를 유지하면서 여러 줄 traceback, 들여쓰기, 재실행 명령, 전송 byte 수와 잘림 상태를 한도 안에서 전달하도록 수정했다. 숨은 Judge 정보는 여전히 Worker에게 보이지 않는다.
+- model-free 검증은 B1 표적 31, Profile R fixture 13, B1 전체 79, 관련 Phase F 13개가 통과했고 실제 model·SDK·Codex·Docker 호출은 0회다. 구현 사고는 `DEV-20260813-002`에 기록했다.
+- 이 변경으로 Worker 공개 overlay와 snapshot bytes가 달라져 qualification v4와 Phase E v4 candidate는 새 live 입력으로 stale하다. 자동 재자격·새 후보·R10·Cell 3은 실행하지 않았다.
+- 현재 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_REPAIR_UNVERIFIED / ROUTING_INCONCLUSIVE`다. 다음은 실제 재실행을 결정하기 전에 이 변경을 검토·커밋하고, B2 병렬 실행과 B3 Brain 합성을 원래 목표에 맞게 별도 단계로 다시 배치하는 것이다.
+
+## 19. 2026-08-13 SS1 → B1 model-free 연결 점검
+
+- 현재 수정본에서 실제 AI 없이 Phase F Cell 1 SS1과 Cell 2 B1을 같은 상태에 순서대로 연결했다. SS1은 한 session에서 R01~R08을 처리한 뒤 멈췄고, B1은 별도의 명시 dispatch 뒤에만 시작했다.
+- SS1과 B1은 각각 Fake Judge·Measurement·seal까지 생성했다. 두 Cell 뒤 Cell 3은 `PLANNED`이고 dispatch claim이나 artifact가 없어 자동 진행되지 않았음을 확인했다.
+- 연결 시험 `1 passed`, SS1·B1 관련 묶음 `7 passed`, model·SDK·Codex·Docker 호출 0회다. 이는 실행 구조 점검일 뿐 실제 성능 비교는 아니다.

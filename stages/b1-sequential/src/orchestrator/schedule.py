@@ -457,12 +457,17 @@ class Orchestrator:
         check_name = feedback.get("check_name")
         messages = feedback.get("messages")
         exit_code = feedback.get("exit_code")
+        feedback_truncated = feedback.get("truncated", False)
+        transmitted_bytes = feedback.get("transmitted_bytes", 0)
         if (
             check_name not in spec.check_names
             or not isinstance(messages, list)
-            or not messages
             or not all(isinstance(message, str) and message for message in messages)
             or (exit_code is not None and not isinstance(exit_code, int))
+            or not isinstance(feedback_truncated, bool)
+            or not isinstance(transmitted_bytes, int)
+            or isinstance(transmitted_bytes, bool)
+            or transmitted_bytes < 0
         ):
             return None
         return {
@@ -470,6 +475,8 @@ class Orchestrator:
             "check_name": check_name,
             "exit_code": exit_code,
             "public_feedback": messages,
+            "public_feedback_truncated": feedback_truncated,
+            "public_feedback_bytes": transmitted_bytes,
             "allowed_write_scope": spec.write_scope,
             "remaining_completion_criteria": [
                 criterion.text for criterion in spec.completion_criteria
@@ -929,20 +936,18 @@ class Orchestrator:
                     "input_fingerprint": fingerprint.sha256,
                 })
                 if check_result.state != "PASSED":
-                    messages = extract_public_check_feedback(check_result)
+                    feedback = extract_public_check_feedback(check_result)
                     raise VerificationError(
                         "checks",
                         f"Check failed: {check_name}",
                         retryable=True,
-                        public_feedback=(
-                            {
-                                "check_name": check_name,
-                                "exit_code": check_result.exit_code,
-                                "messages": messages,
-                            }
-                            if messages
-                            else None
-                        ),
+                        public_feedback={
+                            "check_name": check_name,
+                            "exit_code": check_result.exit_code,
+                            "messages": list(feedback.messages),
+                            "transmitted_bytes": feedback.transmitted_bytes,
+                            "truncated": feedback.truncated,
+                        },
                     )
                 passed.add(check_name)
             for criterion in spec.completion_criteria:

@@ -2,9 +2,18 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+
+REPOSITORY = Path(__file__).resolve().parents[3]
+B1_SOURCE = REPOSITORY / "stages" / "b1-sequential" / "src"
+if str(B1_SOURCE) not in sys.path:
+    sys.path.insert(0, str(B1_SOURCE))
+
+from orchestrator.runtime import FakeRuntime as B1FakeRuntime
 
 from benchmark_runner.realistic_phase_f import (
     PHASE_F_CELLS_DIRECTORY,
@@ -14,6 +23,14 @@ from benchmark_runner.realistic_phase_f import (
     initialize_phase_f_execution,
     phase_f_status,
     run_next_phase_f_cell,
+)
+from benchmark_runner.realistic_phase_f_b1 import ProfileRPhaseFB1Backend
+from benchmark_runner.realistic_phase_f_finalize import (
+    PHASE_F_CELL_SEAL_FILENAME,
+    PHASE_F_FINAL_DIRECTORY,
+    PHASE_F_SEALED_DIRECTORY,
+    FakePhaseFJudgePort,
+    ProfileRPhaseFCellFinalizerBackend,
 )
 from benchmark_runner.realistic_phase_f_ss1 import (
     PHASE_F_SS1_EVIDENCE_FILENAME,
@@ -30,7 +47,6 @@ from benchmark_runner.realistic_phase_f_ss1 import (
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
 
 
-REPOSITORY = Path(__file__).resolve().parents[3]
 CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
@@ -252,6 +268,124 @@ def test_profile_r_ss1_fake_backend_runs_all_tasks_in_one_thread_and_stops_at_ce
         / second["cell_id"]
         / PHASE_F_CLAIM_FILENAME
     ).exists()
+
+
+def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatches(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    artifact_root = tmp_path / "backend"
+    ss1_runtimes: list[FakeSdkRuntime] = []
+    ss1 = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=ProfileRPhaseFSS1Backend(
+            repository=REPOSITORY,
+            artifact_root=artifact_root,
+            runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+            runtime_factory=_runtime_factory(ss1_runtimes),
+            telemetry=ModelFreeClearBoundaryTelemetry(),
+            environ={},
+        ),
+        judge=FakePhaseFJudgePort(check_success=True),
+    )
+
+    first = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=ss1,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+
+    after_ss1 = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert first.executed_ordinal == 1
+    assert first.next_execution_ordinal == 2
+    assert first.automatic_continuation is False
+    assert len(ss1_runtimes) == 1
+    assert len(ss1_runtimes[0].started_threads) == 1
+    assert [turn["task_id"] for turn in ss1_runtimes[0].turns] == list(
+        PROFILE_R_EXPECTED_TASK_IDS
+    )
+    assert [item["lifecycle"] for item in after_ss1["cells"]] == [
+        PhaseFCellLifecycle.SEALED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+    ]
+    cell_two_id = str(after_ss1["cells"][1]["cell_id"])
+    assert not (artifact_root / cell_two_id).exists()
+
+    b1_runtimes: list[B1FakeRuntime] = []
+
+    def b1_runtime_factory(workspace: Path) -> B1FakeRuntime:
+        runtime = B1FakeRuntime("complete", workspace=workspace)
+        b1_runtimes.append(runtime)
+        return runtime
+
+    b1 = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=ProfileRPhaseFB1Backend(
+            repository=REPOSITORY,
+            artifact_root=artifact_root,
+            runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+            runtime_factory=b1_runtime_factory,
+            telemetry=ModelFreeClearBoundaryTelemetry(),
+            environ={},
+        ),
+        judge=FakePhaseFJudgePort(check_success=True),
+    )
+
+    second = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=b1,
+        expected_execution_ordinal=2,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+
+    after_b1 = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert second.executed_ordinal == 2
+    assert second.next_execution_ordinal == 3
+    assert second.automatic_continuation is False
+    assert len(b1_runtimes) == 1
+    assert b1_runtimes[0].turn_count >= 1
+    assert [item["lifecycle"] for item in after_b1["cells"]] == [
+        PhaseFCellLifecycle.SEALED.value,
+        PhaseFCellLifecycle.SEALED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+    ]
+    for cell_id in (first.executed_cell_id, second.executed_cell_id):
+        assert (
+            artifact_root
+            / cell_id
+            / PHASE_F_FINAL_DIRECTORY
+            / PHASE_F_SEALED_DIRECTORY
+            / PHASE_F_CELL_SEAL_FILENAME
+        ).is_file()
+    cell_three = after_b1["cells"][2]
+    assert not (
+        experiment_dir
+        / PHASE_F_CELLS_DIRECTORY
+        / str(cell_three["cell_id"])
+        / PHASE_F_CLAIM_FILENAME
+    ).exists()
+    assert not (artifact_root / str(cell_three["cell_id"])).exists()
 
 
 def test_live_backend_refuses_model_free_clear_telemetry(tmp_path: Path) -> None:
