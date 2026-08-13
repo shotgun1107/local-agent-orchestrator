@@ -50,6 +50,11 @@ source identity가 바뀌어 qualification v5와 Phase E v5 후보는 새 live �
 별도 Python process verifier가 공식 raw root의 9개 Cell과 manifest/result/seal을 다시
 계산해 `CHALLENGE_READY True 9 9 0`을 확인했다.
 
+qualification projection과 stage binding을 clean commit으로 고정한 뒤 Docker Judge,
+Phase F Docker port, Phase E binding 관련 model-free 회귀는 `22 passed, 1 opt-in skipped`로
+통과했다. skip은 명시적인 실제 Docker smoke opt-in이며 이번 9-cell matrix는 별도로 실제
+Docker에서 완료됐다.
+
 ## 판정 범위와 다음 관문
 
 이 결과는 현재 공개 fixture와 집 Docker Judge가 기준답안과 8개 고장판을 예상대로

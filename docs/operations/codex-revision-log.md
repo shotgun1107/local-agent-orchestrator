@@ -2189,3 +2189,4 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 긴 raw 경로로 인한 patch precheck 중단, 회사 image 부재로 9개 Cell이 모두 runtime error가 된 `C:\q6`의 `CHALLENGE_NOT_READY`, 짧은 source hash 입력 거부는 성공 결과에서 제외했다. `C:\q6` 실패 raw/seal은 보존하고 재분류하지 않는다.
 - 공식 fresh batch `C:\q8\profile-r-docker-matrix-q8`은 reference R-P01~R-P08 8/8 pass와 negative mutation 8개의 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`로 닫혔다. seal self-hash는 `167d8813...c04b`, projection SHA-256은 `acfc13f5...476c`이며 별도 process verifier는 `CHALLENGE_READY True 9 9 0`을 재계산했다. 잔여 container는 0개이고 model·SDK thread·Codex turn은 0회다.
 - 새 projection은 기존 v1~v5를 덮지 않고 `profile-r-docker-judge-qualification-v6`에 추가했고 stage도 v6를 가리킨다. 다음 관문은 새 Phase E 0-turn 후보 생성이며 이번 승인 범위에서는 자동 생성하거나 실제 Worker/model을 실행하지 않는다.
+- projection과 stage binding을 clean commit으로 고정한 뒤 Docker Judge·Phase F Docker port·Phase E binding 관련 회귀는 `22 passed, 1 opt-in skipped`로 통과했다. skip은 실제 Docker smoke opt-in이며 공식 9-cell matrix는 별도 Docker 실행으로 완료됐다.
