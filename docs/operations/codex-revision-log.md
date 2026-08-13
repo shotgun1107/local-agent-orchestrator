@@ -2206,3 +2206,9 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Worker adapter는 `completed`였지만 독립 Docker Judge는 R-P05 lifecycle reuse, R-P07 cross-checkout repro, R-P08 operator contract를 실패로 판정했다. Measurement는 `failed / independent_judge_failed`, Evidence hash와 scope 정상, secret finding 없음으로 봉인됐다.
 - Measurement SHA-256은 `3519083e...7e6`, Cell seal file SHA-256은 `f878291e...e4e`, seal self-hash는 `aea6f9e3...fcd`다. 별도 finalization verifier가 통과했고 잔여 container는 0개다. Cell 2~4는 `PLANNED`, automatic continuation은 false다.
 - backend public summary에는 Worker 단계의 `judge_executed=false`가 남았지만 봉인된 Judge Evidence와 Measurement는 실제 Docker Judge 실행을 증명한다. 결과를 바꾸지 않는 summary 표현 불일치로 기록한다. 현재 source의 B1 Cell 2는 아직 실행하지 않았으므로 route 판정은 계속 보류하며 별도 사용자 승인 전 다음 Cell을 시작하지 않는다.
+
+## SS1 v6 뒤 집→회사 exact-tree 인수인계
+
+- 작업일: 2026-08-13. 집의 qualification v6, Phase E v6 0-turn 후보와 Profile R SS1 Cell 1 봉인 결과를 `docs/operations/home-to-company-codex-handoff.md` revision 6에 통합했다. Git 정본의 최소 실행 결과 commit은 `532cab41da53e621c6cf853a5ff1931ca548ff55`다.
+- Git은 code·qualification projection·candidate·결과 문서를 전달하지만, 같은 experiment의 Cell 2를 이어가는 Controller state와 Cell 1 raw/seal은 집 `C:\lao-phase-f-live-a686cd22-pair-1`에만 있다. 회사가 Git pull만 한 상태에서 새 state 생성, Cell 1 재실행, 수동 state 재구성으로 Cell 2를 이어가면 같은 paired run이 아니다.
+- 회사 첫 세션은 ff-only 동기화와 맥락 확인 뒤 이 raw-state 경계를 보고하고 멈춘다. Cell 2를 회사에서 실행하려면 최소 resume state·봉인 Evidence의 별도 byte-exact 전송과 credential/thread metadata 검사 범위를 먼저 정하고 사용자 승인을 받아야 한다. raw를 public Git에 임의 업로드하지 않는다.
