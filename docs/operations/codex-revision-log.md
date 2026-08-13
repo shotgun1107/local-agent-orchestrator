@@ -2150,3 +2150,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 공식 batch `profile-r-docker-matrix-r09-company-v8`은 기존 image `ba83a183...330ab`에서 reference 8/8 pass와 negative mutation 8개 목표 실패가 모두 일치해 `9/9`, `CHALLENGE_READY`였다.
 - manifest `bd74f9d5...59a2`, result `5da28bc9...a941`, seal `48673955...7042`이며 별도 verifier가 같은 결과를 재계산했다. 잔여 container는 0개, model·SDK thread·Codex turn은 0회다.
 - 공개 projection은 기존 v1~v4를 덮지 않고 `profile-r-docker-judge-qualification-v5`에 추가하고 stage의 Profile R 입력을 v5로 전환한다. 실패한 v7 raw는 보존하지만 qualification 표본으로 합산하지 않는다.
+
+## Profile R qualification v5 기반 Phase E v5 0-turn 후보
+
+- clean source commit `f4ee4b26e6bd2282099d521fa9426d1606ecf060`에서 기존 v1~v4 후보를 덮지 않고 `sdk-routing-realistic-high-difficulty-phase-e-v5`를 생성했다.
+- API-key 환경 이름은 없었다. ChatGPT 구독 account/model-list로 SDK `0.144.4`와 `gpt-5.6-sol` 노출만 확인했으며 thread/start, turn/start와 actual model turn은 0회다.
+- experiment는 `exp_20260813_a79e6015_1`, Plan fingerprint는 `a79e6015...1718d`, files manifest는 `b03610d5...eb3d`, candidate seal은 `9efcc97c...2c89`다. 별도 verifier가 exact 6-file set과 모든 binding을 재계산해 통과했다.
+- 후보는 R SS1→R B1→I B1→I SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다. 실제 SS1/B1과 다른 model turn은 별도 사용자 승인 전 시작하지 않는다.
