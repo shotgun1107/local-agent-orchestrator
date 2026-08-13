@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 12
+- revision: 13
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -295,3 +295,11 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 공식 batch `profile-r-docker-matrix-r09-company-v8`은 reference와 8개 negative mutation이 모두 기대와 일치해 `9/9`, `CHALLENGE_READY`다. seal은 `48673955d95db1e2c2c34ccd27efcfcaee7462053e39431826d038bd26717042`다.
 - 새 projection은 `benchmarks/artifacts/profile-r-docker-judge-qualification-v5/qualification.json`이고 stage도 v5를 사용한다. 기존 v1~v4와 R7~R9 raw/seal은 수정하지 않는다.
 - 실제 model·SDK thread·Codex turn은 0회다. 다음 작업은 clean commit에서 새 Phase E 0-turn 후보를 만들고 검증하는 것이며 실제 SS1/B1 실행은 자동으로 시작하지 않는다.
+
+## 21. 2026-08-13 Phase E v5 0-turn 후보 동결
+
+- qualification v5와 stage binding을 포함한 clean source commit `f4ee4b26e6bd2282099d521fa9426d1606ecf060`에서 새 후보를 만들었다.
+- 후보 root는 `benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v5`, experiment는 `exp_20260813_a79e6015_1`, Plan은 `a79e6015...1718d`, seal은 `9efcc97c...2c89`다.
+- ChatGPT account/model-list만 확인했고 실제 thread/start, turn/start와 model turn은 0회다. 별도 verifier도 exact 6-file set과 source/qualification/stage binding을 재계산해 통과했다.
+- Cell 순서는 Profile R SS1→B1, Profile I B1→SS1이고 자동 연속 실행은 꺼져 있다. 이 후보가 존재한다고 실제 SS1 또는 B1을 자동 실행하지 않는다.
+- 다음 관문은 실제 비교를 다시 할지, 여기서 B1 수정을 보존하고 B2/B3 설계로 넘어갈지 사용자가 결정하는 것이다.
