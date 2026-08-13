@@ -143,6 +143,16 @@ def test_materialized_profile_r_workspace_matches_manifest_and_has_clean_baselin
     assert len(manifest["files"]) == 130
     assert (
         subprocess.run(
+            ["git", "-C", str(workspace), "config", "--bool", "core.autocrlf"],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        ).stdout.strip()
+        == "false"
+    )
+    assert (
+        subprocess.run(
             ["git", "-C", str(workspace), "status", "--porcelain=v1"],
             check=True,
             capture_output=True,

@@ -364,3 +364,56 @@ def test_terminal_failure_exit_matches_public_state(
     assert evidence.outcome_state == outcome
     assert evidence.failure_kind == failure_kind
     assert evidence.raw_payload["stop_required"] is True
+
+
+def test_retry_report_ignores_pending_tasks_without_attempts(tmp_path: Path) -> None:
+    report = _report("BLOCKED")
+    metrics = report["metrics"]
+    assert isinstance(metrics, dict)
+    metrics.update({"turns": 2, "sessions": 2, "attempts": 2})
+    report["tasks"] = [
+        {
+            "key": "T1",
+            "state": "BLOCKED",
+            "attempts": [
+                {
+                    "attempt_no": 1,
+                    "state": "RETRYABLE_FAILED",
+                    "failure_kind": "check_failed",
+                    "resume_count": 0,
+                    "initial_prompt_sha256": "1" * 64,
+                    "output_schema_sha256": "2" * 64,
+                    "task_semantics_sha256": "3" * 64,
+                },
+                {
+                    "attempt_no": 2,
+                    "state": "BLOCKED",
+                    "failure_kind": "scope_violation",
+                    "resume_count": 0,
+                    "initial_prompt_sha256": "4" * 64,
+                    "output_schema_sha256": "2" * 64,
+                    "task_semantics_sha256": "5" * 64,
+                },
+            ],
+        },
+        {"key": "T2", "state": "PENDING", "attempts": []},
+    ]
+    evidence = ScriptedAdapter(
+        tmp_path,
+        [
+            _capture(3, _status("BLOCKED", session_usage_statuses=["measured", "measured"])),
+            _capture(3, _status("BLOCKED", session_usage_statuses=["measured", "measured"])),
+            _capture(0, report),
+            _capture(0, {"ok": True}),
+        ],
+    ).run(CONTEXT)
+
+    assert evidence.outcome_state == "blocked"
+    assert evidence.normalized_metrics["b1_retry_count"] == 1
+    assert evidence.normalized_metrics["first_attempt_outcome"] == [
+        {
+            "task_key": "T1",
+            "state": "RETRYABLE_FAILED",
+            "failure_kind": "check_failed",
+        }
+    ]

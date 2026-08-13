@@ -57,6 +57,7 @@ from .verify import (
     VerificationError,
     hash_project_pack,
     extract_public_check_feedback,
+    preflight_check_environment,
     run_command_check,
     validate_declared_artifacts,
     validate_result_artifact_path_types,
@@ -299,6 +300,7 @@ class Orchestrator:
             raise ConfigurationError(f"workspace doctor failed: {health}")
         if self.policy.require_clean_worktree and not self.workspace.status()["clean"]:
             raise ConfigurationError("workspace must be clean before Run creation")
+        preflight_check_environment(self.workspace)
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.create_run({
@@ -339,6 +341,7 @@ class Orchestrator:
 
     def resume(self, run_id: str, spec: RunSpec) -> str:
         validate_run_against_project(spec, self.loaded)
+        preflight_check_environment(self.workspace)
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.get("run", run_id)

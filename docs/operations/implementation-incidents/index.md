@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 53건
-- 해결: 50건
+- 해결: 51건
 - 조사 중: 2건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -65,7 +65,7 @@
 | DEV-20260812-007 | resolved | phase-f-profile-r-b1 | integration | Profile R R07 S2 B1 fixture가 legacy project pack으로 preflight를 중단함 |
 | DEV-20260813-001 | resolved | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
 | DEV-20260813-002 | resolved | b1-sequential | integration | B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함 |
-| DEV-20260813-003 | open | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
+| DEV-20260813-003 | resolved | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3162,11 +3162,11 @@ B1 공개 feedback 한도를 16 KiB로 늘리고 여러 줄, 들여쓰기, 전�
 
 ## DEV-20260813-003 — Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r`
 - 분류: `test`
 - 발견: 2026-08-13T07:51:04Z / sealed Phase F Profile R B1 v5 live run
-- 해결: 미해결
+- 해결: 2026-08-13T08:38:29Z
 
 ### 증상
 
@@ -3182,33 +3182,41 @@ R07 기능 검사 전에 pytest tmp_path 접근 거부가 발생했고 재시도
 
 ### 근본 원인
 
-investigating: 실제 sandboxed B1 Check가 사용할 수 없는 pytest TEMP 경로를 상속했고, Git에서 복원한 legacy project.yaml의 Windows CRLF bytes를 source의 LF bytes와 직접 비교하는 시험 계약이 함께 존재했다.
+B1 Check가 호스트 TEMP/TMP를 그대로 상속하여 다른 Windows sandbox identity가 만든 pytest 임시 경로에 접근했고, Windows Git의 전역 core.autocrlf=true가 git archive 복원 바이트를 LF에서 CRLF로 바꾸었다. 또한 실패 보고 어댑터가 미실행 후속 Task에도 첫 Attempt가 있다고 가정했다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` 호스트 TEMP를 계속 상속 — 같은 권한 충돌을 다시 허용한다
+- `rejected` 공개 assertion을 줄바꿈 무시 비교로 완화 — exact-byte fixture 계약을 약화한다
+- `adopted` workspace-private Check TEMP와 Git 환경 override — 모델 실행 전 접근성을 확인하고 복원 바이트를 고정한다
 
 ### 채택한 해결
 
-미해결
+각 Check마다 Git metadata 아래에 새 임시 폴더를 만들고 TEMP/TMP/TMPDIR을 그 경로로 고정했다. Run 시작과 재개 전에 동일 subprocess 쓰기 probe를 수행한다. Check 자식 Git에는 core.autocrlf=false를 강제하고 FixtureRestorer의 archive에도 같은 설정을 적용했다. 미실행 Task는 first-attempt 요약에서 제외했다.
 
 ### 수정 파일
 
-- tools/benchmark-runner/tests/test_routing_s2.py
-- tools/benchmark-runner/src/benchmark_runner/routing_suite.py
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/src/benchmark_runner/workspace.py
+- tools/benchmark-runner/src/benchmark_runner/adapter.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
 
 ### 회귀시험
 
-- 기록 없음
+- stages/b1-sequential/tests/unit/test_verify.py::test_check_environment_preflight_ignores_inaccessible_host_temp
+- tools/benchmark-runner/tests/test_workspace.py::test_restore_is_independent_of_windows_autocrlf
+- tools/benchmark-runner/tests/test_b1_adapter_failures.py::test_retry_report_ignores_pending_tasks_without_attempts
 
 ### 검증 결과
 
-- 기록 없음
+- B1 전체 80 passed
+- 관련 Runner 76 passed, 2 opt-in skipped
+- 실패했던 B1 v5 Worker 복사본의 R07 canonicalization 회귀 1 passed
 
 ### 남은 위험
 
-- R07 기능 검사가 시작되기 전에 환경 검사가 실패해 v5 B1 결과를 SS1/B1 품질 비교에 사용할 수 없다
-- TEMP와 줄바꿈 계약을 고치지 않은 live 반복은 같은 종류의 무효 결과를 다시 만들 수 있다
+- 이 수정으로 기존 qualification v4와 Phase E v4 candidate의 source identity는 stale이며 다음 live 실행 전에 재자격과 새 candidate가 필요하다
 
 ### 추적 정보
 
