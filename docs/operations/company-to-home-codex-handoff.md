@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 7
+- revision: 8
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -234,3 +234,11 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 - 공개 projection은 기존 v1~v3을 덮지 않고 `profile-r-docker-judge-qualification-v4`에 추가했다. stage의 Profile R 입력도 v4로 전환했다.
 - 제어 도구 timeout을 실제 process 실패로 오인해 v6 중복 batch를 한 번 시작했다. v6 raw도 `9/9`, `CHALLENGE_READY`로 봉인됐지만 versioned projection 쓰기는 fresh-output 규칙으로 거부됐다. 공식 근거는 먼저 완료된 v5 하나이며 v6를 표본으로 합산하지 않는다.
 - 실제 model, SDK thread와 Codex turn은 0회다. 다음은 Phase E 후보 생성이 아니라, 현재 시험환경 전체를 새 독립 AI가 model-free로 감사하는 관문이다. 감사에서 실제 실행 차단 오류가 나오면 한 차례만 교정하고 같은 범위로 한 번 재검증한다. 그 뒤에만 Phase E 새 0-turn 후보와 R9 여부를 결정한다.
+
+## 14. 2026-08-13 R9 전 독립 AI 시험환경 감사
+
+- qualification v4와 stage binding을 commit `44341acfded453ab71cbfa654bd7ad91a3ad46be`로 고정한 뒤, 서로 결과를 공유하지 않은 `gpt-daybreak-blue-latest` 감사자 두 명이 같은 공개 model-free 흐름을 확인했다.
+- 1차 감사는 `62 passed, 0 failed, 2 skipped` (`132.70s`), 2차 재감사는 `62 passed, 0 failed, 2 skipped` (`130.05s`)였다. 두 판정 모두 `GO`다.
+- 작업 준비와 fixture, B1 preflight, Fake 결과 생성, 공개 Check/Judge, Phase E 후보 생성·검증, Phase F Measurement/finalization 경로가 통과했다. skip 2개는 실제 Docker full dry-run과 실제 SDK zero-turn preflight opt-in이다.
+- 실제 R9 차단 오류가 없어 수정 단계는 0건으로 끝났다. 감사 중 model·SDK thread/turn·Codex·Docker·network 호출과 파일 수정은 모두 0회다.
+- 다음 관문은 새 Phase E 0-turn 후보 동결이다. 그 뒤 R9 Cell 2 실제 실행은 별도 사용자 승인을 받아 한 번만 수행하며, 성공·실패와 무관하게 Cell 3으로 자동 진행하지 않는다.
