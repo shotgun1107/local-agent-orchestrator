@@ -2120,3 +2120,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 독립 Docker Judge는 R-P01~P04, P06, P07을 통과시키고 R-P05 `DUPLICATE_OR_MISSING_LIFECYCLE`, R-P08 `OPERATOR_CONTRACT_DRIFT`를 실패로 판정했다. Measurement는 `failed / b1_failed / check_success=false`, `scope_ok=true`, Evidence hash 정상, secret finding 없음으로 봉인됐다. 공개 feedback에는 pytest traceback이 없으므로 두 `ERROR`의 더 좁은 예외 원인은 미확인으로 남긴다.
 - Measurement SHA-256은 `4ed937aa2e9dc9fafc4946bdd18cca557b4e8d2d64ec3c49db146a6d6707a7de`, Cell seal file SHA-256은 `edad83081a80289e5c6eaf26b58094890c66f11f9ba0ee0e7edd216e740c90f8`다. 별도 Python 3.12 process의 finalization verifier가 통과했고 종료 뒤 Docker container는 0개, backend Cell 디렉터리는 Cell 2 하나였다. Cell 3은 실행하지 않았다.
 - 사전 합의한 종료선에 따라 성공·실패와 무관하게 R9에서 실험 실행을 종료한다. R10과 Cell 3은 실행하지 않는다. R9 raw/seal은 수정·삭제·재봉인하지 않는다. 이 단일 실패를 B1의 일반 효용이나 다른 variant와의 우열로 확대하지 않는다.
+
+## B1 Phase F 최종 판정과 개발 방향 전환
+
+- R7~R9의 봉인 결과와 현실 난이도 비교 명세의 route 술어를 대조했다. B1의 Task 순차 실행, 독립 Check, bounded retry, 실패 뒤 downstream 차단, Judge·Measurement·seal·별도 verifier는 실제 작동했으므로 `B1_MECHANICS_VERIFIED`다.
+- SS1 대조 Cell과 독립 두 번째 snapshot이 없고 해석 가능한 R9 B1도 성공하지 못했으므로 route 판정은 `ROUTING_INCONCLUSIVE`다. `ADOPT_B1`, `REJECT_B1_PROFILE`, `ROUTE_B1_PROVISIONAL`, `INSTANCE_SS1_ADVANTAGE_OBSERVED`를 발행하지 않는다.
+- R7~R9의 실제 운영 합계는 model turn 24회, token 49,338,443, sealed wall 9,371.687초다. source revision과 환경 상태가 달라 성능 통계로 합치지 않지만, 같은 synthetic benchmark의 반복 교정 비용이 크다는 운영 경고로 보존한다.
+- B1은 폐기하지 않고 검증된 안전 실행 기반으로 보존한다. 기본 route로는 채택하지 않으며 단순 실행을 fallback으로 둔다. Task 의존·독립 검사·실패 차단이 필요한 실제 작업에만 선택적으로 적용한다.
+- R10과 Cell 3을 포함한 Phase F 추가 실행은 종료했다. 다음은 새 benchmark가 아니라 현재 branch를 정본에 통합할 범위와 실제 프로젝트 1개에서 자연 사용 telemetry를 수집할 최소 오케스트레이터 범위를 정하는 것이다. B2·B3는 B1의 검증·복구가 실제 최종 성공을 만든 자료가 생기기 전까지 보류한다.
