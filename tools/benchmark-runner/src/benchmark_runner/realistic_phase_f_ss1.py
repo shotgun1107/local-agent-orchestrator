@@ -644,13 +644,26 @@ class ProfileRPhaseFSS1Backend:
         turns = evidence.raw_payload.get("turns")
         if not isinstance(turns, list):
             raise PhaseFSS1BackendError("SS1 adapter turn Evidence is unavailable")
-        dispatched_task_semantics = [
-            turn.get("task_semantics_sha256")
+        initial_turns = [
+            turn
             for turn in turns
             if isinstance(turn, dict) and turn.get("turn_kind") == "initial"
         ]
-        if len(dispatched_task_semantics) != len(tasks) or any(
-            not isinstance(value, str) for value in dispatched_task_semantics
+        dispatched_task_semantics = [
+            turn.get("task_semantics_sha256") for turn in initial_turns
+        ]
+        dispatched_task_ids = [turn.get("task_id") for turn in initial_turns]
+        expected_task_prefix = [
+            task.task_id for task in tasks[: len(initial_turns)]
+        ]
+        if (
+            len(initial_turns) > len(tasks)
+            or (
+                str(evidence.outcome_state) == "completed"
+                and len(initial_turns) != len(tasks)
+            )
+            or dispatched_task_ids != expected_task_prefix
+            or any(not isinstance(value, str) for value in dispatched_task_semantics)
         ):
             raise PhaseFSS1BackendError("SS1 initial Task semantics Evidence differs")
         evidence_payload: dict[str, JsonValue] = {
@@ -682,10 +695,6 @@ class ProfileRPhaseFSS1Backend:
         evidence_bytes = canonical_json_bytes(evidence_payload)
         evidence_path = cell_root / PHASE_F_SS1_EVIDENCE_FILENAME
         _write_new(evidence_path, evidence_bytes)
-        if str(evidence.outcome_state) != "completed":
-            raise PhaseFSS1BackendError(
-                f"Profile R SS1 adapter did not complete: {evidence.failure_kind}"
-            )
         return PhaseFBackendResult(
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
