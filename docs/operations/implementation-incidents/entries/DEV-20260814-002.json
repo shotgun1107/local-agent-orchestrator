@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260814-002",
+  "title": "B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과",
+  "status": "investigating",
+  "stage": "phase-f-profile-r",
+  "category": "test",
+  "discovered_at": "2026-08-14T03:10:52Z",
+  "resolved_at": null,
+  "discovered_by": "Phase F Profile R B1 회사 v8 live run",
+  "symptom": "R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 experiment/cell/workspace 경로를 만들어 git init이 Filename too long으로 실패했고 재시도도 같은 이유로 실패했다",
+  "reproduction": [
+    "raw root C:\\lao-phase-f-live-66e6607b-company-pair-2의 B1 R07 attempt 001과 002 check result를 읽는다",
+    "Worker workspace에서 python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py를 실행한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다"
+    }
+  ],
+  "root_cause": "B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. core.longpaths 설정만으로는 git init이 접근할 config 경로를 안정적으로 만들지 못했다.",
+  "considered_options": [
+    {
+      "option": "같은 live Cell을 다시 실행",
+      "decision": "rejected",
+      "reason": "동일한 결정적 환경 결함에 model turn만 더 소비한다"
+    },
+    {
+      "option": "R07 회귀를 줄이거나 skip",
+      "decision": "rejected",
+      "reason": "검사 강도를 낮춰 잘못된 성공을 만들 수 있다"
+    },
+    {
+      "option": "Check 임시 Git root를 짧고 격리된 Windows 경로로 이동하고 실제 B1 환경을 감사",
+      "decision": "deferred",
+      "reason": "다음 model-free 수정과 재감사 범위로 고정해야 한다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [
+    "실제 B1 Worker와 같은 깊이의 workspace에서 R07 공개 S2 pytest가 nested Git repository를 생성하고 통과하는 회귀",
+    "Check별 짧은 임시 root가 다른 sandbox identity와 충돌하지 않고 종료 뒤 정리되는 회귀"
+  ],
+  "verification": [
+    "B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨",
+    "R07 attempt 002에 attempt 001의 공개 traceback과 long-path 힌트가 전달됨",
+    "B1 Cell 실패 Measurement와 seal은 별도 finalization verifier를 통과함"
+  ],
+  "remaining_risks": [
+    "해결 전에는 Profile R SS1/B1 속도·비용·품질 비교가 유효하지 않다",
+    "현재 qualification v7의 9-cell Docker Judge 성공은 실제 B1 Check 내부의 nested pytest 경로까지 감사한 것이 아니다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md"
+  ]
+}

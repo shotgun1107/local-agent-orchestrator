@@ -2229,3 +2229,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - experiment는 `exp_20260814_0a8bd290_1`, Plan fingerprint는 `0a8bd290...57ad3`, files manifest는 `dcddd73a...1ca5`, candidate seal은 `dc734af8...6043`다. 별도 verifier가 exact 6-file set과 모든 binding을 다시 계산해 통과했다.
 - 후보는 Profile R SS1→B1, Profile I B1→SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다.
 - 다음 관문은 같은 fresh 회사-local Phase F 상태에서 Profile R SS1 Cell 1과 B1 Cell 2를 명시적으로 각각 한 번 실행하는 것이다. Cell 3은 실행하지 않는다.
+
+## SS1 부분 실패 봉인 경계 교정과 Phase E v8 후보
+
+- Phase E v7의 첫 SS1은 R05 산출물 결손으로 adapter가 실패했지만 실행기가 여덟 Task Evidence를 먼저 요구해 실제 원인을 `SS1 initial Task semantics Evidence differs`로 가렸다. Judge·Measurement·seal도 생성되지 않았다.
+- completed outcome만 전체 여덟 Task Evidence를 요구하고 실패 outcome은 완료된 prefix를 검증하도록 바꿨다. 실패도 backend result로 반환해 finalizer가 Judge·Measurement·seal을 만들게 했다. 관련 model-free 시험은 `28 passed, 1 opt-in skipped`다.
+- 수정 commit은 `ecb62139d824db5917d599c61cd18d107b8d2d22`이고 incident는 `DEV-20260814-001`이다. 실패한 v7 raw는 정식 표본으로 사용하지 않고 그대로 보존한다.
+- source identity가 바뀌어 Phase E v8 후보를 새로 만들었다. experiment는 `exp_20260814_66e6607b_1`, Plan은 `66e6607b...e5c21`, files manifest는 `a095a994...c129`, candidate seal은 `cf336990...c27`이다. account/model-list만 확인했고 model turn은 0회였다.
+
+## 회사 Phase F Profile R SS1→B1 v8 실제 실행
+
+- 같은 fresh state에서 Profile R SS1 Cell 1과 B1 Cell 2를 각각 한 번 명시 실행했다. SS1은 1 session·10 turn, B1은 8 session·8 turn이었다. Cell 1·2는 `SEALED`, Cell 3·4는 `PLANNED`이고 automatic continuation은 false다.
+- SS1은 전체 R01~R08을 수행했지만 독립 Judge에서 R-P05와 R-P08을 실패했다. total token은 `21,512,839`, sealed wall은 `4,152.109초`다.
+- B1은 R01~R06을 첫 Attempt에 통과했다. R07 첫 공개 Check가 Windows `Filename too long`으로 실패했고 상세 traceback과 재실행 명령이 재시도 Worker에게 전달됐다. Worker가 long-path 보강을 했지만 시험 임시 Git 경로 자체가 너무 깊어 같은 오류가 반복됐고 R08은 시작되지 않았다.
+- B1 total token은 `16,392,822`, sealed wall은 `3,842.516초`지만 작업량이 SS1과 다르므로 성능 비교에 사용하지 않는다. 부분 workspace의 Judge 실패 R-P05·R-P06도 B1 완성품 품질 점수로 쓰지 않는다.
+- 두 Cell의 별도 finalization verifier가 통과했다. 잔여 LAO Docker container와 Cell 3 실행은 0이다. 새 시험환경 incident는 `DEV-20260814-002`다.
+- 공식 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 다음 live 전에 R07 Check 임시 저장소를 짧은 Windows 경로로 옮기고 실제 B1 환경을 포함한 model-free 감사가 필요하다.

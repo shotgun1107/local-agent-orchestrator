@@ -1,8 +1,8 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 16
-- 작성일: 2026-08-13
+- revision: 17
+- 작성일: 2026-08-14
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
 - 반드시 포함할 집→회사 인수 commit: `db83a5b9ea1981a8716b47df57fe112c72e6a61c`
@@ -381,3 +381,32 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 회사에만 있는 `C:\lao-phase-f-live-a79e6015-pair-1`의 SS1/B1 raw와 seal은 Git
 동기화 대상이 아니다. 집에 없다고 복사·재현·재봉인하지 않는다. R7~R9, P001~P015,
 기존 qualification/candidate도 수정하거나 성공으로 재분류하지 않는다.
+
+## 25. 2026-08-14 회사 fresh SS1→B1 v8 실행과 긴 경로 결함
+
+이 절은 회사 PC에서 새 qualification·candidate·state로 Profile R 첫 pair를 실제 실행한
+최신 상태다.
+
+- 회사 Judge image를 고정하고 qualification v7을 `9/9`, `CHALLENGE_READY`로 닫았다.
+  이어 Phase E v7을 만들었지만 첫 SS1 실행에서 부분 실패를 실행기 오류로 바꾸는 결함을
+  발견했다. `DEV-20260814-001`로 기록하고 commit `ecb6213`에서 고친 뒤 Phase E v8
+  후보 `exp_20260814_66e6607b_1`을 0 model turn으로 새로 봉인했다.
+- fresh root `C:\lao-phase-f-live-66e6607b-company-pair-2`에서 Cell 1 SS1과 Cell 2 B1을
+  각각 한 번 명시 실행했다. 두 Cell의 Judge·Measurement·seal은 별도 verifier를 통과했고
+  Cell 3·4는 `PLANNED`로 남았다.
+- SS1은 한 세션·10 turn으로 R01~R08을 수행했지만 독립 Judge에서 R-P05와 R-P08을
+  실패했다. B1은 R01~R06을 첫 시도에 통과하고 R07 첫 실패 뒤 상세 오류를 전달해
+  재시도했지만 Windows `Filename too long`이 반복돼 R08을 실행하지 못했다.
+- B1 재시도 피드백은 정상 작동했다. 두 번째 Worker는 첫 traceback과 long-path 힌트를
+  받고 관련 보강을 했지만 시험 임시 Git 경로 자체가 너무 깊어 해결할 수 없었다. 이 새
+  시험환경 결함은 `DEV-20260814-002`이며 아직 `investigating`이다.
+- 따라서 B1의 독립 분배·중간 검사·오류 전달은 확인됐지만 SS1/B1의 속도·비용·품질
+  우열은 판정할 수 없다. B1이 R08까지 같은 작업량을 끝내지 않았기 때문이다. 추가 live
+  실행, Cell 3, Profile I 실행은 금지한다.
+- 다음 작업은 model-free로 R07 Check 임시 Git root를 짧은 Windows 경로에 격리하고,
+  실제 B1 Check와 같은 깊이에서 공개 S2 회귀를 통과시킨 뒤 독립 환경 감사를 다시 받는
+  것이다. 그 전에는 새 qualification·candidate·live를 만들지 않는다.
+- 결과 전문은
+  `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md`에
+  있다. 회사 raw, `C:\q9`, 과거 R1~R9와 P001~P015는 Git 대상이 아니며 삭제·이동·재봉인하지
+  않는다.
