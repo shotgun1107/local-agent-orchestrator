@@ -2221,3 +2221,11 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - manifest file SHA는 `59ac4b6c...dcd2`, result file SHA는 `2b5a49e9...83fd`, seal file SHA는 `dd539b37...c17c`, seal self-hash는 `46861116...a80f`, projection SHA는 `8612694a...db29`다.
 - 첫 호출은 필수 base root `C:\q9`가 없어 Docker Cell 생성 전에 중단됐다. root를 만든 뒤 실행한 공식 batch만 결과로 사용하며, 실패 호출을 표본에 합산하지 않는다.
 - 기존 v1~v6 qualification과 과거 raw/seal은 수정하지 않는다. stage는 새 v7 projection을 사용하며 다음 관문은 clean source commit에서 Phase E v7 0-turn 후보를 생성하는 것이다.
+
+## 회사 Profile R qualification v7 기반 Phase E v7 0-turn 후보
+
+- qualification v7과 stage binding을 포함한 clean source commit `b4e71ce89e5fe920c17b809c34170c13b788cb6e`에서 기존 v1~v6 후보를 덮지 않고 `sdk-routing-realistic-high-difficulty-phase-e-v7`을 생성했다.
+- API-key 환경 이름은 없었다. SDK account/model-list로 ChatGPT 구독, SDK `0.144.4`, `gpt-5.6-sol` 노출만 확인했고 thread/start, turn/start와 actual model turn은 0회다.
+- experiment는 `exp_20260814_0a8bd290_1`, Plan fingerprint는 `0a8bd290...57ad3`, files manifest는 `dcddd73a...1ca5`, candidate seal은 `dc734af8...6043`다. 별도 verifier가 exact 6-file set과 모든 binding을 다시 계산해 통과했다.
+- 후보는 Profile R SS1→B1, Profile I B1→SS1, 32/40 turn 예산과 automatic continuation 금지를 유지한다.
+- 다음 관문은 같은 fresh 회사-local Phase F 상태에서 Profile R SS1 Cell 1과 B1 Cell 2를 명시적으로 각각 한 번 실행하는 것이다. Cell 3은 실행하지 않는다.
