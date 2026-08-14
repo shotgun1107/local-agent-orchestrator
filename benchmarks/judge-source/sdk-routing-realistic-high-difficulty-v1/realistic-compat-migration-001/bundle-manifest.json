@@ -28,52 +28,52 @@
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "dd396b0b2db7200ffd43b7a4aa5d8f33a60174bc7b104116c2ab3bd51600409f",
+      "sha256": "12a839865e1b42f4bc32bde5f3210d07c0d79d28aa1f035607f7bb4ae05dc539",
       "size": 9234
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "6ac7387439b9ba89eed8284cc99fb46fcaf9afb103da4cd76e7a8111f24e7a11",
+      "sha256": "10d2d411e0cfa53f62da49dc8c5dc94cea5b972662ecbd9bba84daff8782f99d",
       "size": 6766
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "7d96922b659365e55aa3154556344d622c91acbd192566945b3b0f8ffd3ad210",
+      "sha256": "1473cdd84f5abb7175f0181ee16bb4b90b5c5a1a6cc4922c31e27ffb82c6c644",
       "size": 7170
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "87ad7d847f35be796f7402755c8d2486fad3b22dc0305fe85c2212ab888e83d2",
+      "sha256": "2c28fa272483f259822fbeb9634029ffc2f56357b4aec331e7b0803a8cf6f134",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "5304ca4909d403814014cc2efb260844038234edb5d3cb5a2c0508c197b7ddf5",
+      "sha256": "af6df53953777dfd5d028a1200578f55ca47ee2740d729f3ced3a43754644985",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "0151e6fcfb8283091ad909a6f91fa8a92f12643884f32dd63dd42054bb428576",
+      "sha256": "87c7d19a51385d833a2865fb35b714a14bb29ec7634b5751e08f7f7b048e654b",
       "size": 7953
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "1485353c2b23ced93a3dfb80ebbb10f16a825e96a635b34633a79478a453e55e",
+      "sha256": "b1bcfeb10a297a4c9a8244341a32f9e3010758edbc3feee4334c6e56b3808d42",
       "size": 9231
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "933bf408f99979eb93f6e812ca9850ee3c8dd887fe74cb6d80fb2014a5dec4b2",
+      "sha256": "3e231d1044fd02a153a300dfd991cbe267d92d7258fc8dbe9e74cadf64ce71f2",
       "size": 9239
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "7352170ab90fc54343d646f35dcf7f20fe232c82e66108113ec5f3f9b7d57345",
+      "sha256": "3477b4541aab1ac5674df67433d0117bdaac2da417c18481f8dc9954c69799ce",
       "size": 6396
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "ea5839b1dc323c6fc8ac394e2e6ef78486821a0fa2868f09ea93df84ec02845d",
+      "sha256": "bf4b6478f93da69a2731ce884c6b8ecdadaf5109e0288ed7d1d31a79df9c150b",
       "size": 9227
     },
     {
@@ -103,8 +103,8 @@
     },
     {
       "path": "negative-mutations/r-p04-reserve-isolation.patch",
-      "sha256": "ba78c9e521eb6035b0fe9c1e9f2d5e523e08a1c9a6d1e1b62e29a0b27a92ac17",
-      "size": 786
+      "sha256": "770eb765bd5e5f87ddf371c83ccc279c67072829a9ae92ecdca1076ffa9ae6e5",
+      "size": 655
     },
     {
       "path": "negative-mutations/r-p05-lifecycle-reuse.patch",
@@ -162,7 +162,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "79d1cf4f9947c0283771d5a3a4109440f32c2daf0bfba6c284a163e1f9558320",
+  "payload_aggregate_sha256": "5d5d765ecedd6f1bdbc23d85bdddc56b6c781eca9afd2bb98797faff9f73658f",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

@@ -4,7 +4,7 @@
   "cell_id": "r-p04-reserve-isolation",
   "checker_run_status": "completed",
   "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "b0dff83972083dddadf38505f04febcd08f2728a1bd224ae19fdf4620e00bf13",
+  "envelope_sha256": "3d878501eb66228fbadb22b05ae05dd46d45cec6068fb871029a9bc64c62e597",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -110,7 +110,7 @@
       "evidence_refs": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
-          "sha256": "9476533e616215d88d94153c70b9c2bbf90dde5af619130cd2dc2bb675ab9ec2"
+          "sha256": "646b1deb4aef7e3c88f3296d021b9f02713e0b0f02d872030ecf5ca3b25e3d7d"
         },
         {
           "path": "tools/benchmark-runner/tests/test_routing_s2.py",
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "54851bb77b95a45a817db9aa88266cd3d84280bc9897249a2356be2ed6d46b9d",
-  "workspace_before_sha256": "54851bb77b95a45a817db9aa88266cd3d84280bc9897249a2356be2ed6d46b9d",
+  "workspace_after_sha256": "a417b2d52efa8933a3b7298f680d8faf2416ac86bae5c8d3c4684a1b3c79c6e0",
+  "workspace_before_sha256": "a417b2d52efa8933a3b7298f680d8faf2416ac86bae5c8d3c4684a1b3c79c6e0",
   "workspace_mutated": false
 }

@@ -308,7 +308,11 @@ def mutate_plan_order(root: Path) -> None:
 
 def mutate_reserve(root: Path) -> None:
     path = root / "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
-    replace_once(path, b"return max(0, reserve_turns - consumed)", b"return max(0, reserve_turns - consumed - (1 if consumed == 2 else 0))")
+    replace_once(
+        path,
+        b"return min(project_policy_turn_cap, task_count + remaining)",
+        b"return min(project_policy_turn_cap, task_count + remaining + 1)",
+    )
 
 
 def mutate_lifecycle(root: Path) -> None:
