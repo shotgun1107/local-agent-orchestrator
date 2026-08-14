@@ -3311,6 +3311,9 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 - `direct-observation`: q10은 기능 판정 9/9가 맞았지만 stale workspace hash로 CHALLENGE_NOT_READY였으며 raw와 seal을 성공 근거와 분리해 보존했다
 - `reproducible-test`: R-P04 변이를 R-P06과 분리한 source commit 85af6e3의 q11 Docker 9-Cell이 CHALLENGE_READY와 기대 일치 9/9를 냈다
 - `reproducible-test`: Phase E v9 exact candidate로 production-shaped SS1→B1 acceptance를 독립 root에서 2회 통과했고 각 실행에서 Check 16/16, Cell 3 미생성, TEMP residue 0을 확인했다
+- `review-finding`: ChatGPT Pro Live readiness revision 1은 공개 checker OSError 오분류, acceptance 원시 Evidence·assertion 부족, Git provenance와 q11 raw/current Docker identity 부재를 P0 3건·P1 2건으로 판정했다
+- `reproducible-test`: commit 00dd92a의 강화된 acceptance 2회가 exact Phase E v10 후보에서 R01~R08 개별 8/8, nested pytest skip/warning 0, +32 path growth, cleanup residue 0과 model turn 0을 원시 state·seal·B1 Evidence·JUnit으로 보존했다
+- `reproducible-test`: 집 Docker image 5610c2a6 기반 q12 9-Cell은 CHALLENGE_READY와 기대 일치 9/9를 냈고 qualification v11 및 current Docker environment attestation으로 봉인됐다
 
 ### 근본 원인
 
@@ -3325,7 +3328,7 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 채택한 해결
 
-축소 교정 source 구현은 commit 80c8c9e, Judge 변이 격리는 85af6e3에서 완료했다. Profile R qualification v10, Phase E v9 후보와 exact-candidate acceptance 2회까지 통과했다. 다만 readiness package 봉인과 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
+기존 축소 교정 뒤 Pro revision 1 NO-GO의 P0 3건·P1 2건을 commit 00dd92a에서 보강했다. 집 q12 qualification v11, Phase E v10 0-turn 후보와 원시 Evidence를 보존한 exact-candidate acceptance 2회까지 통과했다. revision 2 readiness package의 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3358,6 +3361,11 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 - Phase E v9 exact-candidate acceptance 2회가 90.91s와 98.22s에 통과
 - 환경 교정 unit/integration과 acceptance의 model·SDK thread/turn·Codex·Docker 호출 0회
 - q11은 Docker Judge 9개를 실행했고 Phase E v9은 SDK account/model-list만 확인했으며 전체 model turn은 0회
+- 공개 checker PermissionError가 check_environment로 끝나고 B1 Attempt와 runtime 호출이 각각 1개임을 확인
+- B1 전체 82 passed, 영향 Runner 33 passed와 1 opt-in skipped, Profile R fixture 13 passed
+- q12 Profile R Docker 9-Cell CHALLENGE_READY와 기대 일치 9/9, 잔여 container 0
+- Phase E v10 후보가 source 68974b8과 qualification v11에 0 model turn으로 결합되고 별도 verifier를 통과
+- Phase E v10 exact-candidate acceptance 2회가 36.94s와 34.82s에 통과하고 원시 Evidence hash mismatch 0
 
 ### 남은 위험
 
@@ -3368,7 +3376,7 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md
@@ -3377,3 +3385,7 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-company-v10-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v9-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-result.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v1.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v11-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v10-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v2-result.md
