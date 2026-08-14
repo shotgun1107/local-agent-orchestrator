@@ -2245,3 +2245,30 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - B1 total token은 `16,392,822`, sealed wall은 `3,842.516초`지만 작업량이 SS1과 다르므로 성능 비교에 사용하지 않는다. 부분 workspace의 Judge 실패 R-P05·R-P06도 B1 완성품 품질 점수로 쓰지 않는다.
 - 두 Cell의 별도 finalization verifier가 통과했다. 잔여 LAO Docker container와 Cell 3 실행은 0이다. 새 시험환경 incident는 `DEV-20260814-002`다.
 - 공식 판정은 `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 다음 live 전에 R07 Check 임시 저장소를 짧은 Windows 경로로 옮기고 실제 B1 환경을 포함한 model-free 감사가 필요하다.
+
+## Profile R 시험환경 Pro 감사와 축소 교정계획 조건부 승인
+
+- 작업일: 2026-08-14. v8 뒤 현재 시험환경, 과거 수정 흔적, 공개 raw Evidence와 Git patch를
+  109-file ZIP으로 묶었다. ZIP SHA-256은
+  `dfdfa32932ffde35b0ee1515bd8233c1c72e90ea3de590972508df45eb9fbca7`이고
+  manifest 108개 항목은 재압축 해제 뒤 모두 일치했다. 인증정보와 비공개 세션 원문은
+  포함하지 않았다.
+- ChatGPT Pro 1차 읽기 전용 심사는 실제 production topology를 검증하지 않은 구조를
+  근본 원인으로 보고 Live `NO-GO`를 판정했다. 재심은 P0-4 전체 lock·CAS·lease·fencing을
+  다음 단일 pair에서 운영상 이연하는 축소안을 조건부 승인했다.
+- 즉시 범위는 external short TEMP와 Live wiring, 모든 관련 Git call-site의 first-command
+  통제, 환경·미분류 실패 non-retry, production-shaped Windows model-free 시험 2회와
+  Phase F crash-window fail-closed 회귀다. 명시적 `PRODUCT_ASSERTION`만 retry할 수 있고
+  문자열 검색만으로 환경 실패를 최종 판정하지 않는다.
+- candidate와 acceptance의 hash 순환을 피하기 위해 candidate는 immutable하게 유지하고
+  별도 `PROFILE_R_LIVE_READINESS` package가 candidate seal과 두 acceptance 결과를 함께
+  결합한다. readiness 독립 승인 전 새 SS1·B1·Cell 3은 계속 `NO-GO`다.
+- 정본은
+  `docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md`다.
+  `DEV-20260814-002`는 계속 `investigating`이고 과거 v8 raw·seal은 수정·재분류하지 않는다.
+- 이번 단계는 문서 최신화뿐이다. production 코드 수정, 테스트, Docker workload, SDK
+  thread/turn, Codex model Cell과 network 호출은 0회다. 다음 관문은 축소 명세의 model-free
+  구현이며 예상 계획값은 26~36시간, Docker 9-cell 재자격이 필요하면 30~44시간이다.
+- 사용자는 이번 회사 로컬 상태를 프로젝트 최신 정본이자 최우선 기준으로 지정했다.
+  회사에서 검증한 clean commit/tree를 push한 뒤 origin을 배포 기준으로 사용하며, 집 로컬
+  상태가 다르면 자동 병합하지 않고 집 고유 작업을 보고한 뒤 회사 정본을 우선한다.

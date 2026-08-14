@@ -1,10 +1,11 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 17
+- revision: 18
 - 작성일: 2026-08-14
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
+- 정본 우선순위: 회사 로컬의 검증된 clean commit/tree → push된 origin branch → 집 로컬
 - 반드시 포함할 집→회사 인수 commit: `db83a5b9ea1981a8716b47df57fe112c72e6a61c`
 - 회사가 인수한 원격 기준 commit: `ee877eb2e947e1d2af4d36f845166a358aad8927`
 - 이번 B1 시험환경 수정 commit: `ed1e1602d8df546e016ba94405f8143088070709`
@@ -410,3 +411,67 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
   `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md`에
   있다. 회사 raw, `C:\q9`, 과거 R1~R9와 P001~P015는 Git 대상이 아니며 삭제·이동·재봉인하지
   않는다.
+
+## 26. 2026-08-14 Profile R 시험환경 Pro 감사와 축소 교정계획
+
+이 절은 §25의 “short TEMP와 model-free 감사”를 구체화하고 대체하는 최신 실행 관문이다.
+
+### 과거 — 왜 다시 Live를 열지 않는가
+
+- v8 B1은 R07에서 Worker `.git` 아래의 깊은 pytest/nested Git 경로 때문에
+  `Filename too long`으로 두 Attempt가 실패했다.
+- 과거 수정은 host TEMP 권한과 autocrlf 문제를 일부 해결했지만 TEMP를 `.git` 아래로
+  옮겨 권한 실패를 경로 실패로 이동시켰다.
+- 기존 clean-room 감사와 qualification은 Judge 판별 또는 얕은 Fake 경로를 확인했을 뿐
+  실제 `Phase F→B1→Check→pytest→nested Git` 깊이를 관통하지 않았다.
+
+### 현재 — 외부 심사와 정본
+
+- 공개 가능한 코드·패치·환경 fingerprint·v8 raw Evidence를 109-file package로 묶고
+  ChatGPT Pro에게 읽기 전용 심사를 맡겼다.
+- 최초 심사는 Live `NO-GO`를 판정했다. 축소 재심은 전체 lock·CAS·lease·fencing을 다음
+  한 pair의 필수조건에서 빼되, 엄격한 단일 실행 조건과 fail-closed 시험을 요구하는
+  구현계획을 조건부 승인했다.
+- 최신 정본은
+  `docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md`다.
+- 이번 문서 최신화와 후속 commit은 회사 로컬을 최우선 정본으로 한다. push가 끝나면
+  origin branch는 그 정본의 배포본이며, 집 clone의 오래된 상태나 별도 추측으로 이를
+  덮지 않는다.
+- `DEV-20260814-002`는 계속 `investigating`이며 코드 수정·시험 통과·Live 승인으로
+  오해하면 안 된다.
+- 실제 model, SDK thread/turn, Docker workload와 새 Phase F state 실행은 이번 문서
+  최신화에서 0회다.
+
+### 다음 허용 작업
+
+1. repository·candidate·state·artifact·workspace·`.git` 밖의 external short TEMP를
+   구현하고 Live B1 builder부터 실제 Check까지 명시적으로 전달한다.
+2. Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터
+   longpaths·autocrlf와 config origin을 통제한다.
+3. 명시적 제품 assertion 실패만 retry하고 환경 또는 미분류 실패는 model retry하지
+   않게 한다.
+4. 실제 Python subprocess·pytest·filesystem·Git을 쓰는 production-shaped Windows
+   SS1→B1 model-free 시험을 독립 root에서 2회 통과한다.
+5. Phase F crash window 세 곳에서 같은 Cell 재실행과 다음 Cell 진행이 fail-closed로
+   차단되는지 확인한다.
+6. 새 candidate와 두 acceptance 결과를 별도 live-readiness package로 봉인해 독립
+   재심사를 받는다.
+
+### 이연 범위와 중단선
+
+전체 Phase F lock·CAS·lease·fencing·자동 crash 복구는 해결된 것이 아니다. 단일 PC,
+단일 Controller, 단일 state root를 쓰고 비정상 종료 시 pair 전체를 폐기하는 조건에서만
+다음 한 pair까지 운영상 이연한다.
+
+다음은 금지한다.
+
+- readiness 독립 승인 전 새 SS1·B1·Cell 3 실행
+- 환경 실패 뒤 model retry로 환경을 교정
+- abnormal termination 뒤 같은 experiment resume
+- cross-PC state continuation
+- 과거 raw·seal·candidate를 수정하거나 성공으로 재분류
+- P001~P015 수정
+- API key 생성·요구·입력·출력
+
+집에서 이어갈 때는 §25의 간단한 short-path 수정 지시 대신 이 절과 최신 환경 교정
+명세를 우선한다.

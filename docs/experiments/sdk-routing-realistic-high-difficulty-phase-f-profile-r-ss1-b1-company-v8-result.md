@@ -93,3 +93,28 @@ B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`다. 추가 live 실행 전에 R0
 잔여 LAO Docker container는 0개다. 별도 프로젝트의 이틀 전 종료 컨테이너 1개는
 이번 실행과 무관해 건드리지 않았다. raw와 seal은 Git 대상이 아니며 수정·삭제·재봉인하지
 않는다.
+
+## 후속 시험환경 감사와 최신 관문
+
+v8 뒤 Daybreak와 ChatGPT Pro가 package의 코드, Git 변경 이력과 공개 raw Evidence를
+읽기 전용으로 감사했다. 최초 판정은 Live `NO-GO`였고, 재심은 다음 한 pair를 위한
+축소 교정계획을 조건부 승인했다. 이 후속 판단은 위 실행 수치나 seal을 바꾸지 않는다.
+
+TEMP 경로만 짧게 바꾸는 것으로 incident를 닫지 않는다. 다음 항목이 한 closure로
+필요하다.
+
+- repository·candidate·state·artifact·workspace·`.git` 밖의 explicit short TEMP와
+  Live B1까지 동일한 wiring
+- Worker materialization, B1 GitWorkspace와 R07 nested fixture의 첫 Git 명령부터
+  longpaths·autocrlf·config origin 통제
+- 명시적인 제품 assertion 실패만 retry하고 환경 또는 미분류 실패는 model retry하지
+  않는 fail-closed 분류
+- 실제 Python subprocess·pytest·filesystem·Git을 쓰는 production-shaped Windows
+  SS1→B1 model-free 시험 2회와 residue 0
+- 현재 Phase F crash window 세 곳의 fail-closed 회귀
+- exact candidate와 두 acceptance 결과를 결합한 별도 live-readiness package 및 독립
+  재심사
+
+최신 정본은
+[Phase F Profile R 시험환경 축소 교정 명세](../design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md)다.
+모든 PASS Evidence가 생기기 전 실제 SS1·B1·Cell 3은 계속 `NO-GO`다.

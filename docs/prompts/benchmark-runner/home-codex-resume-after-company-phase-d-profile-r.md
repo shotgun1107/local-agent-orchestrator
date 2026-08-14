@@ -1,33 +1,31 @@
-# 집 Codex 동기화·R07 model-free 교정 시작 프롬프트
+# 집 Codex 동기화·Profile R 시험환경 축소 교정 시작 프롬프트
 
-> 대상: 오늘 집→회사 인수를 담당했던 **같은 집 Codex 작업**에 후속 메시지로
-> 전달한다. 새 작업을 만들 필요가 없다.
+> 대상: 회사 작업을 이어받는 집 Codex 작업. 이전 대화보다 Git 정본과 아래 최신 문서를
+> 우선한다.
 
 ```text
-오늘 회사 PC에서 이어간 local-agent-orchestrator 작업을 집 PC의 현재 Codex 작업으로 다시 인수하라. 이전 대화는 참고하되 Git 정본과 최신 인수인계 문서를 우선한다. 문장을 기계적으로 실행하지 말고, 실제 경로·branch 상태가 다르면 사용자 작업을 보존하는 방향으로 합리적으로 적응하라.
+회사 PC에서 진행한 local-agent-orchestrator 작업을 집 PC의 기존 clone으로 안전하게
+인수한 뒤, Profile R 시험환경 축소 교정을 model-free로 구현하라.
 
 repository:
 https://github.com/shotgun1107/local-agent-orchestrator.git
 
-전달 branch:
+branch:
 codex/phase-d-artifacts
 
-반드시 포함돼야 하는 최소 구현 commit:
-2dab6f01acd8e202109b7d8cb83911247cf8ed65
+최소 ancestor:
+9801d040fafb68d66ce513474c4675d0beb7fe9d
 
-이 프롬프트와 인수인계 문서를 포함한 origin/codex/phase-d-artifacts 최신 tip이 실제 정본이다.
+이 프롬프트를 포함하는 origin/codex/phase-d-artifacts 최신 tip이 실제 정본이다. 새 clone,
+기초 설치, P001~P015 재수집 또는 과거 raw 재현을 반복하지 마라.
 
-이번 세션 목표는 세 가지다.
-
-1. 집의 기존 clone과 P001~P015 원본을 보존하면서 전달 branch 최신 commit/tree로 ff-only 동기화한다.
-2. 실제 model을 호출하지 않고 Profile R B1 R07 회귀시험 입력 오류와 공개 Check 피드백 부족을 최소 수정한다.
-3. 표적·관련 model-free 회귀를 통과시키고 작업 로그를 갱신한 뒤 현재 branch에 commit·push한다.
-
-실제 Worker, SDK thread, Codex model turn, Docker live 비교는 실행하지 마라. 인증은 ChatGPT 구독 계정만 허용하며 API key를 생성·요구·입력·출력하지 마라.
+정본 우선순위는 회사 로컬에서 검증해 push한 commit/tree, origin branch, 집 로컬 순이다.
+집에 local-only 작업이 있으면 폐기하지 말고 보고하되 자동 merge·rebase로 회사 정본을
+바꾸지 마라. 사용자 별도 결정이 없으면 회사 정본을 기준으로 이어간다.
 
 ## 1. 집 로컬 보존 확인
 
-새 clone이나 기초 설치를 반복하지 말고 기존 repository에서 먼저 확인하라.
+먼저 다음을 확인하라.
 
 Get-Location
 git remote get-url origin
@@ -42,152 +40,138 @@ origin은 다음 중 하나여야 한다.
 - https://github.com/shotgun1107/local-agent-orchestrator.git
 - git@github.com:shotgun1107/local-agent-orchestrator.git
 
-다음 중 하나라도 있으면 reset·clean·checkout·switch·stash·pull·rebase하지 말고 파일/commit 목록과 충돌 가능성을 보고한 뒤 멈춰라.
+modified·staged·untracked file, stash, detached HEAD, 다른 origin 또는 local-only commit이
+있으면 reset·clean·stash·rebase·pull로 숨기지 말고 목록과 충돌 가능성을 보고한 뒤
+멈춰라.
 
-- origin이 다름
-- detached HEAD
-- modified, staged 또는 untracked file
-- 기존 stash
-
-P001~P015 원본 위치와 tracked import는 수정·이동·삭제하지 마라. 이미 Git 정본화가 끝났으므로 다시 import·익명화·hash 계산하지 마라.
-
-## 2. 원격과 집 고유 작업 확인
+집에 있는 P001~P015 원본, 과거 raw root, Docker image, .venv, 로그인과 cache는 Git
+동기화 대상이 아니다. 삭제·이동·수정하지 마라.
 
 working tree가 깨끗할 때만 실행하라.
 
 git fetch origin
 git log --oneline --branches --not --remotes
-git rev-parse origin/codex/phase-d-artifacts
-git merge-base --is-ancestor 2dab6f01acd8e202109b7d8cb83911247cf8ed65 origin/codex/phase-d-artifacts
+git merge-base --is-ancestor 9801d040fafb68d66ce513474c4675d0beb7fe9d origin/codex/phase-d-artifacts
 
-local-only commit이 있거나 ancestor 검사가 실패하면 임의 병합·rebase하지 말고 실제 commit 관계를 보고한 뒤 멈춰라.
-
-## 3. 전달 branch ff-only 동기화
-
-집에 local codex/phase-d-artifacts branch가 없으면:
-
-git switch --track origin/codex/phase-d-artifacts
-
-이미 존재하면 divergence를 확인한 뒤:
+문제가 없을 때만 ff-only로 동기화하라.
 
 git switch codex/phase-d-artifacts
 git pull --ff-only origin codex/phase-d-artifacts
 
+동기화 뒤 local/remote HEAD와 tree가 같고 status와 remote diff가 깨끗한지 확인하라.
 main merge·rebase·squash·PR·branch 삭제는 하지 마라.
 
-다음으로 local/remote 동일성을 확인하라.
-
-git rev-parse HEAD
-git rev-parse origin/codex/phase-d-artifacts
-git rev-parse 'HEAD^{tree}'
-git rev-parse 'origin/codex/phase-d-artifacts^{tree}'
-git status --porcelain=v1
-git diff --exit-code origin/codex/phase-d-artifacts -- .
-
-local/remote HEAD와 tree가 각각 같고 status 출력이 없으며 diff가 성공해야 한다. 하나라도 다르면 직접 고치지 말고 보고 후 멈춰라.
-
-## 4. 최신 정본 읽기
+## 2. 최신 정본 읽기
 
 다음 순서로 읽어라.
 
-1. docs/operations/company-to-home-codex-handoff.md
-2. docs/operations/home-to-company-codex-handoff.md
-3. docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-result.md
-4. docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-live-stack-preflight-result.md
-5. benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/benchmark_checks/check_profile_r.py의 R07
-6. tools/benchmark-runner/tests/test_routing_s2.py
-7. stages/b1-sequential/src/orchestrator/verify.py의 Check 실행·재시도 feedback 경계
-8. docs/operations/codex-revision-log.md의 “Phase F Profile R B1 Cell 2 최초 실행” 이후 절
+1. docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
+2. docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md
+3. docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md
+4. docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
+5. docs/experiments/b1-phase-f-final-assessment.md의 2026-08-14 addendum
+6. docs/operations/implementation-incidents/entries/DEV-20260814-002.json
+7. docs/operations/company-to-home-codex-handoff.md §26
+8. docs/operations/codex-revision-log.md의 마지막 절
 
-과거 reconstructed replay R3, P001~P015 재수집 지시와 Phase E 이전 NO-GO 상태를 현재 지시로 사용하지 마라.
+과거 home-to-company revision 6, R07 manifest canonicalization, reconstructed replay R3,
+“첫 SS1 승인 대기”와 “Phase F 즉시 Live” 지시를 현재 작업으로 사용하지 마라.
 
-현재 사실은 다음과 같다.
+현재 상태:
 
-- P001~P015 exact raw Git import와 Profile I source gate 완료
-- Profile R·I challenge 모두 ready
-- Phase E 4-Cell Plan 동결
-- Phase F one-Cell 실행 경계 구현
-- R6에서 Profile R B1 R01~R06 실제 성공
-- R07은 두 Attempt 모두 공개 Check 실패, R08 미실행
-- Cell 3 자동 진행 없음
-- R6 실패 결과는 정상 봉인
-- B1 우위·route 결론은 아직 없음
+- v8 SS1 Cell 1과 B1 Cell 2는 봉인됐지만 B1 R07 환경 결함 때문에 비교가 무효다.
+- route는 ROUTING_INCONCLUSIVE다.
+- DEV-20260814-002는 investigating이다.
+- 실제 SS1·B1·Cell 3은 NO-GO다.
+- 승인된 다음 작업은 축소 환경 교정의 model-free 구현과 검증뿐이다.
 
-## 5. R07 model-free 재현
+## 3. 구현 범위
 
-회사에서 실패 workspace를 수정하지 않고 B1 전용 Python으로 R07 test file만 재실행했을 때 `3 passed, 1 failed`였다. 실패한 함수는 다음이다.
+정본 명세를 그대로 따르되 핵심은 다음과 같다.
 
-test_s2_fake_four_cell_plan_judge_property_seal_export
+1. repository·candidate·state·artifact·workspace·.git 밖의 explicit short Check TEMP를
+   구현한다.
+2. TEMP 설정을 live stack builder→B1 backend→Orchestrator→preflight→actual Check까지
+   끊김 없이 전달한다. host TEMP나 .git fallback은 금지한다.
+3. Worker materialization, B1 GitWorkspace, 별도 git ls-files와 nested fixture restore의
+   모든 Git 호출을 첫 명령부터 longpaths=true, autocrlf=false와 통제된 config 환경으로
+   실행한다.
+4. 명시적인 PRODUCT_ASSERTION만 retry 가능하게 한다. ENVIRONMENT, UNKNOWN,
+   CheckState.ERROR는 retry하지 않는다. stderr 문자열만으로 최종 분류하지 않는다.
+5. 실제 Python subprocess·pytest·filesystem·Git을 쓰는 production-shaped Windows
+   SS1→B1 model-free 시험을 독립 root에서 2회 통과시킨다.
+6. claim 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 뒤 seal state 실패의
+   세 crash window에서 같은 Cell 재실행과 다음 Cell 진행이 차단되는 회귀를 추가한다.
 
-새 test helper가 S2 전용 manifest의 `stage_id`, `purpose`, `initial_cell_order`와 fixture `profile`을 구형 `FrozenManifest` 입력에 그대로 넣어 Pydantic extra-forbidden validation에서 실패했다.
+코어에 Profile R, R07 또는 fixture 이름을 하드코딩하지 마라. 공개 checker assertion을
+삭제·완화·skip·xfail하지 마라. 범용 tamper-proof 계층이나 B2/B3 전체 플랫폼을 이번
+범위에 추가하지 마라.
 
-집 Git 정본의 같은 공개 fixture/test를 model-free로 재현하라. 회사 R6 raw root는 집에 없고 필요하지 않다. 모델·SDK·Docker를 호출하지 말고 Python 3.12 테스트만 사용한다.
+## 4. 시험 경계
 
-## 6. 최소 수정 범위
+개발 중에는 Python 3.12와 기존 가상환경을 사용한다. 실제 model, SDK thread/turn,
+Codex Worker, Docker workload와 network는 호출하지 마라.
 
-다음 원칙으로 구현하라.
+최소 검증 묶음:
 
-1. S2 manifest를 구형 `FrozenManifest`에 그대로 넣지 않도록 test helper의 입력 변환을 고친다.
-2. 기존 production Pydantic model의 extra-forbidden 규칙을 완화하지 않는다.
-3. R07 요구 시험 4개를 삭제·skip·xfail하거나 assertion을 약화하지 않는다.
-4. 공개 checker가 내부 pytest 실패를 한 줄짜리 `R07_PUBLIC_CONTRACT_FAILED`로 지워 B1 재시도가 원인을 받지 못하는 경로를 확인한다.
-5. B1 retry prompt가 Check stdout/stderr를 전달할 수 있는데 checker가 버리는 것이 원인이라면, public source에 한해 bounded하고 조치 가능한 실패 분류 또는 출력 일부를 전달하는 최소 교정을 한다.
-6. 숨은 Judge 값, reference, negative mutation 정답 또는 비공개 경로는 Worker feedback에 넣지 않는다.
-7. R6 workspace의 완성 파일을 정답처럼 복사하지 않는다. Git 정본의 공개 계약에서 일반화 가능한 수정만 한다.
+- B1 TEMP/Git 단위시험
+- 환경 또는 미분류 실패 non-retry 통합시험
+- Benchmark Runner workspace hermetic Git 시험
+- Phase F fail-closed crash-window 시험
+- live stack TEMP wiring 시험
+- production-shaped Windows acceptance 2회
+- 관련 B1·Runner model-free 회귀
+- implementation-log check
+- git diff --check
 
-새 아키텍처, 새 Schema 계층 또는 범용 tamper-proof 추상화를 만들지 마라. 이번 목표는 R07 공개 회귀와 재시도 피드백의 최소 교정이다.
+Windows acceptance는 R01~R08 개별 PASSED, skip·xfail 0, 관련 warning 0, model turn 0,
+Cell 3·4 미실행과 residue 0을 요구한다. 두 실행은 state, artifact와 TEMP allocation을
+공유하지 않아야 한다.
 
-## 7. 검증
+## 5. candidate와 readiness
 
-Python 3.12와 프로젝트의 기존 가상환경을 사용해 다음을 순서대로 실행하라. 실제 로컬 경로와 기존 명령을 확인해 맞게 적응하라.
+구현·시험 source를 clean commit으로 고정한 뒤 Docker-bound hash와 current image identity를
+확인하라. 달라졌으면 새 9-cell qualification이 별도 승인 대상이다.
 
-1. R07 공개 test file 표적
-2. R07 공개 checker 관통 시험
-3. 관련 routing S2 회귀
-4. B1 전체 회귀
-5. Phase F B1 model-free 관통 회귀
-6. 구현 로그 index/harness 검사
-7. git diff --check
+최종 qualification을 참조하는 새 Phase E candidate를 만든 뒤 그 exact candidate로
+production-shaped acceptance 2회를 수행한다. candidate를 다시 수정하지 마라. 별도
+PROFILE_R_LIVE_READINESS package가 candidate seal과 두 acceptance 결과를 결합한다.
 
-테스트 실행 중 실제 SDK/Codex/model/Docker/network가 호출되지 않았음을 확인하라. 테스트 수와 실패·skip을 실제 출력 그대로 보고하고, 실행하지 않은 것은 미확인으로 남겨라.
+candidate 생성, Docker 재자격과 readiness package 제작은 각각 필요한 model-free 단계의
+사용자 승인 범위 안에서만 수행한다. readiness 독립 재심사 전 실제 SS1을 시작하지 마라.
 
-## 8. 기록·commit·push
+## 6. 운영 중단선
 
-원인과 교정을 다음에 기록하라.
-
-- docs/operations/codex-revision-log.md
-- 프로젝트의 기존 implementation incident/log와 index/harness가 요구하는 파일
-
-기존 R1~R6 기록과 봉인 hash는 수정하지 않는다.
-
-변경 범위와 테스트가 정상이고 unrelated file이 없으면 현재 branch에 의도적으로 commit하고 push하라. commit message는 실제 수정 내용을 반영해 작성하되 R07 공개 회귀와 actionable feedback 교정임이 드러나게 한다.
-
-push 뒤 local/remote HEAD·tree 일치와 clean status를 확인한다.
-
-## 9. 실제 재실행 전 중단
-
-commit·push와 보고 뒤 멈춰라. R6는 약 46분 24초, model turn 8회, total token 11,136,599를 사용했다. 실제 R7을 자동으로 시작하지 말고 다음을 사용자에게 먼저 보고한다.
-
-- model-free 수정·검증 결과
-- 새 실제 correction root 제안
-- Cell 2 하나만 실행하고 Cell 3은 실행하지 않는다는 경계
-- 예상 시간과 model 사용량
-- ChatGPT 구독 인증 확인 방식
-
-별도 사용자 승인을 받은 뒤에만 새 root에서 실제 Profile R B1 Cell 2를 실행한다.
+전체 lock·CAS·lease·fencing은 이번 범위에서 구현하지 않는다. 다음 한 pair까지 단일 PC,
+단일 Controller, 단일 state root만 허용한다. 비정상 종료, claim/state/result 불일치 또는
+잔존 process가 있으면 experiment 전체를 폐기하고 resume하지 않는다.
 
 금지:
 
-- reset·clean·stash·rebase로 집 작업 숨김 또는 폐기
-- P001~P015 원본 또는 tracked raw 수정·이동·삭제·재수집
-- R1~R6 raw 수정·성공 재분류
-- 공개 검사 완화·삭제·skip
-- 실제 Worker·SDK thread·Codex model turn
-- Docker live 비교
+- 실제 SS1·B1·Cell 3 또는 다른 model Cell
+- 환경 오류 뒤 model retry
+- abnormal experiment resume 또는 cross-PC continuation
+- 과거 raw·seal·candidate 수정·재봉인·성공 재분류
+- P001~P015 수정
 - API key 생성·요구·입력·출력
-- Cell 3 자동 진행
-- main merge·PR·branch 삭제
-- 사용자가 요청하지 않은 하위 에이전트 호출
+- main 병합·rebase·squash·branch 삭제
 
-최종 보고는 과거·현재·미래 순으로 쉽게 작성하라.
+## 7. 기록과 보고
+
+구현·검증을 완료하면 DEV-20260814-002와 codex revision log를 실제 결과로 갱신하라.
+incident는 모든 required Evidence가 통과하기 전 resolved로 닫지 마라.
+
+변경과 시험이 정상이고 unrelated file이 없을 때만 현재 branch에 commit·push하라. push 뒤
+local/remote HEAD·tree 일치와 clean status를 확인하라.
+
+최종 보고는 다음을 구분한다.
+
+- 구현한 것
+- 실제 실행해 통과한 model-free 시험
+- 미확인
+- Docker 재자격 필요 여부
+- readiness package 전 남은 관문
+- model·SDK·Codex·Docker workload 호출 수
+
+보고 뒤 멈춰라. 실제 Live는 별도 사용자 승인 대상이다.
 ```
