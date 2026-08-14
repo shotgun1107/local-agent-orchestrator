@@ -28,52 +28,52 @@
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "6f863dbabe8f1437312633e5e2ba5dfb7b81594e49524df786affafc5320efee",
+      "sha256": "a6067a1f14f02925e39d5e327b1ca2c381d5708af02c4ff22b5fc2fbc525d600",
       "size": 9234
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "7acb8f94bd08993ab4e590b2e7d274a9381f460fe73e8526d9e6ee034f14f3cb",
+      "sha256": "d9fe8ee68784eb272607cd45d7ca6961a6d5f09e000ff54a6d87d1696457eaa2",
       "size": 6766
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "160e5108b0997dc44ddc6e0704bcb7667053493093e5d7b5cbbe5a0b8e0ef03b",
+      "sha256": "9393c0de9c5f44e06ea13650f735c907b343a32ce265d08bcfe4c645fd23eec1",
       "size": 7170
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "012ac353074746238a5b3997c76d30c0a08dd18a1fb01fc09570132c3e441b6f",
+      "sha256": "e8c9360d5d275493f49f5fe505651bdb474ba537da6f8538ab01830b69e6590e",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "7138d9ab21c93c28b467d26066b5ae0e52f26d2e4636e5da49b1d3cc609c7289",
+      "sha256": "84ccf84480d93f4fe37ad0346411b3e643e71dfbe9157fac93a2f1944939587a",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "fc1babe0977b6e70f537d10bc5715c33f62679b1ddec96adabaa4e1797e84439",
+      "sha256": "def477fe13ce69502b7acf579b2e46515517a68be51e4307d13cc370707763ac",
       "size": 7953
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "99b380bbc2f6982f2286bad8e4f74dbec3b1a0de686d1a25af7718a7fc39fdc1",
+      "sha256": "9a7dab7a51bd48118698355cd2f11095a9c5474445299001f9ed872d80c41f36",
       "size": 9231
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "c93bc803bfe6b4a86c94bdbd339c00ae42ccf203c9455b13a9a43132140ef399",
+      "sha256": "6ad8bb22d8b4751f899b2aecd491c50f2b2bc52fb06c54773f2c266614358650",
       "size": 9239
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "2d2555c3243fd9826f8b6e9dcbebc9515adfb699ce9bf486d8dd1d46a768596b",
+      "sha256": "009d29fa936ba38d5ebd89828e98bbbc614c5f0180e048cd351bd2a7e1131e46",
       "size": 6396
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "5f86374b9c2951657895af9d92755ceb157c227753110231557aa247cefaee53",
+      "sha256": "bb45ae9ad42a5cbdeb4ee759e40e1b3a2c45cdbc33d41cc70fcfec15b0329244",
       "size": 9227
     },
     {
@@ -162,7 +162,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "b2e92cbebd4f8553aeb9b6ad127d5c573fe5647b614de5f4c432db684729f348",
+  "payload_aggregate_sha256": "ee0fadf9be62011a4e8700febc8301bcc067329068c4715bda70248cdd913dfd",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,
