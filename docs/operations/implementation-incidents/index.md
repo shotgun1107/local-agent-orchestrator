@@ -3308,6 +3308,9 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 - `review-finding`: ChatGPT Pro 1차 심사는 Live NO-GO, 축소 재심은 외부 TEMP·첫 Git 호출 통제·환경 실패 non-retry·production-shaped Windows 시험 2회를 포함하는 구현계획을 조건부 승인했다
 - `source-inspection`: commit 80c8c9e에서 외부 Check TEMP, hermetic Git, typed Check 실패와 product-only retry, Phase F crash-window fail-closed 경계를 구현했다
 - `reproducible-test`: 실제 subprocess·pytest·filesystem·Git을 사용하는 SS1→B1 운영형 모의 흐름을 독립 root에서 2회 통과했고 각 실행에서 R01~R08 Check 16/16, Cell 3 미생성, cleanup residue 0을 확인했다
+- `direct-observation`: q10은 기능 판정 9/9가 맞았지만 stale workspace hash로 CHALLENGE_NOT_READY였으며 raw와 seal을 성공 근거와 분리해 보존했다
+- `reproducible-test`: R-P04 변이를 R-P06과 분리한 source commit 85af6e3의 q11 Docker 9-Cell이 CHALLENGE_READY와 기대 일치 9/9를 냈다
+- `reproducible-test`: Phase E v9 exact candidate로 production-shaped SS1→B1 acceptance를 독립 root에서 2회 통과했고 각 실행에서 Check 16/16, Cell 3 미생성, TEMP residue 0을 확인했다
 
 ### 근본 원인
 
@@ -3322,7 +3325,7 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 채택한 해결
 
-축소 교정 source 구현과 model-free 구조 검증은 commit 80c8c9e에서 완료했다. 다만 변경 source에 대한 Docker identity, 새 qualification/candidate, exact-candidate acceptance, readiness package와 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
+축소 교정 source 구현은 commit 80c8c9e, Judge 변이 격리는 85af6e3에서 완료했다. Profile R qualification v10, Phase E v9 후보와 exact-candidate acceptance 2회까지 통과했다. 다만 readiness package 봉인과 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3350,22 +3353,27 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 - B1 전체 81 passed
 - 관련 Runner 45 passed, 2 opt-in skipped
 - production-shaped Windows SS1→B1 model-free acceptance 2회 통과
-- model·SDK thread/turn·Codex·Docker 호출 0회
+- Profile R qualification v10 CHALLENGE_READY와 기대 일치 9/9
+- Phase E v9 후보 0 model turn 생성 및 별도 verifier 통과
+- Phase E v9 exact-candidate acceptance 2회가 90.91s와 98.22s에 통과
+- 환경 교정 unit/integration과 acceptance의 model·SDK thread/turn·Codex·Docker 호출 0회
+- q11은 Docker Judge 9개를 실행했고 Phase E v9은 SDK account/model-list만 확인했으며 전체 model turn은 0회
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
-- source 변경으로 qualification v7과 Phase E v8 candidate는 새 Live 입력으로 stale하다
-- 현재 source의 Docker identity 판단, 필요 시 9-cell 재자격과 새 Phase E candidate가 필요하다
-- 새 exact candidate로 acceptance 2회와 live-readiness package 독립 재심사가 끝나지 않았다
+- live-readiness package 봉인과 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-model-free-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-company-v10-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v9-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-result.md

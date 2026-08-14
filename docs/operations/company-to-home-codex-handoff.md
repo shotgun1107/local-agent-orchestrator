@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 19
+- revision: 20
 - 작성일: 2026-08-14
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -10,6 +10,9 @@
 - 회사가 인수한 원격 기준 commit: `ee877eb2e947e1d2af4d36f845166a358aad8927`
 - 이번 B1 시험환경 수정 commit: `ed1e1602d8df546e016ba94405f8143088070709`
 - 이번 Profile R 환경 교정 구현 commit: `80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a`
+- 이번 Judge 변이 격리 commit: `85af6e33e6aebdde8a8b5218054ca14e0be7e700`
+- 이번 qualification binding commit: `f17c43e816ba585bdb8324c4ecb41e27e3112372`
+- 이번 Phase E v9 record commit: `78b55529fe1cccd8e54028381a468f64edd94bd9`
 
 > 이 문서를 포함하는 원격 tip이 집에서 받을 정본이다. 집에서는 이 문서의 고정
 > commit으로 hard reset하지 말고 `git fetch` 뒤
@@ -500,3 +503,24 @@ source의 official acceptance가 아니다. 집에서는 기존 raw·Docker imag
 않는다. 다음 사용자 결정은 현재 Docker identity 확인과 새 qualification/candidate 제작을
 회사에서 계속할지 여부다. 그 뒤 exact-candidate acceptance 2회, readiness package와
 독립 재심사가 필요하다.
+
+## 28. 2026-08-14 Profile R v10 자격화·Phase E v9·exact acceptance 완료
+
+이 절은 §27의 남은 qualification/candidate/acceptance 작업을 수행한 최신 회사 정본이다.
+
+- q10은 기능 판정 9/9가 맞았지만 옛 workspace hash 때문에 `CHALLENGE_NOT_READY`였다.
+  raw와 seal은 `C:\\q10\\profile-r-docker-matrix-q10`에 보존하고 성공 근거로 쓰지 않는다.
+- R-P04 고장판이 R-P06까지 깨뜨리는 변이를 분리한 뒤 Judge source bundle은
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`가 됐다.
+- clean source `85af6e3`의 q11은 기존 Docker image에서 `CHALLENGE_READY`, 9/9다.
+  공식 projection은 Profile R qualification v10이고 q11 raw는 `C:\\q11`에 있다.
+- qualification을 stage에 결합한 commit `f17c43e`에서 Phase E v9 후보를 만들었다.
+  experiment는 `exp_20260814_1c971b08_1`, candidate seal은 `eb1b2186...d5da`, model
+  turn은 0이다.
+- exact candidate acceptance 2회는 `90.91s`, `98.22s`에 통과했다. 매번 SS1 Cell 1과
+  B1 Cell 2만 seal했고, B1 공개 Check 16/16, Cell 3 미생성, TEMP residue 0이었다.
+
+아직 실제 model Cell을 실행하지 않는다. 남은 관문은 candidate·qualification·환경 identity와
+두 acceptance를 결합한 `PROFILE_R_LIVE_READINESS` package 봉인 및 독립 재심사다.
+`DEV-20260814-002`는 그 승인 전까지 `investigating`이고, 집에서는 새 qualification,
+candidate 또는 acceptance를 다시 만들지 않는다.

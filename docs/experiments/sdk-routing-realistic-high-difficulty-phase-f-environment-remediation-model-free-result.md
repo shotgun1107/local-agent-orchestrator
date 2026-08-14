@@ -48,3 +48,14 @@ official acceptance 또는 실제 SS1/B1 실행 승인으로 사용하지 않는
 다음 순서는 현재 Docker identity 판단, 필요 시 Profile R 9-cell 재자격, 새 Phase E
 candidate 생성, 그 exact candidate 기반 acceptance 2회, live-readiness package 봉인과
 독립 재심사다. 그 승인 전 실제 model Cell은 계속 금지한다.
+
+## 2026-08-14 exact-candidate 후속 결과
+
+이 문서의 stale v8 구조 회귀 뒤 현재 source를 qualification v10으로 다시 자격화했고,
+Phase E v9 후보 `exp_20260814_1c971b08_1`을 0 model turn으로 봉인했다. 그 exact
+candidate를 사용한 production-shaped acceptance 2회는 각각 `90.91s`, `98.22s`에
+통과했다. 두 실행 모두 R01~R08 Check 16/16, Cell 3 미생성, Check TEMP residue 0이다.
+
+상세 hash와 판정은
+`docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-result.md`에 있다. 남은 관문은 readiness package와 독립
+재심사이며 Live NO-GO는 유지한다.

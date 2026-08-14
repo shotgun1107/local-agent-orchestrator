@@ -2290,3 +2290,21 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   수행한 두 모의 실행은 구조 회귀이며 official acceptance가 아니다. 새 qualification과
   candidate, exact-candidate acceptance 2회, readiness package와 독립 재심사 전까지
   Live와 `DEV-20260814-002` closure는 계속 NO-GO다.
+
+## Profile R qualification v10·Phase E v9·exact-candidate acceptance
+
+- 환경 교정 source `51f64d6`으로 실행한 q10은 reference와 8개 변이의 기능 판정은 모두
+  맞았지만 Judge bundle의 workspace hash가 stale해 `CHALLENGE_NOT_READY`였다. q10 raw와
+  seal은 보존하고 qualification으로 사용하지 않는다.
+- Judge bundle 재생성 중 R-P04 변이가 R-P06 export 회귀까지 함께 실패시키는 비독립
+  고장판을 확인했다. builder가 R-P04 turn-cap 계산만 깨뜨리도록 수정했고 commit
+  `85af6e3`의 source bundle은 8개 변이 각각 목표 property만 실패했다.
+- q11 Docker 9-Cell은 `CHALLENGE_READY`, 기대 일치 9/9, model turn 0이다. qualification
+  v10 seal은 `26061d75...c8cc`, projection SHA-256은 `5b175ecb...2b1e`다.
+- stage binding commit `f17c43e`에서 Phase E v9 후보를 생성했다. experiment
+  `exp_20260814_1c971b08_1`, Plan `1c971b08...a784`, candidate seal
+  `eb1b2186...d5da`, 실제 model turn 0이다.
+- exact candidate production-shaped acceptance 2회는 `90.91s`, `98.22s`에 통과했다.
+  각각 R01~R08 Check 16/16, Cell 1·2만 seal, Cell 3 미생성, TEMP residue 0이다.
+- 남은 관문은 별도 `PROFILE_R_LIVE_READINESS` package와 독립 재심사다. 그 전까지 실제
+  SS1·B1·Cell 3은 NO-GO이고 `DEV-20260814-002`는 investigating을 유지한다.
