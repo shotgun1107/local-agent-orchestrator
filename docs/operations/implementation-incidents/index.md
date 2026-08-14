@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 53건
-- 해결: 51건
-- 조사 중: 2건
+- 전체: 55건
+- 해결: 52건
+- 조사 중: 3건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -66,6 +66,8 @@
 | DEV-20260813-001 | resolved | phase-f-profile-r-b1 | integration | R8 R07 재시도 피드백이 두 공개 test의 setup error 원인을 전달하지 못함 |
 | DEV-20260813-002 | resolved | b1-sequential | integration | B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함 |
 | DEV-20260813-003 | resolved | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
+| DEV-20260814-001 | resolved | phase-f-profile-r | implementation | Phase F SS1 실행기가 부분 실패를 봉인하지 못하고 실제 원인을 가림 |
+| DEV-20260814-002 | investigating | phase-f-profile-r | test | B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3222,3 +3224,122 @@ B1 Check가 호스트 TEMP/TMP를 그대로 상속하여 다른 Windows sandbox 
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-v5-result.md
+
+## DEV-20260814-001 — Phase F SS1 실행기가 부분 실패를 봉인하지 못하고 실제 원인을 가림
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r`
+- 분류: `implementation`
+- 발견: 2026-08-14T00:50:54Z / Phase F Profile R SS1 회사 v7 live run
+- 해결: 2026-08-14T00:56:46Z
+
+### 증상
+
+SS1이 R05 뒤 실패했지만 실행기가 여덟 Task Evidence를 먼저 요구해 ss1_task_resolution_failed 대신 Evidence differs 예외로 종료했고 Judge·Measurement·seal이 생성되지 않았다
+
+### 재현
+
+- Phase E v7의 Profile R SS1 Cell 1을 한 번 실행해 R05 산출물이 빠진 product failure를 만든다
+- 부분 Task Evidence가 있는 non-completed adapter 결과를 Phase F SS1 실행기에 반환한다
+
+### 증거
+
+- `direct-observation`: raw root C:\lao-phase-f-live-0a8bd290-company-pair-1에서 R01~R05까지만 진행된 뒤 PhaseFSS1BackendError: SS1 initial Task semantics Evidence differs로 종료됐다
+- `reproducible-test`: R05 효과를 생략한 Fake SS1에서 부분 Evidence와 ss1_task_resolution_failed를 보존하고 Cell 1을 SEALED로 닫는 회귀를 추가했다
+
+### 근본 원인
+
+실행기가 adapter outcome을 확인하기 전에 항상 여덟 initial Task semantics Evidence를 요구했고 non-completed 결과도 예외로 바꿨다. 제품 실패와 실행기 기반시설 실패의 경계가 뒤집혀 있었다.
+
+### 검토한 해결안
+
+- `rejected` 부분 실패를 예외로 유지 — 실제 실패 원인과 부분 Evidence를 잃고 다음 Cell 진행 여부도 판단할 수 없다
+- `adopted` 완료한 Task prefix만 검증하고 실패 결과도 Judge·Measurement·seal로 보존 — 제품 실패를 정직하게 기록하면서 실행기 오류와 구분한다
+
+### 채택한 해결
+
+completed outcome일 때만 여덟 Task Evidence를 모두 요구하고 non-completed outcome은 완료된 prefix만 검증한다. adapter 실패를 예외로 바꾸지 않고 PhaseFBackendResult로 반환해 finalizer가 Judge·Measurement·seal을 생성하게 했다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py의 partial task-resolution failure seal 회귀
+
+### 검증 결과
+
+- 관련 Phase F model-free 시험 28 passed, 1 opt-in skipped
+- Phase E v8 실제 SS1 결과가 Judge·Measurement·seal로 종료되고 별도 verifier를 통과함
+
+### 남은 위험
+
+- 실패한 v7 raw는 정식 비교 표본이 아니며 수정·재봉인하지 않고 별도 보존한다
+
+### 추적 정보
+
+- 관련 커밋: ecb62139d824db5917d599c61cd18d107b8d2d22
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
+
+## DEV-20260814-002 — B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과
+
+- 상태: `investigating`
+- 단계: `phase-f-profile-r`
+- 분류: `test`
+- 발견: 2026-08-14T03:10:52Z / Phase F Profile R B1 회사 v8 live run
+- 해결: 미해결
+
+### 증상
+
+R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 experiment/cell/workspace 경로를 만들어 git init이 Filename too long으로 실패했고 재시도도 같은 이유로 실패했다
+
+### 재현
+
+- raw root C:\lao-phase-f-live-66e6607b-company-pair-2의 B1 R07 attempt 001과 002 check result를 읽는다
+- Worker workspace에서 python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py를 실행한다
+
+### 증거
+
+- `direct-observation`: 두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다
+- `direct-observation`: 재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다
+
+### 근본 원인
+
+B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. core.longpaths 설정만으로는 git init이 접근할 config 경로를 안정적으로 만들지 못했다.
+
+### 검토한 해결안
+
+- `rejected` 같은 live Cell을 다시 실행 — 동일한 결정적 환경 결함에 model turn만 더 소비한다
+- `rejected` R07 회귀를 줄이거나 skip — 검사 강도를 낮춰 잘못된 성공을 만들 수 있다
+- `deferred` Check 임시 Git root를 짧고 격리된 Windows 경로로 이동하고 실제 B1 환경을 감사 — 다음 model-free 수정과 재감사 범위로 고정해야 한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 실제 B1 Worker와 같은 깊이의 workspace에서 R07 공개 S2 pytest가 nested Git repository를 생성하고 통과하는 회귀
+- Check별 짧은 임시 root가 다른 sandbox identity와 충돌하지 않고 종료 뒤 정리되는 회귀
+
+### 검증 결과
+
+- B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨
+- R07 attempt 002에 attempt 001의 공개 traceback과 long-path 힌트가 전달됨
+- B1 Cell 실패 Measurement와 seal은 별도 finalization verifier를 통과함
+
+### 남은 위험
+
+- 해결 전에는 Profile R SS1/B1 속도·비용·품질 비교가 유효하지 않다
+- 현재 qualification v7의 9-cell Docker Judge 성공은 실제 B1 Check 내부의 nested pytest 경로까지 감사한 것이 아니다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md

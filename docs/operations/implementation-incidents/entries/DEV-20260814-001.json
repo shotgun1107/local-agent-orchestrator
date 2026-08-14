@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260814-001",
+  "title": "Phase F SS1 실행기가 부분 실패를 봉인하지 못하고 실제 원인을 가림",
+  "status": "resolved",
+  "stage": "phase-f-profile-r",
+  "category": "implementation",
+  "discovered_at": "2026-08-14T00:50:54Z",
+  "resolved_at": "2026-08-14T00:56:46Z",
+  "discovered_by": "Phase F Profile R SS1 회사 v7 live run",
+  "symptom": "SS1이 R05 뒤 실패했지만 실행기가 여덟 Task Evidence를 먼저 요구해 ss1_task_resolution_failed 대신 Evidence differs 예외로 종료했고 Judge·Measurement·seal이 생성되지 않았다",
+  "reproduction": [
+    "Phase E v7의 Profile R SS1 Cell 1을 한 번 실행해 R05 산출물이 빠진 product failure를 만든다",
+    "부분 Task Evidence가 있는 non-completed adapter 결과를 Phase F SS1 실행기에 반환한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "raw root C:\\lao-phase-f-live-0a8bd290-company-pair-1에서 R01~R05까지만 진행된 뒤 PhaseFSS1BackendError: SS1 initial Task semantics Evidence differs로 종료됐다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "R05 효과를 생략한 Fake SS1에서 부분 Evidence와 ss1_task_resolution_failed를 보존하고 Cell 1을 SEALED로 닫는 회귀를 추가했다"
+    }
+  ],
+  "root_cause": "실행기가 adapter outcome을 확인하기 전에 항상 여덟 initial Task semantics Evidence를 요구했고 non-completed 결과도 예외로 바꿨다. 제품 실패와 실행기 기반시설 실패의 경계가 뒤집혀 있었다.",
+  "considered_options": [
+    {
+      "option": "부분 실패를 예외로 유지",
+      "decision": "rejected",
+      "reason": "실제 실패 원인과 부분 Evidence를 잃고 다음 Cell 진행 여부도 판단할 수 없다"
+    },
+    {
+      "option": "완료한 Task prefix만 검증하고 실패 결과도 Judge·Measurement·seal로 보존",
+      "decision": "adopted",
+      "reason": "제품 실패를 정직하게 기록하면서 실행기 오류와 구분한다"
+    }
+  ],
+  "resolution": "completed outcome일 때만 여덟 Task Evidence를 모두 요구하고 non-completed outcome은 완료된 prefix만 검증한다. adapter 실패를 예외로 바꾸지 않고 PhaseFBackendResult로 반환해 finalizer가 Judge·Measurement·seal을 생성하게 했다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py의 partial task-resolution failure seal 회귀"
+  ],
+  "verification": [
+    "관련 Phase F model-free 시험 28 passed, 1 opt-in skipped",
+    "Phase E v8 실제 SS1 결과가 Judge·Measurement·seal로 종료되고 별도 verifier를 통과함"
+  ],
+  "remaining_risks": [
+    "실패한 v7 raw는 정식 비교 표본이 아니며 수정·재봉인하지 않고 별도 보존한다"
+  ],
+  "related_commits": [
+    "ecb62139d824db5917d599c61cd18d107b8d2d22"
+  ],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md"
+  ]
+}
