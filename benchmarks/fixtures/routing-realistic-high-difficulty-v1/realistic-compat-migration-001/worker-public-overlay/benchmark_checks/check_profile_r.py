@@ -263,8 +263,18 @@ def _import_runner_module(name: str):
         sys.path.insert(0, source)
     try:
         return importlib.import_module(f"benchmark_runner.{name}")
-    except Exception as exc:
+    except OSError as exc:
+        raise PublicContractError(
+            f"public module import environment is unavailable: {name}",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except (ImportError, SyntaxError) as exc:
         raise PublicContractError(f"public module import failed: {name}") from exc
+    except Exception as exc:
+        raise PublicContractError(
+            f"public module import failed without a typed cause: {name}",
+            failure_classification="UNKNOWN",
+        ) from exc
 
 
 def check_r02() -> None:

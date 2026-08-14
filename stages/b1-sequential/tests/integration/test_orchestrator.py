@@ -257,6 +257,69 @@ def test_public_checker_permission_error_is_environment_failure_and_never_retrie
     assert snapshot["checks"][0]["state"] == "FAILED"
 
 
+def test_public_checker_import_permission_error_stops_before_retry_or_next_task(
+    tmp_path: Path,
+    project_factory,
+) -> None:
+    root = project_factory()
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    injected_check = "\n".join(
+        (
+            "import importlib.util, pathlib, sys",
+            "path = pathlib.Path(sys.argv[1])",
+            "spec = importlib.util.spec_from_file_location('profile_r_public_check', path)",
+            "module = importlib.util.module_from_spec(spec)",
+            "spec.loader.exec_module(module)",
+            "original = module.importlib.import_module",
+            "def denied(name, *args, **kwargs):",
+            "    if name.startswith('benchmark_runner.'):",
+            "        raise PermissionError('injected public module import denial')",
+            "    return original(name, *args, **kwargs)",
+            "module.importlib.import_module = denied",
+            "module.CHECKS['R02'] = lambda: module._import_runner_module('routing_suite')",
+            "raise SystemExit(module.main(['check_profile_r.py', 'R02']))",
+        )
+    )
+    checks["checks"]["test_check"]["argv"] = [
+        sys.executable,
+        "-c",
+        injected_check,
+        str(PROFILE_R_PUBLIC_CHECK),
+    ]
+    checks_path.write_text(
+        yaml.safe_dump(checks, sort_keys=False),
+        encoding="utf-8",
+    )
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise public module import permission failure")
+
+    runtime = FakeRuntime()
+    state = tmp_path / "state"
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        check_temp_root=tmp_path / "check-temp",
+        runtime_port=runtime,
+        runtime_profile_override={"runtime": "fake"},
+        auth_method_override="none",
+    )
+    try:
+        run_id = orchestrator.start(make_spec(tasks=2))
+    finally:
+        orchestrator.close()
+
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    first_attempts = snapshot["tasks"][0]["attempts"]
+    assert len(first_attempts) == 1
+    assert first_attempts[0]["failure_kind"] == "check_environment"
+    assert snapshot["checks"][0]["state"] == "FAILED"
+    assert snapshot["tasks"][1]["attempts"] == []
+    assert runtime.turn_count == 1
+    assert len(runtime.initial_feedbacks) == 1
+
+
 def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:
     root = project_factory()
     _, snapshot = execute(root, tmp_path / "state", make_spec(), scenario="transient_failure")
