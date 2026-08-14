@@ -71,7 +71,11 @@ def _completed_result(task_id: str) -> dict[str, object]:
     }
 
 
-def _runtime_factory(captured: list[FakeSdkRuntime]):
+def _runtime_factory(
+    captured: list[FakeSdkRuntime],
+    *,
+    omit_effects_for: frozenset[str] = frozenset(),
+):
     effects = {
         "R02": (
             (
@@ -108,7 +112,9 @@ def _runtime_factory(captured: list[FakeSdkRuntime]):
             workspace,
             {
                 task_id: FakeTurnScript(
-                    effects=effects.get(task_id, ()),
+                    effects=(
+                        () if task_id in omit_effects_for else effects.get(task_id, ())
+                    ),
                     result=_completed_result(task_id),
                 )
                 for task_id in PROFILE_R_EXPECTED_TASK_IDS
@@ -396,6 +402,68 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         / PHASE_F_CLAIM_FILENAME
     ).exists()
     assert not (artifact_root / str(cell_three["cell_id"])).exists()
+
+
+def test_ss1_task_resolution_failure_is_preserved_sealed_and_stops_before_b1(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    artifact_root = tmp_path / "backend"
+    runtimes: list[FakeSdkRuntime] = []
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=ProfileRPhaseFSS1Backend(
+            repository=REPOSITORY,
+            artifact_root=artifact_root,
+            runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+            runtime_factory=_runtime_factory(
+                runtimes,
+                omit_effects_for=frozenset({"R05"}),
+            ),
+            telemetry=ModelFreeClearBoundaryTelemetry(),
+            environ={},
+        ),
+        judge=FakePhaseFJudgePort(check_success=True),
+    )
+
+    result = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+
+    cell_root = artifact_root / result.executed_cell_id
+    evidence = json.loads(
+        (cell_root / PHASE_F_SS1_EVIDENCE_FILENAME).read_text(encoding="utf-8")
+    )
+    status = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+    )
+
+    assert evidence["adapter_outcome_state"] == "infrastructure_error"
+    assert evidence["adapter_failure_kind"] == "ss1_task_resolution_failed"
+    assert len(evidence["dispatched_task_semantics_sha256"]) == 5
+    assert result.next_execution_ordinal == 2
+    assert [item["lifecycle"] for item in status["cells"]] == [
+        PhaseFCellLifecycle.SEALED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+        PhaseFCellLifecycle.PLANNED.value,
+    ]
+    assert (
+        cell_root
+        / PHASE_F_FINAL_DIRECTORY
+        / PHASE_F_SEALED_DIRECTORY
+        / PHASE_F_CELL_SEAL_FILENAME
+    ).is_file()
 
 
 def test_live_backend_refuses_model_free_clear_telemetry(tmp_path: Path) -> None:
