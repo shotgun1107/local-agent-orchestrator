@@ -191,6 +191,7 @@ CREATE TABLE attempts (
   result_claim TEXT,
   failure_kind TEXT CHECK(failure_kind IS NULL OR failure_kind IN (
     'transient_runtime', 'runtime_unknown', 'malformed_result', 'check_failed',
+    'check_environment', 'check_unknown',
     'stale_input', 'scope_violation', 'timeout', 'dispatch_uncertain',
     'terminal_unknown', 'artifact_corrupt', 'internal'
   )),

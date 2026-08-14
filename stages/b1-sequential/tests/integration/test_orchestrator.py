@@ -16,7 +16,9 @@ from tests.conftest import git, make_spec
 
 def execute(root: Path, state: Path, spec, *, scenario="complete", fixture=None):
     orchestrator = Orchestrator(
-        load_project(root), state_root=state, runtime_kind="fake",
+        load_project(root), state_root=state,
+        check_temp_root=state.parent / f"{state.name}-check-temp",
+        runtime_kind="fake",
         fake_scenario=scenario, fake_fixture=fixture,
     )
     try:
@@ -64,6 +66,7 @@ def test_run_level_turn_override_blocks_before_dispatching_past_budget(
     orchestrator = Orchestrator(
         load_project(root),
         state_root=state,
+        check_temp_root=tmp_path / "check-temp",
         runtime_kind="fake",
         max_turns_override=1,
     )
@@ -83,8 +86,11 @@ def test_worker_completed_claim_cannot_override_failed_check(tmp_path: Path, pro
     _, snapshot = execute(root, tmp_path / "state", make_spec())
     assert snapshot["run"]["state"] == "FAILED"
     assert snapshot["tasks"][0]["state"] == "FAILED"
-    assert len(snapshot["tasks"][0]["attempts"]) == 2
-    assert all(attempt["failure_kind"] == "check_failed" for attempt in snapshot["tasks"][0]["attempts"])
+    assert len(snapshot["tasks"][0]["attempts"]) == 1
+    assert all(
+        attempt["failure_kind"] == "check_unknown"
+        for attempt in snapshot["tasks"][0]["attempts"]
+    )
 
 
 def test_retry_prompt_receives_only_explicit_public_check_feedback(
@@ -98,6 +104,7 @@ def test_retry_prompt_receives_only_explicit_public_check_feedback(
         "python",
         "-c",
         (
+            "print('CHECK_FAILURE_CLASS:PRODUCT_ASSERTION'); "
             "print('unmarked private diagnostic'); "
             "print('WORKER_FEEDBACK:rerun the public regression and fix its strict input'); "
             "print('WORKER_FEEDBACK:Traceback (most recent call last):'); "
@@ -116,6 +123,7 @@ def test_retry_prompt_receives_only_explicit_public_check_feedback(
     orchestrator = Orchestrator(
         load_project(root),
         state_root=tmp_path / "state",
+        check_temp_root=tmp_path / "check-temp",
         runtime_port=runtime,
         runtime_profile_override={"runtime": "fake"},
         auth_method_override="none",
@@ -156,6 +164,29 @@ def test_retry_prompt_receives_only_explicit_public_check_feedback(
     with Ledger(tmp_path / "state" / "ledger.sqlite") as ledger:
         snapshot = ledger.load_run_snapshot(run_id)
     assert snapshot["run"]["state"] == "FAILED"
+
+
+def test_check_process_error_is_environment_failure_and_never_retries(
+    tmp_path: Path,
+    project_factory,
+) -> None:
+    root = project_factory()
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    checks["checks"]["test_check"]["argv"] = ["missing-check-command-for-test.exe"]
+    checks_path.write_text(
+        yaml.safe_dump(checks, sort_keys=False),
+        encoding="utf-8",
+    )
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise environment failure")
+
+    _, snapshot = execute(root, tmp_path / "state", make_spec())
+
+    attempts = snapshot["tasks"][0]["attempts"]
+    assert len(attempts) == 1
+    assert attempts[0]["failure_kind"] == "check_environment"
+    assert snapshot["checks"][0]["state"] == "ERROR"
 
 
 def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:
@@ -229,6 +260,7 @@ def test_directory_artifact_gets_immediate_guidance_then_file_artifact_passes(
     orchestrator = Orchestrator(
         load_project(root),
         state_root=state,
+        check_temp_root=tmp_path / "check-temp",
         runtime_kind="injected_fake",
         runtime_port=runtime,
         runtime_profile_override={"runtime": "fake"},
@@ -411,7 +443,12 @@ def test_dirty_worktree_is_rejected_before_run_creation(tmp_path: Path, project_
     root = project_factory()
     (root / "dirty.txt").write_text("dirty\n", encoding="utf-8")
     state = tmp_path / "state"
-    orchestrator = Orchestrator(load_project(root), state_root=state, runtime_kind="fake")
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        check_temp_root=tmp_path / "check-temp",
+        runtime_kind="fake",
+    )
     try:
         with pytest.raises(ConfigurationError, match="clean"):
             orchestrator.start(make_spec())
@@ -428,7 +465,12 @@ def test_controller_restart_resumes_from_reported_without_new_session(tmp_path: 
         def _verify_and_finish(self, *args, **kwargs):
             raise RuntimeError("simulated controller crash after REPORTED")
 
-    first = CrashAfterReport(load_project(root), state_root=state, runtime_kind="fake")
+    first = CrashAfterReport(
+        load_project(root),
+        state_root=state,
+        check_temp_root=tmp_path / "check-temp",
+        runtime_kind="fake",
+    )
     try:
         with pytest.raises(RuntimeError, match="simulated controller crash"):
             first.start(make_spec())
@@ -440,7 +482,12 @@ def test_controller_restart_resumes_from_reported_without_new_session(tmp_path: 
         assert snapshot["tasks"][0]["attempts"][0]["state"] == "REPORTED"
         assert len(snapshot["sessions"]) == 1
 
-    second = Orchestrator(load_project(root), state_root=state, runtime_kind="fake")
+    second = Orchestrator(
+        load_project(root),
+        state_root=state,
+        check_temp_root=tmp_path / "check-temp",
+        runtime_kind="fake",
+    )
     try:
         second.resume(run_id, make_spec())
     finally:

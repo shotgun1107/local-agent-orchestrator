@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import benchmark_runner.realistic_phase_f as phase_f_module
 
 from benchmark_runner.realistic_phase_f import (
     PHASE_F_CELLS_DIRECTORY,
@@ -59,6 +60,12 @@ class LiveTripwireBackend(FakePhaseFBackend):
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         raise AssertionError("live tripwire backend must not be called")
+
+
+class RaisingFakeBackend(FakePhaseFBackend):
+    def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
+        self.calls.append(request)
+        raise RuntimeError("model-free backend failure")
 
 
 def _initialize(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -193,3 +200,117 @@ def test_controller_source_has_no_concrete_sdk_or_process_backend() -> None:
     ).read_text(encoding="utf-8")
     for forbidden in ("openai_codex", "subprocess", "CodexSdkRuntime", "turn/start"):
         assert forbidden not in source
+
+
+def test_claim_written_then_state_write_failure_blocks_every_future_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    backend = FakePhaseFBackend()
+    monkeypatch.setattr(
+        phase_f_module,
+        "atomic_write",
+        lambda path, data: (_ for _ in ()).throw(OSError("state write failed")),
+    )
+
+    with pytest.raises(OSError, match="state write failed"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert backend.calls == []
+
+    with pytest.raises(PhaseFControllerError, match="planned Phase F Cell has dispatch artifacts"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert backend.calls == []
+
+
+def test_backend_exception_marks_failed_and_blocks_every_future_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    backend = RaisingFakeBackend()
+
+    with pytest.raises(RuntimeError, match="model-free backend failure"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert len(backend.calls) == 1
+
+    with pytest.raises(PhaseFControllerError, match="execution is stopped"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=2,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert len(backend.calls) == 1
+
+
+def test_result_written_then_sealed_state_failure_blocks_every_future_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    backend = FakePhaseFBackend()
+    original_atomic_write = phase_f_module.atomic_write
+
+    def fail_after_backend_result(path: Path, data: bytes) -> None:
+        result_exists = any(
+            experiment_dir.joinpath(PHASE_F_CELLS_DIRECTORY).glob(
+                f"*/{phase_f_module.PHASE_F_BACKEND_RESULT_FILENAME}"
+            )
+        )
+        if result_exists:
+            raise OSError("sealed state write failed")
+        original_atomic_write(path, data)
+
+    monkeypatch.setattr(phase_f_module, "atomic_write", fail_after_backend_result)
+
+    with pytest.raises(OSError, match="sealed state write failed"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert len(backend.calls) == 1
+
+    with pytest.raises(PhaseFControllerError, match="unsealed Phase F Cell has a backend result"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=2,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=False,
+        )
+    assert len(backend.calls) == 1

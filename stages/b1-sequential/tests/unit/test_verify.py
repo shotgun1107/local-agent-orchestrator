@@ -71,25 +71,29 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
         captured.update(kwargs)
         temp_path = Path(kwargs["env"]["TEMP"])
         assert temp_path.is_dir()
-        assert temp_path.parent == (root / ".git").resolve()
+        assert temp_path.parent == (root.parent / "external-check-temp").resolve()
         (temp_path / "write-probe.txt").write_text("ok", encoding="utf-8")
         return subprocess.CompletedProcess(argv, 0, "ok", "")
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret-value")
     monkeypatch.setenv("CODEX_API_KEY", "must-not-be-forwarded")
     monkeypatch.setenv("UNRELATED_USER_SETTING", "must-not-be-forwarded")
-    monkeypatch.setattr(
-        GitWorkspace,
-        "git_directory",
-        lambda self: (root / ".git").resolve(),
-    )
     monkeypatch.setattr(subprocess, "run", fake_run)
     check = CommandCheck(kind="command", argv=["python", "-V"], cwd=".", timeout_seconds=3, expected_exit_codes=[0])
-    result = run_command_check("unit", check, GitWorkspace(root))
+    result = run_command_check(
+        "unit",
+        check,
+        GitWorkspace(root),
+        temp_root=root.parent / "external-check-temp",
+    )
     assert result.state == "PASSED"
     assert captured["shell"] is False
     assert captured["argv"] == [str(Path(os.sys.executable).resolve()), "-V"]
     assert result.argv == ["python", "-V"]
+    assert result.failure_classification is None
+    assert result.failure_classification_source == "passed"
+    assert result.temp_root == str((root.parent / "external-check-temp").resolve())
+    assert len(result.temp_allocation_id) == 32
     assert "OPENAI_API_KEY" not in captured["env"]
     assert "CODEX_API_KEY" not in captured["env"]
     assert "UNRELATED_USER_SETTING" not in captured["env"]
@@ -140,9 +144,19 @@ def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> Non
         "PYTHONHASHSEED": "0",
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
-        "GIT_CONFIG_COUNT": "1",
-        "GIT_CONFIG_KEY_0": "core.autocrlf",
-        "GIT_CONFIG_VALUE_0": "false",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_TERMINAL_PROMPT": "0",
+        "GCM_INTERACTIVE": "Never",
+        "GIT_CONFIG_COUNT": "4",
+        "GIT_CONFIG_KEY_0": "core.longpaths",
+        "GIT_CONFIG_VALUE_0": "true",
+        "GIT_CONFIG_KEY_1": "core.autocrlf",
+        "GIT_CONFIG_VALUE_1": "false",
+        "GIT_CONFIG_KEY_2": "credential.interactive",
+        "GIT_CONFIG_VALUE_2": "false",
+        "GIT_CONFIG_KEY_3": "core.hooksPath",
+        "GIT_CONFIG_VALUE_3": os.devnull,
     }
 
 
@@ -156,9 +170,15 @@ def test_check_environment_preflight_ignores_inaccessible_host_temp(
     monkeypatch.setenv("TMP", str(inaccessible))
     monkeypatch.setenv("TMPDIR", str(inaccessible))
 
-    preflight_check_environment(GitWorkspace(root))
+    check_temp_root = root.parent / "explicit-check-temp"
+    preflight_check_environment(
+        GitWorkspace(root),
+        temp_root=check_temp_root,
+    )
 
     assert not inaccessible.exists()
+    assert check_temp_root.is_dir()
+    assert list(check_temp_root.iterdir()) == []
 
 
 def test_public_check_feedback_requires_marker_and_is_bounded() -> None:
@@ -176,6 +196,10 @@ def test_public_check_feedback_requires_marker_and_is_bounded() -> None:
         stderr="unmarked stderr\nWORKER_FEEDBACK:ignored after the byte cap\n",
         started_at="2026-08-12T00:00:00Z",
         ended_at="2026-08-12T00:00:01Z",
+        failure_classification="PRODUCT_ASSERTION",
+        failure_classification_source="check_protocol",
+        temp_root="C:/lao-check-temp",
+        temp_allocation_id="a" * 32,
     )
 
     feedback = extract_public_check_feedback(result)

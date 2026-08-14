@@ -382,14 +382,20 @@ class ProfileRPhaseFB1Backend:
         runtime_mode: PhaseFRuntimeMode,
         runtime_factory: Callable[[Path], RuntimePort],
         telemetry: PhaseFBoundaryTelemetry,
+        check_temp_root: Path,
         environ: Mapping[str, str] | None = None,
+        git_executable: Path | None = None,
+        source_environment: Mapping[str, str] | None = None,
     ) -> None:
         self.repository = repository.resolve()
         self.artifact_root = artifact_root.resolve()
         self.runtime_mode = PhaseFRuntimeMode(runtime_mode)
         self.runtime_factory = runtime_factory
         self.telemetry = telemetry
+        self.check_temp_root = check_temp_root.resolve()
         self.environ = environ
+        self.git_executable = git_executable
+        self.source_environment = source_environment
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         if present_api_key_environment_names(self.environ):
@@ -407,7 +413,12 @@ class ProfileRPhaseFB1Backend:
             raise PhaseFB1BackendError("Profile R B1 Cell already exists")
         cell_root.mkdir(parents=True, exist_ok=False)
         workspace = cell_root / "workspace"
-        materialize_profile_r_workspace(self.repository, workspace)
+        materialize_profile_r_workspace(
+            self.repository,
+            workspace,
+            git_executable=self.git_executable,
+            source_environment=self.source_environment,
+        )
         initial_tree = _tree_sha256(_file_state(workspace))
         public_tasks = build_profile_r_ss1_tasks(workspace)
         public_by_key = {task.task_id: task for task in public_tasks}
@@ -467,6 +478,13 @@ class ProfileRPhaseFB1Backend:
         orchestrator = Orchestrator(
             loaded,
             state_root=cell_root / "b1-state",
+            check_temp_root=self.check_temp_root,
+            git_executable=self.git_executable,
+            source_environment=(
+                None
+                if self.source_environment is None
+                else dict(self.source_environment)
+            ),
             runtime_kind="injected_codex_v2",
             max_turns_override=10,
             runtime_port=runtime,

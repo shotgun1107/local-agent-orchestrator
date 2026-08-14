@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import shutil
 import sys
 from collections.abc import Iterator, Mapping
 from pathlib import Path
@@ -11,6 +12,7 @@ import pytest
 
 from benchmark_runner.realistic_phase_f_live import (
     PolicyAttestedPhaseFBoundaryTelemetry,
+    build_profile_r_phase_f_b1_live_stack,
     build_profile_r_phase_f_live_stack,
     run_profile_r_phase_f_zero_turn_preflight,
 )
@@ -25,6 +27,7 @@ from benchmark_runner.sdk_baselines import SS1ObserverContext
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]
+GIT_EXECUTABLE = Path(shutil.which("git") or "git").resolve()
 CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
@@ -178,6 +181,8 @@ def test_live_stack_construction_is_side_effect_free_and_binds_runtime_policy(
         artifact_root=tmp_path / "backend",
         docker_raw_root=tmp_path / "docker-raw",
         docker_executable=Path(sys.executable),
+        git_executable=GIT_EXECUTABLE,
+        execution_environment_root=(tmp_path / "execution-environment").resolve(),
         source_commit="a" * 40,
         environ={},
         source_environment={
@@ -210,10 +215,44 @@ def test_live_stack_rejects_api_key_name_without_reading_value(tmp_path: Path) -
             artifact_root=tmp_path / "backend",
             docker_raw_root=tmp_path / "docker-raw",
             docker_executable=Path(sys.executable),
+            git_executable=GIT_EXECUTABLE,
+            execution_environment_root=(tmp_path / "execution-environment").resolve(),
             source_commit="a" * 40,
             environ=NameOnlyApiKeyMapping(),
             source_environment={},
         )
+
+
+def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
+    tmp_path: Path,
+) -> None:
+    environment_root = (tmp_path / "short-environment-root").resolve()
+
+    stack = build_profile_r_phase_f_b1_live_stack(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        artifact_root=tmp_path / "backend",
+        docker_raw_root=tmp_path / "docker-raw",
+        docker_executable=Path(sys.executable),
+        git_executable=GIT_EXECUTABLE,
+        execution_environment_root=environment_root,
+        source_commit="a" * 40,
+        environ={},
+        source_environment={
+            "PATH": str(GIT_EXECUTABLE.parent),
+            **(
+                {"SYSTEMROOT": os.environ["SYSTEMROOT"]}
+                if os.name == "nt"
+                else {}
+            ),
+        },
+        app_server_port_factory=lambda workspace, overrides: DormantPort(),
+    )
+
+    worker = stack.backend.worker_backend
+    assert worker.check_temp_root == environment_root / "b1-check-temp"
+    assert worker.git_executable == GIT_EXECUTABLE
+    assert not environment_root.exists()
 
 
 def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None:

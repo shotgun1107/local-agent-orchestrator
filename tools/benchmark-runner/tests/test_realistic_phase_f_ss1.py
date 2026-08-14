@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -9,6 +11,7 @@ import pytest
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]
+GIT_EXECUTABLE = Path(shutil.which("git") or "git").resolve()
 B1_SOURCE = REPOSITORY / "stages" / "b1-sequential" / "src"
 if str(B1_SOURCE) not in sys.path:
     sys.path.insert(0, str(B1_SOURCE))
@@ -45,6 +48,10 @@ from benchmark_runner.realistic_phase_f_ss1 import (
     refresh_profile_r_ss1_task,
 )
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
+from benchmark_runner.workspace import (
+    build_hermetic_git_environment,
+    path_matches_write_scope,
+)
 
 
 CANDIDATE_ROOT = (
@@ -53,6 +60,13 @@ CANDIDATE_ROOT = (
     / "artifacts"
     / "sdk-routing-realistic-high-difficulty-phase-e-v1"
 )
+REFERENCE_PATCH = (
+    REPOSITORY
+    / "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/"
+    "realistic-compat-migration-001/reference.patch"
+)
+R07_PUBLIC_FIX_COMMIT = "f0bd978"
+R07_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
 
 
 def _completed_result(task_id: str) -> dict[str, object]:
@@ -69,6 +83,133 @@ def _completed_result(task_id: str) -> dict[str, object]:
         "needs_additional_review": False,
         "additional_review_reason": None,
     }
+
+
+def _b1_completed_result(task_id: str, changed_paths: list[str]) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "status_claim": "completed",
+        "summary": f"model-free B1 completion for {task_id}",
+        "artifacts": [],
+        "changed_paths": changed_paths,
+        "checks_run_by_worker": [],
+        "assumptions": [],
+        "warnings": [],
+        "requested_followup": None,
+    }
+
+
+def _reference_b1_runtime(
+    *,
+    workspace: Path,
+    reference_workspace: Path,
+    source_environment: dict[str, str],
+) -> B1FakeRuntime:
+    materialize_profile_r_workspace(
+        REPOSITORY,
+        reference_workspace,
+        git_executable=GIT_EXECUTABLE,
+        source_environment=source_environment,
+    )
+    git_environment = build_hermetic_git_environment(
+        git_executable=GIT_EXECUTABLE,
+        home=reference_workspace,
+        source_environment=source_environment,
+    )
+    applied = subprocess.run(
+        [
+            str(GIT_EXECUTABLE),
+            "-C",
+            str(reference_workspace),
+            "apply",
+            "--no-index",
+            "--whitespace=nowarn",
+            "-",
+        ],
+        input=REFERENCE_PATCH.read_bytes(),
+        capture_output=True,
+        check=False,
+        env=git_environment,
+    )
+    assert applied.returncode == 0, applied.stderr.decode("utf-8", errors="replace")
+    repository_git_environment = build_hermetic_git_environment(
+        git_executable=GIT_EXECUTABLE,
+        home=REPOSITORY,
+        source_environment=source_environment,
+    )
+    r07_fix = subprocess.run(
+        [
+            str(GIT_EXECUTABLE),
+            "-C",
+            str(REPOSITORY),
+            "show",
+            "--format=",
+            R07_PUBLIC_FIX_COMMIT,
+            "--",
+            R07_PUBLIC_FIX_PATH,
+        ],
+        capture_output=True,
+        check=False,
+        env=repository_git_environment,
+    )
+    assert r07_fix.returncode == 0, r07_fix.stderr.decode(
+        "utf-8", errors="replace"
+    )
+    applied_r07_fix = subprocess.run(
+        [
+            str(GIT_EXECUTABLE),
+            "-C",
+            str(reference_workspace),
+            "apply",
+            "--no-index",
+            "--whitespace=nowarn",
+            "-",
+        ],
+        input=r07_fix.stdout,
+        capture_output=True,
+        check=False,
+        env=git_environment,
+    )
+    assert applied_r07_fix.returncode == 0, applied_r07_fix.stderr.decode(
+        "utf-8", errors="replace"
+    )
+    reference_files = sorted(
+        path
+        for path in reference_workspace.rglob("*")
+        if path.is_file() and ".git" not in path.relative_to(reference_workspace).parts
+    )
+    turns: list[dict[str, object]] = []
+    for task in build_profile_r_ss1_tasks(workspace):
+        selected = [
+            path
+            for path in reference_files
+            if any(
+                path_matches_write_scope(
+                    path.relative_to(reference_workspace).as_posix(),
+                    scope,
+                )
+                for scope in task.write_scope
+            )
+        ]
+        changed_paths = [
+            path.relative_to(reference_workspace).as_posix() for path in selected
+        ]
+        turns.append(
+            {
+                "effects": [
+                    {
+                        "type": "write_file",
+                        "path": relative,
+                        "content": (reference_workspace / relative).read_text(
+                            encoding="utf-8"
+                        ),
+                    }
+                    for relative in changed_paths
+                ],
+                "result": _b1_completed_result(task.task_id, changed_paths),
+            }
+        )
+    return B1FakeRuntime("complete", workspace=workspace, fixture={"turns": turns})
 
 
 def _runtime_factory(
@@ -286,10 +427,26 @@ def test_profile_r_ss1_fake_backend_runs_all_tasks_in_one_thread_and_stops_at_ce
     ).exists()
 
 
+@pytest.mark.parametrize("acceptance_run", (1, 2))
 def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatches(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    acceptance_run: int,
 ) -> None:
+    hostile_temp = tmp_path / f"host-temp-must-not-be-used-{acceptance_run}"
+    monkeypatch.setenv("TEMP", str(hostile_temp))
+    monkeypatch.setenv("TMP", str(hostile_temp))
+    monkeypatch.setenv("TMPDIR", str(hostile_temp))
+    source_environment = {
+        "PATH": str(GIT_EXECUTABLE.parent),
+        **(
+            {"SYSTEMROOT": os.environ["SYSTEMROOT"]}
+            if os.name == "nt"
+            else {}
+        ),
+        "HOME": str(tmp_path / "hostile-home"),
+        "GIT_CONFIG_GLOBAL": str(tmp_path / "hostile-global-config"),
+    }
     experiment_dir = _initialize(tmp_path, monkeypatch)
     artifact_root = tmp_path / "backend"
     ss1_runtimes: list[FakeSdkRuntime] = []
@@ -303,6 +460,8 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             runtime_factory=_runtime_factory(ss1_runtimes),
             telemetry=ModelFreeClearBoundaryTelemetry(),
             environ={},
+            git_executable=GIT_EXECUTABLE,
+            source_environment=source_environment,
         ),
         judge=FakePhaseFJudgePort(check_success=True),
     )
@@ -342,7 +501,11 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     b1_runtimes: list[B1FakeRuntime] = []
 
     def b1_runtime_factory(workspace: Path) -> B1FakeRuntime:
-        runtime = B1FakeRuntime("complete", workspace=workspace)
+        runtime = _reference_b1_runtime(
+            workspace=workspace,
+            reference_workspace=tmp_path / "reference-worker",
+            source_environment=source_environment,
+        )
         b1_runtimes.append(runtime)
         return runtime
 
@@ -355,7 +518,10 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
             runtime_factory=b1_runtime_factory,
             telemetry=ModelFreeClearBoundaryTelemetry(),
+            check_temp_root=tmp_path / "check-temp",
             environ={},
+            git_executable=GIT_EXECUTABLE,
+            source_environment=source_environment,
         ),
         judge=FakePhaseFJudgePort(check_success=True),
     )
@@ -380,6 +546,16 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     assert second.automatic_continuation is False
     assert len(b1_runtimes) == 1
     assert b1_runtimes[0].turn_count >= 1
+    b1_evidence = json.loads(
+        (
+            artifact_root
+            / second.executed_cell_id
+            / "b1-adapter-evidence.json"
+        ).read_text(encoding="utf-8")
+    )
+    report_metrics = b1_evidence["adapter_raw_payload"]["report"]["metrics"]
+    assert report_metrics["checks_passed"] == 16
+    assert report_metrics["checks_failed"] == 0
     assert [item["lifecycle"] for item in after_b1["cells"]] == [
         PhaseFCellLifecycle.SEALED.value,
         PhaseFCellLifecycle.SEALED.value,
@@ -402,6 +578,9 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         / PHASE_F_CLAIM_FILENAME
     ).exists()
     assert not (artifact_root / str(cell_three["cell_id"])).exists()
+    assert not hostile_temp.exists()
+    assert (tmp_path / "check-temp").is_dir()
+    assert list((tmp_path / "check-temp").iterdir()) == []
 
 
 def test_ss1_task_resolution_failure_is_preserved_sealed_and_stops_before_b1(

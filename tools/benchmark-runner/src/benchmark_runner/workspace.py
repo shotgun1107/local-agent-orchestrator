@@ -155,6 +155,50 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def build_hermetic_git_environment(
+    *,
+    git_executable: Path,
+    home: Path,
+    source_environment: dict[str, str] | None = None,
+    additions: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Return the command-scope Git policy used from the first invocation."""
+
+    source = dict(os.environ if source_environment is None else source_environment)
+    keep = ("SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT")
+    environment = {key: source[key] for key in keep if key in source}
+    git_path = Path(git_executable).resolve(strict=True)
+    path_parts = [str(git_path.parent)]
+    system_root = environment.get("SystemRoot") or environment.get("SYSTEMROOT")
+    if system_root:
+        path_parts.append(str(Path(system_root) / "System32"))
+    environment.update(
+        {
+            "PATH": os.pathsep.join(dict.fromkeys(path_parts)),
+            "HOME": str(Path(home).resolve()),
+            "USERPROFILE": str(Path(home).resolve()),
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GCM_INTERACTIVE": "Never",
+            "GIT_CONFIG_COUNT": "5",
+            "GIT_CONFIG_KEY_0": "core.longpaths",
+            "GIT_CONFIG_VALUE_0": "true",
+            "GIT_CONFIG_KEY_1": "core.autocrlf",
+            "GIT_CONFIG_VALUE_1": "false",
+            "GIT_CONFIG_KEY_2": "credential.interactive",
+            "GIT_CONFIG_VALUE_2": "false",
+            "GIT_CONFIG_KEY_3": "core.hooksPath",
+            "GIT_CONFIG_VALUE_3": os.devnull,
+            "GIT_CONFIG_KEY_4": "safe.directory",
+            "GIT_CONFIG_VALUE_4": str(Path(home).resolve()),
+        }
+    )
+    if additions:
+        environment.update(additions)
+    return environment
+
+
 def _run_git(
     git_executable: str,
     repository: Path,
@@ -244,15 +288,41 @@ def _protected_hashes(workspace: Path) -> tuple[tuple[str, str], ...]:
 
 
 class FixtureRestorer:
-    def __init__(self, source_repository: Path, git_executable: str = "git") -> None:
+    def __init__(
+        self,
+        source_repository: Path,
+        git_executable: str = "git",
+        *,
+        source_environment: dict[str, str] | None = None,
+    ) -> None:
         self.source_repository = source_repository.resolve()
-        self.git_executable = git_executable
+        discovered = shutil.which(git_executable) if not Path(git_executable).is_absolute() else git_executable
+        if not discovered:
+            raise WorkspaceError("Git executable is unavailable")
+        self.git_executable = str(Path(discovered).resolve(strict=True))
+        self.source_environment = dict(
+            os.environ if source_environment is None else source_environment
+        )
+
+    def _git_environment(
+        self,
+        home: Path,
+        *,
+        additions: dict[str, str] | None = None,
+    ) -> dict[str, str]:
+        return build_hermetic_git_environment(
+            git_executable=Path(self.git_executable),
+            home=home,
+            source_environment=self.source_environment,
+            additions=additions,
+        )
 
     def verify_source(self, fixture: FrozenFixtureSpec) -> str:
         actual_tree = _run_git(
             self.git_executable,
             self.source_repository,
             ["rev-parse", f"{fixture.commit}:{fixture.path}"],
+            env=self._git_environment(self.source_repository),
         ).decode("ascii").strip()
         if actual_tree != fixture.git_tree:
             raise WorkspaceError(
@@ -277,6 +347,7 @@ class FixtureRestorer:
             self.git_executable,
             workspace,
             ["rev-parse", "HEAD^{tree}"],
+            env=self._git_environment(workspace),
         ).decode("ascii").strip()
         if baseline_tree != fixture.git_tree:
             raise WorkspaceError(
@@ -286,6 +357,7 @@ class FixtureRestorer:
             self.git_executable,
             workspace,
             ["status", "--porcelain"],
+            env=self._git_environment(workspace),
         ):
             raise WorkspaceError("prepared fixture worktree is not clean")
         checks = ChecksFile.model_validate(
@@ -324,33 +396,55 @@ class FixtureRestorer:
                 "--",
                 fixture.path,
             ],
+            env=self._git_environment(self.source_repository),
         )
         _safe_extract_fixture(archive, fixture.path, workspace)
 
-        _run_git(self.git_executable, workspace, ["init", "-q", "-b", "main"])
-        _run_git(self.git_executable, workspace, ["config", "core.longpaths", "true"])
-        _run_git(self.git_executable, workspace, ["config", "user.name", "benchmark-runner"])
+        git_environment = self._git_environment(workspace)
         _run_git(
             self.git_executable,
             workspace,
-            ["config", "user.email", "benchmark@local.invalid"],
+            ["init", "-q", "-b", "main"],
+            env=git_environment,
         )
-        _run_git(self.git_executable, workspace, ["add", "-A"])
+        _run_git(
+            self.git_executable,
+            workspace,
+            ["config", "core.longpaths", "true"],
+            env=git_environment,
+        )
+        _run_git(
+            self.git_executable,
+            workspace,
+            ["config", "core.autocrlf", "false"],
+            env=git_environment,
+        )
+        _run_git(
+            self.git_executable,
+            workspace,
+            ["add", "-A"],
+            env=git_environment,
+        )
         restored_tree = _run_git(
             self.git_executable,
             workspace,
             ["write-tree"],
+            env=git_environment,
         ).decode("ascii").strip()
         if restored_tree != fixture.git_tree:
             raise WorkspaceError(
                 f"restored tree mismatch: expected {fixture.git_tree}, got {restored_tree}"
             )
-        commit_env = os.environ.copy()
-        commit_env.update(
-            {
+        commit_env = self._git_environment(
+            workspace,
+            additions={
                 "GIT_AUTHOR_DATE": "2000-01-01T00:00:00Z",
                 "GIT_COMMITTER_DATE": "2000-01-01T00:00:00Z",
-            }
+                "GIT_AUTHOR_NAME": "benchmark-runner",
+                "GIT_AUTHOR_EMAIL": "benchmark@local.invalid",
+                "GIT_COMMITTER_NAME": "benchmark-runner",
+                "GIT_COMMITTER_EMAIL": "benchmark@local.invalid",
+            },
         )
         _run_git(
             self.git_executable,
@@ -358,7 +452,12 @@ class FixtureRestorer:
             ["commit", "-q", "-m", "benchmark baseline"],
             env=commit_env,
         )
-        if _run_git(self.git_executable, workspace, ["status", "--porcelain"]):
+        if _run_git(
+            self.git_executable,
+            workspace,
+            ["status", "--porcelain"],
+            env=git_environment,
+        ):
             raise WorkspaceError("restored fixture worktree is not clean")
 
         return self.open_existing(fixture, workspace, require_clean=True)

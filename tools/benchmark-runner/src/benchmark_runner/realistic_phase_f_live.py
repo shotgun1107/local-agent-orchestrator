@@ -59,6 +59,24 @@ AppServerPortFactory = Callable[
 ]
 
 
+def _external_environment_root(root: Path, *forbidden_roots: Path) -> Path:
+    candidate = Path(root)
+    if not candidate.is_absolute():
+        raise PhaseFSS1BackendError("Phase F execution environment root must be absolute")
+    resolved = candidate.resolve()
+    for forbidden in forbidden_roots:
+        boundary = Path(forbidden).resolve()
+        if (
+            resolved == boundary
+            or resolved in boundary.parents
+            or boundary in resolved.parents
+        ):
+            raise PhaseFSS1BackendError(
+                "Phase F execution environment root overlaps an execution artifact root"
+            )
+    return resolved
+
+
 class PolicyAttestedPhaseFBoundaryTelemetry:
     """Scan changed W files and attest that runtime-v2 exposes only W.
 
@@ -252,6 +270,8 @@ def build_profile_r_phase_f_live_stack(
     artifact_root: Path,
     docker_raw_root: Path,
     docker_executable: Path,
+    git_executable: Path,
+    execution_environment_root: Path,
     source_commit: str,
     environ: Mapping[str, str] | None = None,
     source_environment: Mapping[str, str] | None = None,
@@ -263,6 +283,17 @@ def build_profile_r_phase_f_live_stack(
     """Assemble the production-shaped live backend without executing it."""
 
     repository = repository.resolve(strict=True)
+    candidate_root = candidate_root.resolve(strict=True)
+    artifact_root = artifact_root.resolve()
+    docker_raw_root = docker_raw_root.resolve()
+    _external_environment_root(
+        execution_environment_root,
+        repository,
+        candidate_root,
+        artifact_root,
+        docker_raw_root,
+    )
+    resolved_git = git_executable.resolve(strict=True)
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
@@ -284,6 +315,8 @@ def build_profile_r_phase_f_live_stack(
         runtime_factory=runtime_factory,
         telemetry=telemetry,
         environ=environ,
+        git_executable=resolved_git,
+        source_environment=source_environment,
     )
     judge = PhaseFDockerJudgePort(
         repository=repository,
@@ -319,6 +352,8 @@ def build_profile_r_phase_f_b1_live_stack(
     artifact_root: Path,
     docker_raw_root: Path,
     docker_executable: Path,
+    git_executable: Path,
+    execution_environment_root: Path,
     source_commit: str,
     environ: Mapping[str, str] | None = None,
     source_environment: Mapping[str, str] | None = None,
@@ -335,6 +370,17 @@ def build_profile_r_phase_f_b1_live_stack(
     )
 
     repository = repository.resolve(strict=True)
+    candidate_root = candidate_root.resolve(strict=True)
+    artifact_root = artifact_root.resolve()
+    docker_raw_root = docker_raw_root.resolve()
+    environment_root = _external_environment_root(
+        execution_environment_root,
+        repository,
+        candidate_root,
+        artifact_root,
+        docker_raw_root,
+    )
+    resolved_git = git_executable.resolve(strict=True)
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
@@ -355,7 +401,10 @@ def build_profile_r_phase_f_b1_live_stack(
         runtime_mode="live_chatgpt",
         runtime_factory=runtime_factory,
         telemetry=telemetry,
+        check_temp_root=environment_root / "b1-check-temp",
         environ=environ,
+        git_executable=resolved_git,
+        source_environment=source_environment,
     )
     judge = PhaseFDockerJudgePort(
         repository=repository,

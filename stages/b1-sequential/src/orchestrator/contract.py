@@ -99,6 +99,12 @@ class CheckState(StrEnum):
     SKIPPED = "SKIPPED"
 
 
+class CheckFailureClassification(StrEnum):
+    PRODUCT_ASSERTION = "PRODUCT_ASSERTION"
+    ENVIRONMENT = "ENVIRONMENT"
+    UNKNOWN = "UNKNOWN"
+
+
 class WorkspaceMode(StrEnum):
     READ_ONLY = "read_only"
     SHARED_SERIAL_WRITE = "shared_serial_write"
@@ -139,6 +145,8 @@ class FailureKind(StrEnum):
     RUNTIME_UNKNOWN = "runtime_unknown"
     MALFORMED_RESULT = "malformed_result"
     CHECK_FAILED = "check_failed"
+    CHECK_ENVIRONMENT = "check_environment"
+    CHECK_UNKNOWN = "check_unknown"
     STALE_INPUT = "stale_input"
     SCOPE_VIOLATION = "scope_violation"
     TIMEOUT = "timeout"
@@ -612,6 +620,15 @@ class CheckResult(StrictModel):
     stderr: str
     started_at: str
     ended_at: str
+    failure_classification: CheckFailureClassification | None = None
+    failure_classification_source: Literal[
+        "passed",
+        "check_protocol",
+        "controller_runtime",
+        "unclassified",
+    ]
+    temp_root: str
+    temp_allocation_id: str
 
 
 class FingerprintEntry(StrictModel):

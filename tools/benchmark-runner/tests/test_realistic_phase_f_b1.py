@@ -72,6 +72,7 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
         runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
         runtime_factory=runtime_factory,
         telemetry=ModelFreeClearBoundaryTelemetry(),
+        check_temp_root=tmp_path / "check-temp",
         environ={},
     )
     backend = ProfileRPhaseFCellFinalizerBackend(
