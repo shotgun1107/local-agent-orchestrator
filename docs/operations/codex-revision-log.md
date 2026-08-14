@@ -2308,3 +2308,21 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   각각 R01~R08 Check 16/16, Cell 1·2만 seal, Cell 3 미생성, TEMP residue 0이다.
 - 남은 관문은 별도 `PROFILE_R_LIVE_READINESS` package와 독립 재심사다. 그 전까지 실제
   SS1·B1·Cell 3은 NO-GO이고 `DEV-20260814-002`는 investigating을 유지한다.
+
+## Profile R Live readiness revision 1 NO-GO 교정과 revision 2 Evidence
+
+- Pro revision 1 `NO_GO`의 P0 3건·P1 2건을 정본 review 파일로 보존했다.
+- 공개 checker의 OS 읽기 오류를 `ENVIRONMENT`로 분리하고 두 번째 B1 Attempt가 없음을
+  실제 checker 주입 회귀로 확인했다.
+- Windows Check TEMP의 NTFS·경로 headroom·Phase F state 비중첩을 강제했다. acceptance는
+  hostile Git config, 개별 R01~R08, nested pytest 0 skip/warning, deepest path/+32 growth,
+  process/TEMP/active-lock residue와 model turn 0을 assertion한다.
+- SS1/B1 raw Evidence에 Git executable canonical path·SHA-256·version·config-origin을
+  추가했고 acceptance state·seal·B1 Evidence·JUnit을 실제 payload로 보존한다.
+- B1 전체 `82 passed`; 영향 Runner `33 passed, 1 opt-in skipped`; Profile R fixture
+  `13 passed`; official acceptance 2회가 각각 `36.94s`, `34.82s`에 통과했다.
+- 새 q12 Docker matrix는 `CHALLENGE_READY`, 9/9, model turn 0이며 qualification v11로
+  고정했다. Phase E v10은 source `68974b8`, experiment `exp_20260814_4f108504_1`, seal
+  `64175499...3821e`, model turn 0이다.
+- 다음은 revision 2 readiness package의 읽기 전용 독립 Pro 재심사다. 실제 model Cell은
+  승인하지 않았고 route는 계속 `ROUTING_INCONCLUSIVE`다.

@@ -524,3 +524,28 @@ source의 official acceptance가 아니다. 집에서는 기존 raw·Docker imag
 두 acceptance를 결합한 `PROFILE_R_LIVE_READINESS` package 봉인 및 독립 재심사다.
 `DEV-20260814-002`는 그 승인 전까지 `investigating`이고, 집에서는 새 qualification,
 candidate 또는 acceptance를 다시 만들지 않는다.
+
+## 29. 2026-08-14 Live readiness revision 1 NO-GO closure 후보
+
+이 절은 §28 뒤 집 PC에서 수행한 최신 상태다.
+
+- ChatGPT Pro revision 1 심사는 package 무결성은 인정했지만 P0 3건·P1 2건으로
+  `NO_GO`를 판정했다. 공개 Check 내부 `OSError` 오분류, acceptance assertion·원본 부족,
+  Git provenance와 q11 raw/current Docker identity 부재가 이유였다.
+- commit `00dd92a`에서 환경 오류 non-retry, NTFS·경로 headroom·state 비중첩,
+  R01~R08 개별 Check와 nested pytest/growth/cleanup assertion, run-level Git
+  executable/version/hash/config-origin Evidence를 구현했다. B1 전체 `82 passed`, 영향 Runner
+  `33 passed, 1 opt-in skipped`, Profile R fixture `13 passed`다.
+- 집 PC Docker image `5610c2...6ad89`를 commit `5044283`에서 다시 고정했다. 같은
+  Dockerfile·lock을 no-network로 확인한 q12는 `CHALLENGE_READY`, 기대 일치 9/9, model
+  turn 0이며 qualification v11과 environment attestation을 `a23c24c`에 기록했다.
+- source `68974b8`에서 Phase E v10 후보를 생성했다. experiment는
+  `exp_20260814_4f108504_1`, candidate seal은 `64175499...3821e`, actual model turn은 0이다.
+- exact candidate acceptance 두 번은 `36.94s`, `34.82s`에 통과했다. 원시 state,
+  Measurement, seal, B1 Evidence, attestation, JUnit과 hash manifest를 외부 root에 보존했다.
+  매번 Cell 1·2만 seal, Cell 3 미생성, R01~R08 개별 8/8, cleanup residue와 model turn 0이다.
+
+현재도 실제 Live는 열지 않는다. 다음 관문은 q12 raw·Docker identity·candidate v10·두
+acceptance 원본을 결합한 revision 2 package를 ChatGPT Pro가 읽기 전용으로 재심사하는
+것이다. `DEV-20260814-002`는 독립 승인 전까지 `investigating`이며 실제 SS1/B1/Cell 3과
+model turn은 계속 `NO_GO`다.
