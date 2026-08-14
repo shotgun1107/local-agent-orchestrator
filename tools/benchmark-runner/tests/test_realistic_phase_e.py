@@ -62,7 +62,7 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.total_turn_ceiling == 40
     assert stage.dispatch.automatic_continuation is False
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v10/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v11/qualification.json"
     )
 
 
@@ -71,7 +71,7 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
         REPOSITORY
         / "benchmarks"
         / "artifacts"
-        / "profile-r-docker-judge-qualification-v10"
+        / "profile-r-docker-judge-qualification-v11"
         / "qualification.json"
     )
     qualification = json.loads(path.read_text(encoding="utf-8"))
@@ -82,7 +82,7 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
     assert qualification["challenge_ready"] is True
     assert qualification["model_turns"] == 0
     assert qualification["image_reference"].endswith(
-        "@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab"
+        "@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89"
     )
     cells = qualification["cells"]
     assert [cell["ordinal"] for cell in cells] == list(range(1, 10))
