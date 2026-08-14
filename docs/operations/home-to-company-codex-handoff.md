@@ -1,6 +1,6 @@
 # 집 로컬 → 회사 로컬 현재 작업 인수인계
 
-- 문서 상태: `current_home_to_company_handoff`
+- 문서 상태: `historical_home_to_company_handoff`
 - revision: 6
 - 작성일: 2026-08-13
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
@@ -16,6 +16,11 @@
 > 회사에서는 `git fetch origin` 뒤 `origin/codex/phase-d-artifacts` 최신 tip을 정본으로
 > 사용한다. dirty file, stash, detached HEAD, local-only commit 또는 ignored/tracked 충돌이
 > 있으면 reset·clean·stash·rebase로 숨기지 말고 보고 후 멈춘다.
+>
+> 최신성 경고: 이 문서는 SS1 v6 집→회사 전달 당시의 역사 기록이다. 2026-08-14 v8
+> 실행과 시험환경 Pro 재심 뒤의 현재 상태는
+> `company-to-home-codex-handoff.md` §26과 Phase F 시험환경 축소 교정 명세를 따른다.
+> 이 문서의 Cell 2 재개 지시를 현재 실행 승인으로 사용하지 않는다.
 
 ## 1. 이번 반환의 핵심
 

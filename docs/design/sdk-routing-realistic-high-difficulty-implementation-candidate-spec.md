@@ -1,5 +1,11 @@
 # SDK routing 현실 고난도 비교 — 구현 후보 명세
 
+> 역사적 동결 문서: 이 문서는 Phase D 구현 후보를 고정한 당시 명세이며 아래의
+> `현재 허용/금지` 문구를 2026-08-14 Phase F 재개 지시로 사용하지 않는다. 최신 Profile R
+> Live 관문은
+> [Phase F 시험환경 축소 교정 명세](./sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md)가
+> 대체한다. 실제 SS1·B1·Cell 3은 현재 `NO-GO`다.
+
 - 문서 상태: `revision_14_phase_d_r2_closure_rereview_candidate`
 - 설계 revision: 14
 - 작성일: 2026-08-09

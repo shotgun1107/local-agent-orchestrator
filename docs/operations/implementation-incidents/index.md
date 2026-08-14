@@ -3304,16 +3304,19 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 
 - `direct-observation`: 두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다
 - `direct-observation`: 재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다
+- `source-inspection`: Check TEMP는 Worker .git 아래에 있고 preflight는 임시파일 하나만 생성하며 fixture restore는 첫 git init 뒤에야 local core.longpaths를 설정한다
+- `review-finding`: ChatGPT Pro 1차 심사는 Live NO-GO, 축소 재심은 외부 TEMP·첫 Git 호출 통제·환경 실패 non-retry·production-shaped Windows 시험 2회를 포함하는 구현계획을 조건부 승인했다
 
 ### 근본 원인
 
-B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. core.longpaths 설정만으로는 git init이 접근할 config 경로를 안정적으로 만들지 못했다.
+B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. preflight와 단위시험은 실제 child pytest와 nested Git 깊이를 관통하지 않았고, core.longpaths는 첫 git init 뒤에 설정됐다. 환경성 Check 실패도 제품 assertion과 구분되지 않아 두 번째 model Attempt를 소비했다.
 
 ### 검토한 해결안
 
 - `rejected` 같은 live Cell을 다시 실행 — 동일한 결정적 환경 결함에 model turn만 더 소비한다
 - `rejected` R07 회귀를 줄이거나 skip — 검사 강도를 낮춰 잘못된 성공을 만들 수 있다
-- `deferred` Check 임시 Git root를 짧고 격리된 Windows 경로로 이동하고 실제 B1 환경을 감사 — 다음 model-free 수정과 재감사 범위로 고정해야 한다
+- `adopted` 외부 short TEMP, live wiring, 첫 Git 호출 통제, 환경 실패 non-retry와 production-shaped Windows 시험 2회를 하나의 축소 closure로 구현 — ChatGPT Pro 축소 재심에서 다음 단일 pair 전 최소 구현계획으로 조건부 승인됐다
+- `deferred` Phase F lock, CAS, lease, fencing과 자동 crash 복구를 이번에 모두 구현 — 단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다
 
 ### 채택한 해결
 
@@ -3325,8 +3328,11 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 회귀시험
 
-- 실제 B1 Worker와 같은 깊이의 workspace에서 R07 공개 S2 pytest가 nested Git repository를 생성하고 통과하는 회귀
-- Check별 짧은 임시 root가 다른 sandbox identity와 충돌하지 않고 종료 뒤 정리되는 회귀
+- 실제 Phase F→B1→Check→pytest→nested Git 깊이에서 R01~R08을 관통하는 Windows model-free 회귀를 독립 root에서 2회 실행
+- Check별 외부 short TEMP allocation이 live builder부터 실제 Check까지 전달되고 종료 뒤 residue 0인 회귀
+- Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터 longpaths·autocrlf·config origin이 통제되는 회귀
+- 환경 또는 미분류 Check 실패가 두 번째 B1 Attempt나 model turn을 생성하지 않는 회귀
+- claim 작성 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 작성 뒤 seal state 실패에서 같은 Cell 재실행과 다음 Cell dispatch를 차단하는 회귀
 
 ### 검증 결과
 
@@ -3338,8 +3344,13 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 - 해결 전에는 Profile R SS1/B1 속도·비용·품질 비교가 유효하지 않다
 - 현재 qualification v7의 9-cell Docker Judge 성공은 실제 B1 Check 내부의 nested pytest 경로까지 감사한 것이 아니다
+- Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
+- 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md

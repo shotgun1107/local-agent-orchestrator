@@ -4,14 +4,15 @@
 
 ## 먼저 읽을 문서
 
-1. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
-2. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 현재 동결된 구현 기준
-3. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
-4. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 다음 구현·비교 기준
-5. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
-6. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase B/C 완료와 Phase D 이후 경계의 현재 정본
-7. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작을 완료한 기준
-8. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
+1. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 현재 `LIVE_NO_GO`와 다음 model-free 구현·검증 관문
+2. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
+3. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
+4. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
+5. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 비교 기준
+6. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
+7. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase D 구현 후보의 역사적 revision 14
+8. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작 기준
+9. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
 
 ## 디렉터리 역할
 
@@ -42,6 +43,7 @@ docs/
 - [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사와 사용자 승인을 마친 revision 2 구현 정본
 - [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase B/C 완료와 Phase D~F의 분리된 관문을 기록한 revision 14
 - [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — Pro revision 2 승인과 Profile R·I artifact 제작의 기준
+- [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — v8 환경 결함 뒤 조건부 승인된 다음 model-free 구현 정본; 실제 Live는 계속 NO-GO
 
 ### `experiments/`
 
@@ -57,6 +59,8 @@ docs/
 - [현실 고난도 Phase F Cell finalizer](./experiments/sdk-routing-realistic-high-difficulty-phase-f-finalizer-model-free-result.md) — SS1 Worker 결과를 Judge·Measurement·최종 Cell seal까지 연결한 model-free 수직 경로
 - [현실 고난도 Phase F Docker Judge 포트](./experiments/sdk-routing-realistic-high-difficulty-phase-f-docker-judge-port-model-free-result.md) — 수정된 Worker W를 기존 Docker property Judge에 전달하는 model-free 포트 계약
 - [현실 고난도 Phase F live stack preflight](./experiments/sdk-routing-realistic-high-difficulty-phase-f-live-stack-preflight-result.md) — Fake Worker→실제 Docker 전체 dry-run과 실제 SDK 0-turn preflight 결과
+- [Profile R SS1→B1 회사 v8 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md) — 두 Cell은 봉인됐지만 B1 R07 환경 결함으로 비교 무효
+- [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
 
 ### `reviews/`
 
@@ -67,6 +71,8 @@ docs/
 - [S3 revision 1 Claude 심사 보고서](./reviews/benchmark-runner/claude-review-sdk-routing-s3-complex-high-risk-spec.md) — P0 1건·P1 5건·P2 4건과 `경미한 수정 후 동결` 판정
 - [S3 revision 2 Claude 집중 재심사 보고서](./reviews/benchmark-runner/claude-rereview-sdk-routing-s3-complex-high-risk-spec.md) — 모든 closure 확인, 새 P0/P1 0건, `동결 가능` 판정
 - [현실 고난도 Phase D revision 1 Pro 심사](./reviews/benchmark-runner/chatgpt-pro-review-sdk-routing-realistic-high-difficulty-phase-d-r1.md) — 두 예외 수용, P1 3건·P2 2건과 artifact `NO-GO`
+- [Profile R 시험환경 Pro 1차 심사](./reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md) — 실제 topology 결손과 Live `NO-GO` 판정
+- [Profile R 시험환경 축소안 Pro 재심](./reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md) — P0-4 전체 이연과 26~36시간 축소 구현계획 조건부 승인
 
 심사 보고서는 현재 설계를 대신하지 않는다. 지적이 반영된 뒤에는 **개정 이력과 판단 근거**로 읽는다.
 
@@ -85,13 +91,15 @@ docs/
 - [현실 고난도 Phase D revision 2 Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-sdk-routing-realistic-high-difficulty-phase-d-r2.md) — P1 3건·P2 2건 closure 전용 읽기 정본
 - [회사 Codex 집 inventory 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phaseb-inventory.md) — 최신 branch를 ff-only로 받고 P001~P015 inventory와 현재 gate를 인수하는 첫 세션 입력
 - [과거 회사 Codex 집 작업 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md) — 2026-08-09 집→회사 인수에 사용한 역사 입력
+- [집 Codex Profile R 환경 교정 재개 프롬프트](./prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md) — 최신 branch 인수 뒤 축소 환경 교정만 model-free로 진행하는 입력
 
 ### `operations/`
 
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [Phase B P001~P015 집 원본 inventory](./operations/phase-b-p001-p015-source-inventory.md) — raw를 공개하지 않고 존재·크기·hash·민감도와 P013/P014 미확인을 고정한 정본
-- [집 로컬 → 회사 로컬 현재 작업 인수인계](./operations/home-to-company-codex-handoff.md) — P001~P015 inventory 뒤 최신 branch·상태와 회사 복귀 절차
+- [회사 로컬 → 집 로컬 현재 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §26이 v8 환경 재심사와 최신 model-free 교정 관문을 보존
+- [과거 집 로컬 → 회사 로컬 인수인계](./operations/home-to-company-codex-handoff.md) — SS1 v6 당시 역사 기록; 최신 재개 지시로 사용하지 않음
 - [과거 집 PC 진입 인수인계](./operations/home-codex-handoff.md) — 프로젝트 정신모델 참고용 역사 문서; 현재 재개 지시로 사용하지 않음
 - [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
 
@@ -109,6 +117,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I `CHALLENGE_READY`까지 완료했다. Phase E는 네 Cell·최초 32 turns·상한 40 turns의 0-turn 후보를 봉인했다. Phase F one-Cell Controller, SDK runtime v2, Profile R SS1, Docker Judge·Measurement·seal을 연결했고 실제 full Docker dry-run과 SDK 0-turn preflight를 통과했다. Profile R SS1 Cell 1 실제 model turn만 사용자 승인 대기 중이다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 회사 v8에서 Profile R SS1 Cell 1과 B1 Cell 2를 실제 실행·봉인했지만 B1이 R07 시험환경의 긴 nested Git 경로로 중단돼 비교는 무효이고 route는 `ROUTING_INCONCLUSIVE`다. 현재 실제 SS1·B1·Cell 3은 `NO-GO`다. 다음 허용 작업은 조건부 승인된 축소 환경 교정의 model-free 구현, production-shaped Windows acceptance 2회, live-readiness package와 독립 재심사뿐이다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

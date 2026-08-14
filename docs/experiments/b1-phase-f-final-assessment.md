@@ -1,5 +1,12 @@
 # B1 Phase F 최종 판정
 
+> 역사 상태: 이 문서의 본문은 2026-08-13 R9/v5 시점 판정을 보존한다. 이후 v8
+> SS1→B1 pair가 실행됐지만 B1 R07 시험환경 결함으로 비교가 무효화됐다. 본문의
+> `Phase F 실행 계열 종료`는 당시 반복 중단 결정이며 현재 Live 재개 승인이 아니다.
+> 최신 구현·실행 관문은
+> [Phase F Profile R 시험환경 축소 교정 명세](../design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md)를
+> 따른다.
+
 - 판정일: 2026-08-13
 - 대상: 범용 순차 세션 오케스트레이터 B1과 Profile R Phase F 실행 계열
 - 공식 판정: `B1_CONTROL_FLOW_VERIFIED / B1_FEEDBACK_DELIVERY_VERIFIED / B1_REPAIR_NOT_EVALUABLE / ROUTING_INCONCLUSIVE`
@@ -137,3 +144,28 @@ B1 공개 오류 전달 구조를 교정한 현재 source에서 실제 model 없
 금지가 연결된 상태에서 작동한다는 뜻이다. 실제 AI 품질·시간·비용 비교 결과는 아니다.
 표적 연결 시험은 `1 passed`, SS1·B1 관련 묶음은 `7 passed`이며 model·SDK·Codex·Docker
 호출은 0회다.
+
+## 2026-08-14 v8와 시험환경 재심사 addendum
+
+새 qualification v7과 Phase E v8 candidate에서 Profile R SS1 Cell 1과 B1 Cell 2를
+같은 fresh experiment로 실행했다. SS1은 R01~R08을 모두 수행했지만 독립 Judge에서
+R-P05와 R-P08을 실패했다. B1은 R01~R06을 통과했으나 R07 공개 Check가 Worker
+`.git` 아래의 깊은 pytest/nested Git 경로에서 `Filename too long`으로 두 번 실패해
+R08을 실행하지 못했다.
+
+따라서 v8도 SS1/B1 속도·비용·품질 비교에 사용할 수 없다. 공식 route는 계속
+`ROUTING_INCONCLUSIVE`이고 과거 raw·Measurement·seal은 재분류하지 않는다.
+
+Daybreak와 ChatGPT Pro의 읽기 전용 감사 뒤 다음 상태로 갱신했다.
+
+- 실제 SS1·B1·Cell 3은 `NO-GO`다.
+- 다음 허용 작업은 외부 short TEMP, first-command Git 통제, 환경 실패 non-retry와
+  production-shaped Windows model-free 시험 2회를 포함한 축소 환경 교정뿐이다.
+- Phase F 전체 lock·CAS·lease·fencing은 해결된 것이 아니며 단일 PC·단일 Controller,
+  비정상 종료 시 pair 폐기 조건에서 다음 한 pair에만 운영상 이연한다.
+- 수정 source의 새 candidate와 환경 acceptance를 별도 live-readiness package로
+  결합하고 독립 재심사를 통과하기 전 새 SS1을 실행하지 않는다.
+
+따라서 본문의 “다음 개발 방향” 중 실제 프로젝트 자연 사용으로 바로 이동한다는 부분은
+최신 실행 지시가 아니다. 현재 다음 관문은 환경 교정 명세의 model-free 구현과 Evidence
+closure다.
