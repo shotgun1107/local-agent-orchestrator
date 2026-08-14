@@ -459,6 +459,7 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
     assert checker.main(["check_profile_r.py", "R07"]) == 1
     assert capsys.readouterr().out.splitlines() == [
         "R07_PUBLIC_CONTRACT_FAILED",
+        "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
         *(f"WORKER_FEEDBACK:{line}" for line in feedback),
     ]
 
@@ -476,7 +477,10 @@ def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> No
             timeout=120,
         )
         assert result.returncode == 1
-        assert result.stdout.strip() == f"{task_id}_PUBLIC_CONTRACT_FAILED"
+        assert result.stdout.splitlines() == [
+            f"{task_id}_PUBLIC_CONTRACT_FAILED",
+            "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
+        ]
         assert result.stderr == ""
 
 

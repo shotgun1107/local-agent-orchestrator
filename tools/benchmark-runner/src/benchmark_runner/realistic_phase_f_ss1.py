@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -41,6 +42,7 @@ from benchmark_runner.realistic_routing import (
     canonical_json_bytes,
     canonical_sha256,
 )
+from benchmark_runner.workspace import build_hermetic_git_environment
 from benchmark_runner.runner import sha256_bytes
 from benchmark_runner.sdk_baselines import (
     SS1ObserverContext,
@@ -184,16 +186,15 @@ def _write_new(path: Path, payload: bytes) -> None:
         os.fsync(handle.fileno())
 
 
-def _run_git(workspace: Path, *arguments: str) -> None:
+def _run_git(
+    workspace: Path,
+    git_executable: Path,
+    environment: Mapping[str, str],
+    *arguments: str,
+) -> None:
     result = subprocess.run(
         [
-            "git",
-            "-c",
-            "core.autocrlf=false",
-            "-c",
-            "user.name=Phase F Fixture",
-            "-c",
-            "user.email=phase-f-fixture@example.invalid",
+            str(git_executable),
             "-C",
             str(workspace),
             *arguments,
@@ -202,6 +203,7 @@ def _run_git(workspace: Path, *arguments: str) -> None:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env=dict(environment),
     )
     if result.returncode != 0:
         raise PhaseFSS1BackendError(
@@ -209,11 +211,25 @@ def _run_git(workspace: Path, *arguments: str) -> None:
         )
 
 
-def materialize_profile_r_workspace(repository: Path, target: Path) -> dict[str, Any]:
+def materialize_profile_r_workspace(
+    repository: Path,
+    target: Path,
+    *,
+    git_executable: Path | None = None,
+    source_environment: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     """Copy the exact committed Worker manifest into a fresh Git workspace."""
 
     repository = repository.resolve()
     target = target.resolve()
+    source_env = dict(os.environ if source_environment is None else source_environment)
+    candidate_git = git_executable
+    if candidate_git is None:
+        discovered = shutil.which("git", path=source_env.get("PATH"))
+        if not discovered:
+            raise PhaseFSS1BackendError("Profile R Git executable is unavailable")
+        candidate_git = Path(discovered)
+    resolved_git = Path(candidate_git).resolve(strict=True)
     source = repository / PROFILE_R_WORKER_RELATIVE
     manifest_path = repository / PROFILE_R_WORKER_MANIFEST_RELATIVE
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -257,10 +273,44 @@ def materialize_profile_r_workspace(repository: Path, target: Path) -> dict[str,
         _write_new(target / path, payload)
     if len(records) != manifest.get("file_count") or set(_file_state(target)) != seen:
         raise PhaseFSS1BackendError("Profile R Worker file set differs")
-    _run_git(target, "init", "-q")
-    _run_git(target, "config", "core.autocrlf", "false")
-    _run_git(target, "add", "--all")
-    _run_git(target, "commit", "-q", "-m", "Profile R Worker baseline")
+    git_environment = build_hermetic_git_environment(
+        git_executable=resolved_git,
+        home=target,
+        source_environment=source_env,
+        additions={
+            "GIT_AUTHOR_NAME": "Phase F Fixture",
+            "GIT_AUTHOR_EMAIL": "phase-f-fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Phase F Fixture",
+            "GIT_COMMITTER_EMAIL": "phase-f-fixture@example.invalid",
+        },
+    )
+    _run_git(target, resolved_git, git_environment, "init", "-q")
+    _run_git(
+        target,
+        resolved_git,
+        git_environment,
+        "config",
+        "core.longpaths",
+        "true",
+    )
+    _run_git(
+        target,
+        resolved_git,
+        git_environment,
+        "config",
+        "core.autocrlf",
+        "false",
+    )
+    _run_git(target, resolved_git, git_environment, "add", "--all")
+    _run_git(
+        target,
+        resolved_git,
+        git_environment,
+        "commit",
+        "-q",
+        "-m",
+        "Profile R Worker baseline",
+    )
     return manifest
 
 
@@ -578,6 +628,8 @@ class ProfileRPhaseFSS1Backend:
         runtime_factory: RuntimeFactory,
         telemetry: PhaseFBoundaryTelemetry,
         environ: Mapping[str, str] | None = None,
+        git_executable: Path | None = None,
+        source_environment: Mapping[str, str] | None = None,
     ) -> None:
         self.repository = repository.resolve()
         self.artifact_root = artifact_root.resolve()
@@ -585,6 +637,8 @@ class ProfileRPhaseFSS1Backend:
         self.runtime_factory = runtime_factory
         self.telemetry = telemetry
         self.environ = environ
+        self.git_executable = git_executable
+        self.source_environment = source_environment
         if (
             self.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT
             and isinstance(telemetry, ModelFreeClearBoundaryTelemetry)
@@ -607,7 +661,12 @@ class ProfileRPhaseFSS1Backend:
             raise PhaseFSS1BackendError("Profile R SS1 backend Cell already exists")
         cell_root.mkdir(parents=True, exist_ok=False)
         workspace = cell_root / "workspace"
-        materialize_profile_r_workspace(self.repository, workspace)
+        materialize_profile_r_workspace(
+            self.repository,
+            workspace,
+            git_executable=self.git_executable,
+            source_environment=self.source_environment,
+        )
         initial_worker_tree_sha256 = _tree_sha256(_file_state(workspace))
         tasks = build_profile_r_ss1_tasks(workspace)
         forbidden_fragments = _forbidden_prompt_fragments(self.repository)

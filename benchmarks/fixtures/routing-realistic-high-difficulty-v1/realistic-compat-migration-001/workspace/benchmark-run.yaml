@@ -111,7 +111,7 @@ tasks:
     check_names: [r04_contract, diff_check]
     approval: none
   - key: R05
-    goal: "Reuse the existing create, status, and run-next lifecycle while adding the structured S2 reserve and routing policy."
+    goal: "Reuse the existing create, status, and run-next lifecycle while adding the structured S2 reserve, routing policy, and the post-hoc module required by the shared lifecycle import boundary."
     completion_criteria:
       - {id: R05C1, text: "The public reserve and lifecycle policy invariants pass.", check_names: [r05_contract]}
     depends_on: [R02, R04]
@@ -128,6 +128,7 @@ tasks:
       - "tools/benchmark-runner/src/benchmark_runner/adapter.py"
       - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
       - "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
+      - "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
       - "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
     capability_profile: code_change
     workspace_mode: shared_serial_write

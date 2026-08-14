@@ -16,6 +16,7 @@ from .contract import (
     AttemptState,
     CapabilitiesConfig,
     ChecksConfig,
+    CheckFailureClassification,
     CORE_VERSION,
     FailureKind,
     PoliciesConfig,
@@ -64,6 +65,7 @@ from .verify import (
     validate_freshness,
     validate_result_schema,
     validate_write_scope,
+    validate_external_check_temp_root,
 )
 
 
@@ -199,7 +201,10 @@ class Orchestrator:
         self,
         loaded: LoadedProject,
         *,
+        check_temp_root: Path,
         state_root: Path | None = None,
+        git_executable: Path | None = None,
+        source_environment: dict[str, str] | None = None,
         runtime_kind: str = "fake",
         fake_scenario: str = "complete",
         fake_fixture: dict[str, Any] | None = None,
@@ -213,7 +218,18 @@ class Orchestrator:
         self.loaded = loaded
         self.state_root = Path(state_root or state_root_for(loaded.pack.project.project_id)).resolve()
         self.store = ArtifactStore(self.state_root)
-        self.workspace = GitWorkspace(loaded.project_root)
+        try:
+            self.check_temp_root = validate_external_check_temp_root(
+                check_temp_root,
+                forbidden_roots=(loaded.project_root, self.state_root),
+            )
+        except VerificationError as exc:
+            raise ConfigurationError(str(exc)) from exc
+        self.workspace = GitWorkspace(
+            loaded.project_root,
+            git_executable=git_executable,
+            environ=source_environment,
+        )
         self.policy: Policy = loaded.pack.policies.policies[loaded.pack.project.default_policy]
         if max_turns_override is not None:
             if max_turns_override < 1 or max_turns_override > self.policy.max_turns_per_run:
@@ -300,7 +316,7 @@ class Orchestrator:
             raise ConfigurationError(f"workspace doctor failed: {health}")
         if self.policy.require_clean_worktree and not self.workspace.status()["clean"]:
             raise ConfigurationError("workspace must be clean before Run creation")
-        preflight_check_environment(self.workspace)
+        preflight_check_environment(self.workspace, temp_root=self.check_temp_root)
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.create_run({
@@ -341,7 +357,7 @@ class Orchestrator:
 
     def resume(self, run_id: str, spec: RunSpec) -> str:
         validate_run_against_project(spec, self.loaded)
-        preflight_check_environment(self.workspace)
+        preflight_check_environment(self.workspace, temp_root=self.check_temp_root)
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.get("run", run_id)
@@ -897,7 +913,11 @@ class Orchestrator:
                             "state": "ERROR",
                             "exit_code": None,
                         })
-                    raise VerificationError("checks", f"previous Check {check_name} did not pass", retryable=True)
+                    raise VerificationError(
+                        "check_unknown",
+                        f"previous Check {check_name} did not pass",
+                        retryable=False,
+                    )
                 definition = self.loaded.pack.checks.checks[check_name]
                 check_record = ledger.create_check({
                     "task_id": task["task_id"],
@@ -907,7 +927,12 @@ class Orchestrator:
                     "argv": definition.argv,
                 })
                 ledger.start_check(check_record["check_id"])
-                check_result = run_command_check(check_name, definition, self.workspace)
+                check_result = run_command_check(
+                    check_name,
+                    definition,
+                    self.workspace,
+                    temp_root=self.check_temp_root,
+                )
                 check_base = f"{base}/checks/{check_name}"
                 stdout_artifact = self._persist(
                     ledger, run_id=run_id, task_id=task["task_id"], attempt_id=attempt_id,
@@ -940,13 +965,29 @@ class Orchestrator:
                 })
                 if check_result.state != "PASSED":
                     feedback = extract_public_check_feedback(check_result)
+                    classification = check_result.failure_classification
+                    retryable = (
+                        check_result.state != "ERROR"
+                        and classification is CheckFailureClassification.PRODUCT_ASSERTION
+                    )
+                    stage = {
+                        CheckFailureClassification.PRODUCT_ASSERTION: "checks",
+                        CheckFailureClassification.ENVIRONMENT: "check_environment",
+                        CheckFailureClassification.UNKNOWN: "check_unknown",
+                    }.get(classification, "check_unknown")
                     raise VerificationError(
-                        "checks",
+                        stage,
                         f"Check failed: {check_name}",
-                        retryable=True,
+                        retryable=retryable,
                         public_feedback={
                             "check_name": check_name,
                             "exit_code": check_result.exit_code,
+                            "failure_classification": (
+                                classification.value if classification is not None else None
+                            ),
+                            "failure_classification_source": (
+                                check_result.failure_classification_source
+                            ),
                             "messages": list(feedback.messages),
                             "transmitted_bytes": feedback.transmitted_bytes,
                             "truncated": feedback.truncated,
@@ -975,6 +1016,8 @@ class Orchestrator:
                 "write_scope": FailureKind.SCOPE_VIOLATION,
                 "freshness": FailureKind.STALE_INPUT,
                 "checks": FailureKind.CHECK_FAILED,
+                "check_environment": FailureKind.CHECK_ENVIRONMENT,
+                "check_unknown": FailureKind.CHECK_UNKNOWN,
                 "project_pack": FailureKind.ARTIFACT_CORRUPT,
                 "declared_artifacts": FailureKind.ARTIFACT_CORRUPT,
                 "artifact_integrity": FailureKind.ARTIFACT_CORRUPT,

@@ -12,7 +12,14 @@ from orchestrator.contract import RunSpec
 
 def git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", *args], cwd=root, text=True, encoding="utf-8", errors="replace",
+        [
+            "git",
+            "-c",
+            "core.longpaths=true",
+            "-c",
+            "core.autocrlf=false",
+            *args,
+        ], cwd=root, text=True, encoding="utf-8", errors="replace",
         capture_output=True, shell=False, check=True,
     )
 

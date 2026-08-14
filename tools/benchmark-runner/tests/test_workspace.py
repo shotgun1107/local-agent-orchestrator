@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tarfile
@@ -14,6 +15,7 @@ from benchmark_runner.workspace import (
     FrozenFixtureSpec,
     WorkspaceError,
     _safe_extract_fixture,
+    build_hermetic_git_environment,
     load_frozen_manifest,
     path_matches_write_scope,
     validate_write_scope,
@@ -32,6 +34,38 @@ def _git() -> str:
     executable = shutil.which("git")
     assert executable is not None
     return executable
+
+
+def test_hermetic_git_policy_is_present_before_the_first_command(
+    tmp_path: Path,
+) -> None:
+    environment = build_hermetic_git_environment(
+        git_executable=Path(_git()),
+        home=tmp_path / "controlled-home",
+        source_environment={
+            "PATH": "hostile-path",
+            "HOME": str(tmp_path / "hostile-home"),
+            "GIT_CONFIG_GLOBAL": str(tmp_path / "hostile.gitconfig"),
+            **(
+                {"SYSTEMROOT": os.environ["SYSTEMROOT"]}
+                if os.name == "nt"
+                else {}
+            ),
+        },
+    )
+
+    assert environment["GIT_CONFIG_NOSYSTEM"] == "1"
+    assert environment["GIT_CONFIG_GLOBAL"] == os.devnull
+    assert environment["GIT_TERMINAL_PROMPT"] == "0"
+    assert environment["GIT_CONFIG_COUNT"] == "5"
+    assert environment["GIT_CONFIG_KEY_0"] == "core.longpaths"
+    assert environment["GIT_CONFIG_VALUE_0"] == "true"
+    assert environment["GIT_CONFIG_KEY_1"] == "core.autocrlf"
+    assert environment["GIT_CONFIG_VALUE_1"] == "false"
+    assert environment["GIT_CONFIG_KEY_4"] == "safe.directory"
+    assert environment["GIT_CONFIG_VALUE_4"] == str(
+        (tmp_path / "controlled-home").resolve()
+    )
 
 
 @pytest.mark.parametrize("fixture_id", ["code-change", "document-read"])

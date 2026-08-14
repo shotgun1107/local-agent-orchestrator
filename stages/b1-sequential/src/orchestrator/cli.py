@@ -250,7 +250,12 @@ def _resume(run_id: str) -> dict[str, Any]:
     with Ledger(root / "ledger.sqlite") as ledger:
         run = ledger.get("run", run_id)
     runtime_kind = "codex" if run["auth_method"] == "chatgpt" else "fake"
-    orchestrator = Orchestrator(load_project(project_root), state_root=root, runtime_kind=runtime_kind)
+    orchestrator = Orchestrator(
+        load_project(project_root),
+        state_root=root,
+        check_temp_root=root.parent / f"{root.name}-check-temp",
+        runtime_kind=runtime_kind,
+    )
     try:
         orchestrator.resume(run_id, spec)
     finally:
@@ -363,6 +368,7 @@ def dispatch(args: argparse.Namespace) -> int:
         return EXIT_OK
     if args.command == "run" and args.run_command == "start":
         loaded = load_project(args.project)
+        state_root = state_root_for(loaded.pack.project.project_id)
         original = args.spec.read_text(encoding="utf-8")
         spec = load_run_spec(args.spec)
         fixture = None
@@ -370,6 +376,8 @@ def dispatch(args: argparse.Namespace) -> int:
             fixture = json.loads(args.fake_fixture.read_text(encoding="utf-8"))
         orchestrator = Orchestrator(
             loaded,
+            state_root=state_root,
+            check_temp_root=state_root.parent / f"{state_root.name}-check-temp",
             runtime_kind=args.runtime,
             fake_scenario=args.fake_scenario,
             fake_fixture=fixture,

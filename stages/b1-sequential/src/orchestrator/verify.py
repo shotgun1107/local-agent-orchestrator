@@ -6,9 +6,11 @@ import fnmatch
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -17,6 +19,7 @@ from typing import Any, Iterable, Iterator
 from pydantic import ValidationError
 
 from .contract import (
+    CheckFailureClassification,
     CheckResult,
     CheckState,
     CommandCheck,
@@ -35,6 +38,144 @@ from .contract import (
 
 PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 16_384
+CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
+CHECK_TEMP_MARKER = ".lao-check-allocation"
+
+
+@dataclass(frozen=True, slots=True)
+class CheckTempAllocation:
+    root: Path
+    path: Path
+    allocation_id: str
+
+
+def _cleanup_path(path: Path) -> str:
+    """Return an absolute path that remains deletable past MAX_PATH on Windows."""
+
+    resolved = str(path.resolve())
+    if os.name != "nt" or resolved.startswith("\\\\?\\"):
+        return resolved
+    if resolved.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + resolved[2:]
+    return "\\\\?\\" + resolved
+
+
+def _retry_check_temp_cleanup(function: Any, path: str, error: OSError) -> None:
+    """Retry removal only when Windows marked a Check-owned file read-only."""
+
+    if not isinstance(error, PermissionError):
+        raise error
+    os.chmod(path, stat.S_IWRITE)
+    function(path)
+
+
+def _is_reparse_point(path: Path) -> bool:
+    if path.is_symlink():
+        return True
+    try:
+        attributes = getattr(path.stat(), "st_file_attributes", 0)
+    except OSError as exc:
+        raise VerificationError(
+            "check_environment",
+            "Check temp path metadata is unavailable",
+        ) from exc
+    return bool(attributes & 0x400)
+
+
+def _assert_no_reparse_ancestors(path: Path) -> None:
+    current = path
+    while True:
+        if current.exists() and _is_reparse_point(current):
+            raise VerificationError(
+                "check_environment",
+                "Check temp root or ancestor is a reparse point",
+            )
+        if current.parent == current:
+            return
+        current = current.parent
+
+
+def validate_external_check_temp_root(
+    root: Path,
+    *,
+    forbidden_roots: Iterable[Path],
+) -> Path:
+    raw = Path(root)
+    if not raw.is_absolute():
+        raise VerificationError("check_environment", "Check temp root must be absolute")
+    resolved = raw.resolve()
+    for forbidden in forbidden_roots:
+        boundary = Path(forbidden).resolve()
+        if (
+            resolved == boundary
+            or resolved in boundary.parents
+            or boundary in resolved.parents
+        ):
+            raise VerificationError(
+                "check_environment",
+                "Check temp root overlaps a protected execution root",
+            )
+    _assert_no_reparse_ancestors(resolved)
+    return resolved
+
+
+def _minimal_process_environment(source: dict[str, str]) -> dict[str, str]:
+    keep = ("SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT")
+    return {key: source[key] for key in keep if key in source}
+
+
+def _resolve_git_executable(
+    git_executable: Path | None,
+    source: dict[str, str],
+) -> Path:
+    candidate = git_executable
+    if candidate is None:
+        discovered = shutil.which("git", path=source.get("PATH"))
+        if not discovered:
+            raise VerificationError("check_environment", "Git executable is unavailable")
+        candidate = Path(discovered)
+    resolved = Path(candidate).resolve()
+    if not resolved.is_file():
+        raise VerificationError("check_environment", "Git executable is not a file")
+    return resolved
+
+
+def build_hermetic_git_environment(
+    *,
+    workspace: Path,
+    git_executable: Path,
+    environ: dict[str, str] | None = None,
+) -> dict[str, str]:
+    source = dict(os.environ if environ is None else environ)
+    git_path = Path(git_executable).resolve()
+    environment = _minimal_process_environment(source)
+    path_parts = [str(git_path.parent)]
+    system_root = environment.get("SystemRoot") or environment.get("SYSTEMROOT")
+    if system_root:
+        path_parts.append(str(Path(system_root) / "System32"))
+    environment.update(
+        {
+            "PATH": os.pathsep.join(dict.fromkeys(path_parts)),
+            "HOME": str(Path(workspace).resolve()),
+            "USERPROFILE": str(Path(workspace).resolve()),
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GCM_INTERACTIVE": "Never",
+            "GIT_CONFIG_COUNT": "5",
+            "GIT_CONFIG_KEY_0": "core.longpaths",
+            "GIT_CONFIG_VALUE_0": "true",
+            "GIT_CONFIG_KEY_1": "core.autocrlf",
+            "GIT_CONFIG_VALUE_1": "false",
+            "GIT_CONFIG_KEY_2": "credential.interactive",
+            "GIT_CONFIG_VALUE_2": "false",
+            "GIT_CONFIG_KEY_3": "core.hooksPath",
+            "GIT_CONFIG_VALUE_3": os.devnull,
+            "GIT_CONFIG_KEY_4": "safe.directory",
+            "GIT_CONFIG_VALUE_4": str(Path(workspace).resolve()),
+        }
+    )
+    return environment
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,12 +263,28 @@ def _file_entry(root: Path, relative: str) -> FingerprintEntry:
 
 
 class GitWorkspace:
-    def __init__(self, root: Path):
+    def __init__(
+        self,
+        root: Path,
+        *,
+        git_executable: Path | None = None,
+        environ: dict[str, str] | None = None,
+    ):
         self.root = Path(root).resolve()
+        self._source_environment = dict(os.environ if environ is None else environ)
+        self.git_executable = _resolve_git_executable(
+            git_executable,
+            self._source_environment,
+        )
+        self.git_environment = build_hermetic_git_environment(
+            workspace=self.root,
+            git_executable=self.git_executable,
+            environ=self._source_environment,
+        )
 
     def _git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["git", *args],
+            [str(self.git_executable), *args],
             cwd=self.root,
             text=True,
             encoding="utf-8",
@@ -135,6 +292,7 @@ class GitWorkspace:
             capture_output=True,
             shell=False,
             check=check,
+            env=self.git_environment,
         )
 
     def doctor(self) -> dict[str, Any]:
@@ -164,11 +322,12 @@ class GitWorkspace:
 
     def list_files(self, path_scopes: Iterable[str] | None = None) -> list[str]:
         result = subprocess.run(
-            ["git", "ls-files", "-co", "--exclude-standard", "-z"],
+            [str(self.git_executable), "ls-files", "-co", "--exclude-standard", "-z"],
             cwd=self.root,
             capture_output=True,
             shell=False,
             check=True,
+            env=self.git_environment,
         )
         files = sorted(
             path.replace("\\", "/")
@@ -364,25 +523,57 @@ def validate_result_artifact_path_types(
 
 
 @contextmanager
-def isolated_check_temp_directory(workspace: GitWorkspace) -> Iterator[Path]:
-    """Create a fresh Check-only temp directory hidden inside the Git metadata.
+def isolated_check_temp_directory(temp_root: Path) -> Iterator[CheckTempAllocation]:
+    """Create and remove one marker-bound allocation below an explicit root."""
 
-    Host TEMP directories can be owned by a different Windows sandbox identity.
-    A fresh directory under this workspace's Git metadata is writable by the
-    Controller, does not appear in the worktree, and is removed after the Check.
-    """
-
+    root = Path(temp_root).resolve()
+    allocation_id = uuid.uuid4().hex
+    allocation = root / allocation_id
+    marker = allocation / CHECK_TEMP_MARKER
     try:
-        with tempfile.TemporaryDirectory(
-            prefix="lao-check-",
-            dir=workspace.git_directory(),
-        ) as raw_directory:
-            yield Path(raw_directory).resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        _assert_no_reparse_ancestors(root)
+        allocation.mkdir(exist_ok=False)
+        _assert_no_reparse_ancestors(allocation)
+        marker.write_text(allocation_id + "\n", encoding="ascii", newline="\n")
     except OSError as exc:
         raise VerificationError(
             "check_environment",
-            "workspace-private Check temp directory is unavailable",
+            "external Check temp allocation is unavailable",
         ) from exc
+    try:
+        yield CheckTempAllocation(
+            root=root,
+            path=allocation.resolve(),
+            allocation_id=allocation_id,
+        )
+    finally:
+        try:
+            if marker.read_text(encoding="ascii") != allocation_id + "\n":
+                raise VerificationError(
+                    "check_environment",
+                    "Check temp allocation ownership marker differs",
+                )
+            shutil.rmtree(
+                _cleanup_path(allocation),
+                onexc=_retry_check_temp_cleanup,
+            )
+            if allocation.exists():
+                raise VerificationError(
+                    "check_environment",
+                    "Check temp allocation cleanup left residue",
+                )
+        except VerificationError:
+            raise
+        except OSError as exc:
+            error_code = getattr(exc, "winerror", None) or exc.errno or "unknown"
+            raise VerificationError(
+                "check_environment",
+                (
+                    "Check temp allocation cleanup failed "
+                    f"({type(exc).__name__}, code={error_code})"
+                ),
+            ) from exc
 
 
 def build_check_environment(
@@ -390,30 +581,28 @@ def build_check_environment(
     temp_directory: Path,
     python_executable: Path | None = None,
     git_executable: Path | None = None,
+    git_safe_directory: Path | None = None,
     environ: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """Build the deterministic, secret-free environment used by command Checks."""
 
-    source = os.environ if environ is None else environ
+    source = dict(os.environ if environ is None else environ)
     python_path = Path(python_executable or sys.executable).resolve()
     resolved_git = git_executable
     if resolved_git is None:
-        discovered = shutil.which("git", path=source.get("PATH"))
-        if not discovered:
-            raise VerificationError("check_environment", "Git executable is unavailable")
-        resolved_git = Path(discovered)
+        resolved_git = _resolve_git_executable(None, source)
     git_path = Path(resolved_git).resolve()
     temp_path = Path(temp_directory).resolve()
     if not temp_path.is_dir():
         raise VerificationError(
             "check_environment",
-            "workspace-private Check temp directory is missing",
+            "external Check temp directory is missing",
         )
-    keep = ("SystemRoot", "WINDIR", "COMSPEC", "PATHEXT")
-    environment = {key: source[key] for key in keep if key in source}
+    environment = _minimal_process_environment(source)
     path_parts = [str(python_path.parent), str(git_path.parent)]
-    if "SystemRoot" in environment:
-        path_parts.append(str(Path(environment["SystemRoot"]) / "System32"))
+    system_root = environment.get("SystemRoot") or environment.get("SYSTEMROOT")
+    if system_root:
+        path_parts.append(str(Path(system_root) / "System32"))
     environment.update(
         {
             "PATH": os.pathsep.join(dict.fromkeys(path_parts)),
@@ -421,22 +610,43 @@ def build_check_environment(
             "PYTHONHASHSEED": "0",
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
-            "GIT_CONFIG_COUNT": "1",
-            "GIT_CONFIG_KEY_0": "core.autocrlf",
-            "GIT_CONFIG_VALUE_0": "false",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GCM_INTERACTIVE": "Never",
+            "GIT_CONFIG_COUNT": "5" if git_safe_directory is not None else "4",
+            "GIT_CONFIG_KEY_0": "core.longpaths",
+            "GIT_CONFIG_VALUE_0": "true",
+            "GIT_CONFIG_KEY_1": "core.autocrlf",
+            "GIT_CONFIG_VALUE_1": "false",
+            "GIT_CONFIG_KEY_2": "credential.interactive",
+            "GIT_CONFIG_VALUE_2": "false",
+            "GIT_CONFIG_KEY_3": "core.hooksPath",
+            "GIT_CONFIG_VALUE_3": os.devnull,
             "TEMP": str(temp_path),
             "TMP": str(temp_path),
             "TMPDIR": str(temp_path),
         }
     )
+    if git_safe_directory is not None:
+        environment.update(
+            {
+                "GIT_CONFIG_KEY_4": "safe.directory",
+                "GIT_CONFIG_VALUE_4": str(Path(git_safe_directory).resolve()),
+            }
+        )
     return environment
 
 
-def preflight_check_environment(workspace: GitWorkspace) -> None:
+def preflight_check_environment(workspace: GitWorkspace, *, temp_root: Path) -> None:
     """Fail before model dispatch unless a Check subprocess can use its temp root."""
 
-    with isolated_check_temp_directory(workspace) as temp_directory:
-        environment = build_check_environment(temp_directory=temp_directory)
+    with isolated_check_temp_directory(temp_root) as allocation:
+        environment = build_check_environment(
+            temp_directory=allocation.path,
+            git_executable=workspace.git_executable,
+            git_safe_directory=workspace.root,
+        )
         probe = (
             "import os,tempfile;"
             "p=tempfile.NamedTemporaryFile(delete=True);"
@@ -459,37 +669,65 @@ def preflight_check_environment(workspace: GitWorkspace) -> None:
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise VerificationError(
                 "check_environment",
-                "workspace-private Check temp probe could not run",
+                "external Check temp probe could not run",
             ) from exc
         if completed.returncode != 0:
             raise VerificationError(
                 "check_environment",
-                "workspace-private Check temp probe failed",
+                "external Check temp probe failed",
             )
 
 
-def resolve_check_argv(argv: list[str]) -> list[str]:
+def resolve_check_argv(argv: list[str], *, git_executable: Path) -> list[str]:
     """Bind bare tool names whose identity is part of the Check contract."""
 
     resolved = list(argv)
     if resolved[0].casefold() in {"python", "python.exe"}:
         resolved[0] = str(Path(sys.executable).resolve())
     elif resolved[0].casefold() in {"git", "git.exe"}:
-        discovered = shutil.which("git", path=os.environ.get("PATH"))
-        if not discovered:
-            raise VerificationError("check_environment", "Git executable is unavailable")
-        resolved[0] = str(Path(discovered).resolve())
+        resolved[0] = str(Path(git_executable).resolve())
     return resolved
 
 
-def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorkspace) -> CheckResult:
+def _check_failure_classification(
+    *,
+    state: CheckState,
+    stdout: str,
+    stderr: str,
+) -> tuple[CheckFailureClassification | None, str]:
+    if state is CheckState.PASSED:
+        return None, "passed"
+    if state is CheckState.ERROR:
+        return CheckFailureClassification.ENVIRONMENT, "controller_runtime"
+    markers = {
+        line[len(CHECK_FAILURE_CLASS_PREFIX):].strip()
+        for stream in (stdout, stderr)
+        for line in stream.splitlines()
+        if line.startswith(CHECK_FAILURE_CLASS_PREFIX)
+    }
+    allowed = {value.value for value in CheckFailureClassification}
+    if len(markers) == 1 and next(iter(markers)) in allowed:
+        return CheckFailureClassification(next(iter(markers))), "check_protocol"
+    return CheckFailureClassification.UNKNOWN, "unclassified"
+
+
+def run_command_check(
+    check_name: str,
+    check: CommandCheck,
+    workspace: GitWorkspace,
+    *,
+    temp_root: Path,
+) -> CheckResult:
     cwd = (workspace.root / check.cwd).resolve()
     if workspace.root not in cwd.parents and cwd != workspace.root:
         raise VerificationError("check", f"Check cwd escaped repository: {check.cwd}")
     started = utc_now()
     try:
-        execution_argv = resolve_check_argv(check.argv)
-        with isolated_check_temp_directory(workspace) as temp_directory:
+        execution_argv = resolve_check_argv(
+            check.argv,
+            git_executable=workspace.git_executable,
+        )
+        with isolated_check_temp_directory(temp_root) as allocation:
             completed = subprocess.run(
                 execution_argv,
                 cwd=cwd,
@@ -499,10 +737,19 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
                 capture_output=True,
                 timeout=check.timeout_seconds,
                 shell=False,
-                env=build_check_environment(temp_directory=temp_directory),
+                env=build_check_environment(
+                    temp_directory=allocation.path,
+                    git_executable=workspace.git_executable,
+                    git_safe_directory=workspace.root,
+                ),
                 check=False,
             )
         state = CheckState.PASSED if completed.returncode in check.expected_exit_codes else CheckState.FAILED
+        failure_classification, classification_source = _check_failure_classification(
+            state=state,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+        )
         return CheckResult(
             check_name=check_name,
             state=state,
@@ -512,6 +759,10 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
             stderr=completed.stderr,
             started_at=started,
             ended_at=utc_now(),
+            failure_classification=failure_classification,
+            failure_classification_source=classification_source,
+            temp_root=str(allocation.root),
+            temp_allocation_id=allocation.allocation_id,
         )
     except subprocess.TimeoutExpired as exc:
         return CheckResult(
@@ -523,6 +774,10 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
             stderr=((exc.stderr or "") if isinstance(exc.stderr, str) else "") + "\ncheck timed out",
             started_at=started,
             ended_at=utc_now(),
+            failure_classification=CheckFailureClassification.ENVIRONMENT,
+            failure_classification_source="controller_runtime",
+            temp_root=str(Path(temp_root).resolve()),
+            temp_allocation_id="unallocated-or-cleaned",
         )
     except OSError as exc:
         return CheckResult(
@@ -534,6 +789,10 @@ def run_command_check(check_name: str, check: CommandCheck, workspace: GitWorksp
             stderr=f"{type(exc).__name__}: {exc}",
             started_at=started,
             ended_at=utc_now(),
+            failure_classification=CheckFailureClassification.ENVIRONMENT,
+            failure_classification_source="controller_runtime",
+            temp_root=str(Path(temp_root).resolve()),
+            temp_allocation_id="unallocated-or-cleaned",
         )
 
 

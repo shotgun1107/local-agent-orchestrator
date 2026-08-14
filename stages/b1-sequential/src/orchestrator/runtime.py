@@ -183,7 +183,11 @@ class FakeRuntime:
             kind = effect.get("type")
             if kind in {"write_file", "mutate_input"}:
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                destination.write_text(str(effect.get("content", "")), encoding="utf-8")
+                destination.write_text(
+                    str(effect.get("content", "")),
+                    encoding="utf-8",
+                    newline="\n",
+                )
             elif kind == "delete_file" and destination.exists():
                 destination.unlink()
             else:

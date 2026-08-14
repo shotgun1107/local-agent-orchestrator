@@ -18,12 +18,20 @@ REQUIREMENTS = ROOT / "profile-r" / "requirements"
 WORK = ROOT / "profile-r" / "work"
 WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 WORKER_FEEDBACK_MAX_BYTES = 12_288
+CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 
 
 class PublicContractError(RuntimeError):
-    def __init__(self, message: str, *, public_feedback: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        public_feedback: list[str] | None = None,
+        failure_classification: str = "PRODUCT_ASSERTION",
+    ) -> None:
         super().__init__(message)
         self.public_feedback = public_feedback
+        self.failure_classification = failure_classification
 
 
 def _decode_utf8_prefix(data: bytes, limit: int) -> str:
@@ -410,10 +418,9 @@ def check_r06() -> None:
     }
     if dict(posthoc.PROPERTY_IDS) != expected or not callable(posthoc.evaluate_posthoc):
         raise PublicContractError("public deterministic property catalog is wrong")
-    for fixture_id, root in (("three-stage-config-migration", CONFIG_ROOT), ("three-stage-incident-analysis", INCIDENT_ROOT)):
-        result = posthoc.evaluate_posthoc(fixture_id, ROOT / root)
-        if result.get("property_status") != "pass":
-            raise PublicContractError("the completed public fixture must pass its deterministic properties")
+    # The property checker programs are Judge-only inputs and are deliberately
+    # absent from the Worker snapshot.  The public Check validates the exported
+    # API and frozen catalog; the independent Judge executes those programs.
 
 
 def _test_functions(path: Path) -> set[str]:
@@ -432,12 +439,15 @@ def check_r07() -> None:
     names = _test_functions(s2_path)
     required = {
         "test_s2_stage_discriminator_rejects_cross_branch_bytes",
-        "test_s2_posthoc_fixture_outputs_and_label_parity",
         "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
         "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
         "test_s2_fake_four_cell_plan_judge_property_seal_export",
     }
-    if not required <= names:
+    posthoc_regression_names = {
+        "test_s2_posthoc_fixture_outputs_and_label_parity",
+        "test_s2_posthoc_pristine_golden_and_label_parity",
+    }
+    if not required <= names or not posthoc_regression_names & names:
         raise PublicContractError("the S2 public regression groups are incomplete")
     legacy_names = _test_functions(suite_path)
     required_legacy = {
@@ -449,8 +459,20 @@ def check_r07() -> None:
     }
     if not required_legacy <= legacy_names:
         raise PublicContractError("the legacy S1 regression source surface is incomplete")
+    public_regressions = [
+        "test_s2_stage_discriminator_rejects_cross_branch_bytes",
+        "test_s2_frozen_fixture_manifest_matches_live_model_controls",
+        "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
+        "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
+    ]
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", str(s2_path)],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            *(f"{s2_path}::{name}" for name in public_regressions),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -462,6 +484,7 @@ def check_r07() -> None:
         raise PublicContractError(
             "the public S2 routing regressions failed",
             public_feedback=_public_pytest_failure_feedback(result),
+            failure_classification="UNKNOWN",
         )
 
 
@@ -519,12 +542,14 @@ def main(argv: list[str]) -> int:
         CHECKS[task_id]()
     except PublicContractError as exc:
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
+        print(f"{CHECK_FAILURE_CLASS_PREFIX}{exc.failure_classification}")
         if exc.public_feedback:
             for line in exc.public_feedback:
                 print(f"{WORKER_FEEDBACK_PREFIX}{line}")
         return 1
     except (OSError, subprocess.SubprocessError):
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
+        print(f"{CHECK_FAILURE_CLASS_PREFIX}ENVIRONMENT")
         return 1
     print(f"{task_id}_PUBLIC_CONTRACT_OK")
     return 0

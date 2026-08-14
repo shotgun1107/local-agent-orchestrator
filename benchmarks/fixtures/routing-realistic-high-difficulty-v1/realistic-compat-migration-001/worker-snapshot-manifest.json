@@ -83,10 +83,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
-      "source_sha256": "b65b0a475bc5426926c8813daa0e886a020432758470e04d4cfb9f1353362455",
-      "source_size": 11159,
-      "worker_sha256": "b65b0a475bc5426926c8813daa0e886a020432758470e04d4cfb9f1353362455",
-      "worker_size": 11159
+      "source_sha256": "2d4da9ae2b76d9d1f6b6ace75fda6143a35b0733d5d565c6f52e974ba3ddac9a",
+      "source_size": 11298,
+      "worker_sha256": "2d4da9ae2b76d9d1f6b6ace75fda6143a35b0733d5d565c6f52e974ba3ddac9a",
+      "worker_size": 11298
     },
     {
       "mapping_ids": [],
@@ -107,10 +107,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
-      "source_sha256": "345b24ec476121aae1884bf0858f9b1c4cde2feadcdf270dcfb0402b32163f64",
-      "source_size": 24500,
-      "worker_sha256": "345b24ec476121aae1884bf0858f9b1c4cde2feadcdf270dcfb0402b32163f64",
-      "worker_size": 24500
+      "source_sha256": "405de8c47d83f94f3ca33aadd4e0af2bf180514728a35c69a329003aaa2399fb",
+      "source_size": 25338,
+      "worker_sha256": "405de8c47d83f94f3ca33aadd4e0af2bf180514728a35c69a329003aaa2399fb",
+      "worker_size": 25338
     },
     {
       "mapping_ids": [],
@@ -1631,9 +1631,9 @@
   "source_allowlist_sha256": "a81913bd80cd6d1ed914b7fdf09f2f74ec46cccda0488e0875d003cc6ccc0d45",
   "source_authority": "git_object_database",
   "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
-  "source_total_bytes": 1182859,
+  "source_total_bytes": 1183836,
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
-  "worker_total_bytes": 1182844,
-  "worker_tree_aggregate_sha256": "a84511064c7c4d514ba4b9ac18b85d84baad1e78a7ee89e5d842fc6194a575cd"
+  "worker_total_bytes": 1183821,
+  "worker_tree_aggregate_sha256": "198f5070e5575a1fbfd95c32a396a539f8907206cc7bd78611659b08ab93f0e6"
 }

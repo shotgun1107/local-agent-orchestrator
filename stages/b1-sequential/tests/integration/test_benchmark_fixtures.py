@@ -28,7 +28,9 @@ def initialize_fixture(tmp_path: Path, name: str) -> Path:
 
 def execute_fixture(root: Path, state: Path, effects: list[dict[str, str]]) -> dict:
     orchestrator = Orchestrator(
-        load_project(root), state_root=state, runtime_kind="fake",
+        load_project(root), state_root=state,
+        check_temp_root=state.parent / f"{state.name}-check-temp",
+        runtime_kind="fake",
         fake_fixture={"effects": effects},
     )
     try:
