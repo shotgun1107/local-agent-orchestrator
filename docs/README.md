@@ -98,7 +98,7 @@ docs/
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [Phase B P001~P015 집 원본 inventory](./operations/phase-b-p001-p015-source-inventory.md) — raw를 공개하지 않고 존재·크기·hash·민감도와 P013/P014 미확인을 고정한 정본
-- [회사 로컬 → 집 로컬 현재 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §26이 v8 환경 재심사와 최신 model-free 교정 관문을 보존
+- [회사 로컬 → 집 로컬 현재 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §27이 model-free 환경 교정 구현 결과와 남은 readiness 관문을 보존
 - [과거 집 로컬 → 회사 로컬 인수인계](./operations/home-to-company-codex-handoff.md) — SS1 v6 당시 역사 기록; 최신 재개 지시로 사용하지 않음
 - [과거 집 PC 진입 인수인계](./operations/home-codex-handoff.md) — 프로젝트 정신모델 참고용 역사 문서; 현재 재개 지시로 사용하지 않음
 - [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
@@ -117,6 +117,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 회사 v8에서 Profile R SS1 Cell 1과 B1 Cell 2를 실제 실행·봉인했지만 B1이 R07 시험환경의 긴 nested Git 경로로 중단돼 비교는 무효이고 route는 `ROUTING_INCONCLUSIVE`다. 현재 실제 SS1·B1·Cell 3은 `NO-GO`다. 다음 허용 작업은 조건부 승인된 축소 환경 교정의 model-free 구현, production-shaped Windows acceptance 2회, live-readiness package와 독립 재심사뿐이다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 회사 v8 비교는 R07 시험환경 오류로 무효다. 환경 교정 구현과 운영형 Windows 모의 흐름 2회는 통과했지만 기존 v8 후보를 사용한 구조 회귀이므로 official acceptance는 아니다. route는 `ROUTING_INCONCLUSIVE`, 실제 SS1·B1·Cell 3은 계속 `NO-GO`다. 다음은 현재 Docker identity 판단, 새 qualification/candidate, exact-candidate acceptance 2회, live-readiness package와 독립 재심사다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

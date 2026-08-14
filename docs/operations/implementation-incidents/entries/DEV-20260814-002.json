@@ -30,6 +30,14 @@
     {
       "kind": "review-finding",
       "detail": "ChatGPT Pro 1차 심사는 Live NO-GO, 축소 재심은 외부 TEMP·첫 Git 호출 통제·환경 실패 non-retry·production-shaped Windows 시험 2회를 포함하는 구현계획을 조건부 승인했다"
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "commit 80c8c9e에서 외부 Check TEMP, hermetic Git, typed Check 실패와 product-only retry, Phase F crash-window fail-closed 경계를 구현했다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "실제 subprocess·pytest·filesystem·Git을 사용하는 SS1→B1 운영형 모의 흐름을 독립 root에서 2회 통과했고 각 실행에서 R01~R08 Check 16/16, Cell 3 미생성, cleanup residue 0을 확인했다"
     }
   ],
   "root_cause": "B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. preflight와 단위시험은 실제 child pytest와 nested Git 깊이를 관통하지 않았고, core.longpaths는 첫 git init 뒤에 설정됐다. 환경성 Check 실패도 제품 assertion과 구분되지 않아 두 번째 model Attempt를 소비했다.",
@@ -55,8 +63,16 @@
       "reason": "단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다"
     }
   ],
-  "resolution": "",
-  "affected_files": [],
+  "resolution": "축소 교정 source 구현과 model-free 구조 검증은 commit 80c8c9e에서 완료했다. 다만 변경 source에 대한 Docker identity, 새 qualification/candidate, exact-candidate acceptance, readiness package와 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/src/benchmark_runner/workspace.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py"
+  ],
   "regression_tests": [
     "실제 Phase F→B1→Check→pytest→nested Git 깊이에서 R01~R08을 관통하는 Windows model-free 회귀를 독립 root에서 2회 실행",
     "Check별 외부 short TEMP allocation이 live builder부터 실제 Check까지 전달되고 종료 뒤 residue 0인 회귀",
@@ -67,19 +83,28 @@
   "verification": [
     "B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨",
     "R07 attempt 002에 attempt 001의 공개 traceback과 long-path 힌트가 전달됨",
-    "B1 Cell 실패 Measurement와 seal은 별도 finalization verifier를 통과함"
+    "B1 Cell 실패 Measurement와 seal은 별도 finalization verifier를 통과함",
+    "B1 전체 81 passed",
+    "관련 Runner 45 passed, 2 opt-in skipped",
+    "production-shaped Windows SS1→B1 model-free acceptance 2회 통과",
+    "model·SDK thread/turn·Codex·Docker 호출 0회"
   ],
   "remaining_risks": [
-    "해결 전에는 Profile R SS1/B1 속도·비용·품질 비교가 유효하지 않다",
-    "현재 qualification v7의 9-cell Docker Judge 성공은 실제 B1 Check 내부의 nested pytest 경로까지 감사한 것이 아니다",
+    "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
+    "source 변경으로 qualification v7과 Phase E v8 candidate는 새 Live 입력으로 stale하다",
+    "현재 source의 Docker identity 판단, 필요 시 9-cell 재자격과 새 Phase E candidate가 필요하다",
+    "새 exact candidate로 acceptance 2회와 live-readiness package 독립 재심사가 끝나지 않았다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
     "새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
-  "related_commits": [],
+  "related_commits": [
+    "80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a"
+  ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md",
     "docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md",
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md",
-    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md"
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-model-free-result.md"
   ]
 }

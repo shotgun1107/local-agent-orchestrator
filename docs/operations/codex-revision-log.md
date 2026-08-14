@@ -2272,3 +2272,21 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 사용자는 이번 회사 로컬 상태를 프로젝트 최신 정본이자 최우선 기준으로 지정했다.
   회사에서 검증한 clean commit/tree를 push한 뒤 origin을 배포 기준으로 사용하며, 집 로컬
   상태가 다르면 자동 병합하지 않고 집 고유 작업을 보고한 뒤 회사 정본을 우선한다.
+
+## Profile R 시험환경 축소 교정 model-free 구현
+
+- 승인된 축소 명세에 따라 B1 Check TEMP를 Worker `.git` 밖의 명시적 root로 분리하고,
+  Windows 긴 경로·읽기 전용 Git object까지 marker-bound cleanup으로 처리했다.
+- Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터
+  hermetic Git 환경을 적용했다. 환경·미분류 Check 실패는 재시도하지 않고 명시적
+  `PRODUCT_ASSERTION`만 retry한다.
+- 공개 fixture의 R05~R07 작업 범위와 Check를 Worker 공개 자료에 맞췄다. Judge 전용
+  property 프로그램은 Worker에 공개하지 않고 독립 Judge 경계에 남겼다.
+- 실제 subprocess·pytest·filesystem·Git을 쓰는 SS1→B1 운영형 모의 흐름을 독립 root에서
+  2회 통과했다. 각 실행은 R01~R08 Check 16/16 pass, Cell 3 미생성, cleanup residue 0이다.
+- B1 전체 `81 passed`; 관련 Runner는 `45 passed, 2 opt-in skipped`; model·SDK
+  thread/turn·Codex·Docker 호출은 0회다. 구현 commit은 `80c8c9e`다.
+- source 변경으로 qualification v7과 Phase E v8은 새 Live 입력으로 stale하다. 기존 후보로
+  수행한 두 모의 실행은 구조 회귀이며 official acceptance가 아니다. 새 qualification과
+  candidate, exact-candidate acceptance 2회, readiness package와 독립 재심사 전까지
+  Live와 `DEV-20260814-002` closure는 계속 NO-GO다.

@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 18
+- revision: 19
 - 작성일: 2026-08-14
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -9,6 +9,7 @@
 - 반드시 포함할 집→회사 인수 commit: `db83a5b9ea1981a8716b47df57fe112c72e6a61c`
 - 회사가 인수한 원격 기준 commit: `ee877eb2e947e1d2af4d36f845166a358aad8927`
 - 이번 B1 시험환경 수정 commit: `ed1e1602d8df546e016ba94405f8143088070709`
+- 이번 Profile R 환경 교정 구현 commit: `80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a`
 
 > 이 문서를 포함하는 원격 tip이 집에서 받을 정본이다. 집에서는 이 문서의 고정
 > commit으로 hard reset하지 말고 `git fetch` 뒤
@@ -475,3 +476,27 @@ Profile I qualification은 영향받지 않는다. Docker 재자격과 Phase E c
 
 집에서 이어갈 때는 §25의 간단한 short-path 수정 지시 대신 이 절과 최신 환경 교정
 명세를 우선한다.
+
+## 27. 2026-08-14 Profile R 환경 교정 model-free 구현 checkpoint
+
+이 절은 §26의 구현 항목을 수행한 현재 회사 정본이다.
+
+- B1 Check 임시 폴더를 Worker `.git` 밖의 명시적 root로 옮겼다. 긴 경로와 Windows
+  읽기 전용 Git object도 자기 marker가 맞는 allocation만 정리한다.
+- Worker 생성, B1 workspace와 nested fixture restore는 첫 Git 명령부터 longpaths와
+  줄바꿈·hook·credential 설정을 고정한다.
+- 공개 Check는 제품 실패·환경 실패·미분류 실패를 구분하고, 제품 실패라고 명시된
+  경우만 model retry를 허용한다.
+- 실제 subprocess·pytest·filesystem·Git을 쓰는 SS1→B1 모의 흐름을 서로 다른 root에서
+  2회 통과했다. 두 번 모두 R01~R08의 16개 Check가 통과했고 Cell 3은 생기지 않았다.
+- B1 전체는 `81 passed`, 관련 Runner는 합산 `45 passed, 2 opt-in skipped`다. 실제
+  model·SDK thread/turn·Codex·Docker 호출은 0회다.
+- 구현 commit은 `80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a`이고 결과 전문은
+  `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-model-free-result.md`다.
+
+아직 Live를 열지 않는다. 이 모의시험은 stale한 v8 후보를 사용한 구조 검증이므로 새
+source의 official acceptance가 아니다. 집에서는 기존 raw·Docker image·로그인 상태를
+보존하고 origin을 ff-only로 인수한 뒤, 자동 Docker 재자격이나 model 실행을 시작하지
+않는다. 다음 사용자 결정은 현재 Docker identity 확인과 새 qualification/candidate 제작을
+회사에서 계속할지 여부다. 그 뒤 exact-candidate acceptance 2회, readiness package와
+독립 재심사가 필요하다.
