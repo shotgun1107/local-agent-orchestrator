@@ -132,7 +132,7 @@ def test_config_builder_grants_only_exact_workspace_write(tmp_path: Path) -> Non
     assert len(overrides) == 5
     filesystem = overrides[2]
     assert '":root"="deny"' in filesystem
-    assert f'{json.dumps(str(workspace.resolve()))}="write"' in filesystem
+    assert f'{json.dumps(str(workspace.resolve()), ensure_ascii=False)}="write"' in filesystem
     assert "workspace-write" not in "\n".join(overrides).lower()
 
 
@@ -182,7 +182,8 @@ def test_live_stack_construction_is_side_effect_free_and_binds_runtime_policy(
         docker_raw_root=tmp_path / "docker-raw",
         docker_executable=Path(sys.executable),
         git_executable=GIT_EXECUTABLE,
-        execution_environment_root=(tmp_path / "execution-environment").resolve(),
+        execution_environment_root=Path(tmp_path.anchor) / "lao-pf-live-s1",
+        experiment_state_root=(tmp_path / "phase-f-state").resolve(),
         source_commit="a" * 40,
         environ={},
         source_environment={
@@ -216,7 +217,8 @@ def test_live_stack_rejects_api_key_name_without_reading_value(tmp_path: Path) -
             docker_raw_root=tmp_path / "docker-raw",
             docker_executable=Path(sys.executable),
             git_executable=GIT_EXECUTABLE,
-            execution_environment_root=(tmp_path / "execution-environment").resolve(),
+            execution_environment_root=Path(tmp_path.anchor) / "lao-pf-api-name",
+            experiment_state_root=(tmp_path / "phase-f-state").resolve(),
             source_commit="a" * 40,
             environ=NameOnlyApiKeyMapping(),
             source_environment={},
@@ -226,7 +228,7 @@ def test_live_stack_rejects_api_key_name_without_reading_value(tmp_path: Path) -
 def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
     tmp_path: Path,
 ) -> None:
-    environment_root = (tmp_path / "short-environment-root").resolve()
+    environment_root = Path(tmp_path.anchor) / "lao-pf-live-b1"
 
     stack = build_profile_r_phase_f_b1_live_stack(
         repository=REPOSITORY,
@@ -236,6 +238,7 @@ def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
         docker_executable=Path(sys.executable),
         git_executable=GIT_EXECUTABLE,
         execution_environment_root=environment_root,
+        experiment_state_root=(tmp_path / "phase-f-state").resolve(),
         source_commit="a" * 40,
         environ={},
         source_environment={
@@ -253,6 +256,49 @@ def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
     assert worker.check_temp_root == environment_root / "b1-check-temp"
     assert worker.git_executable == GIT_EXECUTABLE
     assert not environment_root.exists()
+
+
+def test_b1_live_stack_rejects_environment_root_overlapping_phase_f_state(
+    tmp_path: Path,
+) -> None:
+    state_root = (tmp_path / "phase-f-state").resolve()
+    with pytest.raises(Exception, match="overlaps"):
+        build_profile_r_phase_f_b1_live_stack(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            artifact_root=tmp_path / "backend",
+            docker_raw_root=tmp_path / "docker-raw",
+            docker_executable=Path(sys.executable),
+            git_executable=GIT_EXECUTABLE,
+            execution_environment_root=state_root / "check-temp",
+            experiment_state_root=state_root,
+            source_commit="a" * 40,
+            environ={},
+            source_environment={"PATH": str(GIT_EXECUTABLE.parent)},
+            app_server_port_factory=lambda workspace, overrides: DormantPort(),
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path budget contract")
+def test_b1_live_stack_rejects_environment_root_without_path_headroom(
+    tmp_path: Path,
+) -> None:
+    too_long = Path(tmp_path.anchor) / ("x" * 100)
+    with pytest.raises(Exception, match="path headroom"):
+        build_profile_r_phase_f_b1_live_stack(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            artifact_root=tmp_path / "backend",
+            docker_raw_root=tmp_path / "docker-raw",
+            docker_executable=Path(sys.executable),
+            git_executable=GIT_EXECUTABLE,
+            execution_environment_root=too_long,
+            experiment_state_root=(tmp_path / "phase-f-state").resolve(),
+            source_commit="a" * 40,
+            environ={},
+            source_environment={"PATH": str(GIT_EXECUTABLE.parent)},
+            app_server_port_factory=lambda workspace, overrides: DormantPort(),
+        )
 
 
 def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None:

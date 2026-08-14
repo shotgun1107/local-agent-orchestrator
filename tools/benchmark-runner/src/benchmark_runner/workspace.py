@@ -9,7 +9,7 @@ import tarfile
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path, PurePosixPath
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import yaml
 from pydantic import Field, JsonValue, field_validator, model_validator
@@ -217,6 +217,51 @@ def _run_git(
         detail = result.stderr.decode("utf-8", errors="replace").strip()
         raise WorkspaceError(f"git {' '.join(args)} failed: {detail}")
     return result.stdout
+
+
+def git_environment_provenance(
+    *,
+    workspace: Path,
+    git_executable: Path | str | None = None,
+    source_environment: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Attest the exact executable and command-scope Git policy used by a run."""
+
+    source = dict(os.environ if source_environment is None else source_environment)
+    candidate: str | Path | None = git_executable
+    if candidate is None:
+        candidate = shutil.which("git", path=source.get("PATH"))
+    if candidate is None:
+        raise WorkspaceError("Git executable is unavailable")
+    resolved = Path(candidate).resolve(strict=True)
+    root = Path(workspace).resolve(strict=True)
+    environment = build_hermetic_git_environment(
+        git_executable=resolved,
+        home=root,
+        source_environment=source,
+    )
+    version = _run_git(
+        str(resolved),
+        root,
+        ["--version"],
+        env=environment,
+    ).decode("utf-8", errors="strict").strip()
+    config_origin = _run_git(
+        str(resolved),
+        root,
+        ["config", "--show-origin", "--show-scope", "--list"],
+        env=environment,
+    )
+    return {
+        "schema_version": 1,
+        "git_executable_canonical_path": str(resolved),
+        "git_executable_sha256": sha256_file(resolved),
+        "git_version": version,
+        "config_scope_origin_sha256": hashlib.sha256(config_origin).hexdigest(),
+        "config_scope_origin_lines": config_origin.decode(
+            "utf-8", errors="strict"
+        ).splitlines(),
+    }
 
 
 def _safe_extract_fixture(archive: bytes, prefix: str, target: Path) -> None:

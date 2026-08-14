@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "anonymization-map.json",
-      "sha256": "eea6653eb62d72890bf041d675e4b64fb8648aa59b7f3059ecee1f018c198e1a",
-      "size": 1537
+      "sha256": "098a555430d01622985b962ee463d33fd4a8897d8bfbaa68b64967d5a990f04d",
+      "size": 1485
     },
     {
       "path": "challenge-eligibility.json",
@@ -28,52 +28,52 @@
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "12a839865e1b42f4bc32bde5f3210d07c0d79d28aa1f035607f7bb4ae05dc539",
+      "sha256": "6f863dbabe8f1437312633e5e2ba5dfb7b81594e49524df786affafc5320efee",
       "size": 9234
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "10d2d411e0cfa53f62da49dc8c5dc94cea5b972662ecbd9bba84daff8782f99d",
+      "sha256": "7acb8f94bd08993ab4e590b2e7d274a9381f460fe73e8526d9e6ee034f14f3cb",
       "size": 6766
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "1473cdd84f5abb7175f0181ee16bb4b90b5c5a1a6cc4922c31e27ffb82c6c644",
+      "sha256": "160e5108b0997dc44ddc6e0704bcb7667053493093e5d7b5cbbe5a0b8e0ef03b",
       "size": 7170
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "2c28fa272483f259822fbeb9634029ffc2f56357b4aec331e7b0803a8cf6f134",
+      "sha256": "012ac353074746238a5b3997c76d30c0a08dd18a1fb01fc09570132c3e441b6f",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "af6df53953777dfd5d028a1200578f55ca47ee2740d729f3ced3a43754644985",
+      "sha256": "7138d9ab21c93c28b467d26066b5ae0e52f26d2e4636e5da49b1d3cc609c7289",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "87c7d19a51385d833a2865fb35b714a14bb29ec7634b5751e08f7f7b048e654b",
+      "sha256": "fc1babe0977b6e70f537d10bc5715c33f62679b1ddec96adabaa4e1797e84439",
       "size": 7953
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "b1bcfeb10a297a4c9a8244341a32f9e3010758edbc3feee4334c6e56b3808d42",
+      "sha256": "99b380bbc2f6982f2286bad8e4f74dbec3b1a0de686d1a25af7718a7fc39fdc1",
       "size": 9231
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "3e231d1044fd02a153a300dfd991cbe267d92d7258fc8dbe9e74cadf64ce71f2",
+      "sha256": "c93bc803bfe6b4a86c94bdbd339c00ae42ccf203c9455b13a9a43132140ef399",
       "size": 9239
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "3477b4541aab1ac5674df67433d0117bdaac2da417c18481f8dc9954c69799ce",
+      "sha256": "2d2555c3243fd9826f8b6e9dcbebc9515adfb699ce9bf486d8dd1d46a768596b",
       "size": 6396
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "bf4b6478f93da69a2731ce884c6b8ecdadaf5109e0288ed7d1d31a79df9c150b",
+      "sha256": "5f86374b9c2951657895af9d92755ceb157c227753110231557aa247cefaee53",
       "size": 9227
     },
     {
@@ -162,7 +162,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "5d5d765ecedd6f1bdbc23d85bdddc56b6c781eca9afd2bb98797faff9f73658f",
+  "payload_aggregate_sha256": "b2e92cbebd4f8553aeb9b6ad127d5c573fe5647b614de5f4c432db684729f348",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

@@ -51,6 +51,7 @@ from benchmark_runner.realistic_routing import (
     common_safety_decision,
 )
 from benchmark_runner.runner import sha256_bytes, sha256_file
+from benchmark_runner.workspace import git_environment_provenance
 
 from orchestrator.contract import (
     FailureKind,
@@ -81,9 +82,11 @@ from orchestrator.schedule import (
     load_run_spec,
 )
 from orchestrator.worker import render_worker_prompt
+from orchestrator.verify import validate_external_check_temp_root
 
 
 PHASE_F_B1_EVIDENCE_FILENAME = "b1-adapter-evidence.json"
+PROFILE_R_CHECK_TEMP_PATH_HEADROOM = 210
 
 
 class PhaseFB1BackendError(RuntimeError):
@@ -383,6 +386,7 @@ class ProfileRPhaseFB1Backend:
         runtime_factory: Callable[[Path], RuntimePort],
         telemetry: PhaseFBoundaryTelemetry,
         check_temp_root: Path,
+        protected_execution_roots: tuple[Path, ...] = (),
         environ: Mapping[str, str] | None = None,
         git_executable: Path | None = None,
         source_environment: Mapping[str, str] | None = None,
@@ -392,7 +396,16 @@ class ProfileRPhaseFB1Backend:
         self.runtime_mode = PhaseFRuntimeMode(runtime_mode)
         self.runtime_factory = runtime_factory
         self.telemetry = telemetry
-        self.check_temp_root = check_temp_root.resolve()
+        self.check_temp_root = validate_external_check_temp_root(
+            check_temp_root,
+            forbidden_roots=(
+                self.repository,
+                self.artifact_root,
+                *protected_execution_roots,
+            ),
+            required_descendant_headroom=PROFILE_R_CHECK_TEMP_PATH_HEADROOM,
+            require_ntfs=True,
+        )
         self.environ = environ
         self.git_executable = git_executable
         self.source_environment = source_environment
@@ -418,6 +431,18 @@ class ProfileRPhaseFB1Backend:
             workspace,
             git_executable=self.git_executable,
             source_environment=self.source_environment,
+        )
+        git_provenance = git_environment_provenance(
+            workspace=workspace,
+            git_executable=self.git_executable,
+            source_environment=(
+                None
+                if self.source_environment is None
+                else dict(self.source_environment)
+            ),
+        )
+        attested_git_executable = Path(
+            str(git_provenance["git_executable_canonical_path"])
         )
         initial_tree = _tree_sha256(_file_state(workspace))
         public_tasks = build_profile_r_ss1_tasks(workspace)
@@ -479,7 +504,7 @@ class ProfileRPhaseFB1Backend:
             loaded,
             state_root=cell_root / "b1-state",
             check_temp_root=self.check_temp_root,
-            git_executable=self.git_executable,
+            git_executable=attested_git_executable,
             source_environment=(
                 None
                 if self.source_environment is None
@@ -503,6 +528,40 @@ class ProfileRPhaseFB1Backend:
             orchestrator.close()
         with Ledger(cell_root / "b1-state" / "ledger.sqlite") as ledger:
             snapshot = ledger.load_run_snapshot(run_id)
+        b1_state_root = cell_root / "b1-state"
+        artifact_by_id = {
+            item["artifact_id"]: item for item in snapshot["artifacts"]
+        }
+
+        def public_stream(artifact_id: str | None) -> dict[str, JsonValue] | None:
+            if artifact_id is None:
+                return None
+            artifact = artifact_by_id[artifact_id]
+            data = (b1_state_root / artifact["relative_path"]).read_bytes()
+            return {
+                "sha256": sha256_bytes(data),
+                "size_bytes": len(data),
+                "text": data.decode("utf-8", errors="replace"),
+            }
+
+        task_external_keys = {
+            str(item["task_id"]): str(item["external_key"])
+            for item in snapshot["tasks"]
+        }
+        check_records: list[dict[str, JsonValue]] = []
+        for item in snapshot["checks"]:
+            check_records.append(
+                {
+                    "task_id": item["task_id"],
+                    "task_external_key": task_external_keys[str(item["task_id"])],
+                    "attempt_id": item["attempt_id"],
+                    "check_name": item["check_name"],
+                    "state": item["state"],
+                    "exit_code": item["exit_code"],
+                    "stdout": public_stream(item["stdout_artifact_id"]),
+                    "stderr": public_stream(item["stderr_artifact_id"]),
+                }
+            )
         report_path = cell_root / "b1-state" / "runs" / run_id / "report" / "summary.json"
         report = json.loads(report_path.read_text(encoding="utf-8"))
         metrics = report["metrics"]
@@ -551,6 +610,7 @@ class ProfileRPhaseFB1Backend:
             "runtime_mode": self.runtime_mode.value,
             "worker_tree_initial_sha256": initial_tree,
             "worker_tree_final_sha256": _tree_sha256(_file_state(workspace)),
+            "git_provenance": git_provenance,
             "actual_model_turns": actual_model_turns,
             "adapter_outcome_state": outcome,
             "adapter_failure_kind": failure_kind,
@@ -558,6 +618,7 @@ class ProfileRPhaseFB1Backend:
             "adapter_raw_payload": {
                 "run_id": run_id,
                 "report": report,
+                "check_records": check_records,
                 "boundary_records": [
                     record.model_dump(mode="json") for record in records
                 ],

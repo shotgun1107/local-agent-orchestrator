@@ -4,7 +4,7 @@
   "cell_id": "r-p02-stage-discriminator",
   "checker_run_status": "completed",
   "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "03554768ec9bd3af8ded8188812d1c21460b2b1599aeffd17ce04041e3ed782a",
+  "envelope_sha256": "b4d599b1ffacdb9cb583bc751d376b86bcab03445e7c53cad071e1403d3d9ca2",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -166,7 +166,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "a0f0f9da443e39423ecc1a379c5b90a0d6c20671dd02d4f9f48e9faed20603e5",
-  "workspace_before_sha256": "a0f0f9da443e39423ecc1a379c5b90a0d6c20671dd02d4f9f48e9faed20603e5",
+  "workspace_after_sha256": "36f9e574387252e82b8c8a43e0bcf94de76bc7b5cb9a4180f832c2feede3e16c",
+  "workspace_before_sha256": "36f9e574387252e82b8c8a43e0bcf94de76bc7b5cb9a4180f832c2feede3e16c",
   "workspace_mutated": false
 }

@@ -40,6 +40,7 @@ PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 16_384
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 CHECK_TEMP_MARKER = ".lao-check-allocation"
+WINDOWS_LEGACY_PATH_LIMIT = 260
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,10 +96,37 @@ def _assert_no_reparse_ancestors(path: Path) -> None:
         current = current.parent
 
 
+def _windows_filesystem_name(path: Path) -> str | None:
+    if os.name != "nt":
+        return None
+    import ctypes
+
+    root = str(Path(path).resolve().anchor)
+    filesystem = ctypes.create_unicode_buffer(261)
+    result = ctypes.windll.kernel32.GetVolumeInformationW(
+        root,
+        None,
+        0,
+        None,
+        None,
+        None,
+        filesystem,
+        len(filesystem),
+    )
+    if not result:
+        raise VerificationError(
+            "check_environment",
+            "Check temp filesystem identity is unavailable",
+        )
+    return filesystem.value
+
+
 def validate_external_check_temp_root(
     root: Path,
     *,
     forbidden_roots: Iterable[Path],
+    required_descendant_headroom: int = 0,
+    require_ntfs: bool = False,
 ) -> Path:
     raw = Path(root)
     if not raw.is_absolute():
@@ -114,6 +142,27 @@ def validate_external_check_temp_root(
             raise VerificationError(
                 "check_environment",
                 "Check temp root overlaps a protected execution root",
+            )
+    if required_descendant_headroom < 0:
+        raise VerificationError(
+            "check_environment",
+            "Check temp path headroom must be nonnegative",
+        )
+    if (
+        os.name == "nt"
+        and len(str(resolved)) + required_descendant_headroom
+        >= WINDOWS_LEGACY_PATH_LIMIT
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check temp root does not preserve the required Windows path headroom",
+        )
+    if require_ntfs and os.name == "nt":
+        filesystem = _windows_filesystem_name(resolved)
+        if filesystem is None or filesystem.casefold() != "ntfs":
+            raise VerificationError(
+                "check_environment",
+                "Check temp root must be located on NTFS",
             )
     _assert_no_reparse_ancestors(resolved)
     return resolved

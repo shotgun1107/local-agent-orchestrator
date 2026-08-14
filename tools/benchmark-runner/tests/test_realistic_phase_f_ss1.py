@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -16,11 +17,13 @@ B1_SOURCE = REPOSITORY / "stages" / "b1-sequential" / "src"
 if str(B1_SOURCE) not in sys.path:
     sys.path.insert(0, str(B1_SOURCE))
 
+from orchestrator.recover import ControllerLock
 from orchestrator.runtime import FakeRuntime as B1FakeRuntime
 
 from benchmark_runner.realistic_phase_f import (
     PHASE_F_CELLS_DIRECTORY,
     PHASE_F_CLAIM_FILENAME,
+    PHASE_F_STATE_FILENAME,
     PhaseFCellLifecycle,
     PhaseFRuntimeMode,
     initialize_phase_f_execution,
@@ -31,6 +34,7 @@ from benchmark_runner.realistic_phase_f_b1 import ProfileRPhaseFB1Backend
 from benchmark_runner.realistic_phase_f_finalize import (
     PHASE_F_CELL_SEAL_FILENAME,
     PHASE_F_FINAL_DIRECTORY,
+    PHASE_F_MEASUREMENT_FILENAME,
     PHASE_F_SEALED_DIRECTORY,
     FakePhaseFJudgePort,
     ProfileRPhaseFCellFinalizerBackend,
@@ -51,6 +55,7 @@ from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
 from benchmark_runner.workspace import (
     build_hermetic_git_environment,
     path_matches_write_scope,
+    sha256_file,
 )
 
 
@@ -67,6 +72,150 @@ REFERENCE_PATCH = (
 )
 R07_PUBLIC_FIX_COMMIT = "f0bd978"
 R07_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
+CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
+ACCEPTANCE_EVIDENCE_ROOT_ENV = "LAO_PHASE_F_ACCEPTANCE_EVIDENCE_ROOT"
+ACCEPTANCE_COMMAND_ENV = "LAO_PHASE_F_ACCEPTANCE_COMMAND"
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    a = left.resolve()
+    b = right.resolve()
+    return a == b or a in b.parents or b in a.parents
+
+
+def _path_identity(path: Path) -> dict[str, object]:
+    canonical = str(path.resolve())
+    return {
+        "canonical_path_sha256": hashlib.sha256(
+            canonical.encode("utf-8")
+        ).hexdigest(),
+        "canonical_path_length": len(canonical),
+    }
+
+
+def _processes_referencing(path: Path) -> list[str]:
+    needle = str(path.resolve())
+    if os.name == "nt":
+        quoted = needle.replace("'", "''")
+        script = (
+            f"$needle='{quoted}';"
+            "Get-CimInstance Win32_Process | "
+            "Where-Object { $_.Name -match '^(python|git)' -and "
+            "$_.CommandLine -like ('*' + $needle + '*') } | "
+            "ForEach-Object { \"$($_.ProcessId):$($_.Name)\" }"
+        )
+        completed = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", script],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            check=True,
+        )
+        return [line for line in completed.stdout.splitlines() if line.strip()]
+    processes: list[str] = []
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return processes
+    for command_line in proc.glob("[0-9]*/cmdline"):
+        try:
+            text = command_line.read_bytes().replace(b"\0", b" ").decode(
+                "utf-8", errors="replace"
+            )
+        except OSError:
+            continue
+        if needle in text and command_line.parent.name != str(os.getpid()):
+            processes.append(command_line.parent.name)
+    return processes
+
+
+def _write_acceptance_evidence(
+    *,
+    acceptance_run: int,
+    experiment_dir: Path,
+    artifact_root: Path,
+    ss1_cell_id: str,
+    b1_cell_id: str,
+    attestation: dict[str, object],
+) -> None:
+    configured = os.environ.get(ACCEPTANCE_EVIDENCE_ROOT_ENV)
+    if not configured:
+        return
+    command = os.environ.get(ACCEPTANCE_COMMAND_ENV)
+    if not command:
+        raise AssertionError(f"{ACCEPTANCE_COMMAND_ENV} is required for Evidence export")
+    repository_status = subprocess.run(
+        [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "status", "--porcelain=v1"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        check=True,
+    ).stdout
+    assert repository_status == ""
+    head = subprocess.run(
+        [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        encoding="ascii",
+        errors="strict",
+        check=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "rev-parse", "HEAD^{tree}"],
+        capture_output=True,
+        text=True,
+        encoding="ascii",
+        errors="strict",
+        check=True,
+    ).stdout.strip()
+    run_root = Path(configured).resolve() / f"acceptance-{acceptance_run}"
+    run_root.mkdir(parents=True, exist_ok=False)
+    payload_root = run_root / "payload"
+    payload_root.mkdir()
+    sources = {
+        "phase-f-state.json": experiment_dir / PHASE_F_STATE_FILENAME,
+        "ss1-measurement.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_MEASUREMENT_FILENAME,
+        "ss1-cell-seal.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_CELL_SEAL_FILENAME,
+        "b1-adapter-evidence.json": artifact_root / b1_cell_id / "b1-adapter-evidence.json",
+        "b1-measurement.json": artifact_root / b1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_MEASUREMENT_FILENAME,
+        "b1-cell-seal.json": artifact_root / b1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_CELL_SEAL_FILENAME,
+    }
+    files: list[dict[str, object]] = []
+    for name, source in sources.items():
+        target = payload_root / name
+        target.write_bytes(source.read_bytes())
+        files.append(
+            {
+                "path": f"payload/{name}",
+                "size_bytes": target.stat().st_size,
+                "sha256": sha256_file(target),
+            }
+        )
+    record = {
+        "schema_version": 1,
+        "acceptance_run": acceptance_run,
+        "exact_test_command": command,
+        "checkout_head": head,
+        "checkout_tree": tree,
+        "checkout_clean": True,
+        "candidate_root_identity": _path_identity(CANDIDATE_ROOT),
+        "candidate_seal_sha256": sha256_file(CANDIDATE_ROOT / "candidate-seal.json"),
+        "attestation": attestation,
+        "files": files,
+    }
+    encoded = (json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    (run_root / "acceptance-attestation.json").write_bytes(encoded)
+    manifest_lines = [f"{item['sha256']}  {item['path']}" for item in files]
+    manifest_lines.append(
+        f"{hashlib.sha256(encoded).hexdigest()}  acceptance-attestation.json"
+    )
+    (run_root / "files.sha256").write_text(
+        "\n".join(manifest_lines) + "\n",
+        encoding="ascii",
+        newline="\n",
+    )
 
 
 def _completed_result(task_id: str) -> dict[str, object]:
@@ -437,6 +586,17 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     monkeypatch.setenv("TEMP", str(hostile_temp))
     monkeypatch.setenv("TMP", str(hostile_temp))
     monkeypatch.setenv("TMPDIR", str(hostile_temp))
+    hostile_home = tmp_path / "hostile-home"
+    hostile_hooks = hostile_home / "hooks"
+    hostile_hooks.mkdir(parents=True)
+    hostile_config = tmp_path / "hostile-global-config"
+    hostile_config.write_text(
+        "[core]\n"
+        "\tautocrlf = true\n"
+        "\tlongpaths = false\n"
+        f"\thooksPath = {hostile_hooks.as_posix()}\n",
+        encoding="utf-8",
+    )
     source_environment = {
         "PATH": str(GIT_EXECUTABLE.parent),
         **(
@@ -444,8 +604,8 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             if os.name == "nt"
             else {}
         ),
-        "HOME": str(tmp_path / "hostile-home"),
-        "GIT_CONFIG_GLOBAL": str(tmp_path / "hostile-global-config"),
+        "HOME": str(hostile_home),
+        "GIT_CONFIG_GLOBAL": str(hostile_config),
     }
     experiment_dir = _initialize(tmp_path, monkeypatch)
     artifact_root = tmp_path / "backend"
@@ -482,6 +642,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         experiment_dir=experiment_dir,
     )
     assert first.executed_ordinal == 1
+    assert first.actual_model_turns == 0
     assert first.next_execution_ordinal == 2
     assert first.automatic_continuation is False
     assert len(ss1_runtimes) == 1
@@ -509,6 +670,10 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         b1_runtimes.append(runtime)
         return runtime
 
+    check_temp_token = hashlib.sha256(str(tmp_path).encode("utf-8")).hexdigest()[:12]
+    check_temp_root = Path(tmp_path.anchor) / "lao-pfa" / check_temp_token
+    if check_temp_root.exists():
+        shutil.rmtree(check_temp_root)
     b1 = ProfileRPhaseFCellFinalizerBackend(
         repository=REPOSITORY,
         candidate_root=CANDIDATE_ROOT,
@@ -518,7 +683,8 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
             runtime_factory=b1_runtime_factory,
             telemetry=ModelFreeClearBoundaryTelemetry(),
-            check_temp_root=tmp_path / "check-temp",
+            check_temp_root=check_temp_root,
+            protected_execution_roots=(CANDIDATE_ROOT, experiment_dir),
             environ={},
             git_executable=GIT_EXECUTABLE,
             source_environment=source_environment,
@@ -542,6 +708,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         experiment_dir=experiment_dir,
     )
     assert second.executed_ordinal == 2
+    assert second.actual_model_turns == 0
     assert second.next_execution_ordinal == 3
     assert second.automatic_continuation is False
     assert len(b1_runtimes) == 1
@@ -556,6 +723,47 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     report_metrics = b1_evidence["adapter_raw_payload"]["report"]["metrics"]
     assert report_metrics["checks_passed"] == 16
     assert report_metrics["checks_failed"] == 0
+    check_records = b1_evidence["adapter_raw_payload"]["check_records"]
+    public_records = {
+        item["task_external_key"]: item
+        for item in check_records
+        if item["check_name"].endswith("_contract")
+    }
+    assert set(public_records) == set(PROFILE_R_EXPECTED_TASK_IDS)
+    assert all(
+        item["state"] == "PASSED" and item["exit_code"] == 0
+        for item in public_records.values()
+    )
+    r07_stdout = public_records["R07"]["stdout"]["text"]
+    evidence_line = next(
+        line
+        for line in r07_stdout.splitlines()
+        if line.startswith(CHECK_ENVIRONMENT_EVIDENCE_PREFIX)
+    )
+    environment_evidence = json.loads(
+        evidence_line.removeprefix(CHECK_ENVIRONMENT_EVIDENCE_PREFIX)
+    )
+    assert environment_evidence["pytest"] == {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0,
+    }
+    assert environment_evidence["growth_margin"] >= 32
+    for provenance in (
+        json.loads(
+            (
+                artifact_root
+                / first.executed_cell_id
+                / PHASE_F_SS1_EVIDENCE_FILENAME
+            ).read_text(encoding="utf-8")
+        )["git_provenance"],
+        b1_evidence["git_provenance"],
+    ):
+        assert len(provenance["git_executable_sha256"]) == 64
+        assert provenance["git_version"].startswith("git version ")
+        assert len(provenance["config_scope_origin_sha256"]) == 64
     assert [item["lifecycle"] for item in after_b1["cells"]] == [
         PhaseFCellLifecycle.SEALED.value,
         PhaseFCellLifecycle.SEALED.value,
@@ -579,8 +787,65 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     ).exists()
     assert not (artifact_root / str(cell_three["cell_id"])).exists()
     assert not hostile_temp.exists()
-    assert (tmp_path / "check-temp").is_dir()
-    assert list((tmp_path / "check-temp").iterdir()) == []
+    assert check_temp_root.is_dir()
+    assert list(check_temp_root.iterdir()) == []
+    protected_roots = (
+        REPOSITORY,
+        CANDIDATE_ROOT,
+        experiment_dir,
+        artifact_root,
+    )
+    assert all(not _paths_overlap(check_temp_root, root) for root in protected_roots)
+    if os.name == "nt":
+        assert len(str(check_temp_root.resolve())) + 210 < 260
+    b1_state_root = artifact_root / second.executed_cell_id / "b1-state"
+    with ControllerLock(b1_state_root):
+        pass
+    unexpected_lock_files = [
+        path
+        for path in artifact_root.rglob("*.lock")
+        if path.name != "controller.lock"
+    ]
+    assert unexpected_lock_files == []
+    assert _processes_referencing(experiment_dir) == []
+    assert _processes_referencing(artifact_root) == []
+    assert _processes_referencing(check_temp_root) == []
+    attestation = {
+        "actual_model_turns": 0,
+        "automatic_continuation": False,
+        "cell_lifecycles": [item["lifecycle"] for item in after_b1["cells"]],
+        "public_check_ids": sorted(public_records),
+        "public_checks_passed": 8,
+        "path_identities": {
+            "phase_f_state": _path_identity(experiment_dir),
+            "artifact_root": _path_identity(artifact_root),
+            "ss1_workspace": _path_identity(
+                artifact_root / first.executed_cell_id / "workspace"
+            ),
+            "b1_workspace": _path_identity(
+                artifact_root / second.executed_cell_id / "workspace"
+            ),
+            "check_temp_root": _path_identity(check_temp_root),
+            "protected_roots": [_path_identity(root) for root in protected_roots],
+        },
+        "paths_non_overlapping": True,
+        "external_check_temp_residue": 0,
+        "child_process_residue": 0,
+        "active_controller_lock_residue": 0,
+        "controller_lock_reacquired": True,
+        "unexpected_lock_file_residue": 0,
+        "r07_environment": environment_evidence,
+    }
+    _write_acceptance_evidence(
+        acceptance_run=acceptance_run,
+        experiment_dir=experiment_dir,
+        artifact_root=artifact_root,
+        ss1_cell_id=first.executed_cell_id,
+        b1_cell_id=second.executed_cell_id,
+        attestation=attestation,
+    )
+    shutil.rmtree(check_temp_root)
+    assert not check_temp_root.exists()
 
 
 def test_ss1_task_resolution_failure_is_preserved_sealed_and_stops_before_b1(

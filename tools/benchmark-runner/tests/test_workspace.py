@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import subprocess
@@ -16,6 +17,7 @@ from benchmark_runner.workspace import (
     WorkspaceError,
     _safe_extract_fixture,
     build_hermetic_git_environment,
+    git_environment_provenance,
     load_frozen_manifest,
     path_matches_write_scope,
     validate_write_scope,
@@ -66,6 +68,46 @@ def test_hermetic_git_policy_is_present_before_the_first_command(
     assert environment["GIT_CONFIG_VALUE_4"] == str(
         (tmp_path / "controlled-home").resolve()
     )
+
+
+def test_git_environment_provenance_binds_executable_version_hash_and_origins(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    subprocess.run([_git(), "-C", str(repository), "init", "-q"], check=True)
+    hostile = tmp_path / "hostile.gitconfig"
+    hostile.write_text(
+        "[core]\n\tautocrlf = true\n\tlongpaths = false\n",
+        encoding="utf-8",
+    )
+
+    evidence = git_environment_provenance(
+        workspace=repository,
+        git_executable=Path(_git()),
+        source_environment={
+            "PATH": str(Path(_git()).resolve().parent),
+            "GIT_CONFIG_GLOBAL": str(hostile),
+            **(
+                {"SYSTEMROOT": os.environ["SYSTEMROOT"]}
+                if os.name == "nt"
+                else {}
+            ),
+        },
+    )
+
+    assert evidence["git_executable_canonical_path"] == str(
+        Path(_git()).resolve()
+    )
+    assert evidence["git_executable_sha256"] == hashlib.sha256(
+        Path(_git()).read_bytes()
+    ).hexdigest()
+    assert str(evidence["git_version"]).startswith("git version ")
+    origins = "\n".join(evidence["config_scope_origin_lines"])
+    assert "core.longpaths=true" in origins
+    assert "core.autocrlf=false" in origins
+    assert "core.autocrlf=true" not in origins
+    assert len(str(evidence["config_scope_origin_sha256"])) == 64
 
 
 @pytest.mark.parametrize("fixture_id", ["code-change", "document-read"])
