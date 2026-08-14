@@ -3306,6 +3306,8 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 - `direct-observation`: 재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다
 - `source-inspection`: Check TEMP는 Worker .git 아래에 있고 preflight는 임시파일 하나만 생성하며 fixture restore는 첫 git init 뒤에야 local core.longpaths를 설정한다
 - `review-finding`: ChatGPT Pro 1차 심사는 Live NO-GO, 축소 재심은 외부 TEMP·첫 Git 호출 통제·환경 실패 non-retry·production-shaped Windows 시험 2회를 포함하는 구현계획을 조건부 승인했다
+- `source-inspection`: commit 80c8c9e에서 외부 Check TEMP, hermetic Git, typed Check 실패와 product-only retry, Phase F crash-window fail-closed 경계를 구현했다
+- `reproducible-test`: 실제 subprocess·pytest·filesystem·Git을 사용하는 SS1→B1 운영형 모의 흐름을 독립 root에서 2회 통과했고 각 실행에서 R01~R08 Check 16/16, Cell 3 미생성, cleanup residue 0을 확인했다
 
 ### 근본 원인
 
@@ -3320,11 +3322,17 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 채택한 해결
 
-미해결
+축소 교정 source 구현과 model-free 구조 검증은 commit 80c8c9e에서 완료했다. 다만 변경 source에 대한 Docker identity, 새 qualification/candidate, exact-candidate acceptance, readiness package와 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
-- 기록 없음
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/src/benchmark_runner/workspace.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 
 ### 회귀시험
 
@@ -3339,18 +3347,25 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 - B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨
 - R07 attempt 002에 attempt 001의 공개 traceback과 long-path 힌트가 전달됨
 - B1 Cell 실패 Measurement와 seal은 별도 finalization verifier를 통과함
+- B1 전체 81 passed
+- 관련 Runner 45 passed, 2 opt-in skipped
+- production-shaped Windows SS1→B1 model-free acceptance 2회 통과
+- model·SDK thread/turn·Codex·Docker 호출 0회
 
 ### 남은 위험
 
-- 해결 전에는 Profile R SS1/B1 속도·비용·품질 비교가 유효하지 않다
-- 현재 qualification v7의 9-cell Docker Judge 성공은 실제 B1 Check 내부의 nested pytest 경로까지 감사한 것이 아니다
+- Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
+- source 변경으로 qualification v7과 Phase E v8 candidate는 새 Live 입력으로 stale하다
+- 현재 source의 Docker identity 판단, 필요 시 9-cell 재자격과 새 Phase E candidate가 필요하다
+- 새 exact candidate로 acceptance 2회와 live-readiness package 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-phase-f-environment-closure-r2.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-model-free-result.md

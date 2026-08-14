@@ -1,6 +1,6 @@
 # Phase F Profile R 시험환경 축소 교정 명세
 
-- 상태: `REDUCED_ENVIRONMENT_REMEDIATION_APPROVED_NOT_IMPLEMENTED`
+- 상태: `REDUCED_ENVIRONMENT_REMEDIATION_IMPLEMENTED_MODEL_FREE_PRECHECK_PASS`
 - Live 상태: `SS1_NO_GO / B1_NO_GO / CELL_3_NO_GO`
 - route 상태: `ROUTING_INCONCLUSIVE`
 - 대상 기준: branch `codex/phase-d-artifacts`, HEAD `9801d040fafb68d66ce513474c4675d0beb7fe9d`
@@ -8,6 +8,7 @@
 - 작성일: 2026-08-14
 - 승인 범위: 문서화와 model-free 구현·검증
 - 금지 범위: 실제 SDK thread/turn, Codex model Cell, 새 Phase F live 실행
+- 구현 commit: `80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a`
 
 ## 1. 목적
 
@@ -275,3 +276,24 @@ Live 동결 유지
 회사와 집 상태가 충돌하면 자동 merge·rebase로 합치지 않는다. 집 고유 작업을 먼저
 목록으로 보존·보고하고, 사용자의 별도 결정이 없는 한 회사에서 검증해 push한 commit/tree를
 프로젝트 최신 정본으로 사용한다.
+
+## 10. 2026-08-14 model-free 구현 checkpoint
+
+구현 commit `80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a`에서 다음 축소 범위를 구현했다.
+
+- Check TEMP를 repository·candidate·state·artifact·workspace·`.git` 밖의 명시적 root로
+  전달하고 Check별 allocation을 만들었다.
+- Windows 긴 경로와 읽기 전용 Git object를 포함해 marker가 일치하는 allocation만
+  정리한다.
+- Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터
+  longpaths·autocrlf·hooks·credential 환경을 통제한다.
+- Check 결과를 `PRODUCT_ASSERTION / ENVIRONMENT / UNKNOWN`으로 나누고 명시적 제품
+  실패만 retry한다.
+- 실제 subprocess·pytest·filesystem·Git을 쓰는 SS1→B1 모의 흐름을 독립 root에서
+  2회 통과시켰고, 각 실행에서 R01~R08의 16개 Check가 통과하며 Cell 3은 생성되지 않았다.
+
+이 checkpoint는 §9의 완료가 아니다. 위 검증은 변경 전 Phase E v8 후보를 사용한 구조
+회귀이므로 official exact-candidate acceptance나 live-readiness Evidence로 승격하지 않는다.
+현재 source에 대한 Docker identity 판단, 필요 시 9-cell 재자격, 새 Phase E candidate,
+그 exact candidate 기반 acceptance 2회, readiness package와 독립 재심사가 남아 있다.
+따라서 `DEV-20260814-002`는 계속 `investigating`이고 Live는 `NO-GO`다.
