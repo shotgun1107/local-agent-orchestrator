@@ -99,7 +99,8 @@ docs/
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [Phase B P001~P015 집 원본 inventory](./operations/phase-b-p001-p015-source-inventory.md) — raw를 공개하지 않고 존재·크기·hash·민감도와 P013/P014 미확인을 고정한 정본
-- [회사 로컬 → 집 로컬 현재 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §28이 qualification v10, Phase E v9, exact acceptance 2회와 남은 독립 재심사 관문을 보존
+- [회사 종료 동기화·집 작업 인수인계](./operations/동기화_인수인계.md) — 최신 Git checkpoint, 환경 복원법, 비Git 자료와 Pro 재심 재개 프롬프트
+- [회사 로컬 → 집 로컬 누적 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §28이 qualification v10, Phase E v9, exact acceptance 2회와 남은 독립 재심사 관문을 보존
 - [과거 집 로컬 → 회사 로컬 인수인계](./operations/home-to-company-codex-handoff.md) — SS1 v6 당시 역사 기록; 최신 재개 지시로 사용하지 않음
 - [과거 집 PC 진입 인수인계](./operations/home-codex-handoff.md) — 프로젝트 정신모델 참고용 역사 문서; 현재 재개 지시로 사용하지 않음
 - [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
