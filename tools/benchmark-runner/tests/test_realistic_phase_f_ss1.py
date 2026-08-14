@@ -31,6 +31,7 @@ from benchmark_runner.realistic_phase_f import (
     run_next_phase_f_cell,
 )
 from benchmark_runner.realistic_phase_f_b1 import ProfileRPhaseFB1Backend
+from benchmark_runner.realistic_phase_e import ALL_CANDIDATE_FILES
 from benchmark_runner.realistic_phase_f_finalize import (
     PHASE_F_CELL_SEAL_FILENAME,
     PHASE_F_FINAL_DIRECTORY,
@@ -146,14 +147,25 @@ def _write_acceptance_evidence(
     if not command:
         raise AssertionError(f"{ACCEPTANCE_COMMAND_ENV} is required for Evidence export")
     repository_status = subprocess.run(
-        [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "status", "--porcelain=v1"],
+        [
+            str(GIT_EXECUTABLE),
+            "-C",
+            str(REPOSITORY),
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        ],
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="strict",
         check=True,
-    ).stdout
-    assert repository_status == ""
+    ).stdout.splitlines()
+    candidate_relative = CANDIDATE_ROOT.relative_to(REPOSITORY).as_posix()
+    expected_generated_candidate = {
+        f"?? {candidate_relative}/{name}" for name in ALL_CANDIDATE_FILES
+    }
+    assert set(repository_status) == expected_generated_candidate
     head = subprocess.run(
         [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "rev-parse", "HEAD"],
         capture_output=True,
@@ -199,7 +211,8 @@ def _write_acceptance_evidence(
         "exact_test_command": command,
         "checkout_head": head,
         "checkout_tree": tree,
-        "checkout_clean": True,
+        "checkout_source_changes": 0,
+        "generated_candidate_files": sorted(expected_generated_candidate),
         "candidate_root_identity": _path_identity(CANDIDATE_ROOT),
         "candidate_seal_sha256": sha256_file(CANDIDATE_ROOT / "candidate-seal.json"),
         "attestation": attestation,
