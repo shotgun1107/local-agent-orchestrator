@@ -2212,3 +2212,12 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 작업일: 2026-08-13. 집의 qualification v6, Phase E v6 0-turn 후보와 Profile R SS1 Cell 1 봉인 결과를 `docs/operations/home-to-company-codex-handoff.md` revision 6에 통합했다. Git 정본의 최소 실행 결과 commit은 `532cab41da53e621c6cf853a5ff1931ca548ff55`다.
 - Git은 code·qualification projection·candidate·결과 문서를 전달하지만, 같은 experiment의 Cell 2를 이어가는 Controller state와 Cell 1 raw/seal은 집 `C:\lao-phase-f-live-a686cd22-pair-1`에만 있다. 회사가 Git pull만 한 상태에서 새 state 생성, Cell 1 재실행, 수동 state 재구성으로 Cell 2를 이어가면 같은 paired run이 아니다.
 - 회사 첫 세션은 ff-only 동기화와 맥락 확인 뒤 이 raw-state 경계를 보고하고 멈춘다. Cell 2를 회사에서 실행하려면 최소 resume state·봉인 Evidence의 별도 byte-exact 전송과 credential/thread metadata 검사 범위를 먼저 정하고 사용자 승인을 받아야 한다. raw를 public Git에 임의 업로드하지 않는다.
+
+## 회사 PC fresh SS1→B1 비교용 Profile R Docker 재자격 v7
+
+- 작업일: 2026-08-14. 집의 Phase F controller state를 회사에서 직접 옮길 수 없는 운영 제약 때문에, 사용자가 회사 PC에서 새 qualification·candidate·state로 SS1→B1을 다시 수행하는 경로를 승인했다.
+- 회사에 존재하는 Judge image `ba83a183...330ab`를 source commit `e1903323...c3cb`에 고정했다. image binding 관련 model-free 시험은 `17 passed`였다.
+- 공식 raw root `C:\q9\profile-r-docker-matrix-q9`의 reference와 negative mutation 8개가 모두 기대와 일치해 `9/9`, `CHALLENGE_READY`로 닫혔다. model·SDK thread·Codex turn은 0회다.
+- manifest file SHA는 `59ac4b6c...dcd2`, result file SHA는 `2b5a49e9...83fd`, seal file SHA는 `dd539b37...c17c`, seal self-hash는 `46861116...a80f`, projection SHA는 `8612694a...db29`다.
+- 첫 호출은 필수 base root `C:\q9`가 없어 Docker Cell 생성 전에 중단됐다. root를 만든 뒤 실행한 공식 batch만 결과로 사용하며, 실패 호출을 표본에 합산하지 않는다.
+- 기존 v1~v6 qualification과 과거 raw/seal은 수정하지 않는다. stage는 새 v7 projection을 사용하며 다음 관문은 clean source commit에서 Phase E v7 0-turn 후보를 생성하는 것이다.
