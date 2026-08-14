@@ -549,3 +549,30 @@ candidate 또는 acceptance를 다시 만들지 않는다.
 acceptance 원본을 결합한 revision 2 package를 ChatGPT Pro가 읽기 전용으로 재심사하는
 것이다. `DEV-20260814-002`는 독립 승인 전까지 `investigating`이며 실제 SS1/B1/Cell 3과
 model turn은 계속 `NO_GO`다.
+
+## 30. 2026-08-14 Live readiness revision 2 잔여 P0 교정과 revision 3 후보
+
+이 절이 §29 뒤의 최신 집 PC 정본이다.
+
+- ChatGPT Pro revision 2는 package 무결성과 77개 hash binding, 기존 P0/P1 대부분의
+  closure를 인정했지만 `_import_runner_module()` catch-all이 `OSError`를
+  `PRODUCT_ASSERTION`으로 승격하는 잔여 P0 1건으로 `NO_GO`를 유지했다.
+- commit `1ecff6c`에서 module import `OSError`는 `ENVIRONMENT`, `ImportError`와
+  `SyntaxError`만 제품 오류, 나머지는 `UNKNOWN`으로 분리했다. 회귀는 Attempt 1개,
+  runtime initial turn 1개, 추가 turn·다음 Task Attempt 0개와 `check_environment`를
+  확인했다. B1 전체는 `83 passed`다.
+- Worker snapshot 지문 변경 뒤 Judge bundle을 다시 생성한 commit은 `dad68df`다. 갱신 전
+  q13은 9개 workspace hash mismatch로 `CHALLENGE_NOT_READY`였고 성공 근거에서 제외했다.
+  q14는 잘못된 commit 입력으로 Git 확인 단계에서 중단됐다.
+- 공식 q15는 `CHALLENGE_READY`, 기대 일치 9/9, model turn 0이고 qualification v12로
+  고정됐다. 별도 verifier는 `CHALLENGE_READY True 9 9 0`, 잔여 container 0을 확인했다.
+- acceptance가 v11 경로를 가리키는 clean source `33463a3`에서 Phase E v11 후보를
+  생성했다. experiment는 `exp_20260814_e2ef3654_1`, candidate seal은
+  `9eee3663...ad9b`, actual model turn은 0이다.
+- exact candidate acceptance 2회는 `84.30s`, `94.24s`에 통과했다. 매번 Cell 1·2만
+  seal, Cell 3·4 planned, 공개 Check 16/16, cleanup residue와 Evidence hash mismatch 0이다.
+
+현재 다음 관문은 revision 3 readiness ZIP의 ChatGPT Pro 읽기 전용 재심사다. 그 심사가
+잔여 P0/P1 0과 `GO_ONE_FRESH_PAIR`를 판정하더라도 실제 SS1/B1은 사용자 별도 승인이
+필요하다. 그 전까지 실제 model Cell과 Cell 3은 `NO_GO`, route는
+`ROUTING_INCONCLUSIVE`, `DEV-20260814-002`는 `investigating`이다.

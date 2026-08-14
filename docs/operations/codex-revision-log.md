@@ -2326,3 +2326,29 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   `64175499...3821e`, model turn 0이다.
 - 다음은 revision 2 readiness package의 읽기 전용 독립 Pro 재심사다. 실제 model Cell은
   승인하지 않았고 route는 계속 `ROUTING_INCONCLUSIVE`다.
+
+## Profile R Live readiness revision 2 잔여 P0 교정과 revision 3 Evidence
+
+- Pro revision 2는 66-file package와 77개 hash·binding 대조를 통과시켰지만 공개
+  checker의 `_import_runner_module()`이 import `OSError`를 제품 assertion으로 바꿔 B1
+  retry를 만들 수 있는 P0 1건을 찾았다.
+- commit `1ecff6c`는 `OSError → ENVIRONMENT`, `ImportError/SyntaxError →
+  PRODUCT_ASSERTION`, 그 밖의 미분류 예외 → `UNKNOWN`으로 분리했다. import
+  PermissionError 주입 회귀는 첫 Attempt와 runtime initial turn 각 1개, 추가 turn과 다음
+  Task Attempt 0개, failure kind `check_environment`를 확인했다. 전체 B1은 `83 passed`다.
+- Worker snapshot 변경으로 Judge 기대 workspace 지문도 stale해졌다. 공식 builder로
+  reference·pristine·8개 mutation을 다시 계산한 `dad68df`는
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다. 갱신 전 q13 `CHALLENGE_NOT_READY`와 잘못된 commit
+  입력으로 시작 전 중단된 q14는 성공 근거에서 제외했다.
+- q15 Docker 9-Cell은 `CHALLENGE_READY`, 기대 일치 9/9, model turn 0이다. qualification
+  v12 projection SHA-256은 `889c4a95...c16a`, seal self-hash는
+  `2286b97a...709e`이며 별도 verifier와 잔여 container 0 확인을 통과했다.
+- acceptance 경로를 v11로 고정한 source `33463a3`에서 Phase E v11을 0-turn으로 만들고
+  별도 검증했다. experiment는 `exp_20260814_e2ef3654_1`, candidate seal은
+  `9eee3663...ad9b`다.
+- exact candidate acceptance는 독립 root에서 `84.30s`, `94.24s`에 통과했다. 두 실행
+  모두 Cell 1·2만 seal, Cell 3·4 planned, 공개 Check 16/16, nested pytest
+  failure/error/skip/warning 0, process/TEMP/lock residue와 payload hash mismatch 0이다.
+- actual Worker, SDK thread/start, turn/start와 model turn은 0이다. 다음은 revision 3
+  readiness package의 읽기 전용 Pro 재심사이며, 그 전에는 Live와
+  `DEV-20260814-002` closure를 주장하지 않는다.
