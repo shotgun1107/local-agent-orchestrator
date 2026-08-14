@@ -51,30 +51,28 @@ from benchmark_runner.realistic_routing import (
     SecretScanObservation,
 )
 from benchmark_runner.sdk_baselines import SS1ObserverContext
+from orchestrator.verify import VerificationError, validate_external_check_temp_root
 
 
 AppServerPortFactory = Callable[
     [Path, tuple[str, ...]],
     PhaseFAppServerPort,
 ]
+PROFILE_R_EXECUTION_ENVIRONMENT_PATH_HEADROOM = 225
 
 
 def _external_environment_root(root: Path, *forbidden_roots: Path) -> Path:
-    candidate = Path(root)
-    if not candidate.is_absolute():
-        raise PhaseFSS1BackendError("Phase F execution environment root must be absolute")
-    resolved = candidate.resolve()
-    for forbidden in forbidden_roots:
-        boundary = Path(forbidden).resolve()
-        if (
-            resolved == boundary
-            or resolved in boundary.parents
-            or boundary in resolved.parents
-        ):
-            raise PhaseFSS1BackendError(
-                "Phase F execution environment root overlaps an execution artifact root"
-            )
-    return resolved
+    try:
+        return validate_external_check_temp_root(
+            root,
+            forbidden_roots=forbidden_roots,
+            required_descendant_headroom=(
+                PROFILE_R_EXECUTION_ENVIRONMENT_PATH_HEADROOM
+            ),
+            require_ntfs=True,
+        )
+    except VerificationError as exc:
+        raise PhaseFSS1BackendError(str(exc)) from exc
 
 
 class PolicyAttestedPhaseFBoundaryTelemetry:
@@ -272,6 +270,7 @@ def build_profile_r_phase_f_live_stack(
     docker_executable: Path,
     git_executable: Path,
     execution_environment_root: Path,
+    experiment_state_root: Path,
     source_commit: str,
     environ: Mapping[str, str] | None = None,
     source_environment: Mapping[str, str] | None = None,
@@ -292,6 +291,7 @@ def build_profile_r_phase_f_live_stack(
         candidate_root,
         artifact_root,
         docker_raw_root,
+        experiment_state_root,
     )
     resolved_git = git_executable.resolve(strict=True)
     if present_api_key_environment_names(environ):
@@ -354,6 +354,7 @@ def build_profile_r_phase_f_b1_live_stack(
     docker_executable: Path,
     git_executable: Path,
     execution_environment_root: Path,
+    experiment_state_root: Path,
     source_commit: str,
     environ: Mapping[str, str] | None = None,
     source_environment: Mapping[str, str] | None = None,
@@ -379,6 +380,7 @@ def build_profile_r_phase_f_b1_live_stack(
         candidate_root,
         artifact_root,
         docker_raw_root,
+        experiment_state_root,
     )
     resolved_git = git_executable.resolve(strict=True)
     if present_api_key_environment_names(environ):
@@ -402,6 +404,7 @@ def build_profile_r_phase_f_b1_live_stack(
         runtime_factory=runtime_factory,
         telemetry=telemetry,
         check_temp_root=environment_root / "b1-check-temp",
+        protected_execution_roots=(candidate_root, experiment_state_root, docker_raw_root),
         environ=environ,
         git_executable=resolved_git,
         source_environment=source_environment,

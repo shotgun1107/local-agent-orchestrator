@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
 import inspect
 import json
+import os
+import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -19,6 +23,7 @@ WORK = ROOT / "profile-r" / "work"
 WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 WORKER_FEEDBACK_MAX_BYTES = 12_288
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
+CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 
 
 class PublicContractError(RuntimeError):
@@ -142,7 +147,12 @@ def _public_pytest_failure_feedback(
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except OSError as exc:
+        raise PublicContractError(
+            f"public JSON is unavailable: {path.relative_to(ROOT)}",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except json.JSONDecodeError as exc:
         raise PublicContractError(f"invalid public JSON: {path.relative_to(ROOT)}") from exc
     if not isinstance(value, dict):
         raise PublicContractError(f"public JSON must be an object: {path.relative_to(ROOT)}")
@@ -152,7 +162,12 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _load_yaml(path: Path) -> dict[str, Any]:
     try:
         value = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
+    except OSError as exc:
+        raise PublicContractError(
+            f"public YAML is unavailable: {path.relative_to(ROOT)}",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except yaml.YAMLError as exc:
         raise PublicContractError(f"invalid public YAML: {path.relative_to(ROOT)}") from exc
     if not isinstance(value, dict):
         raise PublicContractError(f"public YAML must be an object: {path.relative_to(ROOT)}")
@@ -426,9 +441,119 @@ def check_r06() -> None:
 def _test_functions(path: Path) -> set[str]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError) as exc:
+    except OSError as exc:
+        raise PublicContractError(
+            f"public regression source is unavailable: {path.relative_to(ROOT)}",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except SyntaxError as exc:
         raise PublicContractError(f"invalid regression source: {path.relative_to(ROOT)}") from exc
     return {node.name for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")}
+
+
+def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, Any]:
+    try:
+        tree = ET.parse(junit_path)
+    except OSError as exc:
+        raise PublicContractError(
+            "R07 pytest JUnit Evidence is unavailable",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except ET.ParseError as exc:
+        raise PublicContractError(
+            "R07 pytest JUnit Evidence is invalid",
+            failure_classification="UNKNOWN",
+        ) from exc
+    suites = (
+        [tree.getroot()]
+        if tree.getroot().tag.endswith("testsuite")
+        else list(tree.getroot().iter("testsuite"))
+    )
+    counts = {
+        name: sum(int(suite.attrib.get(name, "0")) for suite in suites)
+        for name in ("tests", "failures", "errors", "skipped")
+    }
+    observed_paths = [temp_root, junit_path]
+    try:
+        observed_paths.extend(temp_root.rglob("*"))
+        deepest = max(observed_paths, key=lambda item: len(str(item.resolve())))
+        target_length = len(str(deepest.resolve())) + 32
+        growth_root = temp_root
+        while len(str(growth_root.resolve())) < target_length:
+            remaining = target_length - len(str(growth_root.resolve())) - 1
+            growth_root = growth_root / ("g" * min(max(remaining, 1), 40))
+        probe_repository = growth_root / "git-probe"
+        probe_repository.mkdir(parents=True, exist_ok=False)
+        probe_file = probe_repository / "probe.txt"
+        probe_file.write_text("profile-r path growth probe\n", encoding="utf-8")
+    except OSError as exc:
+        raise PublicContractError(
+            "R07 path growth filesystem probe failed",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    git_executable = shutil.which("git")
+    if git_executable is None:
+        raise PublicContractError(
+            "R07 path growth Git executable is unavailable",
+            failure_classification="ENVIRONMENT",
+        )
+    git_path = Path(git_executable).resolve()
+    commands = (
+        [git_executable, "-C", str(probe_repository), "init", "-q"],
+        [git_executable, "-C", str(probe_repository), "add", "probe.txt"],
+        [git_executable, "-C", str(probe_repository), "status", "--porcelain=v1"],
+    )
+    for command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise PublicContractError(
+                "R07 path growth Git probe could not run",
+                failure_classification="ENVIRONMENT",
+            ) from exc
+        if completed.returncode != 0:
+            raise PublicContractError(
+                "R07 path growth Git probe failed",
+                failure_classification="ENVIRONMENT",
+            )
+    version = subprocess.run(
+        [git_executable, "--version"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        timeout=30,
+        check=True,
+    ).stdout.strip()
+    config_origin = subprocess.run(
+        [git_executable, "-C", str(probe_repository), "config", "--show-origin", "--show-scope", "--list"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        timeout=30,
+        check=True,
+    ).stdout
+    return {
+        "schema_version": 1,
+        "temp_root": str(temp_root),
+        "temp_root_length": len(str(temp_root)),
+        "deepest_path": str(deepest.resolve()),
+        "deepest_path_length": len(str(deepest.resolve())),
+        "growth_probe_path": str(probe_file.resolve()),
+        "growth_probe_path_length": len(str(probe_file.resolve())),
+        "growth_margin": len(str(probe_file.resolve())) - len(str(deepest.resolve())),
+        "pytest": {**counts, "warnings": 0},
+        "git_executable_canonical_path": str(git_path),
+        "git_executable_sha256": hashlib.sha256(git_path.read_bytes()).hexdigest(),
+        "git_version": version,
+        "git_config_origin_sha256": hashlib.sha256(config_origin.encode("utf-8")).hexdigest(),
+    }
 
 
 def check_r07() -> None:
@@ -465,12 +590,31 @@ def check_r07() -> None:
         "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
         "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
     ]
+    try:
+        temp_root = Path(os.environ["TEMP"]).resolve(strict=True)
+    except (KeyError, OSError) as exc:
+        raise PublicContractError(
+            "R07 external Check TEMP is unavailable",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    if any(Path(os.environ.get(name, "")).resolve() != temp_root for name in ("TMP", "TMPDIR")):
+        raise PublicContractError(
+            "R07 Check TEMP variables differ",
+            failure_classification="ENVIRONMENT",
+        )
+    junit_path = temp_root / "r07-public-pytest.xml"
     result = subprocess.run(
         [
             sys.executable,
             "-m",
             "pytest",
             "-q",
+            "-W",
+            "error",
+            "--basetemp",
+            str(temp_root / "pytest"),
+            "--junitxml",
+            str(junit_path),
             *(f"{s2_path}::{name}" for name in public_regressions),
         ],
         cwd=ROOT,
@@ -486,6 +630,22 @@ def check_r07() -> None:
             public_feedback=_public_pytest_failure_feedback(result),
             failure_classification="UNKNOWN",
         )
+    evidence = _r07_environment_evidence(temp_root, junit_path)
+    if evidence["pytest"] != {
+        "tests": len(public_regressions),
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0,
+    } or int(evidence["growth_margin"]) < 32:
+        raise PublicContractError(
+            "R07 public regression environment Evidence differs",
+            failure_classification="UNKNOWN",
+        )
+    print(
+        CHECK_ENVIRONMENT_EVIDENCE_PREFIX
+        + json.dumps(evidence, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    )
 
 
 def check_r08() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -12,6 +13,13 @@ from orchestrator.recover import ControllerLock, ControllerLockError, backup_run
 from orchestrator.runtime import FakeRuntime
 from orchestrator.schedule import ConfigurationError, Orchestrator, load_project
 from tests.conftest import git, make_spec
+
+
+PROFILE_R_PUBLIC_CHECK = (
+    Path(__file__).resolve().parents[4]
+    / "benchmarks/fixtures/routing-realistic-high-difficulty-v1/"
+    "realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py"
+)
 
 
 def execute(root: Path, state: Path, spec, *, scenario="complete", fixture=None):
@@ -187,6 +195,66 @@ def test_check_process_error_is_environment_failure_and_never_retries(
     assert len(attempts) == 1
     assert attempts[0]["failure_kind"] == "check_environment"
     assert snapshot["checks"][0]["state"] == "ERROR"
+
+
+def test_public_checker_permission_error_is_environment_failure_and_never_retries(
+    tmp_path: Path,
+    project_factory,
+) -> None:
+    root = project_factory()
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    injected_check = "\n".join(
+        (
+            "import importlib.util, pathlib, sys",
+            "path = pathlib.Path(sys.argv[1])",
+            "spec = importlib.util.spec_from_file_location('profile_r_public_check', path)",
+            "module = importlib.util.module_from_spec(spec)",
+            "spec.loader.exec_module(module)",
+            "original = pathlib.Path.read_text",
+            "def denied(self, *args, **kwargs):",
+            "    if self.suffix == '.json':",
+            "        raise PermissionError('injected public input denial')",
+            "    return original(self, *args, **kwargs)",
+            "pathlib.Path.read_text = denied",
+            "raise SystemExit(module.main(['check_profile_r.py', 'R01']))",
+        )
+    )
+    checks["checks"]["test_check"]["argv"] = [
+        sys.executable,
+        "-c",
+        injected_check,
+        str(PROFILE_R_PUBLIC_CHECK),
+    ]
+    checks_path.write_text(
+        yaml.safe_dump(checks, sort_keys=False),
+        encoding="utf-8",
+    )
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise public input permission failure")
+
+    runtime = FakeRuntime()
+    state = tmp_path / "state"
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        check_temp_root=tmp_path / "check-temp",
+        runtime_port=runtime,
+        runtime_profile_override={"runtime": "fake"},
+        auth_method_override="none",
+    )
+    try:
+        run_id = orchestrator.start(make_spec())
+    finally:
+        orchestrator.close()
+
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+    attempts = snapshot["tasks"][0]["attempts"]
+    assert len(attempts) == 1
+    assert attempts[0]["failure_kind"] == "check_environment"
+    assert len(runtime.initial_feedbacks) == 1
+    assert snapshot["checks"][0]["state"] == "FAILED"
 
 
 def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:

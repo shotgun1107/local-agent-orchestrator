@@ -4,7 +4,7 @@
   "cell_id": "r-p08-operator-contract",
   "checker_run_status": "completed",
   "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "0c532567d60bff5c53dfacdddf967d77464e1517d53eeed426aa2c87b3dff8a3",
+  "envelope_sha256": "b34a86c7f0a5db1a558f328f0ee8841ea30028cd9f4929aa5641c0feb959487a",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "b2f9270be8349316ede8014f72690aa07489e4031703ded175fd810d7d0b63cf",
-  "workspace_before_sha256": "b2f9270be8349316ede8014f72690aa07489e4031703ded175fd810d7d0b63cf",
+  "workspace_after_sha256": "178a81373c52ef4dbefa2f1874f730f92cf913d4955f53a6d3e58495416ffd2e",
+  "workspace_before_sha256": "178a81373c52ef4dbefa2f1874f730f92cf913d4955f53a6d3e58495416ffd2e",
   "workspace_mutated": false
 }

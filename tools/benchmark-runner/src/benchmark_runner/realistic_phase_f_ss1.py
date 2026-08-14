@@ -53,6 +53,7 @@ from benchmark_runner.sdk_common import SdkRuntime, SdkThread, SdkTurnResult, Wo
 from benchmark_runner.workspace import (
     BenchmarkRun,
     RunTask,
+    git_environment_provenance,
     load_benchmark_run,
     path_matches_write_scope,
     sha256_file,
@@ -667,6 +668,15 @@ class ProfileRPhaseFSS1Backend:
             git_executable=self.git_executable,
             source_environment=self.source_environment,
         )
+        git_provenance = git_environment_provenance(
+            workspace=workspace,
+            git_executable=self.git_executable,
+            source_environment=(
+                None
+                if self.source_environment is None
+                else dict(self.source_environment)
+            ),
+        )
         initial_worker_tree_sha256 = _tree_sha256(_file_state(workspace))
         tasks = build_profile_r_ss1_tasks(workspace)
         forbidden_fragments = _forbidden_prompt_fragments(self.repository)
@@ -739,6 +749,7 @@ class ProfileRPhaseFSS1Backend:
             ),
             "worker_tree_initial_sha256": initial_worker_tree_sha256,
             "worker_tree_final_sha256": _tree_sha256(_file_state(workspace)),
+            "git_provenance": git_provenance,
             "task_count": len(tasks),
             "task_template_sha256": [canonical_sha256(task) for task in tasks],
             "dispatched_task_semantics_sha256": dispatched_task_semantics,
