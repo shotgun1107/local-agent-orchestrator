@@ -62,7 +62,7 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.total_turn_ceiling == 40
     assert stage.dispatch.automatic_continuation is False
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v7/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v10/qualification.json"
     )
 
 
@@ -71,7 +71,7 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
         REPOSITORY
         / "benchmarks"
         / "artifacts"
-        / "profile-r-docker-judge-qualification-v7"
+        / "profile-r-docker-judge-qualification-v10"
         / "qualification.json"
     )
     qualification = json.loads(path.read_text(encoding="utf-8"))
