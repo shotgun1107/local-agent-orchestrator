@@ -3339,7 +3339,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 채택한 해결
 
-2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. 새 source의 Docker qualification·0-turn candidate·readiness가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.
+2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. q16 qualification v13, Phase E v12 0-turn candidate와 exact acceptance 두 번, readiness v4 package까지 새 identity로 만들었으며 독립 readiness 재심사가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3396,18 +3396,20 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
 - clean source 21f3743에서 B1 전체 86 passed
 - 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
+- Phase E v12 후보가 source 3cb5593과 qualification v13에 model turn 0으로 결합되고 별도 verifier와 Phase E 전체 11 passed를 통과
+- Phase E v12 exact-candidate acceptance 2회가 77.22s와 76.79s에 통과하고 각 실행은 R07 12 case, Check 16/16, Cell 3 미실행과 residue 0을 보존
+- readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
-- 새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다
+- 새 Worker·Judge source 기준 live-readiness v4 package는 봉인됐지만 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
-- 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
-- 새 Docker qualification v13은 통과했지만 이를 stage에 결합한 Phase E 0-turn candidate와 readiness를 다시 만들어야 한다
+- 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3425,6 +3427,10 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v12-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v3-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
 
 ## DEV-20260815-001 — Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴
 
@@ -3463,7 +3469,7 @@ R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공
 
 ### 채택한 해결
 
-R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했으며 새 Docker qualification이 남아 있어 investigating을 유지한다.
+R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개, q16 qualification v13 9/9, Phase E v12 0-turn candidate와 exact acceptance 두 번이 통과했으며 readiness v4 독립 재심사가 남아 있어 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3493,18 +3499,24 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
 - clean source 21f3743에서 B1 전체 86 passed
 - 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
+- Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과
+- readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 manifest와 seal 검증 mismatch 0
 
 ### 남은 위험
 
-- 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. q16 qualification v13은 통과했지만 새 candidate/readiness가 남았다
-- 새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
+- 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. 새 readiness v4 독립 재심사가 남았다
+- 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md
 - 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/adversarial-worker-test-oracle.json
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-r07-reference.json
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md

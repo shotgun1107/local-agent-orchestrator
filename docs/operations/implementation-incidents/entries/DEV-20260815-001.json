@@ -51,7 +51,7 @@
       "reason": "기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다"
     }
   ],
-  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했으며 새 Docker qualification이 남아 있어 investigating을 유지한다.",
+  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개, q16 qualification v13 9/9, Phase E v12 0-turn candidate와 exact acceptance 두 번이 통과했으며 readiness v4 독립 재심사가 남아 있어 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
@@ -76,15 +76,23 @@
     "영향 범위 회귀 125 passed, 1 opt-in skipped",
     "clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped",
     "clean source 21f3743에서 B1 전체 86 passed",
-    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산"
+    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
+    "Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과",
+    "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 manifest와 seal 검증 mismatch 0"
   ],
   "remaining_risks": [
-    "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. q16 qualification v13은 통과했지만 새 candidate/readiness가 남았다",
-    "새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
+    "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. 새 readiness v4 독립 재심사가 남았다",
+    "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
     "112c4738d9a6b9304192d60b4222a8b0ccff1353",
-    "d0e40bf1d26823c693922d13342c77edf6b836dd"
+    "d0e40bf1d26823c693922d13342c77edf6b836dd",
+    "21f3743bbb4f822e27628ce018c52b92a597ae08",
+    "754a64caf99b719ff2ec780b3e59d83b69e38b92",
+    "9035cef739864b45d0b1bc9ab442bbc5294fa5f9",
+    "3cb559355f0feb0403ef486dcce14a9cc8c25506",
+    "d015a899cdf7d13bc811a9d5ea4ff2071466f981",
+    "ee6caa79439b01b930bb64f33fe26af43b524594"
   ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",
@@ -92,6 +100,10 @@
     "docs/operations/codex-revision-log.md",
     "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/adversarial-worker-test-oracle.json",
-    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-r07-reference.json"
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-r07-reference.json",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v13-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md",
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md"
   ]
 }

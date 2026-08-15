@@ -2449,3 +2449,26 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 다음 관문은 이 qualification/stage binding을 clean commit으로 만든 뒤 Phase E 새
   0-turn candidate를 생성하는 것이다. 실제 Worker·SDK thread/turn·model Cell은 아직
   실행하지 않는다.
+
+## Phase E v12 0-turn 후보·exact acceptance와 readiness v4
+
+- 작업일: 2026-08-15. qualification v13 record commit `9035cef...` 뒤 Phase F acceptance가
+  새 v12 경로를 가리키는 clean source `3cb559355f0feb0403ef486dcce14a9cc8c25506`, tree
+  `68fa82b5a62e0dc9720c5989d34d84a8ce00ee0f`를 고정했다.
+- Phase E v12 candidate를 ChatGPT 구독 인증으로 만들었다. account/model-list만 확인했고
+  SDK thread와 turn은 0이다. experiment는 `exp_20260815_3a34f942_1`, Plan fingerprint는
+  `3a34f942...9c44af`, candidate seal은 `0268930e...fd54f`다. 별도 verifier와 clean
+  Phase E 전체 `11 passed`를 통과했다.
+- exact candidate acceptance는 서로 다른 short root에서 두 번 정식 실행됐다. 결과는
+  `1 passed in 77.22s`, `1 passed in 76.79s`다. 매번 SS1/B1 Cell만 SEALED, Cell 3·4
+  PLANNED, R01~R08 8/8, 전체 Check 16/16, R07 nested pytest 12 case, TEMP/process/lock
+  residue와 actual model turn 0이다.
+- 정식 Evidence 전에 같은 코드의 예비 acceptance 1회가 통과했지만 exact command와 JUnit을
+  동일 봉인 root에 남기지 않아 readiness 근거에서 제외했다. official evidence는 새 root의
+  위 두 실행뿐이다.
+- readiness v4 package 입력은 q16의 sealed payload 전체, qualification v13, candidate
+  v12, 두 acceptance raw와 현재 source/test snapshot으로 확정했다. 이 기록을 clean
+  commit으로 만든 뒤 package manifest·seal·ZIP을 생성하고 별도 해제 검증한다.
+- 다음 관문은 v4 package의 ChatGPT Pro 읽기 전용 독립 재심사다. 그 전까지 두 incident는
+  investigating, 실제 SS1/B1/Cell 3과 route 결정은 NO-GO다. 이번 단계의 actual model
+  turn은 0이다.

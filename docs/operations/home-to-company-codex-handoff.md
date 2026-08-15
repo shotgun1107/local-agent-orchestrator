@@ -1,7 +1,7 @@
 # 집 로컬 → 회사 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_home_to_company_handoff`
-- revision: 7
+- revision: 8
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -271,3 +271,23 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
 - q15, Phase E v11, v11 SS1/B1 raw는 stale한 역사 Evidence다. 덮어쓰거나 새 source의
   성공 근거로 사용하지 않는다.
 - 독립 readiness와 사용자 별도 승인 전 실제 SS1·B1·Cell 3, SDK thread/turn은 NO-GO다.
+
+## 11. 2026-08-15 Phase E v12와 readiness v4 반환 checkpoint
+
+이 절이 최신 집→회사 보고다.
+
+- q16 qualification v13을 stage에 결합한 뒤 acceptance 입력을 v12로 먼저 고정한 clean
+  source는 `3cb559355f0feb0403ef486dcce14a9cc8c25506`, tree
+  `68fa82b5a62e0dc9720c5989d34d84a8ce00ee0f`다.
+- v12 candidate는 experiment `exp_20260815_3a34f942_1`, seal
+  `0268930e...fd54f`, model turn 0이며 separate-process verifier를 통과했다.
+- production-shaped acceptance 두 번은 `77.22s`, `76.79s`에 통과했다. 각 실행은
+  R07 exact 12 case, 공개 Check 16/16, Cell 1·2 SEALED, Cell 3·4 PLANNED, residue와
+  model turn 0을 원시 Evidence와 JUnit에 보존한다.
+- readiness v4 입력에는 q16 9-Cell sealed payload 전체, candidate와 두 acceptance raw가
+  포함된다. package manifest와 readiness seal은 이 clean record commit 뒤 생성·검증하고
+  정확한 ZIP hash는 후속 결과 문서에 남긴다.
+
+다음은 readiness v4의 독립 읽기 전용 재심사다. 회사 PC는 이 원격 branch를 ff-only로
+동기화해도 실제 SS1/B1/Cell 3을 자동 실행하지 않는다. 독립 승인과 사용자 Cell별 승인이
+모두 있어야 새 fresh pair를 열 수 있다.
