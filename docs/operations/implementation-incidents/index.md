@@ -3398,7 +3398,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
 - Phase E v12 후보가 source 3cb5593과 qualification v13에 model turn 0으로 결합되고 별도 verifier와 Phase E 전체 11 passed를 통과
 - Phase E v12 exact-candidate acceptance 2회가 77.22s와 76.79s에 통과하고 각 실행은 R07 12 case, Check 16/16, Cell 3 미실행과 residue 0을 보존
-- readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0
+- readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f
 
 ### 남은 위험
 
@@ -3409,7 +3409,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3431,6 +3431,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md
 
 ## DEV-20260815-001 — Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴
 
@@ -3500,7 +3501,7 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - clean source 21f3743에서 B1 전체 86 passed
 - 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
 - Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과
-- readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 manifest와 seal 검증 mismatch 0
+- readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 manifest와 seal 및 ZIP 재해제 검증 mismatch 0, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f
 
 ### 남은 위험
 
@@ -3509,7 +3510,7 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 
 ### 추적 정보
 
-- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md
@@ -3520,3 +3521,4 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md

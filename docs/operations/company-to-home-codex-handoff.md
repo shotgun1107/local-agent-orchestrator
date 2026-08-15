@@ -636,9 +636,9 @@ model turn은 계속 `NO_GO`다.
 - exact candidate acceptance는 서로 다른 short root에서 두 번 정식 실행됐다. 결과는
   `1 passed in 77.22s`, `1 passed in 76.79s`다. 매번 Cell 1·2만 SEALED, Cell 3·4
   PLANNED, R01~R08 8/8, 전체 Check 16/16, R07 12 case, residue와 model turn 0이다.
-- readiness v4 package 입력은 q16 sealed payload 전체, qualification v13, candidate v12,
-  두 acceptance와 source/test snapshot으로 고정했다. 이 문서를 포함하는 clean record
-  commit에서 최종 ZIP을 생성하며 정확한 ZIP hash는 package 밖의 후속 결과 문서에 남긴다.
+- readiness v4 package는 record commit `d80e8e4...c86a4`에서 304파일로 만들었다.
+  manifest 303항목, seal payload 302파일의 원본·ZIP 재해제 mismatch는 0이며 ZIP SHA-256은
+  `00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f`다.
 
 ### 현재 관문
 

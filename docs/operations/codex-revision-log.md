@@ -2466,9 +2466,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 정식 Evidence 전에 같은 코드의 예비 acceptance 1회가 통과했지만 exact command와 JUnit을
   동일 봉인 root에 남기지 않아 readiness 근거에서 제외했다. official evidence는 새 root의
   위 두 실행뿐이다.
-- readiness v4 package 입력은 q16의 sealed payload 전체, qualification v13, candidate
-  v12, 두 acceptance raw와 현재 source/test snapshot으로 확정했다. 이 기록을 clean
-  commit으로 만든 뒤 package manifest·seal·ZIP을 생성하고 별도 해제 검증한다.
+- readiness v4 package는 record commit `d80e8e4...c86a4`에서 304파일로 생성했다.
+  manifest 303항목과 seal payload 302파일의 원본·ZIP 재해제 mismatch는 0이다. seal
+  self-hash는 `4db8dd69...c15fb5`, ZIP SHA-256은
+  `00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f`다.
 - 다음 관문은 v4 package의 ChatGPT Pro 읽기 전용 독립 재심사다. 그 전까지 두 incident는
   investigating, 실제 SS1/B1/Cell 3과 route 결정은 NO-GO다. 이번 단계의 actual model
   turn은 0이다.

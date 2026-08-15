@@ -182,7 +182,7 @@
     "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
     "Phase E v12 후보가 source 3cb5593과 qualification v13에 model turn 0으로 결합되고 별도 verifier와 Phase E 전체 11 passed를 통과",
     "Phase E v12 exact-candidate acceptance 2회가 77.22s와 76.79s에 통과하고 각 실행은 R07 12 case, Check 16/16, Cell 3 미실행과 residue 0을 보존",
-    "readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0"
+    "readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
@@ -210,7 +210,8 @@
     "9035cef739864b45d0b1bc9ab442bbc5294fa5f9",
     "3cb559355f0feb0403ef486dcce14a9cc8c25506",
     "d015a899cdf7d13bc811a9d5ea4ff2071466f981",
-    "ee6caa79439b01b930bb64f33fe26af43b524594"
+    "ee6caa79439b01b930bb64f33fe26af43b524594",
+    "d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4"
   ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md",
@@ -233,6 +234,7 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v13-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md"
   ]
 }
