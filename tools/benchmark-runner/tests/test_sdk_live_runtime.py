@@ -520,10 +520,12 @@ def test_mocked_live_cell_reaches_judge_measurement_and_seal(
             (prepared.workspace / "src" / "normalization.py").write_text(
                 NORMALIZATION_SOURCE,
                 encoding="utf-8",
+                newline="\n",
             )
             (prepared.workspace / "src" / "config.py").write_text(
                 CONFIG_SOURCE,
                 encoding="utf-8",
+                newline="\n",
             )
             return super().run()
 
