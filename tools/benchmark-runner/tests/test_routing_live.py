@@ -353,6 +353,10 @@ def test_candidate_create_and_confirm_true_dispatches_at_most_one_mocked_cell(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     source_commit = "a" * 40
+    # This test exercises the mocked one-Cell dispatch boundary, not the host
+    # interpreter admission gate.  Keep the frozen runtime identity explicit
+    # so a newer local 3.12 patch release cannot silently change the Plan.
+    monkeypatch.setattr(routing_live.platform, "python_version", lambda: "3.12.10")
     regression_path = tmp_path / "regression.json"
     atomic_write(regression_path, canonical_json_bytes(_regression_record(source_commit)))
     original_git_at = routing_live._git_at
