@@ -2432,3 +2432,20 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   `428 passed, 4 skipped in 577.85s`, B1 전체는 `86 passed in 29.14s`다. skip 4개는
   Windows symlink 권한 1개와 Docker/SDK 명시 opt-in 3개다. actual model·SDK thread/turn,
   Codex, Docker workload와 network 호출은 0회다.
+
+## 새 source의 Profile R Docker 재자격 v13
+
+- 작업일: 2026-08-15. 적대 교정과 기록을 포함한 source
+  `754a64caf99b719ff2ec780b3e59d83b69e38b92`에서 기존 q15를 덮지 않고 q16을
+  실행했다. 고정 Judge image는
+  `local-agent-orchestrator/profile-r-judge@sha256:5610c2...6ad89`다.
+- 공식 batch `profile-r-docker-matrix-q16-home`은 reference와 negative mutation 8개를
+  순차 실행해 `CHALLENGE_READY`, 기대 일치 `9/9`, model turn 0을 냈다. 별도 verifier도
+  `CHALLENGE_READY True 9 9 0`을 재계산했고 잔여 container는 0이다.
+- seal self-hash는 `865d3cfc...cc1b`, projection SHA-256은
+  `c040c912...a46c`다. projection은
+  `benchmarks/artifacts/profile-r-docker-judge-qualification-v13/qualification.json`에
+  보존하고 stage가 v13을 가리키도록 갱신했다.
+- 다음 관문은 이 qualification/stage binding을 clean commit으로 만든 뒤 Phase E 새
+  0-turn candidate를 생성하는 것이다. 실제 Worker·SDK thread/turn·model Cell은 아직
+  실행하지 않는다.

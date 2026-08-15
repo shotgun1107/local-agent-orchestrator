@@ -75,10 +75,11 @@
     "교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로 통과",
     "영향 범위 회귀 125 passed, 1 opt-in skipped",
     "clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped",
-    "clean source 21f3743에서 B1 전체 86 passed"
+    "clean source 21f3743에서 B1 전체 86 passed",
+    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산"
   ],
   "remaining_risks": [
-    "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다",
+    "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. q16 qualification v13은 통과했지만 새 candidate/readiness가 남았다",
     "새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [

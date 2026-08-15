@@ -178,14 +178,15 @@
     "첫 clean 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 policy timeout mismatch를 발견해 fail-fast 중단",
     "Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed",
     "clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped",
-    "clean source 21f3743에서 B1 전체 86 passed"
+    "clean source 21f3743에서 B1 전체 86 passed",
+    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
     "새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
     "새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다",
-    "새 Worker·Judge source identity로 Docker qualification과 Phase E 0-turn candidate를 다시 만들어야 한다"
+    "새 Docker qualification v13은 통과했지만 이를 stage에 결합한 Phase E 0-turn candidate와 readiness를 다시 만들어야 한다"
   ],
   "related_commits": [
     "80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a",
