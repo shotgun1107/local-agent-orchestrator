@@ -54,8 +54,10 @@ from .worker import (
 )
 from .verify import (
     ArtifactStore,
+    CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX,
     GitWorkspace,
     VerificationError,
+    extract_check_environment_diagnostic,
     hash_project_pack,
     extract_public_check_feedback,
     preflight_check_environment,
@@ -214,6 +216,7 @@ class Orchestrator:
         runtime_profile_override: Any | None = None,
         auth_method_override: str | None = None,
         turn_boundary_observer: TurnBoundaryObserver | None = None,
+        check_temp_hostile_git_probe: bool = False,
     ) -> None:
         self.loaded = loaded
         self.state_root = Path(state_root or state_root_for(loaded.pack.project.project_id)).resolve()
@@ -222,6 +225,11 @@ class Orchestrator:
             self.check_temp_root = validate_external_check_temp_root(
                 check_temp_root,
                 forbidden_roots=(loaded.project_root, self.state_root),
+                required_allocation_suffixes=(
+                    (CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX,)
+                    if check_temp_hostile_git_probe
+                    else ()
+                ),
             )
         except VerificationError as exc:
             raise ConfigurationError(str(exc)) from exc
@@ -230,6 +238,7 @@ class Orchestrator:
             git_executable=git_executable,
             environ=source_environment,
         )
+        self.check_temp_hostile_git_probe = check_temp_hostile_git_probe
         self.policy: Policy = loaded.pack.policies.policies[loaded.pack.project.default_policy]
         if max_turns_override is not None:
             if max_turns_override < 1 or max_turns_override > self.policy.max_turns_per_run:
@@ -316,7 +325,11 @@ class Orchestrator:
             raise ConfigurationError(f"workspace doctor failed: {health}")
         if self.policy.require_clean_worktree and not self.workspace.status()["clean"]:
             raise ConfigurationError("workspace must be clean before Run creation")
-        preflight_check_environment(self.workspace, temp_root=self.check_temp_root)
+        preflight_check_environment(
+            self.workspace,
+            temp_root=self.check_temp_root,
+            hostile_git_probe=self.check_temp_hostile_git_probe,
+        )
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.create_run({
@@ -357,7 +370,11 @@ class Orchestrator:
 
     def resume(self, run_id: str, spec: RunSpec) -> str:
         validate_run_against_project(spec, self.loaded)
-        preflight_check_environment(self.workspace, temp_root=self.check_temp_root)
+        preflight_check_environment(
+            self.workspace,
+            temp_root=self.check_temp_root,
+            hostile_git_probe=self.check_temp_hostile_git_probe,
+        )
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
                 run = ledger.get("run", run_id)
@@ -963,6 +980,25 @@ class Orchestrator:
                     "ended_at": check_result.ended_at,
                     "input_fingerprint": fingerprint.sha256,
                 })
+                environment_diagnostic = extract_check_environment_diagnostic(
+                    check_result
+                )
+                if environment_diagnostic is not None:
+                    self._persist(
+                        ledger,
+                        run_id=run_id,
+                        task_id=task["task_id"],
+                        attempt_id=attempt_id,
+                        relative_path=(
+                            f"{check_base}/environment-diagnostic.json"
+                        ),
+                        value=environment_diagnostic,
+                        # Preserve the migration-1 Artifact-kind contract.  The
+                        # dedicated path distinguishes this verifier record
+                        # from the command result without rewriting old ledgers.
+                        kind="check_result",
+                        producer="verifier",
+                    )
                 if check_result.state != "PASSED":
                     feedback = extract_public_check_feedback(check_result)
                     classification = check_result.failure_classification

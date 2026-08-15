@@ -12,7 +12,7 @@ import queue
 import threading
 import time
 from collections.abc import Callable, Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from pydantic import JsonValue
@@ -82,11 +82,13 @@ from orchestrator.schedule import (
     load_run_spec,
 )
 from orchestrator.worker import render_worker_prompt
-from orchestrator.verify import validate_external_check_temp_root
+from orchestrator.verify import (
+    CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX,
+    validate_external_check_temp_root,
+)
 
 
 PHASE_F_B1_EVIDENCE_FILENAME = "b1-adapter-evidence.json"
-PROFILE_R_CHECK_TEMP_PATH_HEADROOM = 210
 
 
 class PhaseFB1BackendError(RuntimeError):
@@ -94,6 +96,32 @@ class PhaseFB1BackendError(RuntimeError):
 
 
 AppServerPortFactory = Callable[[Path, tuple[str, ...]], PhaseFAppServerPort]
+
+
+def _b1_adapter_outcome(
+    state: str,
+    report: Mapping[str, Any],
+) -> tuple[str, str | None]:
+    """Keep Check-environment failures out of the B1 product-failure bucket."""
+
+    failure_kinds = {
+        str(attempt.get("failure_kind"))
+        for task in report.get("tasks", [])
+        if isinstance(task, dict)
+        for attempt in task.get("attempts", [])
+        if isinstance(attempt, dict) and attempt.get("failure_kind") is not None
+    }
+    if "check_environment" in failure_kinds:
+        return "infrastructure_error", "check_environment"
+    if "check_unknown" in failure_kinds:
+        return "infrastructure_error", "check_unknown"
+    outcome = {
+        "COMPLETED": "completed",
+        "FAILED": "failed",
+        "BLOCKED": "blocked",
+        "CANCELLED": "interrupted",
+    }.get(state, "infrastructure_error")
+    return outcome, None if outcome == "completed" else f"b1_{state.lower()}"
 
 
 class PhaseFB1RuntimeV2(RuntimePort):
@@ -403,7 +431,7 @@ class ProfileRPhaseFB1Backend:
                 self.artifact_root,
                 *protected_execution_roots,
             ),
-            required_descendant_headroom=PROFILE_R_CHECK_TEMP_PATH_HEADROOM,
+            required_allocation_suffixes=(CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX,),
             require_ntfs=True,
         )
         self.environ = environ
@@ -521,6 +549,7 @@ class ProfileRPhaseFB1Backend:
             ),
             auth_method_override="chatgpt",
             turn_boundary_observer=observe,
+            check_temp_hostile_git_probe=True,
         )
         try:
             run_id = orchestrator.start(spec, original_spec=spec_text)
@@ -532,6 +561,34 @@ class ProfileRPhaseFB1Backend:
         artifact_by_id = {
             item["artifact_id"]: item for item in snapshot["artifacts"]
         }
+        environment_diagnostics: dict[tuple[str, str], dict[str, JsonValue]] = {}
+        for artifact in snapshot["artifacts"]:
+            relative_path = str(artifact.get("relative_path", ""))
+            if (
+                artifact.get("kind") != "check_result"
+                or not relative_path.endswith("/environment-diagnostic.json")
+            ):
+                continue
+            attempt_id = artifact.get("attempt_id")
+            parts = PurePosixPath(relative_path).parts
+            if not isinstance(attempt_id, str) or len(parts) < 2:
+                raise PhaseFB1BackendError(
+                    "B1 Check environment diagnostic identity is invalid"
+                )
+            check_name = parts[-2]
+            value = json.loads(
+                (b1_state_root / relative_path).read_text(encoding="utf-8")
+            )
+            if not isinstance(value, dict):
+                raise PhaseFB1BackendError(
+                    "B1 Check environment diagnostic payload is invalid"
+                )
+            key = (attempt_id, check_name)
+            if key in environment_diagnostics:
+                raise PhaseFB1BackendError(
+                    "B1 Check environment diagnostic is duplicated"
+                )
+            environment_diagnostics[key] = value
 
         def public_stream(artifact_id: str | None) -> dict[str, JsonValue] | None:
             if artifact_id is None:
@@ -560,6 +617,9 @@ class ProfileRPhaseFB1Backend:
                     "exit_code": item["exit_code"],
                     "stdout": public_stream(item["stdout_artifact_id"]),
                     "stderr": public_stream(item["stderr_artifact_id"]),
+                    "environment_diagnostic": environment_diagnostics.get(
+                        (str(item["attempt_id"]), str(item["check_name"]))
+                    ),
                 }
             )
         report_path = cell_root / "b1-state" / "runs" / run_id / "report" / "summary.json"
@@ -569,13 +629,7 @@ class ProfileRPhaseFB1Backend:
         if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
             actual_model_turns = 0
         state = str(snapshot["run"]["state"])
-        outcome = {
-            "COMPLETED": "completed",
-            "FAILED": "failed",
-            "BLOCKED": "blocked",
-            "CANCELLED": "interrupted",
-        }.get(state, "infrastructure_error")
-        failure_kind = None if outcome == "completed" else f"b1_{state.lower()}"
+        outcome, failure_kind = _b1_adapter_outcome(state, report)
         token_usage = (
             metrics["token_usage"]
             if metrics.get("usage_status") == "measured"
@@ -598,6 +652,8 @@ class ProfileRPhaseFB1Backend:
                 for task in report["tasks"]
                 for attempt in task["attempts"]
             ),
+            "b1_environment_diagnostic_count": len(environment_diagnostics),
+            "b1_invalid_environment": failure_kind == "check_environment",
         }
         payload: dict[str, JsonValue] = {
             "schema_version": 1,
@@ -653,5 +709,6 @@ class ProfileRPhaseFB1Backend:
                 "boundary_record_count": len(records),
                 "judge_executed": False,
                 "automatic_continuation": False,
+                "invalid_environment": failure_kind == "check_environment",
             },
         )

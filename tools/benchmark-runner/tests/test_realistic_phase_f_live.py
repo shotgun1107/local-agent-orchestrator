@@ -283,8 +283,8 @@ def test_b1_live_stack_rejects_environment_root_overlapping_phase_f_state(
 def test_b1_live_stack_rejects_environment_root_without_path_headroom(
     tmp_path: Path,
 ) -> None:
-    too_long = Path(tmp_path.anchor) / ("x" * 100)
-    with pytest.raises(Exception, match="path headroom"):
+    too_long = Path(tmp_path.anchor) / ("x" * 205)
+    with pytest.raises(Exception, match="exact Windows path headroom"):
         build_profile_r_phase_f_b1_live_stack(
             repository=REPOSITORY,
             candidate_root=CANDIDATE_ROOT,

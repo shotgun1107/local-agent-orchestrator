@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 55건
+- 전체: 56건
 - 해결: 52건
-- 조사 중: 3건
+- 조사 중: 4건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -68,6 +68,7 @@
 | DEV-20260813-003 | resolved | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
 | DEV-20260814-001 | resolved | phase-f-profile-r | implementation | Phase F SS1 실행기가 부분 실패를 봉인하지 못하고 실제 원인을 가림 |
 | DEV-20260814-002 | investigating | phase-f-profile-r | test | B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과 |
+| DEV-20260815-001 | investigating | phase-d-profile-r | test | Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3293,7 +3294,7 @@ completed outcome일 때만 여덟 Task Evidence를 모두 요구하고 non-comp
 
 ### 증상
 
-R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 experiment/cell/workspace 경로를 만들어 git init이 Filename too long으로 실패했고 재시도도 같은 이유로 실패했다
+Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 checker가 뒤이어 만든 자체 path-growth Git 저장소가 Windows 경로 한계를 넘어서 ENVIRONMENT로 실패했다. 같은 checker는 이름만 맞춘 no-op 테스트를 통과시킬 수 있어 유효한 구현은 거부하고 실질 assertion 없는/no-op 회귀시험은 허용하는 역전된 시험 경계였다.
 
 ### 재현
 
@@ -3302,7 +3303,7 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 
 ### 증거
 
-- `direct-observation`: 2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. 공개 Evidence만으로 구체 ENVIRONMENT 분기는 아직 식별되지 않았다.
+- `direct-observation`: 2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. v11 봉인 시점의 공개 Evidence만으로는 구체 ENVIRONMENT 분기를 식별하지 못했다.
 - `direct-observation`: 두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다
 - `direct-observation`: 재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다
 - `source-inspection`: Check TEMP는 Worker .git 아래에 있고 preflight는 임시파일 하나만 생성하며 fixture restore는 첫 git init 뒤에야 local core.longpaths를 설정한다
@@ -3319,10 +3320,14 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 - `reproducible-test`: commit 1ecff6c의 import PermissionError 회귀는 B1 Attempt 1개, runtime initial turn 1개, 추가 turn과 다음 Task Attempt 0개, failure kind check_environment를 확인했고 B1 전체 83 passed를 통과했다
 - `reproducible-test`: 새 Worker snapshot에 Judge 예상 지문을 다시 결합한 dad68df의 q15 Docker 9-Cell은 CHALLENGE_READY, 기대 일치 9/9, model turn 0을 냈고 별도 verifier가 같은 결과를 재계산했다
 - `reproducible-test`: source 33463a3의 Phase E v11 0-turn 후보로 production-shaped acceptance를 독립 root에서 2회 통과했고 각 실행은 Cell 1·2만 seal, 공개 Check 16/16, cleanup residue와 hash mismatch 0이었다
+- `reproducible-test`: 2026-08-15 보존 v11 B1 workspace의 byte-exact 복사본에서 R07을 재현한 결과 선택된 공개 pytest는 4/4 통과했고, 그 다음 checker 자체의 git init이 Filename too long return code 128로 실패했다
+- `source-inspection`: checker가 관측한 최장 Worker 경로에 32자를 더한 뒤 그 아래에 git-probe/.git/config까지 생성해 자신이 측정하려는 경계보다 더 긴 저장소 루트를 만들고 있었다
+- `reproducible-test`: Worker 소유 test_routing_s2.py를 이름만 맞춘 pass 함수로 바꾼 적대 복사본이 기존 R07_PUBLIC_CONTRACT_OK를 받았고, 실질 구현의 더 긴 경로는 반대로 ENVIRONMENT로 거부됐다
+- `reproducible-test`: 교정 뒤 공개 R07은 정확한 12개 case를 실행하고 short-root Git에서 260자를 넘는 tracked descendant를 add·lookup했다. 전용 적대 회귀 13개와 production-shaped B1 acceptance 두 경로가 통과했다
 
 ### 근본 원인
 
-B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. preflight와 단위시험은 실제 child pytest와 nested Git 깊이를 관통하지 않았고, core.longpaths는 첫 git init 뒤에 설정됐다. 환경성 Check 실패도 제품 assertion과 구분되지 않아 두 번째 model Attempt를 소비했다.
+과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다.
 
 ### 검토한 해결안
 
@@ -3333,7 +3338,7 @@ B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정
 
 ### 채택한 해결
 
-Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68df에서 새 Worker snapshot에 재결합했다. q15 qualification v12는 CHALLENGE_READY 9/9, Phase E v11 후보는 0-turn으로 별도 검증됐고 exact-candidate acceptance 2회도 통과했다. revision 3 readiness package의 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.
+2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. model-free 통합 검증은 통과했지만 새 source의 clean 전체 회귀·Docker qualification·0-turn candidate가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3344,6 +3349,8 @@ Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68
 - tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
 - tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py
 - benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
 
 ### 회귀시험
 
@@ -3352,6 +3359,9 @@ Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68
 - Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터 longpaths·autocrlf·config origin이 통제되는 회귀
 - 환경 또는 미분류 Check 실패가 두 번째 B1 Attempt나 model turn을 생성하지 않는 회귀
 - claim 작성 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 작성 뒤 seal state 실패에서 같은 Cell 재실행과 다음 Cell dispatch를 차단하는 회귀
+- R07 필수 공개 시험의 exact 12-case 수집·실행과 no-op·skip·case-count mismatch 거부 회귀
+- short-root Git 저장소의 260자 초과 tracked descendant add·lookup과 실제 B1 allocation suffix를 포함하는 hostile preflight 회귀
+- 환경진단 marker의 strict Schema·Evidence 보존·Worker feedback 비노출 회귀
 
 ### 검증 결과
 
@@ -3376,13 +3386,19 @@ Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68
 - q15 Profile R Docker 9-Cell CHALLENGE_READY와 기대 일치 9/9, 별도 verifier 통과, 잔여 container 0
 - Phase E v11 후보가 source 33463a3과 qualification v12에 0 model turn으로 결합되고 별도 verifier를 통과
 - Phase E v11 exact-candidate acceptance 2회가 84.30s와 94.24s에 통과하고 원시 Evidence hash mismatch 0
+- R07 공개 checker 적대 회귀 13 passed
+- B1 verifier 11 passed, scheduler 환경진단 3 passed, B1 Measurement/live 타깃 4 passed
+- 교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로가 각각 8 Task, 16 Check, R07 12 case로 통과
+- 영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
-- live-readiness package 봉인과 독립 재심사가 끝나지 않았다
+- 새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
+- 현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다
+- 새 Worker·Judge source identity로 Docker qualification과 Phase E 0-turn candidate를 다시 만들어야 한다
 
 ### 추적 정보
 
@@ -3404,3 +3420,84 @@ Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v12-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v3-result.md
+
+## DEV-20260815-001 — Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴
+
+- 상태: `investigating`
+- 단계: `phase-d-profile-r`
+- 분류: `test`
+- 발견: 2026-08-15T08:00:13Z / R07 관련 하네스 전체 적대 model-free 감사
+- 해결: 미해결
+
+### 증상
+
+R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공개 pytest 함수를 실행했다. 알려진 불량 구현과 해당 테스트의 no-op 변조를 함께 적용하면 실제 속성이 깨졌는데도 aggregate pass가 가능했다.
+
+### 재현
+
+- 공식 reference workspace에 R-P04 negative mutation을 적용한다
+- Worker 소유 test_routing_s2.py의 Judge가 호출하는 세 테스트를 pass로 바꾼다
+- 기존 check_properties.py로 전체 hidden Judge를 실행하고 aggregate_status와 R-P04 판정을 확인한다
+
+### 증거
+
+- `reproducible-test`: R-P04 turn-cap 구현을 깨뜨리고 Worker 소유 테스트 세 개를 pass로 바꾼 외부 복사본에서 기존 hidden Judge가 aggregate pass와 R-P04 RESERVE_ISOLATED를 반환했다
+- `source-inspection`: 기존 check_properties.py의 R-P02, R-P04, R-P06과 R-P07 generated-check가 Worker-writable test_routing_s2.py 또는 test_routing_suite.py의 named node를 직접 실행했고 신뢰 가능한 test digest allowlist가 없었다
+- `reproducible-test`: Judge-owned protected_behavior_checks.py로 전환한 뒤 정상 reference는 8/8 pass했고 P02, P04, P06 구현과 Worker 테스트를 함께 변조한 공격은 각각 목표 property에서 fail했다
+- `reproducible-test`: Worker 테스트만 no-op, skip 또는 assert-false로 바꾼 3개 case는 정상 구현에서 hidden Judge 결과를 바꾸지 않았고, 구현과 테스트 동시변조 4개 case는 모두 차단됐다
+
+### 근본 원인
+
+독립 Judge가 Worker 산출 코드의 동작을 직접 검사하지 않고 Worker가 함께 수정할 수 있는 공개 테스트를 oracle로 사용했다. Evidence에는 현재 파일 hash만 기록됐고 신뢰 가능한 테스트 정본이나 Judge 전용 검사와 결합되지 않아 구현과 oracle의 동시변조를 구분할 수 없었다.
+
+### 검토한 해결안
+
+- `rejected` Worker 테스트 hash를 고정해 기존 named-node 실행을 유지 — Worker가 공개 테스트를 개선해야 하는 작업 범위와 충돌하고 속성 자체보다 특정 테스트 표현을 정답으로 고정한다
+- `adopted` Judge 소유 보호 검사에서 Worker 모듈과 export 동작을 직접 검증 — Worker가 수정할 수 없는 oracle 경계를 유지하면서 속성별 의미를 직접 다시 계산한다
+- `rejected` 기존 qualification과 live 결과를 그대로 유효하다고 간주 — 기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다
+
+### 채택한 해결
+
+R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94로 재생성됐다. clean 전체 회귀와 새 Docker qualification이 남아 있어 investigating을 유지한다.
+
+### 수정 파일
+
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py
+- tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/adversarial-worker-test-oracle.json
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-r07-reference.json
+
+### 회귀시험
+
+- 정상 reference 8개 property가 모두 통과하는 hidden Judge 회귀
+- Worker 테스트만 no-op·skip·assert-false로 바꿔도 정상 구현 판정이 유지되는 독립성 회귀
+- R-P02·R-P04·R-P06·R-P07 구현과 공개 테스트를 동시에 변조하면 목표 property가 실패하는 적대 회귀
+- 8개 negative mutation이 각 목표 property만 실패하고 다른 protected property를 침범하지 않는 독립성 회귀
+- builder가 공개 R07 exact 12-case reference Evidence와 7개 oracle 공격 Evidence를 필수 산출물로 봉인하는 회귀
+
+### 검증 결과
+
+- 정상 reference hidden Judge 8/8 pass
+- Worker test-only 변조 3개와 구현·테스트 동시변조 4개 적대 case가 기대 결과와 일치
+- 최종 Profile R source bundle builder가 PROFILE_R_SOURCE_BUNDLE_VERIFIED를 반환
+- 최종 bundle file_count 35, payload aggregate 3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94
+- 교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로 통과
+- 영향 범위 회귀 125 passed, 1 opt-in skipped
+
+### 남은 위험
+
+- 현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다
+- 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다
+- 새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
+- 출처: docs/operations/codex-revision-log.md
+- 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
+- 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/adversarial-worker-test-oracle.json
+- 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-r07-reference.json

@@ -71,7 +71,6 @@ REFERENCE_PATCH = (
     / "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/"
     "realistic-compat-migration-001/reference.patch"
 )
-R07_PUBLIC_FIX_COMMIT = "f0bd978"
 R07_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 ACCEPTANCE_EVIDENCE_ROOT_ENV = "LAO_PHASE_F_ACCEPTANCE_EVIDENCE_ROOT"
@@ -266,6 +265,7 @@ def _reference_b1_runtime(
     workspace: Path,
     reference_workspace: Path,
     source_environment: dict[str, str],
+    alternate_deep_r07_repository: bool = False,
 ) -> B1FakeRuntime:
     materialize_profile_r_workspace(
         REPOSITORY,
@@ -294,47 +294,20 @@ def _reference_b1_runtime(
         env=git_environment,
     )
     assert applied.returncode == 0, applied.stderr.decode("utf-8", errors="replace")
-    repository_git_environment = build_hermetic_git_environment(
-        git_executable=GIT_EXECUTABLE,
-        home=REPOSITORY,
-        source_environment=source_environment,
-    )
-    r07_fix = subprocess.run(
-        [
-            str(GIT_EXECUTABLE),
-            "-C",
-            str(REPOSITORY),
-            "show",
-            "--format=",
-            R07_PUBLIC_FIX_COMMIT,
-            "--",
-            R07_PUBLIC_FIX_PATH,
-        ],
-        capture_output=True,
-        check=False,
-        env=repository_git_environment,
-    )
-    assert r07_fix.returncode == 0, r07_fix.stderr.decode(
-        "utf-8", errors="replace"
-    )
-    applied_r07_fix = subprocess.run(
-        [
-            str(GIT_EXECUTABLE),
-            "-C",
-            str(reference_workspace),
-            "apply",
-            "--no-index",
-            "--whitespace=nowarn",
-            "-",
-        ],
-        input=r07_fix.stdout,
-        capture_output=True,
-        check=False,
-        env=git_environment,
-    )
-    assert applied_r07_fix.returncode == 0, applied_r07_fix.stderr.decode(
-        "utf-8", errors="replace"
-    )
+    if alternate_deep_r07_repository:
+        r07_test = reference_workspace / R07_PUBLIC_FIX_PATH
+        original = 'source = tmp_path / "source"'
+        replacement = (
+            'source = tmp_path / '
+            '"alternate-valid-worker-internal-repository-root"'
+        )
+        content = r07_test.read_text(encoding="utf-8")
+        assert content.count(original) == 1
+        r07_test.write_text(
+            content.replace(original, replacement),
+            encoding="utf-8",
+            newline="\n",
+        )
     reference_files = sorted(
         path
         for path in reference_workspace.rglob("*")
@@ -679,6 +652,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             workspace=workspace,
             reference_workspace=tmp_path / "reference-worker",
             source_environment=source_environment,
+            alternate_deep_r07_repository=acceptance_run == 2,
         )
         b1_runtimes.append(runtime)
         return runtime
@@ -757,7 +731,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         evidence_line.removeprefix(CHECK_ENVIRONMENT_EVIDENCE_PREFIX)
     )
     assert environment_evidence["pytest"] == {
-        "tests": 4,
+        "tests": 12,
         "failures": 0,
         "errors": 0,
         "skipped": 0,

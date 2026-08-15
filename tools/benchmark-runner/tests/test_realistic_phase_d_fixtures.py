@@ -331,7 +331,7 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
             "benchmark_checks/check_profile_r.py",
             f"R{number:02d}",
         ]
-        assert check["timeout_seconds"] == 120
+        assert check["timeout_seconds"] == (900 if number == 7 else 120)
 
 
 def test_profile_r_public_check_is_model_free_and_compiles() -> None:
@@ -497,7 +497,8 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert eligibility["judge_runtime_boundary_verified"] is False
     assert eligibility["challenge_ready"] is False
     records = manifest["files"]
-    assert manifest["file_count_excluding_manifest"] == len(records) == 32
+    assert eligibility["public_r07_reference_verified"] is True
+    assert manifest["file_count_excluding_manifest"] == len(records) == 35
     for record in records:
         payload = (JUDGE_SOURCE_ROOT / record["path"]).read_bytes()
         assert len(payload) == record["size"]
@@ -512,6 +513,24 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert reference["aggregate_status"] == "pass"
     assert {item["status"] for item in reference["properties"]} == {"pass"}
     assert pristine["aggregate_status"] == "fail"
+
+    public_r07 = json.loads(
+        (JUDGE_SOURCE_ROOT / "evidence/public-r07-reference.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert public_r07["passed"] is True
+    assert public_r07["return_code"] == 0
+    assert public_r07["contract_ok_marker"] is True
+    assert public_r07["pytest"] == {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0,
+    }
+    assert public_r07["growth_margin"] >= 32
+    assert public_r07["growth_probe_path_length"] >= 261
 
 
 def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> None:
@@ -545,7 +564,11 @@ def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak()
     checker = (JUDGE_SOURCE_ROOT / "checker/check_properties.py").read_text(
         encoding="utf-8"
     )
+    protected = (
+        JUDGE_SOURCE_ROOT / "checker/protected_behavior_checks.py"
+    ).read_text(encoding="utf-8")
     compile(checker, "check_properties.py", "exec")
+    compile(protected, "protected_behavior_checks.py", "exec")
     forbidden_runtime = (
         "openai_codex",
         "CodexClient",
@@ -553,7 +576,9 @@ def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak()
         "OPENAI_API_KEY",
         "CODEX_API_KEY",
     )
-    assert all(value not in checker for value in forbidden_runtime)
+    assert all(value not in checker + protected for value in forbidden_runtime)
+    assert "tools/benchmark-runner/tests/test_routing_s2.py" not in checker + protected
+    assert "tools/benchmark-runner/tests/test_routing_suite.py" not in checker + protected
     leakage = json.loads(
         (JUDGE_SOURCE_ROOT / "solution-leakage-catalog.json").read_text(
             encoding="utf-8"
@@ -563,3 +588,37 @@ def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak()
         payload = path.read_bytes()
         for literal in leakage["forbidden_worker_literals"]:
             assert literal.encode("utf-8") not in payload
+
+
+def test_profile_r_protected_judge_rejects_worker_test_oracle_co_mutation() -> None:
+    evidence = json.loads(
+        (
+            JUDGE_SOURCE_ROOT
+            / "evidence"
+            / "adversarial-worker-test-oracle.json"
+        ).read_text(encoding="utf-8")
+    )
+    cases = {item["case_id"]: item for item in evidence["cases"]}
+    assert len(cases) == 7
+    for mode in ("noop", "skip", "assert_false"):
+        value = cases[f"worker-tests-{mode}"]
+        assert value["aggregate_status"] == "pass"
+        assert set(value["statuses"].values()) == {"pass"}
+        assert value["matched_expectation"] is True
+
+    targets = {
+        "r-p02-stage-discriminator": "R-P02-STAGE-DISCRIMINATOR",
+        "r-p04-reserve-isolation": "R-P04-RESERVE-ISOLATION",
+        "r-p06-export-roundtrip": "R-P06-EXPORT-ROUNDTRIP",
+        "r-p07-cross-checkout": "R-P07-CROSS-CHECKOUT-REPRO",
+    }
+    for mutation, target in targets.items():
+        value = cases[f"{mutation}-plus-noop"]
+        assert value["worker_test_mode"] == "noop"
+        assert value["aggregate_status"] == "fail"
+        assert value["statuses"][target] == "fail"
+        assert value["matched_expectation"] is True
+
+    p04 = cases["r-p04-reserve-isolation-plus-noop"]
+    assert p04["statuses"]["R-P04-RESERVE-ISOLATION"] == "fail"
+    assert p04["statuses"]["R-P06-EXPORT-ROUNDTRIP"] == "pass"

@@ -1,8 +1,8 @@
 # 집 로컬 → 회사 로컬 현재 작업 인수인계
 
-- 문서 상태: `historical_home_to_company_handoff`
-- revision: 6
-- 작성일: 2026-08-13
+- 문서 상태: `current_home_to_company_handoff`
+- revision: 7
+- 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
 - 집 SS1 v6 결과까지 포함하는 최소 commit:
@@ -17,10 +17,9 @@
 > 사용한다. dirty file, stash, detached HEAD, local-only commit 또는 ignored/tracked 충돌이
 > 있으면 reset·clean·stash·rebase로 숨기지 말고 보고 후 멈춘다.
 >
-> 최신성 경고: 이 문서는 SS1 v6 집→회사 전달 당시의 역사 기록이다. 2026-08-14 v8
-> 실행과 시험환경 Pro 재심 뒤의 현재 상태는
-> `company-to-home-codex-handoff.md` §26과 Phase F 시험환경 축소 교정 명세를 따른다.
-> 이 문서의 Cell 2 재개 지시를 현재 실행 승인으로 사용하지 않는다.
+> 최신성 경고: §1~§9는 SS1 v6 집→회사 전달 당시의 역사 기록이다. 현재 인수 정본은
+> 이 문서 §10과 `company-to-home-codex-handoff.md` §31이다. 앞 절의 Cell 2 재개 지시는
+> 현재 실행 승인으로 사용하지 않는다.
 
 ## 1. 이번 반환의 핵심
 
@@ -235,3 +234,36 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
 - API key 생성·요구·입력·출력
 - main merge·rebase·squash·branch 삭제
 - dirty/stash/local-only commit을 숨기거나 폐기
+
+## 10. 2026-08-15 R07·Judge 적대 교정 반환 checkpoint
+
+이 절은 앞의 v6 인수인계를 대체하는 최신 집→회사 보고다.
+
+### 과거
+
+- Phase E v11의 실제 B1은 R07에서 환경 실패로 멈췄지만, byte-exact 복사본 재현 결과
+  공개 pytest 4개는 모두 통과했다. checker가 만든 긴 Git probe가 스스로 Windows 한계를
+  넘은 것이 직접 원인이었다.
+- 공개 R07은 no-op 시험을 허용했고, 숨은 Judge의 네 속성은 Worker가 고칠 수 있는
+  공개 pytest를 oracle로 신뢰해 구현과 시험 동시변조를 통과시킬 수 있었다.
+
+### 현재 집 작업
+
+- 공개 R07 exact 12-case 실행, 실제 long tracked path Git 동작, strict 환경진단과
+  model 전 hostile preflight를 구현했다.
+- Judge-owned 보호 검사와 7개 oracle 공격 회귀를 추가했다. 최종 35-file source bundle은
+  aggregate `3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94`로
+  자체 검증됐다.
+- production-shaped B1 acceptance 두 경로와 영향 회귀
+  `125 passed, 1 opt-in skipped`가 통과했다. 실제 model·SDK·Docker 호출은 0회다.
+- 현재 source를 commit한 clean HEAD에서 전체 Runner 428개를 다시 통과하기 전에는 교정을
+  완료로 선언하지 않는다.
+
+### 회사에서 이어받을 조건
+
+- origin branch의 최종 교정 commit과 tree가 집의 보고값과 정확히 같아야 한다.
+- 새 source 기준 전체 회귀, Docker qualification, Phase E 0-turn candidate와 readiness
+  산출물이 모두 Git에 기록된 뒤에만 다음 live 승인 여부를 검토한다.
+- q15, Phase E v11, v11 SS1/B1 raw는 stale한 역사 Evidence다. 덮어쓰거나 새 source의
+  성공 근거로 사용하지 않는다.
+- 독립 readiness와 사용자 별도 승인 전 실제 SS1·B1·Cell 3, SDK thread/turn은 NO-GO다.

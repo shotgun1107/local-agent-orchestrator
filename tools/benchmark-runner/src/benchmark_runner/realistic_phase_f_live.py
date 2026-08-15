@@ -58,7 +58,6 @@ AppServerPortFactory = Callable[
     [Path, tuple[str, ...]],
     PhaseFAppServerPort,
 ]
-PROFILE_R_EXECUTION_ENVIRONMENT_PATH_HEADROOM = 225
 
 
 def _external_environment_root(root: Path, *forbidden_roots: Path) -> Path:
@@ -66,9 +65,6 @@ def _external_environment_root(root: Path, *forbidden_roots: Path) -> Path:
         return validate_external_check_temp_root(
             root,
             forbidden_roots=forbidden_roots,
-            required_descendant_headroom=(
-                PROFILE_R_EXECUTION_ENVIRONMENT_PATH_HEADROOM
-            ),
             require_ntfs=True,
         )
     except VerificationError as exc:

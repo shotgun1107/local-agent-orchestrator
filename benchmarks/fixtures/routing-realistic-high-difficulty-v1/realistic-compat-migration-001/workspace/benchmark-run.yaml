@@ -151,6 +151,7 @@ tasks:
       - "benchmarks/fixtures/routing-v1/intermediate/**"
       - "tools/benchmark-runner/src/benchmark_runner/**"
     write_scope:
+      - "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/**"
       - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
       - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
       - "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"

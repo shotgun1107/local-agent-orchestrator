@@ -2373,3 +2373,46 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   investigating이다. 자동 live 재실행과 Cell 3은 금지한다.
 - 상세 결과는
   `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md`다.
+
+## Profile R R07·독립 Judge 적대 model-free 교정
+
+- 작업일: 2026-08-15. 사용자 지시에 따라 R07과 연결된 공개 checker, B1 실행 경계,
+  숨은 Judge와 source-bundle builder를 한 Sol·두 Blue 관점으로 적대 감사했다. SDK thread,
+  Codex model turn, Docker workload와 network 호출은 0회다.
+- 보존 v11 B1 workspace의 byte-exact 복사본에서 정확한 실패를 재현했다. 공개 pytest
+  4개는 모두 통과했고 그 뒤 checker가 최장 Worker 경로보다 더 긴 위치에 Git 저장소를
+  만들면서 `Filename too long`으로 실패했다. 제품이나 Worker 결과가 아니라 checker
+  자체의 false `ENVIRONMENT`였다.
+- 기존 공개 R07은 필수 함수 일부를 이름만 확인해 no-op 테스트도 통과시켰다. 교정 뒤
+  필수 S2 5개, posthoc 2 case, legacy S1 5개를 실제로 한 번에 실행하고 정확히 12 case,
+  0 failure/error/skip/warning을 요구한다. `pass`, assignment-only, `assert True`,
+  `return None`, print-only 시험과 case-count 불일치를 거부한다.
+- path-growth 검사는 짧은 root에서 Git을 초기화한 뒤 260자를 넘는 tracked descendant를
+  실제 `git add`·`ls-files`한다. B1 preflight도 실제 32자 allocation과 Git 내부 suffix를
+  포함한 hostile Git 작업을 model 호출 전에 수행한다. 환경진단은 원시 경로나 stderr를
+  노출하지 않는 strict JSON으로 Evidence와 seal에 보존하고 Worker retry feedback에는
+  전달하지 않는다.
+- 숨은 Judge의 R-P02·R-P04·R-P06·R-P07이 Worker가 수정할 수 있는 공개 pytest를
+  oracle로 사용해 구현과 테스트 동시변조를 통과시키는 P0도 재현했다. Judge 소유
+  `protected_behavior_checks.py`에서 실제 모듈·export 동작을 직접 검사하도록 분리했다.
+  정상 reference는 8/8 pass, Worker test-only 변조 3개는 결과 불변, 구현·테스트
+  동시변조 4개는 목표 property fail이다.
+- one-commit Worker projection은 legacy S1 시험이 과거 Git object를 요구하지 않도록
+  self-contained fixture repository와 manifest를 만든다. R06에 posthoc checker write
+  scope를 명시했고 Check HOME/USERPROFILE은 secret-free external TEMP로 고정했다.
+- 최종 source bundle은 35 files,
+  `payload_aggregate_sha256=3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94`로
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`를 반환했다. Worker snapshot은 130 files, source와
+  file-set·size·SHA mismatch 0이다.
+- production-shaped B1 acceptance는 표준 경로와 더 깊은 유효 Worker 경로에서 각각
+  통과했다. 각 실행은 8 Task·16 Check와 R07 12 case를 수행했다. 영향 회귀는
+  `125 passed, 1 opt-in skipped, 2 deselected`이며 deselected 둘은 앞서 별도로 통과한
+  두 acceptance parameter다.
+- 전체 Runner 428개 회귀는 dirty source에서 clean-source 후보 생성 계약이 의도대로
+  중단시켜 아직 완료로 세지 않는다. 먼저 이 교정과 사건 기록을 commit한 뒤 clean HEAD에서
+  전체를 처음부터 재실행한다. 기존 q15, Phase E v11과 readiness 판정은 새 Worker·Judge
+  source를 인증하지 않으므로 stale다. 새 Docker qualification, 새 0-turn candidate와
+  독립 readiness 승인 전 실제 SS1·B1·Cell 3은 계속 NO-GO다.
+- 통합 diff 감사에서 R07 외부 timeout이 내부 최대 720초보다 짧은 120초인 P1과
+  도달 불가능·정적 참 assertion을 허용하는 P2를 추가로 찾았다. 외부 제한을 900초로
+  맞추고 해당 우회까지 거부하는 적대 회귀를 추가해 R07 전용 시험은 `13 passed`다.

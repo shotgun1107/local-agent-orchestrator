@@ -3,8 +3,8 @@
   "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
   "cell_id": "r-p05-lifecycle-reuse",
   "checker_run_status": "completed",
-  "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "db7a21d8c0f91a79e14e994216c8e879a0dcbfd5a695d32fd271a4146de0d280",
+  "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
+  "envelope_sha256": "3c545d937497a85b2d2c4383a65c69f847c249391d1e139267366036822675bf",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -30,7 +30,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
       "evidence_refs": [
         {
@@ -57,7 +57,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -73,8 +73,8 @@
           "sha256": "de10e7c4741e620e8019e51619b22c4898ec2e96ea1247f83031f0863920d089"
         },
         {
-          "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "9dd213c84cb2a1398e9f720e1be2af54ba6039b131aa0dfcd9801e38f81dcc17"
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "28963c3179b2708cb41890008f8292a1210612317b59f29ca15bc88bf6003f85"
         }
       ],
       "prerequisite_ids": [],
@@ -84,7 +84,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -105,16 +105,12 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
       "evidence_refs": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
           "sha256": "d1d9dff915662c3c90d61a907d09c557c6e7781f425f13e162646853799de719"
-        },
-        {
-          "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "9dd213c84cb2a1398e9f720e1be2af54ba6039b131aa0dfcd9801e38f81dcc17"
         }
       ],
       "prerequisite_ids": [
@@ -126,7 +122,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -145,16 +141,20 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
       "evidence_refs": [
         {
-          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
-          "sha256": "28963c3179b2708cb41890008f8292a1210612317b59f29ca15bc88bf6003f85"
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+          "sha256": "de10e7c4741e620e8019e51619b22c4898ec2e96ea1247f83031f0863920d089"
         },
         {
-          "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "9dd213c84cb2a1398e9f720e1be2af54ba6039b131aa0dfcd9801e38f81dcc17"
+          "path": "benchmarks/suites/sdk-routing-v1/suite.yaml",
+          "sha256": "4e5fe2cd6a3ac805a4479a8d17725331d9ce01820d5842814070417a8d7c6a1d"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "28963c3179b2708cb41890008f8292a1210612317b59f29ca15bc88bf6003f85"
         }
       ],
       "prerequisite_ids": [
@@ -167,7 +167,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "Generated routing bytes remain reproducible under the frozen LF checkout policy.",
       "evidence_refs": [
         {
@@ -200,7 +200,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The structured command, state, failure, and stop relations match the public operator surface.",
       "evidence_refs": [
         {
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "53ea4b4c76c249bebbdbbe40c7c4b48ebe29a7a8fbbf420b234eca12913ae4ad",
-  "workspace_before_sha256": "53ea4b4c76c249bebbdbbe40c7c4b48ebe29a7a8fbbf420b234eca12913ae4ad",
+  "workspace_after_sha256": "c4b5c980d1c45f0925c0dd88c3b504e21281971fdc4b26512e3d6438bec66c3a",
+  "workspace_before_sha256": "c4b5c980d1c45f0925c0dd88c3b504e21281971fdc4b26512e3d6438bec66c3a",
   "workspace_mutated": false
 }

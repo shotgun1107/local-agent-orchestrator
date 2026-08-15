@@ -24,6 +24,43 @@ WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 WORKER_FEEDBACK_MAX_BYTES = 12_288
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
+CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+
+
+def _environment_diagnostic(
+    *,
+    stage: str,
+    command_ordinal: int,
+    return_code: int | None,
+    stderr: bytes | str,
+    safe_error_code: str,
+    path_lengths: dict[str, int],
+) -> dict[str, Any]:
+    stderr_bytes = stderr.encode("utf-8", errors="replace") if isinstance(stderr, str) else stderr
+    bounded_lengths = {
+        key: max(0, min(int(value), 1_000_000))
+        for key, value in sorted(path_lengths.items())
+    }
+    return {
+        "schema_version": 1,
+        "stage": stage,
+        "command_ordinal": command_ordinal,
+        "return_code": return_code,
+        "stderr_sha256": hashlib.sha256(stderr_bytes).hexdigest(),
+        "safe_error_code": safe_error_code,
+        "path_lengths": bounded_lengths,
+    }
+
+
+def _default_environment_diagnostic(task_id: str, safe_error_code: str) -> dict[str, Any]:
+    return _environment_diagnostic(
+        stage=f"{task_id.lower()}_public_contract",
+        command_ordinal=0,
+        return_code=None,
+        stderr=b"",
+        safe_error_code=safe_error_code,
+        path_lengths={},
+    )
 
 
 class PublicContractError(RuntimeError):
@@ -33,10 +70,12 @@ class PublicContractError(RuntimeError):
         *,
         public_feedback: list[str] | None = None,
         failure_classification: str = "PRODUCT_ASSERTION",
+        environment_diagnostic: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
         self.public_feedback = public_feedback
         self.failure_classification = failure_classification
+        self.environment_diagnostic = environment_diagnostic
 
 
 def _decode_utf8_prefix(data: bytes, limit: int) -> str:
@@ -448,7 +487,9 @@ def check_r06() -> None:
     # API and frozen catalog; the independent Judge executes those programs.
 
 
-def _test_functions(path: Path) -> set[str]:
+def _test_function_nodes(
+    path: Path,
+) -> dict[str, ast.FunctionDef | ast.AsyncFunctionDef]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except OSError as exc:
@@ -458,7 +499,327 @@ def _test_functions(path: Path) -> set[str]:
         ) from exc
     except SyntaxError as exc:
         raise PublicContractError(f"invalid regression source: {path.relative_to(ROOT)}") from exc
-    return {node.name for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")}
+    return {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    }
+
+
+def _test_functions(path: Path) -> set[str]:
+    return set(_test_function_nodes(path))
+
+
+_STATIC_UNKNOWN = object()
+
+
+def _bounded_static_value(node: ast.AST) -> object:
+    """Evaluate only small literal boolean expressions without running Worker code."""
+
+    if isinstance(node, ast.Constant) and isinstance(
+        node.value, (type(None), bool, int, float, str, bytes)
+    ):
+        if isinstance(node.value, (str, bytes)) and len(node.value) > 4_096:
+            return _STATIC_UNKNOWN
+        return node.value
+    if isinstance(node, (ast.Tuple, ast.List)) and len(node.elts) <= 32:
+        values = tuple(_bounded_static_value(item) for item in node.elts)
+        if _STATIC_UNKNOWN in values:
+            return _STATIC_UNKNOWN
+        return values
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        value = _bounded_static_value(node.operand)
+        return _STATIC_UNKNOWN if value is _STATIC_UNKNOWN else not bool(value)
+    if isinstance(node, ast.BoolOp):
+        values = [_bounded_static_value(item) for item in node.values]
+        if isinstance(node.op, ast.And):
+            if any(value is not _STATIC_UNKNOWN and not bool(value) for value in values):
+                return False
+            return True if all(value is not _STATIC_UNKNOWN for value in values) else _STATIC_UNKNOWN
+        if any(value is not _STATIC_UNKNOWN and bool(value) for value in values):
+            return True
+        return False if all(value is not _STATIC_UNKNOWN for value in values) else _STATIC_UNKNOWN
+    if isinstance(node, ast.Compare):
+        values = [_bounded_static_value(node.left)] + [
+            _bounded_static_value(item) for item in node.comparators
+        ]
+        if any(value is _STATIC_UNKNOWN for value in values):
+            return _STATIC_UNKNOWN
+        results: list[bool] = []
+        try:
+            for left, operator, right in zip(values, node.ops, values[1:]):
+                if isinstance(operator, ast.Eq):
+                    results.append(left == right)
+                elif isinstance(operator, ast.NotEq):
+                    results.append(left != right)
+                elif isinstance(operator, ast.Is):
+                    results.append(left is right)
+                elif isinstance(operator, ast.IsNot):
+                    results.append(left is not right)
+                elif isinstance(operator, ast.Lt):
+                    results.append(left < right)  # type: ignore[operator]
+                elif isinstance(operator, ast.LtE):
+                    results.append(left <= right)  # type: ignore[operator]
+                elif isinstance(operator, ast.Gt):
+                    results.append(left > right)  # type: ignore[operator]
+                elif isinstance(operator, ast.GtE):
+                    results.append(left >= right)  # type: ignore[operator]
+                elif isinstance(operator, ast.In):
+                    results.append(left in right)  # type: ignore[operator]
+                elif isinstance(operator, ast.NotIn):
+                    results.append(left not in right)  # type: ignore[operator]
+                else:
+                    return _STATIC_UNKNOWN
+        except (TypeError, ValueError):
+            return _STATIC_UNKNOWN
+        return all(results)
+    return _STATIC_UNKNOWN
+
+
+def _assert_is_substantive(node: ast.Assert) -> bool:
+    static_value = _bounded_static_value(node.test)
+    if static_value is not _STATIC_UNKNOWN and bool(static_value):
+        return False
+    if (
+        isinstance(node.test, ast.Compare)
+        and len(node.test.ops) == 1
+        and len(node.test.comparators) == 1
+        and isinstance(node.test.ops[0], (ast.Eq, ast.Is, ast.LtE, ast.GtE))
+        and ast.dump(node.test.left, include_attributes=False)
+        == ast.dump(node.test.comparators[0], include_attributes=False)
+    ):
+        return False
+    return True
+
+
+def _call_is_assertion(call: ast.Call) -> bool:
+    function = call.func
+    call_name = (
+        function.attr
+        if isinstance(function, ast.Attribute)
+        else function.id
+        if isinstance(function, ast.Name)
+        else ""
+    )
+    return call_name in {"fail", "raises", "skip"}
+
+
+def _block_contains_substantive_test(statements: list[ast.stmt]) -> bool:
+    for statement in statements:
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        if isinstance(statement, ast.Assert) and _assert_is_substantive(statement):
+            return True
+        if isinstance(statement, ast.Raise):
+            return True
+        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
+            if _call_is_assertion(statement.value):
+                return True
+        if isinstance(statement, ast.If):
+            condition = _bounded_static_value(statement.test)
+            branches = (
+                (statement.body,)
+                if condition is not _STATIC_UNKNOWN and bool(condition)
+                else (statement.orelse,)
+                if condition is not _STATIC_UNKNOWN
+                else (statement.body, statement.orelse)
+            )
+            if any(_block_contains_substantive_test(branch) for branch in branches):
+                return True
+        elif isinstance(statement, ast.While):
+            condition = _bounded_static_value(statement.test)
+            branches = (
+                (statement.orelse,)
+                if condition is not _STATIC_UNKNOWN and not bool(condition)
+                else (statement.body, statement.orelse)
+            )
+            if any(_block_contains_substantive_test(branch) for branch in branches):
+                return True
+        elif isinstance(statement, (ast.For, ast.AsyncFor)):
+            if _block_contains_substantive_test(statement.body) or _block_contains_substantive_test(
+                statement.orelse
+            ):
+                return True
+        elif isinstance(statement, (ast.With, ast.AsyncWith)):
+            if any(
+                isinstance(item.context_expr, ast.Call)
+                and _call_is_assertion(item.context_expr)
+                for item in statement.items
+            ) or _block_contains_substantive_test(statement.body):
+                return True
+        elif isinstance(statement, ast.Try):
+            branches = [statement.body, statement.orelse, statement.finalbody] + [
+                handler.body for handler in statement.handlers
+            ]
+            if any(_block_contains_substantive_test(branch) for branch in branches):
+                return True
+        elif isinstance(statement, ast.Match):
+            if any(_block_contains_substantive_test(case.body) for case in statement.cases):
+                return True
+        if isinstance(statement, (ast.Return, ast.Break, ast.Continue)):
+            break
+    return False
+
+
+def _is_trivial_test_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    return not _block_contains_substantive_test(node.body)
+
+
+def _require_substantive_test_functions(path: Path, names: set[str]) -> None:
+    nodes = _test_function_nodes(path)
+    trivial = sorted(name for name in names if _is_trivial_test_function(nodes[name]))
+    if trivial:
+        raise PublicContractError(
+            "public regression functions must contain executable assertions or behavior: "
+            + ", ".join(trivial)
+        )
+
+
+def _run_r07_subprocess(
+    command: list[str],
+    *,
+    stage: str,
+    command_ordinal: int,
+    safe_error_code: str,
+    path_lengths: dict[str, int],
+    timeout: int,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            command,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            env={
+                **os.environ,
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTEST_ADDOPTS": "",
+            },
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise PublicContractError(
+            f"{stage} could not run",
+            failure_classification="ENVIRONMENT",
+            environment_diagnostic=_environment_diagnostic(
+                stage=stage,
+                command_ordinal=command_ordinal,
+                return_code=None,
+                stderr=b"",
+                safe_error_code=safe_error_code,
+                path_lengths=path_lengths,
+            ),
+        ) from exc
+
+
+def _parse_collected_node_ids(
+    stdout: str,
+    expected_sources: dict[str, Path],
+    expected_case_counts: dict[str, int] | None = None,
+) -> list[str]:
+    collected = [line.strip() for line in stdout.splitlines() if "::" in line]
+    if not collected or len(collected) != len(set(collected)):
+        raise PublicContractError("R07 public regression collection is empty or duplicated")
+    observed_names: set[str] = set()
+    observed_case_counts = {name: 0 for name in expected_sources}
+    execution_nodes: list[str] = []
+    for node_id in collected:
+        source_text, selector = node_id.split("::", 1)
+        function_name = selector.split("[", 1)[0]
+        expected_source = expected_sources.get(function_name)
+        observed_path = Path(source_text)
+        expected_path = expected_source.resolve(strict=True) if expected_source else None
+        if observed_path.is_absolute():
+            source_matches = expected_path is not None and observed_path.resolve() == expected_path
+        else:
+            observed_parts = tuple(part.casefold() for part in observed_path.parts)
+            expected_parts = (
+                tuple(part.casefold() for part in expected_path.parts)
+                if expected_path is not None
+                else ()
+            )
+            source_matches = bool(observed_parts) and expected_parts[-len(observed_parts) :] == observed_parts
+        if expected_path is None or not source_matches:
+            raise PublicContractError("R07 collected an undeclared public regression")
+        observed_names.add(function_name)
+        observed_case_counts[function_name] += 1
+        execution_nodes.append(f"{expected_path}::{selector}")
+    if observed_names != set(expected_sources):
+        raise PublicContractError("R07 did not collect every declared public regression")
+    if expected_case_counts is not None and observed_case_counts != expected_case_counts:
+        raise PublicContractError("R07 public regression case counts differ")
+    return execution_nodes
+
+
+def _collect_and_run_r07_pytest(
+    *,
+    expected_sources: dict[str, Path],
+    expected_case_counts: dict[str, int] | None = None,
+    temp_root: Path,
+    junit_path: Path,
+) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+    requested_nodes = [
+        f"{path}::{name}"
+        for name, path in sorted(expected_sources.items(), key=lambda item: (str(item[1]), item[0]))
+    ]
+    common = [sys.executable, "-m", "pytest", "-q", "-W", "error", "-p", "no:cacheprovider"]
+    path_lengths = {
+        "temp_root": len(str(temp_root)),
+        "junit_file": len(str(junit_path)),
+    }
+    collection = _run_r07_subprocess(
+        [
+            *common,
+            "--collect-only",
+            "--basetemp",
+            str(temp_root / "pytest-collect"),
+            *requested_nodes,
+        ],
+        stage="r07_public_pytest_collect",
+        command_ordinal=1,
+        safe_error_code="PYTEST_COLLECTION_LAUNCH_FAILED",
+        path_lengths=path_lengths,
+        timeout=120,
+    )
+    if collection.returncode != 0:
+        raise PublicContractError(
+            "the public routing regressions could not be collected",
+            public_feedback=_public_pytest_failure_feedback(collection),
+            failure_classification="UNKNOWN",
+        )
+    collected = _parse_collected_node_ids(
+        collection.stdout,
+        expected_sources,
+        expected_case_counts,
+    )
+    result = _run_r07_subprocess(
+        [
+            *common,
+            "--basetemp",
+            str(temp_root / "pytest-run"),
+            "--junitxml",
+            str(junit_path),
+            *collected,
+        ],
+        stage="r07_public_pytest_run",
+        command_ordinal=2,
+        safe_error_code="PYTEST_EXECUTION_LAUNCH_FAILED",
+        path_lengths=path_lengths,
+        timeout=600,
+    )
+    return result, collected
+
+
+def _require_r07_pytest_success(result: subprocess.CompletedProcess[str]) -> None:
+    if result.returncode != 0:
+        raise PublicContractError(
+            "the public S2 routing regressions failed",
+            public_feedback=_public_pytest_failure_feedback(result),
+            failure_classification="UNKNOWN",
+        )
 
 
 def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, Any]:
@@ -487,33 +848,77 @@ def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, An
     try:
         observed_paths.extend(temp_root.rglob("*"))
         deepest = max(observed_paths, key=lambda item: len(str(item.resolve())))
-        target_length = len(str(deepest.resolve())) + 32
-        growth_root = temp_root
-        while len(str(growth_root.resolve())) < target_length:
-            remaining = target_length - len(str(growth_root.resolve())) - 1
-            growth_root = growth_root / ("g" * min(max(remaining, 1), 40))
-        probe_repository = growth_root / "git-probe"
+        deepest_length = len(str(deepest.resolve()))
+        target_length = max(deepest_length + 32, 261)
+        probe_repository = temp_root / "g"
         probe_repository.mkdir(parents=True, exist_ok=False)
         probe_file = probe_repository / "probe.txt"
+        while len(str(probe_file.resolve(strict=False))) < target_length:
+            remaining = target_length - len(str(probe_file.resolve(strict=False))) - 1
+            probe_file = probe_file.parent / ("g" * min(max(remaining, 1), 40)) / "probe.txt"
+        if probe_file.parent != probe_repository:
+            probe_file.parent.mkdir(parents=True, exist_ok=False)
         probe_file.write_text("profile-r path growth probe\n", encoding="utf-8")
     except OSError as exc:
+        path_lengths = {
+            "temp_root": len(str(temp_root)),
+            "junit_file": len(str(junit_path)),
+        }
         raise PublicContractError(
             "R07 path growth filesystem probe failed",
             failure_classification="ENVIRONMENT",
+            environment_diagnostic=_environment_diagnostic(
+                stage="r07_path_growth_filesystem",
+                command_ordinal=0,
+                return_code=None,
+                stderr=b"",
+                safe_error_code="PATH_GROWTH_FILESYSTEM_FAILED",
+                path_lengths=path_lengths,
+            ),
         ) from exc
+    probe_relative = probe_file.relative_to(probe_repository)
+    git_config_path = probe_repository / ".git" / "config"
+    path_lengths = {
+        "temp_root": len(str(temp_root)),
+        "deepest_observed": deepest_length,
+        "growth_target": target_length,
+        "probe_repository": len(str(probe_repository.resolve())),
+        "probe_relative": len(str(probe_relative)),
+        "probe_file": len(str(probe_file.resolve())),
+        "git_config": len(str(git_config_path.resolve(strict=False))),
+    }
     git_executable = shutil.which("git")
     if git_executable is None:
         raise PublicContractError(
             "R07 path growth Git executable is unavailable",
             failure_classification="ENVIRONMENT",
+            environment_diagnostic=_environment_diagnostic(
+                stage="r07_path_growth_git",
+                command_ordinal=0,
+                return_code=None,
+                stderr=b"",
+                safe_error_code="GIT_EXECUTABLE_UNAVAILABLE",
+                path_lengths=path_lengths,
+            ),
         )
     git_path = Path(git_executable).resolve()
+    git_prefix = [
+        git_executable,
+        "-c",
+        "core.longpaths=true",
+        "-C",
+        str(probe_repository),
+    ]
     commands = (
-        [git_executable, "-C", str(probe_repository), "init", "-q"],
-        [git_executable, "-C", str(probe_repository), "add", "probe.txt"],
-        [git_executable, "-C", str(probe_repository), "status", "--porcelain=v1"],
+        ([*git_prefix, "init", "-q"], "GIT_INIT_FAILED"),
+        ([*git_prefix, "add", "--", probe_relative.as_posix()], "GIT_ADD_FAILED"),
+        ([*git_prefix, "status", "--porcelain=v1"], "GIT_STATUS_FAILED"),
+        (
+            [*git_prefix, "ls-files", "--error-unmatch", "--", probe_relative.as_posix()],
+            "GIT_TRACKED_FILE_LOOKUP_FAILED",
+        ),
     )
-    for command in commands:
+    for command_ordinal, (command, safe_error_code) in enumerate(commands, start=1):
         try:
             completed = subprocess.run(
                 command,
@@ -525,45 +930,123 @@ def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, An
             raise PublicContractError(
                 "R07 path growth Git probe could not run",
                 failure_classification="ENVIRONMENT",
+                environment_diagnostic=_environment_diagnostic(
+                    stage="r07_path_growth_git",
+                    command_ordinal=command_ordinal,
+                    return_code=None,
+                    stderr=b"",
+                    safe_error_code=f"{safe_error_code}_LAUNCH_FAILED",
+                    path_lengths=path_lengths,
+                ),
             ) from exc
         if completed.returncode != 0:
+            diagnostic_code = safe_error_code
+            if b"filename too long" in (completed.stderr or b"").lower():
+                diagnostic_code = f"{safe_error_code}_PATH_LIMIT"
             raise PublicContractError(
                 "R07 path growth Git probe failed",
                 failure_classification="ENVIRONMENT",
+                environment_diagnostic=_environment_diagnostic(
+                    stage="r07_path_growth_git",
+                    command_ordinal=command_ordinal,
+                    return_code=completed.returncode,
+                    stderr=completed.stderr or b"",
+                    safe_error_code=diagnostic_code,
+                    path_lengths=path_lengths,
+                ),
             )
-    version = subprocess.run(
-        [git_executable, "--version"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="strict",
-        timeout=30,
-        check=True,
-    ).stdout.strip()
-    config_origin = subprocess.run(
-        [git_executable, "-C", str(probe_repository), "config", "--show-origin", "--show-scope", "--list"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="strict",
-        timeout=30,
-        check=True,
-    ).stdout
+    metadata_commands = (
+        ([git_executable, "--version"], "GIT_VERSION_FAILED"),
+        (
+            [*git_prefix, "config", "--show-origin", "--show-scope", "--list"],
+            "GIT_CONFIG_PROVENANCE_FAILED",
+        ),
+    )
+    metadata_results: list[subprocess.CompletedProcess[bytes]] = []
+    for command_ordinal, (command, safe_error_code) in enumerate(metadata_commands, start=5):
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise PublicContractError(
+                "R07 Git identity probe could not run",
+                failure_classification="ENVIRONMENT",
+                environment_diagnostic=_environment_diagnostic(
+                    stage="r07_path_growth_git",
+                    command_ordinal=command_ordinal,
+                    return_code=None,
+                    stderr=b"",
+                    safe_error_code=f"{safe_error_code}_LAUNCH_FAILED",
+                    path_lengths=path_lengths,
+                ),
+            ) from exc
+        if completed.returncode != 0:
+            raise PublicContractError(
+                "R07 Git identity probe failed",
+                failure_classification="ENVIRONMENT",
+                environment_diagnostic=_environment_diagnostic(
+                    stage="r07_path_growth_git",
+                    command_ordinal=command_ordinal,
+                    return_code=completed.returncode,
+                    stderr=completed.stderr or b"",
+                    safe_error_code=safe_error_code,
+                    path_lengths=path_lengths,
+                ),
+            )
+        metadata_results.append(completed)
+    version = metadata_results[0].stdout.decode("utf-8", errors="replace").strip()
+    config_origin = metadata_results[1].stdout
     return {
         "schema_version": 1,
         "temp_root": str(temp_root),
         "temp_root_length": len(str(temp_root)),
         "deepest_path": str(deepest.resolve()),
-        "deepest_path_length": len(str(deepest.resolve())),
+        "deepest_path_length": deepest_length,
+        "growth_target_path_length": target_length,
+        "probe_repository_path_length": path_lengths["probe_repository"],
+        "probe_relative_path_length": path_lengths["probe_relative"],
+        "git_config_path_length": path_lengths["git_config"],
         "growth_probe_path": str(probe_file.resolve()),
         "growth_probe_path_length": len(str(probe_file.resolve())),
-        "growth_margin": len(str(probe_file.resolve())) - len(str(deepest.resolve())),
+        "growth_margin": len(str(probe_file.resolve())) - deepest_length,
         "pytest": {**counts, "warnings": 0},
         "git_executable_canonical_path": str(git_path),
         "git_executable_sha256": hashlib.sha256(git_path.read_bytes()).hexdigest(),
         "git_version": version,
-        "git_config_origin_sha256": hashlib.sha256(config_origin.encode("utf-8")).hexdigest(),
+        "git_config_origin_sha256": hashlib.sha256(config_origin).hexdigest(),
     }
+
+
+def _validate_r07_evidence(evidence: dict[str, Any], expected_test_count: int) -> None:
+    expected_pytest = {
+        "tests": expected_test_count,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "warnings": 0,
+    }
+    if evidence.get("pytest") != expected_pytest or (
+        int(evidence.get("growth_margin", -1)) < 32
+        or int(evidence.get("growth_probe_path_length", -1)) < 261
+        or int(evidence.get("probe_repository_path_length", 1_000_000))
+        >= int(evidence.get("growth_probe_path_length", -1))
+        or (
+            os.name == "nt"
+            and max(
+                int(evidence.get("probe_repository_path_length", 1_000_000)),
+                int(evidence.get("git_config_path_length", 1_000_000)),
+            )
+            >= 260
+        )
+    ):
+        raise PublicContractError(
+            "R07 public regression environment Evidence differs",
+            failure_classification="UNKNOWN",
+        )
 
 
 def check_r07() -> None:
@@ -574,6 +1057,7 @@ def check_r07() -> None:
     names = _test_functions(s2_path)
     required = {
         "test_s2_stage_discriminator_rejects_cross_branch_bytes",
+        "test_s2_frozen_fixture_manifest_matches_live_model_controls",
         "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
         "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
         "test_s2_fake_four_cell_plan_judge_property_seal_export",
@@ -582,7 +1066,8 @@ def check_r07() -> None:
         "test_s2_posthoc_fixture_outputs_and_label_parity",
         "test_s2_posthoc_pristine_golden_and_label_parity",
     }
-    if not required <= names or not posthoc_regression_names & names:
+    present_posthoc = posthoc_regression_names & names
+    if not required <= names or len(present_posthoc) != 1:
         raise PublicContractError("the S2 public regression groups are incomplete")
     legacy_names = _test_functions(suite_path)
     required_legacy = {
@@ -594,12 +1079,15 @@ def check_r07() -> None:
     }
     if not required_legacy <= legacy_names:
         raise PublicContractError("the legacy S1 regression source surface is incomplete")
-    public_regressions = [
-        "test_s2_stage_discriminator_rejects_cross_branch_bytes",
-        "test_s2_frozen_fixture_manifest_matches_live_model_controls",
-        "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
-        "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
-    ]
+    selected_s2 = required | present_posthoc
+    _require_substantive_test_functions(s2_path, selected_s2)
+    _require_substantive_test_functions(suite_path, required_legacy)
+    expected_sources = {
+        **{name: s2_path for name in selected_s2},
+        **{name: suite_path for name in required_legacy},
+    }
+    expected_case_counts = {name: 1 for name in expected_sources}
+    expected_case_counts[next(iter(present_posthoc))] = 2
     try:
         temp_root = Path(os.environ["TEMP"]).resolve(strict=True)
     except (KeyError, OSError) as exc:
@@ -613,45 +1101,15 @@ def check_r07() -> None:
             failure_classification="ENVIRONMENT",
         )
     junit_path = temp_root / "r07-public-pytest.xml"
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "pytest",
-            "-q",
-            "-W",
-            "error",
-            "--basetemp",
-            str(temp_root / "pytest"),
-            "--junitxml",
-            str(junit_path),
-            *(f"{s2_path}::{name}" for name in public_regressions),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=120,
+    result, collected = _collect_and_run_r07_pytest(
+        expected_sources=expected_sources,
+        expected_case_counts=expected_case_counts,
+        temp_root=temp_root,
+        junit_path=junit_path,
     )
-    if result.returncode != 0:
-        raise PublicContractError(
-            "the public S2 routing regressions failed",
-            public_feedback=_public_pytest_failure_feedback(result),
-            failure_classification="UNKNOWN",
-        )
+    _require_r07_pytest_success(result)
     evidence = _r07_environment_evidence(temp_root, junit_path)
-    if evidence["pytest"] != {
-        "tests": len(public_regressions),
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "warnings": 0,
-    } or int(evidence["growth_margin"]) < 32:
-        raise PublicContractError(
-            "R07 public regression environment Evidence differs",
-            failure_classification="UNKNOWN",
-        )
+    _validate_r07_evidence(evidence, len(collected))
     print(
         CHECK_ENVIRONMENT_EVIDENCE_PREFIX
         + json.dumps(evidence, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
@@ -713,13 +1171,41 @@ def main(argv: list[str]) -> int:
     except PublicContractError as exc:
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
         print(f"{CHECK_FAILURE_CLASS_PREFIX}{exc.failure_classification}")
+        if exc.failure_classification == "ENVIRONMENT":
+            diagnostic = exc.environment_diagnostic or _default_environment_diagnostic(
+                task_id,
+                "PUBLIC_CONTRACT_ENVIRONMENT_FAILED",
+            )
+            print(
+                CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX
+                + json.dumps(
+                    diagnostic,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            )
         if exc.public_feedback:
             for line in exc.public_feedback:
                 print(f"{WORKER_FEEDBACK_PREFIX}{line}")
         return 1
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
         print(f"{CHECK_FAILURE_CLASS_PREFIX}ENVIRONMENT")
+        safe_error_code = (
+            "UNHANDLED_OS_ERROR"
+            if isinstance(exc, OSError)
+            else "UNHANDLED_SUBPROCESS_ERROR"
+        )
+        print(
+            CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX
+            + json.dumps(
+                _default_environment_diagnostic(task_id, safe_error_code),
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
         return 1
     print(f"{task_id}_PUBLIC_CONTRACT_OK")
     return 0

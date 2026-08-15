@@ -1,9 +1,11 @@
 # Profile R anonymization and solution-leakage review
 
-- Worker file count: 140
+- Worker file count: 130
 - Reference aggregate: pass
 - Pristine aggregate: fail
 - Negative mutation contracts: pass
+- Adversarial Worker test-oracle contracts: pass
+- Exact public R07 projected-reference run: pass
 - Forbidden Worker literal hits: 0
 - The public S2 regression consumes current fixture outputs and never reads the hidden golden tree.
 - This source bundle does not claim the protected Judge runtime filesystem/no-network boundary.

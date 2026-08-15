@@ -35,9 +35,9 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/checks.yaml",
-      "source_sha256": "ef2767b797b90fd6536bdd2ae50fccee3005ac00245071a1b184158dfb88d2bc",
+      "source_sha256": "356ef4ee1c7a50c905db9f0bcadc91a6026d5169c9a06178870e8c47170541d4",
       "source_size": 1506,
-      "worker_sha256": "ef2767b797b90fd6536bdd2ae50fccee3005ac00245071a1b184158dfb88d2bc",
+      "worker_sha256": "356ef4ee1c7a50c905db9f0bcadc91a6026d5169c9a06178870e8c47170541d4",
       "worker_size": 1506
     },
     {
@@ -83,10 +83,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
-      "source_sha256": "2d4da9ae2b76d9d1f6b6ace75fda6143a35b0733d5d565c6f52e974ba3ddac9a",
-      "source_size": 11298,
-      "worker_sha256": "2d4da9ae2b76d9d1f6b6ace75fda6143a35b0733d5d565c6f52e974ba3ddac9a",
-      "worker_size": 11298
+      "source_sha256": "e97a414a737559d0fd5347b519d13dc950cddf5e2e85a8d45c4c291839aa1fac",
+      "source_size": 11364,
+      "worker_sha256": "e97a414a737559d0fd5347b519d13dc950cddf5e2e85a8d45c4c291839aa1fac",
+      "worker_size": 11364
     },
     {
       "mapping_ids": [],
@@ -107,10 +107,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
-      "source_sha256": "7da99360a3c457c3a74053eedc1bc3efe62432f2da305d62f83d91091fbac332",
-      "source_size": 31975,
-      "worker_sha256": "7da99360a3c457c3a74053eedc1bc3efe62432f2da305d62f83d91091fbac332",
-      "worker_size": 31975
+      "source_sha256": "87a68c5a92eb4f2eb0a4fe2f425b03a0aa0535e64776d333b4c48d6cbb15c18e",
+      "source_size": 51836,
+      "worker_sha256": "87a68c5a92eb4f2eb0a4fe2f425b03a0aa0535e64776d333b4c48d6cbb15c18e",
+      "worker_size": 51836
     },
     {
       "mapping_ids": [],
@@ -1631,9 +1631,9 @@
   "source_allowlist_sha256": "a81913bd80cd6d1ed914b7fdf09f2f74ec46cccda0488e0875d003cc6ccc0d45",
   "source_authority": "git_object_database",
   "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
-  "source_total_bytes": 1190473,
+  "source_total_bytes": 1210400,
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
-  "worker_total_bytes": 1190458,
-  "worker_tree_aggregate_sha256": "a389f5f4ee46f3c50990c4803246f4653ad2c476b7dd7f9e2a0f31d88f8810c7"
+  "worker_total_bytes": 1210385,
+  "worker_tree_aggregate_sha256": "93b9d7ac28fdf0247f16228a07a2a9ca9104c7b1bbfaf7ccaee1ac15d1ef05a7"
 }

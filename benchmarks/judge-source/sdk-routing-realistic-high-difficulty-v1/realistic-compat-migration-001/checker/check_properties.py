@@ -13,7 +13,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +20,7 @@ from typing import Any
 BUNDLE_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = BUNDLE_ROOT / "property-catalog.json"
 DAG_PATH = BUNDLE_ROOT / "prerequisite-dag.json"
+PROTECTED_CHECKER_PATH = Path(__file__).with_name("protected_behavior_checks.py")
 
 
 def _sha256(payload: bytes) -> str:
@@ -209,50 +209,56 @@ def _evaluate_checks(
     return payload
 
 
-def _run_pytest(root: Path, *nodeids: str, timeout_seconds: float = 240.0) -> bool:
+def _checker_identity_sha256() -> str:
+    digest = hashlib.sha256()
+    for path in (Path(__file__).resolve(), PROTECTED_CHECKER_PATH.resolve()):
+        payload = path.read_bytes()
+        relative = path.relative_to(BUNDLE_ROOT).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+    return digest.hexdigest()
+
+
+def _run_protected_check(
+    root: Path,
+    property_id: str,
+    *,
+    timeout_seconds: float = 240.0,
+) -> bool:
     environment = {
         name: os.environ[name]
         for name in ("SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP")
         if name in os.environ
     }
-    python_paths = [
-        root / "tools" / "benchmark-runner" / "src",
-        root / "stages" / "b1-sequential" / "src",
-    ]
     environment.update(
         {
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
-            "PYTHONPATH": os.pathsep.join(str(path) for path in python_paths),
             "USERPROFILE": environment.get("TEMP", str(root)),
         }
     )
     try:
-        with tempfile.TemporaryDirectory(
-            prefix="profile-r-pytest-",
-            dir=environment.get("TEMP"),
-        ) as base_temp:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "pytest",
-                    "-q",
-                    "-p",
-                    "no:cacheprovider",
-                    "--basetemp",
-                    base_temp,
-                    *nodeids,
-                ],
-                cwd=root,
-                env=environment,
-                stdin=subprocess.DEVNULL,
-                capture_output=True,
-                timeout=timeout_seconds,
-                check=False,
-                shell=False,
-            )
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-P",
+                str(PROTECTED_CHECKER_PATH.resolve()),
+                "--workspace",
+                str(root.resolve()),
+                "--property-id",
+                property_id,
+            ],
+            cwd=BUNDLE_ROOT,
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+            shell=False,
+        )
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0 and len(result.stdout) <= 1_000_000 and len(result.stderr) <= 1_000_000
@@ -276,10 +282,9 @@ def _legacy_bytes(root: Path, catalog: dict[str, Any]) -> dict[str, object]:
 
 
 def _stage_discriminator(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
-    node = "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_stage_discriminator_rejects_cross_branch_bytes"
     return _outcome(
         root,
-        _run_pytest(root, node),
+        _run_protected_check(root, "R-P02-STAGE-DISCRIMINATOR"),
         pass_code="STAGE_DISCRIMINATOR_EXACT",
         fail_code="STAGE_DISCRIMINATOR_FAILED",
         description="S1 and S2 stage bytes are accepted only by their exact Schema branch.",
@@ -287,7 +292,7 @@ def _stage_discriminator(root: Path, _catalog: dict[str, Any]) -> dict[str, obje
             "benchmarks/suites/sdk-routing-v1/stage.schema.json",
             "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
             "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
-            "tools/benchmark-runner/tests/test_routing_s2.py",
+            "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
         ),
     )
 
@@ -332,16 +337,14 @@ def _plan_binding(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
 
 
 def _reserve_isolation(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
-    node = "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_retry_reserve_is_independent_and_never_recycles_early_turns"
     return _outcome(
         root,
-        _run_pytest(root, node),
+        _run_protected_check(root, "R-P04-RESERVE-ISOLATION"),
         pass_code="RESERVE_ISOLATED",
         fail_code="RESERVE_REUSED_OR_MISCOUNTED",
         description="B1 retry and resume turns consume only the independent three-turn reserve.",
         evidence=(
             "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
-            "tools/benchmark-runner/tests/test_routing_s2.py",
         ),
     )
 
@@ -393,16 +396,20 @@ def _lifecycle_reuse(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
 
 
 def _export_roundtrip(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
-    node = "tools/benchmark-runner/tests/test_routing_s2.py::test_s2_fake_four_cell_plan_judge_property_seal_export"
     return _outcome(
         root,
-        _run_pytest(root, node, timeout_seconds=360.0),
+        _run_protected_check(
+            root,
+            "R-P06-EXPORT-ROUNDTRIP",
+            timeout_seconds=360.0,
+        ),
         pass_code="EXPORT_ROUNDTRIP_BOUND",
         fail_code="EXPORT_ROUNDTRIP_FAILED",
         description="The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
         evidence=(
             "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
-            "tools/benchmark-runner/tests/test_routing_s2.py",
+            "benchmarks/suites/sdk-routing-v1/suite.yaml",
+            "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
         ),
     )
 
@@ -418,9 +425,9 @@ def _cross_checkout(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
     try:
         policy = attributes.read_text(encoding="utf-8")
         bytes_ok = all(b"\r\n" not in (root / path).read_bytes() for path in checked)
-        generated_ok = _run_pytest(
+        generated_ok = _run_protected_check(
             root,
-            "tools/benchmark-runner/tests/test_routing_suite.py::test_routing_manifests_and_generated_schemas_match_contracts",
+            "R-P07-CROSS-CHECKOUT-REPRO",
         )
         passed = "* text=auto eol=lf" in policy and bytes_ok and generated_ok
     except OSError:
@@ -474,7 +481,7 @@ def evaluate_workspace(workspace: Path, *, experiment_id: str, cell_id: str) -> 
     catalog = _load_json(CATALOG_PATH)
     dag = _load_json(DAG_PATH)
     before = _workspace_sha256(workspace)
-    checker_sha = _sha256(Path(__file__).read_bytes())
+    checker_sha = _checker_identity_sha256()
     return _evaluate_checks(
         catalog=catalog,
         dag=dag,
