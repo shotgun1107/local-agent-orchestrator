@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "artifact": "profile-r-live-readiness-v4-d80e8e4.zip",
+  "package_record_commit": "d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4",
+  "package_record_tree": "44d26a097475e3cbedfe3859626773f9449c5578",
+  "seal_sha256": "4db8dd69d00b564e5c38a2b5829469e4ac6ef0e9437113a8598954a8a0c15fb5",
+  "payload_file_count": 302,
+  "declared_payload_records_format": "lowercase_sha256 two_spaces size_decimal two_spaces forward_slash_relative_path LF, ordinal path sort",
+  "stored_payload_aggregate_sha256": "a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84",
+  "manifest_order_payload_aggregate_sha256": "a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84",
+  "canonical_ordinal_payload_aggregate_sha256": "33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd",
+  "manifest_first_path": "artifacts/acceptance/acceptance-1/acceptance-attestation.json",
+  "canonical_first_path": "PACKAGE-CONTENTS.md",
+  "first_manifest_order_inversion": {
+    "before": "artifacts/q16-sealed/cells/profile-r-judge-q16-home-01-reference/docker-judge.stdout.bin",
+    "after": "artifacts/q16-sealed/cells/profile-r-judge-q16-home-01-reference/docker-judge-manifest.json"
+  },
+  "minimized_v4_order_reproducer": {
+    "payload_files": [
+      {
+        "path": "PACKAGE-CONTENTS.md",
+        "utf8": "package contents\n"
+      },
+      {
+        "path": "START-HERE.md",
+        "utf8": "start here\n"
+      },
+      {
+        "path": "artifacts/acceptance/acceptance-1/acceptance-attestation.json",
+        "utf8": "{}\n"
+      }
+    ],
+    "payload_manifest_order_paths": [
+      "artifacts/acceptance/acceptance-1/acceptance-attestation.json",
+      "PACKAGE-CONTENTS.md",
+      "START-HERE.md"
+    ],
+    "canonical_payload_order_paths": [
+      "PACKAGE-CONTENTS.md",
+      "START-HERE.md",
+      "artifacts/acceptance/acceptance-1/acceptance-attestation.json"
+    ],
+    "package_manifest_order_paths": [
+      "artifacts/acceptance/acceptance-1/acceptance-attestation.json",
+      "PACKAGE-CONTENTS.md",
+      "readiness-seal.json",
+      "START-HERE.md"
+    ]
+  }
+}

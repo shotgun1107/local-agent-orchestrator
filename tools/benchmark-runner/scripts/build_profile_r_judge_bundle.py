@@ -13,6 +13,8 @@ import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
+import yaml
+
 
 SNAPSHOT_ID = "realistic-compat-migration-001"
 BASE_COMMIT = "dbd84422a315b8bc34d0fc2583862f5add8c7c44"
@@ -22,6 +24,7 @@ JUDGE_ROOT = Path("benchmarks/judge-source/sdk-routing-realistic-high-difficulty
 CHECKER_RELATIVE = Path("checker/check_properties.py")
 PROBE_SOURCE_RELATIVE = Path("tools/benchmark-runner/scripts/probe_runtime_boundary.py")
 PROBE_RELATIVE = Path("checker/probe_runtime_boundary.py")
+R07_GROWTH_PATH_MINIMUM = 261
 
 
 def canonical_json(value: object) -> bytes:
@@ -653,13 +656,64 @@ def load_checker(checker_path: Path):
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot load Profile R checker")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
     return module
+
+
+def public_check_timeout_seconds(solution: Path, check_id: str) -> int:
+    """Read the public command-Check deadline from the projected Worker pack."""
+
+    value = yaml.safe_load(
+        (solution / ".orchestrator" / "checks.yaml").read_text(encoding="utf-8")
+    )
+    try:
+        timeout_seconds = value["checks"][check_id]["timeout_seconds"]
+    except (KeyError, TypeError) as exc:
+        raise RuntimeError(f"public Check timeout is unavailable: {check_id}") from exc
+    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, int):
+        raise RuntimeError(f"public Check timeout is invalid: {check_id}")
+    if timeout_seconds <= 0:
+        raise RuntimeError(f"public Check timeout must be positive: {check_id}")
+    return timeout_seconds
+
+
+def public_r07_evidence_projection(evidence: dict[str, Any]) -> dict[str, object]:
+    """Bind portable R07 facts without transient absolute TEMP path strings."""
+
+    def exact_int(name: str) -> int:
+        value = evidence.get(name)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise RuntimeError(f"public R07 Evidence field is not an integer: {name}")
+        return value
+
+    pytest_counts = evidence.get("pytest")
+    if not isinstance(pytest_counts, dict):
+        raise RuntimeError("public R07 pytest Evidence is unavailable")
+    growth_path_length = exact_int("growth_probe_path_length")
+    probe_repository_length = exact_int("probe_repository_path_length")
+    return {
+        "schema_version": 1,
+        "pytest": pytest_counts,
+        "growth_margin": exact_int("growth_margin"),
+        "growth_probe_minimum_path_length": R07_GROWTH_PATH_MINIMUM,
+        "growth_probe_minimum_satisfied": (
+            growth_path_length >= R07_GROWTH_PATH_MINIMUM
+        ),
+        "probe_repository_shorter_than_growth_path": (
+            probe_repository_length < growth_path_length
+        ),
+    }
 
 
 def validate_public_r07_reference(solution: Path) -> dict[str, object]:
     """Run the exact protected public R07 entrypoint against projected W."""
 
+    outer_timeout_seconds = public_check_timeout_seconds(solution, "r07_contract")
     with tempfile.TemporaryDirectory(prefix="profile-r-public-r07-") as raw:
         temp_root = Path(raw).resolve()
         environment = os.environ.copy()
@@ -669,6 +723,7 @@ def validate_public_r07_reference(solution: Path) -> dict[str, object]:
                 "TMP": str(temp_root),
                 "TMPDIR": str(temp_root),
                 "PYTHONUTF8": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
             }
         )
         environment.pop("PYTHONPATH", None)
@@ -681,10 +736,11 @@ def validate_public_r07_reference(solution: Path) -> dict[str, object]:
             cwd=solution,
             env=environment,
             capture_output=True,
-            timeout=900,
+            timeout=outer_timeout_seconds,
             check=False,
         )
     stdout = completed.stdout.decode("utf-8", errors="replace")
+    stdout_lines = stdout.splitlines()
     evidence_prefix = "CHECK_ENVIRONMENT_EVIDENCE:"
     evidence_lines = [
         line[len(evidence_prefix) :]
@@ -699,25 +755,33 @@ def validate_public_r07_reference(solution: Path) -> dict[str, object]:
             candidate = None
         if isinstance(candidate, dict):
             evidence = candidate
-    pytest_counts = evidence.get("pytest")
+    projection = public_r07_evidence_projection(evidence)
+    pytest_counts = projection["pytest"]
+    stdout_contract_ok = (
+        len(stdout_lines) == 2
+        and stdout_lines[0].startswith(evidence_prefix)
+        and stdout_lines[1] == "R07_PUBLIC_CONTRACT_OK"
+    )
     passed = (
         completed.returncode == 0
-        and stdout.splitlines()[-1:] == ["R07_PUBLIC_CONTRACT_OK"]
+        and completed.stderr == b""
+        and stdout_contract_ok
         and pytest_counts
         == {"tests": 12, "failures": 0, "errors": 0, "skipped": 0, "warnings": 0}
-        and int(evidence.get("growth_margin", -1)) >= 32
-        and int(evidence.get("growth_probe_path_length", -1)) >= 261
+        and int(projection["growth_margin"]) >= 32
+        and projection["growth_probe_minimum_satisfied"] is True
+        and projection["probe_repository_shorter_than_growth_path"] is True
     )
     return {
         "schema_version": 1,
         "entrypoint": "benchmark_checks/check_profile_r.py R07",
+        "outer_timeout_seconds": outer_timeout_seconds,
         "return_code": completed.returncode,
-        "stdout_sha256": sha256(completed.stdout),
+        "stdout_contract": "one canonical Evidence line followed by R07_PUBLIC_CONTRACT_OK",
+        "evidence_projection": projection,
+        "evidence_projection_sha256": sha256(canonical_json(projection)),
         "stderr_sha256": sha256(completed.stderr),
-        "pytest": pytest_counts,
-        "growth_margin": evidence.get("growth_margin"),
-        "growth_probe_path_length": evidence.get("growth_probe_path_length"),
-        "contract_ok_marker": "R07_PUBLIC_CONTRACT_OK" in stdout.splitlines(),
+        "contract_ok_marker": stdout_contract_ok,
         "passed": passed,
     }
 
@@ -726,11 +790,62 @@ def file_manifest(root: Path, *, exclude: set[str]) -> list[dict[str, object]]:
     records = []
     for path in sorted((item for item in root.rglob("*") if item.is_file()), key=lambda item: item.relative_to(root).as_posix().encode("utf-8")):
         relative = path.relative_to(root).as_posix()
-        if relative in exclude or "__pycache__" in path.parts:
+        if relative in exclude:
             continue
         payload = path.read_bytes()
         records.append({"path": relative, "size": len(payload), "sha256": sha256(payload)})
     return records
+
+
+def assert_no_transient_cache_files(root: Path) -> None:
+    for path in root.rglob("*"):
+        relative_parts = path.relative_to(root).parts
+        if "__pycache__" in relative_parts or ".pytest_cache" in relative_parts:
+            raise RuntimeError("Judge source contains a transient cache path")
+
+
+def validate_exact_worker_snapshot(
+    workspace: Path,
+    manifest_path: Path,
+) -> dict[str, Any]:
+    """Reject transient or unsealed bytes before deriving protected Evidence."""
+
+    manifest = load_json(manifest_path)
+    records = manifest.get("files")
+    if not isinstance(records, list) or not records:
+        raise RuntimeError("Worker snapshot manifest file records are unavailable")
+    expected_paths: list[str] = []
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get("path"), str):
+            raise RuntimeError("Worker snapshot manifest contains an invalid file record")
+        expected_paths.append(str(record["path"]))
+    if len(expected_paths) != len(set(expected_paths)):
+        raise RuntimeError("Worker snapshot manifest contains duplicate paths")
+
+    actual_files: list[Path] = []
+    for path in workspace.rglob("*"):
+        is_junction = getattr(path, "is_junction", None)
+        if path.is_symlink() or bool(is_junction is not None and is_junction()):
+            raise RuntimeError("Worker snapshot contains a link or junction")
+        if path.is_file():
+            actual_files.append(path)
+    actual_files.sort(key=lambda item: item.relative_to(workspace).as_posix().encode("utf-8"))
+    actual_paths = [path.relative_to(workspace).as_posix() for path in actual_files]
+    if actual_paths != expected_paths:
+        raise RuntimeError("Worker snapshot exact file set differs from its manifest")
+
+    for path, record in zip(actual_files, records, strict=True):
+        payload = path.read_bytes()
+        if (
+            isinstance(record.get("worker_size"), bool)
+            or not isinstance(record.get("worker_size"), int)
+            or record["worker_size"] != len(payload)
+            or record.get("worker_sha256") != sha256(payload)
+        ):
+            raise RuntimeError(
+                f"Worker snapshot bytes differ from manifest: {record['path']}"
+            )
+    return manifest
 
 
 def build(repository: Path) -> dict[str, object]:
@@ -740,6 +855,11 @@ def build(repository: Path) -> dict[str, object]:
     checker_path = judge_root / CHECKER_RELATIVE
     if not pristine.is_dir() or not checker_path.is_file():
         raise RuntimeError("Profile R Worker snapshot or checker is missing")
+    assert_no_transient_cache_files(judge_root)
+    worker_manifest = validate_exact_worker_snapshot(
+        pristine,
+        profile_root / "worker-snapshot-manifest.json",
+    )
     generated = {
         "challenge-eligibility.json", "r-change-composition.json", "property-catalog.json",
         "prerequisite-dag.json", "information-dependency-map.json", "worker-information-boundary.json",
@@ -800,7 +920,7 @@ def build(repository: Path) -> dict[str, object]:
         "properties": [
             {
                 "property_id": item["property_id"],
-                "worker_readable_paths": sorted({entry["path"] for entry in profile_root.joinpath("worker-snapshot-manifest.json") and load_json(profile_root / "worker-snapshot-manifest.json")["files"] if isinstance(entry, dict) and isinstance(entry.get("path"), str) and not str(entry["path"]).startswith(("benchmark_checks/", ".orchestrator/"))})[:1],
+                "worker_readable_paths": sorted({entry["path"] for entry in worker_manifest["files"] if isinstance(entry, dict) and isinstance(entry.get("path"), str) and not str(entry["path"]).startswith(("benchmark_checks/", ".orchestrator/"))})[:1],
                 "task_ids": [f"R{index:02d}"],
                 "required_fact_description": "The public migration contract and declared source surface needed for this property.",
                 "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
@@ -1019,6 +1139,7 @@ def build(repository: Path) -> dict[str, object]:
         })
         write_bytes(judge_root, "challenge-eligibility.json", pretty_json(eligibility))
 
+    assert_no_transient_cache_files(judge_root)
     records = file_manifest(judge_root, exclude={"bundle-manifest.json"})
     manifest = {
         "schema_version": 1,

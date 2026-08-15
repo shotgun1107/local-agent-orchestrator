@@ -5,6 +5,7 @@ import hashlib
 import importlib
 import inspect
 import json
+import operator
 import os
 import shutil
 import subprocess
@@ -25,6 +26,11 @@ WORKER_FEEDBACK_MAX_BYTES = 12_288
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+R07_COLLECTION_TIMEOUT_SECONDS = 120
+R07_EXECUTION_TIMEOUT_SECONDS = 600
+R07_GIT_COMMAND_TIMEOUT_SECONDS = 30
+R07_GIT_COMMAND_COUNT = 6
+R07_INTERNAL_CHILD_BUDGET_SECONDS = 900
 
 
 def _environment_diagnostic(
@@ -487,9 +493,7 @@ def check_r06() -> None:
     # API and frozen catalog; the independent Judge executes those programs.
 
 
-def _test_function_nodes(
-    path: Path,
-) -> dict[str, ast.FunctionDef | ast.AsyncFunctionDef]:
+def _test_module_tree(path: Path) -> ast.Module:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except OSError as exc:
@@ -499,6 +503,13 @@ def _test_function_nodes(
         ) from exc
     except SyntaxError as exc:
         raise PublicContractError(f"invalid regression source: {path.relative_to(ROOT)}") from exc
+    return tree
+
+
+def _test_function_nodes(
+    path: Path,
+) -> dict[str, ast.FunctionDef | ast.AsyncFunctionDef]:
+    tree = _test_module_tree(path)
     return {
         node.name: node
         for node in tree.body
@@ -512,27 +523,124 @@ def _test_functions(path: Path) -> set[str]:
 
 
 _STATIC_UNKNOWN = object()
+_STATIC_MAX_DEPTH = 24
+_STATIC_MAX_ITEMS = 32
+_STATIC_MAX_TEXT_BYTES = 4_096
+_STATIC_MAX_ABS_NUMBER = 1_000_000
+_PYTEST_CONTRACT_CALLS = frozenset({"fail", "raises", "skip"})
+_R07_DYNAMIC_IMPORT_MODULES = frozenset(
+    {
+        "datetime",
+        "json",
+        "os",
+        "pathlib",
+        "pydantic",
+        "shutil",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "yaml",
+        "benchmark_runner.adapter",
+        "benchmark_runner.contract",
+        "benchmark_runner.failure_scenarios",
+        "benchmark_runner.routing_suite",
+        "benchmark_runner.runner",
+        "benchmark_runner.s2_policy",
+        "benchmark_runner.s2_posthoc",
+        "benchmark_runner.sdk_baselines",
+        "benchmark_runner.sdk_cells",
+        "benchmark_runner.sdk_common",
+        "benchmark_runner.workspace",
+    }
+)
+_STATIC_NUMERIC_BINOPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+}
 
 
-def _bounded_static_value(node: ast.AST) -> object:
-    """Evaluate only small literal boolean expressions without running Worker code."""
+def _bounded_static_result(value: object) -> object:
+    if value is None or isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value if abs(value) <= _STATIC_MAX_ABS_NUMBER else _STATIC_UNKNOWN
+    if isinstance(value, float):
+        return value if abs(value) <= _STATIC_MAX_ABS_NUMBER else _STATIC_UNKNOWN
+    if isinstance(value, (str, bytes)):
+        return value if len(value) <= _STATIC_MAX_TEXT_BYTES else _STATIC_UNKNOWN
+    if isinstance(value, (tuple, list, set, frozenset)) and len(value) <= _STATIC_MAX_ITEMS:
+        return value if all(_bounded_static_result(item) is not _STATIC_UNKNOWN for item in value) else _STATIC_UNKNOWN
+    return _STATIC_UNKNOWN
 
-    if isinstance(node, ast.Constant) and isinstance(
-        node.value, (type(None), bool, int, float, str, bytes)
-    ):
-        if isinstance(node.value, (str, bytes)) and len(node.value) > 4_096:
-            return _STATIC_UNKNOWN
-        return node.value
-    if isinstance(node, (ast.Tuple, ast.List)) and len(node.elts) <= 32:
-        values = tuple(_bounded_static_value(item) for item in node.elts)
+
+def _bounded_static_value(
+    node: ast.AST,
+    bindings: dict[str, object] | None = None,
+    *,
+    depth: int = 0,
+) -> object:
+    """Fold a small, side-effect-free expression without running Worker code."""
+
+    if depth > _STATIC_MAX_DEPTH:
+        return _STATIC_UNKNOWN
+    bindings = {} if bindings is None else bindings
+    if isinstance(node, ast.Name):
+        return bindings.get(node.id, _STATIC_UNKNOWN)
+    if isinstance(node, ast.Constant):
+        return _bounded_static_result(node.value)
+    if isinstance(node, (ast.Tuple, ast.List, ast.Set)) and len(node.elts) <= _STATIC_MAX_ITEMS:
+        values = tuple(
+            _bounded_static_value(item, bindings, depth=depth + 1) for item in node.elts
+        )
         if _STATIC_UNKNOWN in values:
             return _STATIC_UNKNOWN
-        return values
-    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-        value = _bounded_static_value(node.operand)
-        return _STATIC_UNKNOWN if value is _STATIC_UNKNOWN else not bool(value)
+        try:
+            return values if isinstance(node, ast.Tuple) else list(values) if isinstance(node, ast.List) else set(values)
+        except TypeError:
+            return _STATIC_UNKNOWN
+    if isinstance(node, ast.UnaryOp):
+        value = _bounded_static_value(node.operand, bindings, depth=depth + 1)
+        if value is _STATIC_UNKNOWN:
+            return _STATIC_UNKNOWN
+        try:
+            if isinstance(node.op, ast.Not):
+                result = not bool(value)
+            elif isinstance(node.op, ast.UAdd) and isinstance(value, (int, float)):
+                result = +value
+            elif isinstance(node.op, ast.USub) and isinstance(value, (int, float)):
+                result = -value
+            elif isinstance(node.op, ast.Invert) and isinstance(value, int):
+                result = ~value
+            else:
+                return _STATIC_UNKNOWN
+        except (ArithmeticError, TypeError, ValueError):
+            return _STATIC_UNKNOWN
+        return _bounded_static_result(result)
+    if isinstance(node, ast.BinOp):
+        left = _bounded_static_value(node.left, bindings, depth=depth + 1)
+        right = _bounded_static_value(node.right, bindings, depth=depth + 1)
+        operation = _STATIC_NUMERIC_BINOPS.get(type(node.op))
+        if (
+            left is _STATIC_UNKNOWN
+            or right is _STATIC_UNKNOWN
+            or operation is None
+            or not isinstance(left, (int, float))
+            or not isinstance(right, (int, float))
+        ):
+            return _STATIC_UNKNOWN
+        try:
+            result = operation(left, right)
+        except (ArithmeticError, TypeError, ValueError, OverflowError):
+            return _STATIC_UNKNOWN
+        return _bounded_static_result(result)
     if isinstance(node, ast.BoolOp):
-        values = [_bounded_static_value(item) for item in node.values]
+        values = [
+            _bounded_static_value(item, bindings, depth=depth + 1) for item in node.values
+        ]
         if isinstance(node.op, ast.And):
             if any(value is not _STATIC_UNKNOWN and not bool(value) for value in values):
                 return False
@@ -540,9 +648,25 @@ def _bounded_static_value(node: ast.AST) -> object:
         if any(value is not _STATIC_UNKNOWN and bool(value) for value in values):
             return True
         return False if all(value is not _STATIC_UNKNOWN for value in values) else _STATIC_UNKNOWN
+    if isinstance(node, ast.IfExp):
+        condition = _bounded_static_value(node.test, bindings, depth=depth + 1)
+        if condition is _STATIC_UNKNOWN:
+            return _STATIC_UNKNOWN
+        selected = node.body if bool(condition) else node.orelse
+        return _bounded_static_value(selected, bindings, depth=depth + 1)
+    if isinstance(node, ast.Subscript):
+        container = _bounded_static_value(node.value, bindings, depth=depth + 1)
+        index = _bounded_static_value(node.slice, bindings, depth=depth + 1)
+        if container is _STATIC_UNKNOWN or index is _STATIC_UNKNOWN or not isinstance(index, int):
+            return _STATIC_UNKNOWN
+        try:
+            return _bounded_static_result(container[index])  # type: ignore[index]
+        except (IndexError, KeyError, TypeError):
+            return _STATIC_UNKNOWN
     if isinstance(node, ast.Compare):
-        values = [_bounded_static_value(node.left)] + [
-            _bounded_static_value(item) for item in node.comparators
+        values = [_bounded_static_value(node.left, bindings, depth=depth + 1)] + [
+            _bounded_static_value(item, bindings, depth=depth + 1)
+            for item in node.comparators
         ]
         if any(value is _STATIC_UNKNOWN for value in values):
             return _STATIC_UNKNOWN
@@ -577,10 +701,291 @@ def _bounded_static_value(node: ast.AST) -> object:
     return _STATIC_UNKNOWN
 
 
-def _assert_is_substantive(node: ast.Assert) -> bool:
-    static_value = _bounded_static_value(node.test)
-    if static_value is not _STATIC_UNKNOWN and bool(static_value):
+def _bound_target_names(target: ast.AST) -> set[str]:
+    if isinstance(target, ast.Name):
+        return {target.id}
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return {name for item in target.elts for name in _bound_target_names(item)}
+    return set()
+
+
+class _ScopeBindingVisitor(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.names: set[str] = set()
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self.names.add(node.id)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.names.add(node.name)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        return
+
+    def visit_Import(self, node: ast.Import) -> None:
+        self.names.update(alias.asname or alias.name.partition(".")[0] for alias in node.names)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self.names.update(alias.asname or alias.name for alias in node.names if alias.name != "*")
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self.names.add(node.name)
+        for statement in node.body:
+            self.visit(statement)
+
+
+def _function_argument_names(node: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    names = {
+        argument.arg
+        for argument in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)
+    }
+    if node.args.vararg:
+        names.add(node.args.vararg.arg)
+    if node.args.kwarg:
+        names.add(node.args.kwarg.arg)
+    return names
+
+
+def _function_local_bindings(node: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    visitor = _ScopeBindingVisitor()
+    for statement in node.body:
+        visitor.visit(statement)
+    return visitor.names | _function_argument_names(node)
+
+
+def _expression_is_dynamic(
+    node: ast.AST,
+    dynamic_names: set[str],
+    provenance: dict[str, set[str]],
+    *,
+    depth: int = 0,
+) -> bool:
+    if depth > _STATIC_MAX_DEPTH or isinstance(node, (ast.Constant, ast.Lambda)):
         return False
+    if isinstance(node, ast.Name):
+        return node.id in dynamic_names or node.id in provenance["module_dynamic_names"]
+    if isinstance(node, ast.Call):
+        arguments_dynamic = any(
+            _expression_is_dynamic(item, dynamic_names, provenance, depth=depth + 1)
+            for item in (*node.args, *(keyword.value for keyword in node.keywords))
+        )
+        if isinstance(node.func, ast.Name):
+            name = node.func.id
+            if name in provenance["imported_names"] or name in provenance["dynamic_helpers"]:
+                return True
+            if name in provenance["local_callables"]:
+                return False
+            return name in dynamic_names or arguments_dynamic
+        if isinstance(node.func, ast.Attribute):
+            return _expression_is_dynamic(
+                node.func.value,
+                dynamic_names,
+                provenance,
+                depth=depth + 1,
+            ) or arguments_dynamic
+        return arguments_dynamic
+    if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+        expressions: list[ast.expr] = []
+        if isinstance(node, ast.DictComp):
+            expressions.extend((node.key, node.value))
+        else:
+            expressions.append(node.elt)
+        for generator in node.generators:
+            expressions.append(generator.iter)
+            expressions.extend(generator.ifs)
+        return any(
+            _expression_is_dynamic(item, dynamic_names, provenance, depth=depth + 1)
+            for item in expressions
+        )
+    return any(
+        _expression_is_dynamic(child, dynamic_names, provenance, depth=depth + 1)
+        for child in ast.iter_child_nodes(node)
+        if isinstance(child, ast.expr)
+    )
+
+
+def _r07_import_has_allowed_source(module: str, test_path: Path) -> bool:
+    if module not in _R07_DYNAMIC_IMPORT_MODULES:
+        return False
+    parts = module.split(".")
+    if parts[0] == "benchmark_runner":
+        expected = SOURCE_ROOT.joinpath(*parts)
+        return expected.with_suffix(".py").is_file() or (expected / "__init__.py").is_file()
+    top_level = parts[0]
+    for search_root in {ROOT, SOURCE_ROOT, test_path.parent}:
+        candidate = search_root / top_level
+        if candidate.with_suffix(".py").exists() or (candidate / "__init__.py").exists():
+            return False
+    return True
+
+
+def _module_test_provenance(tree: ast.Module, test_path: Path) -> dict[str, set[str]]:
+    imported_names: set[str] = set()
+    pytest_modules: set[str] = set()
+    pytest_calls: set[str] = set()
+    pytest_raises_calls: set[str] = set()
+    pytest_fail_calls: set[str] = set()
+    pytest_skip_calls: set[str] = set()
+    invalidated_names: set[str] = set()
+    local_callables = {
+        statement.name
+        for statement in tree.body
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+    for statement in tree.body:
+        if isinstance(statement, ast.Import):
+            for alias in statement.names:
+                local_name = alias.asname or alias.name.partition(".")[0]
+                if _r07_import_has_allowed_source(alias.name, test_path):
+                    imported_names.add(local_name)
+                if alias.name == "pytest":
+                    pytest_modules.add(local_name)
+                elif local_name in pytest_modules:
+                    invalidated_names.add(local_name)
+        elif isinstance(statement, ast.ImportFrom):
+            for alias in statement.names:
+                if alias.name == "*":
+                    continue
+                local_name = alias.asname or alias.name
+                if statement.module and _r07_import_has_allowed_source(
+                    statement.module,
+                    test_path,
+                ):
+                    imported_names.add(local_name)
+                if statement.module == "pytest" and alias.name in _PYTEST_CONTRACT_CALLS:
+                    pytest_calls.add(local_name)
+                    if alias.name == "raises":
+                        pytest_raises_calls.add(local_name)
+                    elif alias.name == "fail":
+                        pytest_fail_calls.add(local_name)
+                    elif alias.name == "skip":
+                        pytest_skip_calls.add(local_name)
+        else:
+            visitor = _ScopeBindingVisitor()
+            visitor.visit(statement)
+            invalidated_names.update(visitor.names & imported_names)
+            for candidate in ast.walk(statement):
+                if (
+                    isinstance(candidate, ast.Attribute)
+                    and isinstance(candidate.ctx, (ast.Store, ast.Del))
+                    and isinstance(candidate.value, ast.Name)
+                ):
+                    invalidated_names.add(candidate.value.id)
+                if (
+                    isinstance(candidate, ast.Call)
+                    and isinstance(candidate.func, ast.Name)
+                    and candidate.func.id == "setattr"
+                    and candidate.args
+                    and isinstance(candidate.args[0], ast.Name)
+                ):
+                    invalidated_names.add(candidate.args[0].id)
+    imported_names.difference_update(invalidated_names)
+    pytest_modules.difference_update(invalidated_names)
+    pytest_calls.difference_update(invalidated_names)
+    pytest_raises_calls.difference_update(invalidated_names)
+    pytest_fail_calls.difference_update(invalidated_names)
+    pytest_skip_calls.difference_update(invalidated_names)
+    provenance = {
+        "imported_names": imported_names,
+        "pytest_modules": pytest_modules,
+        "pytest_calls": pytest_calls,
+        "pytest_raises_calls": pytest_raises_calls,
+        "pytest_fail_calls": pytest_fail_calls,
+        "pytest_skip_calls": pytest_skip_calls,
+        "local_callables": local_callables,
+        "module_dynamic_names": set(imported_names) | {"__file__"},
+        "dynamic_helpers": set(),
+    }
+    functions = [
+        statement
+        for statement in tree.body
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+    for _ in range(min(len(functions) + 1, 16)):
+        changed = False
+        for function in functions:
+            pending: list[ast.AST] = list(function.body)
+            returns: list[ast.expr] = []
+            while pending:
+                current = pending.pop()
+                if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+                    continue
+                if isinstance(current, (ast.Return, ast.Yield, ast.YieldFrom)) and current.value:
+                    returns.append(current.value)
+                pending.extend(ast.iter_child_nodes(current))
+            if function.name not in provenance["dynamic_helpers"] and any(
+                _expression_is_dynamic(
+                    value,
+                    _function_argument_names(function),
+                    provenance,
+                )
+                for value in returns
+            ):
+                provenance["dynamic_helpers"].add(function.name)
+                changed = True
+        if not changed:
+            break
+    return provenance
+
+
+def _module_static_values(tree: ast.Module) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for statement in tree.body:
+        if isinstance(statement, ast.Assign):
+            targets = list(statement.targets)
+            value = statement.value
+        elif isinstance(statement, ast.AnnAssign) and statement.value is not None:
+            targets = [statement.target]
+            value = statement.value
+        else:
+            continue
+        names = {name for target in targets for name in _bound_target_names(target)}
+        static_value = _bounded_static_value(value, values)
+        for name in names:
+            values.pop(name, None)
+        if len(names) == 1 and static_value is not _STATIC_UNKNOWN:
+            values[next(iter(names))] = static_value
+    return values
+
+
+def _function_provenance(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    module_provenance: dict[str, set[str]],
+) -> dict[str, set[str]]:
+    local_bindings = _function_local_bindings(node)
+    provenance = {name: set(values) for name, values in module_provenance.items()}
+    for name in (
+        "imported_names",
+        "pytest_modules",
+        "pytest_calls",
+        "pytest_raises_calls",
+        "pytest_fail_calls",
+        "pytest_skip_calls",
+        "module_dynamic_names",
+        "local_callables",
+        "dynamic_helpers",
+    ):
+        provenance[name].difference_update(local_bindings)
+    return provenance
+
+
+def _assert_is_substantive(
+    node: ast.Assert,
+    dynamic_names: set[str],
+    static_values: dict[str, object],
+    provenance: dict[str, set[str]],
+) -> bool:
+    static_value = _bounded_static_value(node.test, static_values)
+    if static_value is not _STATIC_UNKNOWN:
+        return not bool(static_value)
     if (
         isinstance(node.test, ast.Compare)
         and len(node.test.ops) == 1
@@ -590,85 +995,273 @@ def _assert_is_substantive(node: ast.Assert) -> bool:
         == ast.dump(node.test.comparators[0], include_attributes=False)
     ):
         return False
-    return True
+    return _expression_is_dynamic(node.test, dynamic_names, provenance)
 
 
-def _call_is_assertion(call: ast.Call) -> bool:
-    function = call.func
-    call_name = (
-        function.attr
-        if isinstance(function, ast.Attribute)
-        else function.id
-        if isinstance(function, ast.Name)
-        else ""
+def _pytest_contract_call_name(
+    call: ast.Call,
+    provenance: dict[str, set[str]],
+) -> str | None:
+    if isinstance(call.func, ast.Name):
+        if call.func.id in provenance["pytest_raises_calls"]:
+            return "raises"
+        if call.func.id in provenance["pytest_fail_calls"]:
+            return "fail"
+        if call.func.id in provenance["pytest_skip_calls"]:
+            return "skip"
+        return None
+    if (
+        isinstance(call.func, ast.Attribute)
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id in provenance["pytest_modules"]
+        and call.func.attr in _PYTEST_CONTRACT_CALLS
+    ):
+        return call.func.attr
+    return None
+
+
+def _call_is_assertion(
+    call: ast.Call,
+    provenance: dict[str, set[str]],
+    *,
+    allow_raises_context: bool,
+) -> bool:
+    call_name = _pytest_contract_call_name(call, provenance)
+    return call_name in {"fail", "skip"} or (
+        allow_raises_context and call_name == "raises"
     )
-    return call_name in {"fail", "raises", "skip"}
 
 
-def _block_contains_substantive_test(statements: list[ast.stmt]) -> bool:
+def _static_pattern_matches(pattern: ast.pattern, value: object) -> object:
+    if isinstance(pattern, ast.MatchSingleton):
+        return pattern.value is value
+    if isinstance(pattern, ast.MatchValue):
+        candidate = _bounded_static_value(pattern.value)
+        return _STATIC_UNKNOWN if candidate is _STATIC_UNKNOWN else candidate == value
+    if isinstance(pattern, ast.MatchAs):
+        return True if pattern.pattern is None else _static_pattern_matches(pattern.pattern, value)
+    if isinstance(pattern, ast.MatchOr):
+        results = [_static_pattern_matches(item, value) for item in pattern.patterns]
+        if any(result is True for result in results):
+            return True
+        return False if all(result is False for result in results) else _STATIC_UNKNOWN
+    return _STATIC_UNKNOWN
+
+
+def _record_assignment(
+    targets: list[ast.AST],
+    value: ast.expr,
+    dynamic_names: set[str],
+    static_values: dict[str, object],
+    provenance: dict[str, set[str]],
+) -> None:
+    names = {name for target in targets for name in _bound_target_names(target)}
+    static_value = _bounded_static_value(value, static_values)
+    dynamic = _expression_is_dynamic(value, dynamic_names, provenance)
+    for name in names:
+        dynamic_names.discard(name)
+        static_values.pop(name, None)
+    if len(names) == 1 and static_value is not _STATIC_UNKNOWN:
+        static_values[next(iter(names))] = static_value
+    elif dynamic:
+        dynamic_names.update(names)
+
+
+def _block_contains_substantive_test(
+    statements: list[ast.stmt],
+    dynamic_names: set[str],
+    static_values: dict[str, object],
+    provenance: dict[str, set[str]],
+) -> bool:
     for statement in statements:
+        if isinstance(statement, ast.Assign):
+            _record_assignment(
+                list(statement.targets),
+                statement.value,
+                dynamic_names,
+                static_values,
+                provenance,
+            )
+            continue
+        if isinstance(statement, ast.AnnAssign) and statement.value is not None:
+            _record_assignment(
+                [statement.target],
+                statement.value,
+                dynamic_names,
+                static_values,
+                provenance,
+            )
+            continue
         if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             continue
-        if isinstance(statement, ast.Assert) and _assert_is_substantive(statement):
+        if isinstance(statement, ast.Assert) and _assert_is_substantive(
+            statement,
+            dynamic_names,
+            static_values,
+            provenance,
+        ):
             return True
         if isinstance(statement, ast.Raise):
             return True
         if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
-            if _call_is_assertion(statement.value):
-                return True
-        if isinstance(statement, ast.If):
-            condition = _bounded_static_value(statement.test)
-            branches = (
-                (statement.body,)
-                if condition is not _STATIC_UNKNOWN and bool(condition)
-                else (statement.orelse,)
-                if condition is not _STATIC_UNKNOWN
-                else (statement.body, statement.orelse)
-            )
-            if any(_block_contains_substantive_test(branch) for branch in branches):
-                return True
-        elif isinstance(statement, ast.While):
-            condition = _bounded_static_value(statement.test)
-            branches = (
-                (statement.orelse,)
-                if condition is not _STATIC_UNKNOWN and not bool(condition)
-                else (statement.body, statement.orelse)
-            )
-            if any(_block_contains_substantive_test(branch) for branch in branches):
-                return True
-        elif isinstance(statement, (ast.For, ast.AsyncFor)):
-            if _block_contains_substantive_test(statement.body) or _block_contains_substantive_test(
-                statement.orelse
+            if _call_is_assertion(
+                statement.value,
+                provenance,
+                allow_raises_context=False,
             ):
                 return True
+        if isinstance(statement, ast.If):
+            condition = _bounded_static_value(statement.test, static_values)
+            if condition is not _STATIC_UNKNOWN:
+                selected = statement.body if bool(condition) else statement.orelse
+                if _block_contains_substantive_test(
+                    selected,
+                    dynamic_names,
+                    static_values,
+                    provenance,
+                ):
+                    return True
+            elif statement.orelse:
+                if all(
+                    _block_contains_substantive_test(
+                        branch,
+                        set(dynamic_names),
+                        dict(static_values),
+                        provenance,
+                    )
+                    for branch in (statement.body, statement.orelse)
+                ):
+                    return True
+        elif isinstance(statement, ast.While):
+            condition = _bounded_static_value(statement.test, static_values)
+            if condition is not _STATIC_UNKNOWN and not bool(condition):
+                if _block_contains_substantive_test(
+                    statement.orelse,
+                    dynamic_names,
+                    static_values,
+                    provenance,
+                ):
+                    return True
+            elif condition is not _STATIC_UNKNOWN and _block_contains_substantive_test(
+                statement.body,
+                set(dynamic_names),
+                dict(static_values),
+                provenance,
+            ):
+                return True
+        elif isinstance(statement, (ast.For, ast.AsyncFor)):
+            iterable = _bounded_static_value(statement.iter, static_values)
+            if iterable is not _STATIC_UNKNOWN and not bool(iterable):
+                if _block_contains_substantive_test(
+                    statement.orelse,
+                    dynamic_names,
+                    static_values,
+                    provenance,
+                ):
+                    return True
+            elif iterable is not _STATIC_UNKNOWN or _expression_is_dynamic(
+                statement.iter,
+                dynamic_names,
+                provenance,
+            ):
+                body_dynamic_names = set(dynamic_names) | _bound_target_names(statement.target)
+                if _block_contains_substantive_test(
+                    statement.body,
+                    body_dynamic_names,
+                    dict(static_values),
+                    provenance,
+                ):
+                    return True
         elif isinstance(statement, (ast.With, ast.AsyncWith)):
             if any(
                 isinstance(item.context_expr, ast.Call)
-                and _call_is_assertion(item.context_expr)
+                and _call_is_assertion(
+                    item.context_expr,
+                    provenance,
+                    allow_raises_context=True,
+                )
                 for item in statement.items
-            ) or _block_contains_substantive_test(statement.body):
+            ) or _block_contains_substantive_test(
+                statement.body,
+                dynamic_names,
+                static_values,
+                provenance,
+            ):
                 return True
         elif isinstance(statement, ast.Try):
-            branches = [statement.body, statement.orelse, statement.finalbody] + [
-                handler.body for handler in statement.handlers
-            ]
-            if any(_block_contains_substantive_test(branch) for branch in branches):
+            if _block_contains_substantive_test(
+                statement.body,
+                set(dynamic_names),
+                dict(static_values),
+                provenance,
+            ) or _block_contains_substantive_test(
+                statement.finalbody,
+                set(dynamic_names),
+                dict(static_values),
+                provenance,
+            ):
                 return True
         elif isinstance(statement, ast.Match):
-            if any(_block_contains_substantive_test(case.body) for case in statement.cases):
-                return True
+            subject = _bounded_static_value(statement.subject, static_values)
+            if subject is not _STATIC_UNKNOWN:
+                for case in statement.cases:
+                    matches = _static_pattern_matches(case.pattern, subject)
+                    if matches is False:
+                        continue
+                    guard = (
+                        True
+                        if case.guard is None
+                        else _bounded_static_value(case.guard, static_values)
+                    )
+                    if matches is True and guard is not _STATIC_UNKNOWN and bool(guard):
+                        if _block_contains_substantive_test(
+                            case.body,
+                            set(dynamic_names),
+                            dict(static_values),
+                            provenance,
+                        ):
+                            return True
+                        break
+                    if matches is _STATIC_UNKNOWN or guard is _STATIC_UNKNOWN:
+                        break
         if isinstance(statement, (ast.Return, ast.Break, ast.Continue)):
             break
     return False
 
 
-def _is_trivial_test_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    return not _block_contains_substantive_test(node.body)
+def _is_trivial_test_function(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    module_provenance: dict[str, set[str]],
+    module_static_values: dict[str, object],
+) -> bool:
+    provenance = _function_provenance(node, module_provenance)
+    return not _block_contains_substantive_test(
+        node.body,
+        _function_argument_names(node),
+        dict(module_static_values),
+        provenance,
+    )
 
 
 def _require_substantive_test_functions(path: Path, names: set[str]) -> None:
-    nodes = _test_function_nodes(path)
-    trivial = sorted(name for name in names if _is_trivial_test_function(nodes[name]))
+    tree = _test_module_tree(path)
+    nodes = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    }
+    module_provenance = _module_test_provenance(tree, path)
+    module_static_values = _module_static_values(tree)
+    trivial = sorted(
+        name
+        for name in names
+        if _is_trivial_test_function(
+            nodes[name],
+            module_provenance,
+            module_static_values,
+        )
+    )
     if trivial:
         raise PublicContractError(
             "public regression functions must contain executable assertions or behavior: "
@@ -782,7 +1375,7 @@ def _collect_and_run_r07_pytest(
         command_ordinal=1,
         safe_error_code="PYTEST_COLLECTION_LAUNCH_FAILED",
         path_lengths=path_lengths,
-        timeout=120,
+        timeout=R07_COLLECTION_TIMEOUT_SECONDS,
     )
     if collection.returncode != 0:
         raise PublicContractError(
@@ -808,7 +1401,7 @@ def _collect_and_run_r07_pytest(
         command_ordinal=2,
         safe_error_code="PYTEST_EXECUTION_LAUNCH_FAILED",
         path_lengths=path_lengths,
-        timeout=600,
+        timeout=R07_EXECUTION_TIMEOUT_SECONDS,
     )
     return result, collected
 
@@ -923,7 +1516,7 @@ def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, An
             completed = subprocess.run(
                 command,
                 capture_output=True,
-                timeout=30,
+                timeout=R07_GIT_COMMAND_TIMEOUT_SECONDS,
                 check=False,
             )
         except (OSError, subprocess.SubprocessError) as exc:
@@ -968,7 +1561,7 @@ def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, An
             completed = subprocess.run(
                 command,
                 capture_output=True,
-                timeout=30,
+                timeout=R07_GIT_COMMAND_TIMEOUT_SECONDS,
                 check=False,
             )
         except (OSError, subprocess.SubprocessError) as exc:

@@ -38,3 +38,25 @@ container는 0이다.
 이 package는 독립 읽기 전용 재심사 입력일 뿐 승인 결과가 아니다. 심사에서 잔여 P0/P1
 0과 `GO_ONE_FRESH_PAIR`가 나와도 실제 SS1과 B1은 각각 사용자 별도 승인이 필요하다.
 그 전까지 실제 Worker, SDK thread/turn, model Cell과 Cell 3은 `NO-GO`다.
+
+## 후속 ChatGPT Pro v4 erratum
+
+ChatGPT Pro 읽기 전용 재심사의 최종 판정은 `NO_GO`였다. 위 생성 당시 검증 문구 중
+exact file set, 개별 file SHA-256, ZIP SHA-256과 readiness seal self-hash 일치는
+그대로 유효하다. 그러나 저장 payload aggregate
+`a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84`는
+`PACKAGE-MANIFEST.sha256` record 순서로만 재현됐다. seal이 선언한 ordinal path
+순서로 재계산한 값은
+`33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd`여서
+최상위 canonicalization 계약은 실패했다.
+
+같은 심사는 R07 checker의 정적 참·도달 불가능 assertion과 local no-op helper 우회,
+그리고 내부 최대 900초와 외부 제한 900초 사이 cleanup 여유 0도 P1으로 판정했다.
+따라서 이 v4 package는 수정·재봉인하지 않고 역사적 `NO_GO` Evidence로 보존한다. R07과
+repository-owned seal tooling의 model-free 교정으로 source identity가 바뀌었으므로 q16,
+qualification v13, candidate v12와 acceptance v4는 다음 live 입력으로 stale하다. 새
+qualification, 새 0-turn candidate, acceptance 두 번, canonical readiness package와 독립
+재심사 전 실제 SS1/B1/Cell 3은 계속 `NO_GO`다.
+
+심사 원문:
+`docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md`

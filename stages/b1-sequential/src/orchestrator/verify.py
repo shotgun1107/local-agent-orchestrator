@@ -6,11 +6,13 @@ import fnmatch
 import json
 import os
 import re
+import signal
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -76,6 +78,8 @@ CHECK_TEMP_ALLOCATION_ID_LENGTH = 32
 CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX = ("git-probe", ".git", "config")
 CHECK_TEMP_HOSTILE_TRACKED_PATH_LENGTH = 320
 WINDOWS_LEGACY_PATH_LIMIT = 260
+DEFAULT_CHECK_TERMINATION_GRACE_SECONDS = 15.0
+WINDOWS_CREATE_SUSPENDED = 0x00000004
 
 
 @dataclass(frozen=True, slots=True)
@@ -878,6 +882,7 @@ def _hostile_check_git_probe(
     *,
     allocation: CheckTempAllocation,
     environment: dict[str, str],
+    termination_grace_seconds: float,
 ) -> None:
     """Exercise Git bootstrap and a long tracked descendant below the real allocation."""
 
@@ -921,24 +926,20 @@ def _hostile_check_git_probe(
     )
     for stage, command in commands:
         try:
-            completed = subprocess.run(
+            completed, timed_out = _run_bounded_check_process(
                 command,
                 cwd=workspace.root,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=30,
-                shell=False,
-                env=environment,
-                check=False,
+                timeout_seconds=30,
+                termination_grace_seconds=termination_grace_seconds,
+                environment=environment,
             )
-        except (OSError, subprocess.TimeoutExpired) as exc:
+        except OSError as exc:
             raise VerificationError(
                 "check_environment",
                 f"hostile external Check Git probe could not run ({stage})",
             ) from exc
-        if completed.returncode != 0:
-            stderr_sha256 = sha256_bytes(completed.stderr or b"")
+        if timed_out or completed.returncode != 0:
+            stderr_sha256 = sha256_bytes((completed.stderr or "").encode("utf-8"))
             raise VerificationError(
                 "check_environment",
                 (
@@ -946,7 +947,7 @@ def _hostile_check_git_probe(
                     f"({stage}, exit={completed.returncode}, stderr_sha256={stderr_sha256})"
                 ),
             )
-    if relative.encode("utf-8") not in (completed.stdout or b""):
+    if relative not in (completed.stdout or ""):
         raise VerificationError(
             "check_environment",
             "hostile external Check Git probe did not stage the tracked descendant",
@@ -958,6 +959,7 @@ def preflight_check_environment(
     *,
     temp_root: Path,
     hostile_git_probe: bool = False,
+    termination_grace_seconds: float = DEFAULT_CHECK_TERMINATION_GRACE_SECONDS,
 ) -> None:
     """Fail before model dispatch unless a Check subprocess can use its temp root."""
 
@@ -981,23 +983,19 @@ def preflight_check_environment(
             "p.close()"
         )
         try:
-            completed = subprocess.run(
+            completed, timed_out = _run_bounded_check_process(
                 [str(Path(sys.executable).resolve()), "-c", probe],
                 cwd=workspace.root,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=10,
-                shell=False,
-                env=environment,
-                check=False,
+                timeout_seconds=10,
+                termination_grace_seconds=termination_grace_seconds,
+                environment=environment,
             )
-        except (OSError, subprocess.TimeoutExpired) as exc:
+        except OSError as exc:
             raise VerificationError(
                 "check_environment",
                 "external Check temp probe could not run",
             ) from exc
-        if completed.returncode != 0:
+        if timed_out or completed.returncode != 0:
             raise VerificationError(
                 "check_environment",
                 "external Check temp probe failed",
@@ -1007,6 +1005,7 @@ def preflight_check_environment(
                 workspace,
                 allocation=allocation,
                 environment=environment,
+                termination_grace_seconds=termination_grace_seconds,
             )
 
 
@@ -1019,6 +1018,329 @@ def resolve_check_argv(argv: list[str], *, git_executable: Path) -> list[str]:
     elif resolved[0].casefold() in {"git", "git.exe"}:
         resolved[0] = str(Path(git_executable).resolve())
     return resolved
+
+
+def _terminate_check_process_tree(
+    process: subprocess.Popen[str],
+    *,
+    grace_seconds: float,
+    windows_job_handle: int | None = None,
+) -> None:
+    """Terminate the complete Check process tree within a bounded grace period."""
+
+    grace = max(float(grace_seconds), 0.0)
+    if os.name == "nt":
+        if windows_job_handle is not None:
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+            kernel32.TerminateJobObject.restype = wintypes.BOOL
+            handle = wintypes.HANDLE(windows_job_handle)
+            if not kernel32.TerminateJobObject(handle, 1):
+                raise OSError(ctypes.get_last_error(), "TerminateJobObject failed")
+            deadline = time.monotonic() + grace
+            while _windows_job_active_processes(windows_job_handle) != 0:
+                if time.monotonic() >= deadline:
+                    raise OSError(
+                        "Check Job still has active processes after termination grace"
+                    )
+                time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
+        # The Check root is launched in its own process group, but CTRL_BREAK is
+        # cooperative and the root can exit before its pytest/Git descendants.
+        # taskkill /T walks the tree while the root still exists and /F makes
+        # cleanup independent of the child application's signal handling.
+        else:
+            taskkill = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "taskkill.exe"
+            try:
+                completed = subprocess.run(
+                    [str(taskkill), "/PID", str(process.pid), "/T", "/F"],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=max(grace, 1.0),
+                    shell=False,
+                    check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                completed = None
+            if completed is None or completed.returncode != 0:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        if grace:
+            try:
+                process.wait(timeout=grace)
+            except subprocess.TimeoutExpired:
+                pass
+        # Even if the group leader already exited, kill any descendant that
+        # ignored SIGTERM before relinquishing the Check-owned TEMP directory.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    try:
+        process.wait(timeout=max(grace, 1.0))
+    except subprocess.TimeoutExpired:
+        try:
+            process.kill()
+        except OSError:
+            pass
+        process.wait(timeout=max(grace, 1.0))
+
+
+def _windows_job_active_processes(job_handle: int) -> int:
+    """Return the number of processes that Windows still accounts to a Job."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    class JOBOBJECT_BASIC_ACCOUNTING_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("TotalUserTime", ctypes.c_longlong),
+            ("TotalKernelTime", ctypes.c_longlong),
+            ("ThisPeriodTotalUserTime", ctypes.c_longlong),
+            ("ThisPeriodTotalKernelTime", ctypes.c_longlong),
+            ("TotalPageFaultCount", wintypes.DWORD),
+            ("TotalProcesses", wintypes.DWORD),
+            ("ActiveProcesses", wintypes.DWORD),
+            ("TotalTerminatedProcesses", wintypes.DWORD),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.QueryInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+    ]
+    kernel32.QueryInformationJobObject.restype = wintypes.BOOL
+    information = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION()
+    if not kernel32.QueryInformationJobObject(
+        wintypes.HANDLE(job_handle),
+        1,
+        ctypes.byref(information),
+        ctypes.sizeof(information),
+        None,
+    ):
+        raise OSError(ctypes.get_last_error(), "QueryInformationJobObject failed")
+    return int(information.ActiveProcesses)
+
+
+def _create_windows_kill_on_close_job() -> int:
+    """Create a Windows Job whose close operation kills every descendant."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_longlong),
+            ("PerJobUserTimeLimit", ctypes.c_longlong),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class IO_COUNTERS(ctypes.Structure):
+        _fields_ = [
+            ("ReadOperationCount", ctypes.c_ulonglong),
+            ("WriteOperationCount", ctypes.c_ulonglong),
+            ("OtherOperationCount", ctypes.c_ulonglong),
+            ("ReadTransferCount", ctypes.c_ulonglong),
+            ("WriteTransferCount", ctypes.c_ulonglong),
+            ("OtherTransferCount", ctypes.c_ulonglong),
+        ]
+
+    class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+            ("IoInfo", IO_COUNTERS),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+    ]
+    kernel32.SetInformationJobObject.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    handle = kernel32.CreateJobObjectW(None, None)
+    if not handle:
+        raise OSError(ctypes.get_last_error(), "CreateJobObjectW failed")
+    information = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+    information.BasicLimitInformation.LimitFlags = 0x00002000
+    if not kernel32.SetInformationJobObject(
+        handle,
+        9,
+        ctypes.byref(information),
+        ctypes.sizeof(information),
+    ):
+        error = ctypes.get_last_error()
+        kernel32.CloseHandle(handle)
+        raise OSError(error, "SetInformationJobObject failed")
+    return int(handle)
+
+
+def _assign_and_resume_windows_job(
+    process: subprocess.Popen[str],
+    job_handle: int,
+) -> None:
+    """Bind a CREATE_SUSPENDED process to its Job before it can spawn children."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+    process_handle = wintypes.HANDLE(int(process._handle))  # type: ignore[attr-defined]
+    if not kernel32.AssignProcessToJobObject(
+        wintypes.HANDLE(job_handle),
+        process_handle,
+    ):
+        raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
+    ntdll = ctypes.WinDLL("ntdll")
+    ntdll.NtResumeProcess.argtypes = [wintypes.HANDLE]
+    ntdll.NtResumeProcess.restype = wintypes.LONG
+    status = int(ntdll.NtResumeProcess(process_handle))
+    if status != 0:
+        raise OSError(status, "NtResumeProcess failed")
+
+
+def _close_windows_job(job_handle: int) -> None:
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    if not kernel32.CloseHandle(wintypes.HANDLE(job_handle)):
+        raise OSError(ctypes.get_last_error(), "CloseHandle for Check Job failed")
+
+
+def _posix_process_group_has_members(process_group_id: int) -> bool:
+    try:
+        os.killpg(process_group_id, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def _run_bounded_check_process(
+    argv: list[str],
+    *,
+    cwd: Path,
+    environment: dict[str, str],
+    timeout_seconds: float,
+    termination_grace_seconds: float,
+) -> tuple[subprocess.CompletedProcess[str], bool]:
+    """Run one Check in an isolated process group and reap its tree on timeout."""
+
+    popen_options: dict[str, Any] = {}
+    windows_job_handle: int | None = None
+    if os.name == "nt":
+        windows_job_handle = _create_windows_kill_on_close_job()
+        popen_options["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | WINDOWS_CREATE_SUSPENDED
+        )
+    else:
+        popen_options["start_new_session"] = True
+    try:
+        process = subprocess.Popen(
+            argv,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            shell=False,
+            env=environment,
+            **popen_options,
+        )
+        try:
+            def terminate_owned_process_tree() -> None:
+                nonlocal windows_job_handle
+                handle = windows_job_handle
+                try:
+                    _terminate_check_process_tree(
+                        process,
+                        grace_seconds=termination_grace_seconds,
+                        windows_job_handle=handle,
+                    )
+                finally:
+                    if handle is not None:
+                        try:
+                            _close_windows_job(handle)
+                        finally:
+                            windows_job_handle = None
+
+            if windows_job_handle is not None:
+                _assign_and_resume_windows_job(process, windows_job_handle)
+            try:
+                stdout, stderr = process.communicate(timeout=timeout_seconds)
+                timed_out = False
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                terminate_owned_process_tree()
+                try:
+                    stdout, stderr = process.communicate(
+                        timeout=max(float(termination_grace_seconds), 1.0)
+                    )
+                except subprocess.TimeoutExpired as exc:
+                    raise OSError(
+                        "Check process streams did not close after tree termination"
+                    ) from exc
+            if not timed_out:
+                active_descendants = (
+                    windows_job_handle is not None
+                    and _windows_job_active_processes(windows_job_handle) != 0
+                ) or (
+                    os.name != "nt" and _posix_process_group_has_members(process.pid)
+                )
+                if active_descendants:
+                    terminate_owned_process_tree()
+                    raise OSError("Check process left active descendants")
+        except BaseException:
+            if windows_job_handle is not None or (
+                os.name != "nt" and _posix_process_group_has_members(process.pid)
+            ):
+                terminate_owned_process_tree()
+            raise
+    finally:
+        if windows_job_handle is not None:
+            _close_windows_job(windows_job_handle)
+    return subprocess.CompletedProcess(
+        argv,
+        process.returncode,
+        stdout or "",
+        stderr or "",
+    ), timed_out
 
 
 def _check_failure_classification(
@@ -1049,6 +1371,7 @@ def run_command_check(
     workspace: GitWorkspace,
     *,
     temp_root: Path,
+    termination_grace_seconds: float = DEFAULT_CHECK_TERMINATION_GRACE_SECONDS,
 ) -> CheckResult:
     cwd = (workspace.root / check.cwd).resolve()
     if workspace.root not in cwd.parents and cwd != workspace.root:
@@ -1060,21 +1383,31 @@ def run_command_check(
             git_executable=workspace.git_executable,
         )
         with isolated_check_temp_directory(temp_root) as allocation:
-            completed = subprocess.run(
+            completed, timed_out = _run_bounded_check_process(
                 execution_argv,
                 cwd=cwd,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                capture_output=True,
-                timeout=check.timeout_seconds,
-                shell=False,
-                env=build_check_environment(
+                timeout_seconds=check.timeout_seconds,
+                termination_grace_seconds=termination_grace_seconds,
+                environment=build_check_environment(
                     temp_directory=allocation.path,
                     git_executable=workspace.git_executable,
                     git_safe_directory=workspace.root,
                 ),
-                check=False,
+            )
+        if timed_out:
+            return CheckResult(
+                check_name=check_name,
+                state=CheckState.ERROR,
+                argv=check.argv,
+                exit_code=None,
+                stdout=completed.stdout,
+                stderr=completed.stderr + "\ncheck timed out",
+                started_at=started,
+                ended_at=utc_now(),
+                failure_classification=CheckFailureClassification.ENVIRONMENT,
+                failure_classification_source="controller_runtime",
+                temp_root=str(allocation.root),
+                temp_allocation_id=allocation.allocation_id,
             )
         state = CheckState.PASSED if completed.returncode in check.expected_exit_codes else CheckState.FAILED
         failure_classification, classification_source = _check_failure_classification(
@@ -1095,21 +1428,6 @@ def run_command_check(
             failure_classification_source=classification_source,
             temp_root=str(allocation.root),
             temp_allocation_id=allocation.allocation_id,
-        )
-    except subprocess.TimeoutExpired as exc:
-        return CheckResult(
-            check_name=check_name,
-            state=CheckState.ERROR,
-            argv=check.argv,
-            exit_code=None,
-            stdout=(exc.stdout or "") if isinstance(exc.stdout, str) else "",
-            stderr=((exc.stderr or "") if isinstance(exc.stderr, str) else "") + "\ncheck timed out",
-            started_at=started,
-            ended_at=utc_now(),
-            failure_classification=CheckFailureClassification.ENVIRONMENT,
-            failure_classification_source="controller_runtime",
-            temp_root=str(Path(temp_root).resolve()),
-            temp_allocation_id="unallocated-or-cleaned",
         )
     except OSError as exc:
         return CheckResult(

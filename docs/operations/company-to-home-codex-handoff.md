@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 22
+- revision: 23
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -18,6 +18,9 @@
 > commit으로 hard reset하지 말고 `git fetch` 뒤
 > `origin/codex/phase-d-artifacts` 최신 tip을 사용한다. 최신 tip에
 > `db83a5b`가 반드시 포함돼야 한다.
+>
+> 최신성 경고: §1~§32는 각 시점의 역사 기록이다. 현재 관문은 §33이다. 특히 §32의
+> readiness v4 재심사 대기는 이미 `NO_GO`로 끝났으므로 Live 승인으로 해석하지 않는다.
 
 ## 1. 이번 반환의 핵심
 
@@ -646,3 +649,48 @@ readiness v4를 ChatGPT Pro가 읽기 전용으로 독립 재심사해야 한다
 `DEV-20260814-002`, `DEV-20260815-001`은 `investigating`, 실제 SS1/B1/Cell 3은
 `NO-GO`, route는 `ROUTING_INCONCLUSIVE`다. 심사가 `GO_ONE_FRESH_PAIR`를 내더라도
 SS1과 B1은 사용자가 각각 별도로 승인해야 하며 자동 continuation은 금지한다.
+
+## 33. 2026-08-15 readiness v4 Pro NO-GO와 model-free closure checkpoint
+
+이 절이 현재 최신 회사→집 관문 정본이다.
+
+### 과거
+
+- ChatGPT Pro v4는 package의 exact file set, 개별 hash와 seal self-hash, 하위 identity
+  chain 및 hidden Judge 독립 oracle은 확인했다.
+- 그러나 readiness seal의 저장 aggregate가 선언된 ordinal sort가 아니라 manifest record
+  order로 계산됐고, R07 checker에는 정적/no-op 우회와 내부·외부 timeout 여유 0이 남아
+  P1 3건, 최종 `NO_GO`를 판정했다.
+- v4 package와 q16, qualification v13, candidate v12, acceptance v4는 수정하지 않고
+  역사 Evidence로 보존한다. 교정 뒤 source가 달라졌으므로 다음 live 입력으로 재사용하지
+  않는다.
+
+### 현재
+
+- readiness seal은 repository-owned canonical builder/verifier를 사용해 normalized
+  relative path의 UTF-8 byte ordinal order와 exact LF를 공유한다. duplicate, casefold,
+  Unicode separator와 path alias는 fail-closed다.
+- R07은 bounded constant folding, reachable control flow와 pytest import provenance로
+  정적 참, 도달 불가능 assertion과 local/shadowed helper를 거부한다.
+- R07 내부 상한 900초와 외부 Check 1020초, model-turn 상한 900초를 분리했다. Windows
+  Job Object runner는 timeout 또는 root 조기 종료 뒤 descendant 0 확인 후 TEMP를 정리하며
+  hostile preflight도 같은 경계를 사용한다.
+- 현재 model-free Evidence는 readiness `13 passed`, R07 `31 passed`, timeout `13 passed`,
+  B1 `88 passed`, Phase D `17 passed`다. Worker snapshot은 130파일·cache 0이고 Judge
+  bundle은 35파일, aggregate
+  `8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`이다. 전체
+  Runner는 진행 중이라 결과를 정본화하지 않는다.
+- `DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`는 모두
+  `investigating`이다. actual model turn은 실행하지 않았다.
+
+### 다음 관문
+
+1. 전체 model-free 회귀와 clean source identity를 고정한다.
+2. 새 q17-equivalent Docker qualification을 실행한다.
+3. 그 source에 결합한 새 Phase E 0-turn candidate와 exact acceptance 두 번을 만든다.
+4. canonical readiness package를 새 identity로 봉인하고 독립 ChatGPT Pro 재심사를 받는다.
+
+q17과 후속 artifact는 아직 존재하지 않으므로 hash, PASS 또는 commit을 미리 기록하지
+않는다. 새 심사에서 P0/P1 0과 `GO_ONE_FRESH_PAIR`를 받기 전 실제 SS1/B1/Cell 3은
+`NO-GO`다. GO가 나와도 SS1과 B1은 사용자가 Cell별로 따로 승인해야 하며 automatic
+continuation은 금지한다.

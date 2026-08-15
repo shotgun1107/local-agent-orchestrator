@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -46,6 +47,13 @@ SNAPSHOT_BUILDER_PATH = (
     / "benchmark-runner"
     / "scripts"
     / "build_profile_r_worker_snapshot.py"
+)
+JUDGE_BUNDLE_BUILDER_PATH = (
+    REPOSITORY
+    / "tools"
+    / "benchmark-runner"
+    / "scripts"
+    / "build_profile_r_judge_bundle.py"
 )
 ALLOWED_COMPOSITION_CATEGORIES = {
     "authored_source",
@@ -190,13 +198,34 @@ def _load_snapshot_builder():
     return module
 
 
+def _load_judge_bundle_builder():
+    spec = importlib.util.spec_from_file_location(
+        "profile_r_judge_bundle_builder", JUDGE_BUNDLE_BUILDER_PATH
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
+    return module
+
+
 def _load_profile_r_public_checker():
     path = WORKER_ROOT / "benchmark_checks" / "check_profile_r.py"
     spec = importlib.util.spec_from_file_location("profile_r_public_checker", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
     return module
 
 
@@ -205,10 +234,7 @@ def _workspace_files(root: Path) -> list[Path]:
         (
             path
             for path in root.rglob("*")
-            if path.is_file()
-            and not {".git", ".pytest_cache", "__pycache__"}.intersection(
-                path.relative_to(root).parts
-            )
+            if path.is_file() and ".git" not in path.relative_to(root).parts
         ),
         key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
     )
@@ -246,6 +272,128 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
             assert literal.encode("utf-8") not in payload
         for pattern in mapping["forbidden_worker_regexes"]:
             assert re.search(pattern.encode("ascii"), payload) is None
+
+
+def test_profile_r_judge_builder_rejects_extra_worker_cache_before_derivation(
+    tmp_path: Path,
+) -> None:
+    builder = _load_judge_bundle_builder()
+
+    canonical = builder.validate_exact_worker_snapshot(
+        WORKER_ROOT,
+        WORKER_MANIFEST_PATH,
+    )
+    assert canonical["file_count"] == len(canonical["files"]) == 130
+
+    profile_root = tmp_path / builder.PROFILE_ROOT
+    workspace = profile_root / "workspace"
+    workspace.mkdir(parents=True)
+    kept_payload = b"sealed worker byte\n"
+    (workspace / "kept.txt").write_bytes(kept_payload)
+    (profile_root / "worker-snapshot-manifest.json").write_text(
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "path": "kept.txt",
+                        "worker_size": len(kept_payload),
+                        "worker_sha256": hashlib.sha256(kept_payload).hexdigest(),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    judge_root = tmp_path / builder.JUDGE_ROOT
+    checker = judge_root / builder.CHECKER_RELATIVE
+    checker.parent.mkdir(parents=True)
+    checker.write_text("# prerequisite marker\n", encoding="utf-8")
+    prior_evidence = judge_root / "evidence" / "must-not-be-deleted.json"
+    prior_evidence.parent.mkdir(parents=True)
+    prior_evidence.write_bytes(b"prior evidence\n")
+
+    cache = workspace / "__pycache__" / "x.pyc"
+    cache.parent.mkdir()
+    cache.write_bytes(b"unsealed cache byte")
+
+    with pytest.raises(
+        RuntimeError,
+        match="Worker snapshot exact file set differs from its manifest",
+    ):
+        builder.build(tmp_path)
+    assert prior_evidence.read_bytes() == b"prior evidence\n"
+
+
+def test_profile_r_judge_builder_uses_declared_r07_outer_timeout() -> None:
+    builder = _load_judge_bundle_builder()
+    checks = yaml.safe_load(
+        (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
+    )["checks"]
+
+    assert checks["r07_contract"]["timeout_seconds"] == 1020
+    assert (
+        builder.public_check_timeout_seconds(WORKER_ROOT, "r07_contract")
+        == checks["r07_contract"]["timeout_seconds"]
+    )
+
+
+def test_profile_r_judge_builder_loads_checker_without_bytecode_cache(
+    tmp_path: Path,
+) -> None:
+    builder = _load_judge_bundle_builder()
+    checker = tmp_path / "checker.py"
+    checker.write_text("VALUE = 1\n", encoding="utf-8", newline="\n")
+
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = False
+    try:
+        loaded = builder.load_checker(checker)
+    finally:
+        sys.dont_write_bytecode = previous
+
+    assert loaded.VALUE == 1
+    assert not (tmp_path / "__pycache__").exists()
+
+
+def test_profile_r_public_r07_projection_ignores_transient_absolute_paths() -> None:
+    builder = _load_judge_bundle_builder()
+    base = {
+        "pytest": {
+            "tests": 12,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "warnings": 0,
+        },
+        "growth_margin": 32,
+        "growth_probe_path_length": 294,
+        "probe_repository_path_length": 58,
+        "temp_root": "C:/first/random-root",
+        "deepest_path": "C:/first/random-root/random/path",
+    }
+    alternate = {
+        **base,
+        "temp_root": "D:/different/random-root",
+        "deepest_path": "D:/different/random-root/random/path",
+    }
+
+    first = builder.public_r07_evidence_projection(base)
+    second = builder.public_r07_evidence_projection(alternate)
+    assert first == second
+    assert builder.sha256(builder.canonical_json(first)) == builder.sha256(
+        builder.canonical_json(second)
+    )
+
+
+def test_profile_r_judge_source_rejects_transient_cache_paths(tmp_path: Path) -> None:
+    builder = _load_judge_bundle_builder()
+    cache = tmp_path / "checker" / "__pycache__" / "checker.pyc"
+    cache.parent.mkdir(parents=True)
+    cache.write_bytes(b"transient")
+
+    with pytest.raises(RuntimeError, match="transient cache path"):
+        builder.assert_no_transient_cache_files(tmp_path)
 
 
 def test_profile_r_worker_snapshot_rebuild_is_byte_identical(tmp_path: Path) -> None:
@@ -331,11 +479,36 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
             "benchmark_checks/check_profile_r.py",
             f"R{number:02d}",
         ]
-        assert check["timeout_seconds"] == (900 if number == 7 else 120)
+        assert check["timeout_seconds"] == (1020 if number == 7 else 120)
     policies = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/policies.yaml").read_text(encoding="utf-8")
     )["policies"]
-    assert policies["b1_safe"]["check_timeout_seconds"] == 900
+    assert policies["b1_safe"]["task_timeout_seconds"] == 900
+    assert policies["b1_safe"]["check_timeout_seconds"] == 1020
+
+
+def test_profile_r_r07_outer_timeout_has_fixed_overhead_margin() -> None:
+    checker = _load_profile_r_public_checker()
+    checks = yaml.safe_load(
+        (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
+    )["checks"]
+    policy = yaml.safe_load(
+        (WORKER_ROOT / ".orchestrator/policies.yaml").read_text(encoding="utf-8")
+    )["policies"]["b1_safe"]
+
+    internal_child_budget = (
+        checker.R07_COLLECTION_TIMEOUT_SECONDS
+        + checker.R07_EXECUTION_TIMEOUT_SECONDS
+        + checker.R07_GIT_COMMAND_COUNT
+        * checker.R07_GIT_COMMAND_TIMEOUT_SECONDS
+    )
+    assert internal_child_budget == checker.R07_INTERNAL_CHILD_BUDGET_SECONDS == 900
+    assert checks["r07_contract"]["timeout_seconds"] == internal_child_budget + 120
+    assert policy["check_timeout_seconds"] == checks["r07_contract"]["timeout_seconds"]
+    # task_timeout_seconds is the Worker model-turn deadline, not an outer
+    # command-Check deadline.  Only check_timeout_seconds bounds r07_contract.
+    assert policy["task_timeout_seconds"] == 900
+    assert policy["task_timeout_seconds"] != policy["check_timeout_seconds"]
 
 
 def test_profile_r_public_check_is_model_free_and_compiles() -> None:
@@ -526,15 +699,21 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert public_r07["passed"] is True
     assert public_r07["return_code"] == 0
     assert public_r07["contract_ok_marker"] is True
-    assert public_r07["pytest"] == {
+    projection = public_r07["evidence_projection"]
+    assert projection["pytest"] == {
         "tests": 12,
         "failures": 0,
         "errors": 0,
         "skipped": 0,
         "warnings": 0,
     }
-    assert public_r07["growth_margin"] >= 32
-    assert public_r07["growth_probe_path_length"] >= 261
+    assert projection["growth_margin"] >= 32
+    assert projection["growth_probe_minimum_path_length"] == 261
+    assert projection["growth_probe_minimum_satisfied"] is True
+    assert projection["probe_repository_shorter_than_growth_path"] is True
+    assert public_r07["evidence_projection_sha256"] == hashlib.sha256(
+        (json.dumps(projection, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    ).hexdigest()
 
 
 def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> None:

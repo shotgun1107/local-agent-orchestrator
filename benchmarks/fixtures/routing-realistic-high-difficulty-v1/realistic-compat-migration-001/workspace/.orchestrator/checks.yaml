@@ -40,7 +40,8 @@ checks:
     kind: command
     argv: ["python", "benchmark_checks/check_profile_r.py", "R07"]
     cwd: "."
-    timeout_seconds: 900
+    # 900s declared nested-child maxima + 120s fixed parse/process/cleanup margin.
+    timeout_seconds: 1020
     expected_exit_codes: [0]
   r08_contract:
     kind: command

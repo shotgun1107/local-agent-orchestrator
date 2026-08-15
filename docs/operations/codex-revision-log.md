@@ -2473,3 +2473,32 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 다음 관문은 v4 package의 ChatGPT Pro 읽기 전용 독립 재심사다. 그 전까지 두 incident는
   investigating, 실제 SS1/B1/Cell 3과 route 결정은 NO-GO다. 이번 단계의 actual model
   turn은 0이다.
+
+## Profile R readiness v4 Pro NO-GO와 seal·R07 closure
+
+- 작업일: 2026-08-15. ChatGPT Pro는 readiness v4 payload의 exact set과 개별 hash,
+  seal self-hash, q16→qualification v13→candidate v12→acceptance 두 번의 하위 identity
+  chain 및 hidden Judge 독립 oracle은 확인했다. 그러나 잔여 P1 3건 때문에 최종
+  `NO_GO`를 냈다.
+- 첫 P1은 readiness 최상위 seal의 canonicalization 불일치다. 저장 aggregate
+  `a137c73a...ac84`는 manifest record order로만 재현되고, seal이 선언한 ordinal path
+  sort의 재계산값은 `33e5e6d5...2246dd`다. v4 파일 자체는 고치지 않고 역사 Evidence로
+  보존한다. 새 `DEV-20260815-002`가 이 tooling 결함을 추적한다.
+- 둘째 P1은 R07 checker가 `assert 1 + 1 == 2`, `if 1 - 1` 아래의 도달 불가능
+  assertion, local 또는 shadowed `raises()`를 실질 시험으로 오인할 수 있었던 점이다.
+  bounded constant folding, reachable control flow와 신뢰한 pytest import provenance를
+  검사하도록 model-free로 교정했다.
+- 셋째 P1은 collection 120초 + pytest 600초 + Git 6회×30초 = 내부 900초와 외부
+  Check/policy 900초가 같아 startup·diagnostic·process-tree 종료·cleanup 여유가 0이었던
+  점이다. 외부 `r07_contract`와 `check_timeout_seconds`는 1020초, model-turn
+  `task_timeout_seconds`는 900초로 분리했다. Windows Check와 hostile preflight는 같은
+  bounded Job Object runner를 사용하며 descendant 0 확인 뒤 TEMP를 정리한다.
+- 현재 model-free 확인은 readiness integrity `13 passed`, R07 적대 회귀 `31 passed`,
+  timeout unit/integration `13 passed`, B1 전체 `88 passed`, Phase D fixture `17 passed`다.
+  Worker snapshot은 130파일·cache 0이고, Judge bundle은 35파일,
+  `payload_aggregate_sha256=8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`으로
+  재생성됐다. 전체 Runner는 아직 진행 중이므로 결과를 기록하지 않는다.
+- R07 source와 readiness tooling이 바뀌었기 때문에 q16, qualification v13, Phase E v12,
+  acceptance v4는 새 source의 live 입력으로 stale하다. q17-equivalent qualification은 아직
+  실행하지 않았고 새 candidate·acceptance·readiness도 만들지 않았다. fresh identity chain과
+  독립 재심사 전 실제 SS1/B1/Cell 3 및 route 결정은 계속 `NO_GO`다.

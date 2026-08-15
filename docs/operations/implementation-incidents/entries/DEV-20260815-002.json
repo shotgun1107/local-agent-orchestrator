@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260815-002",
+  "title": "Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함",
+  "status": "investigating",
+  "stage": "phase-f-profile-r",
+  "category": "tooling",
+  "discovered_at": "2026-08-15T14:43:46Z",
+  "resolved_at": null,
+  "discovered_by": "ChatGPT Pro Profile R live-readiness v4 read-only adversarial review",
+  "symptom": "readiness v4의 개별 payload와 seal self-hash는 재현됐지만 seal의 저장 payload aggregate는 선언된 ordinal path sort가 아니라 PACKAGE-MANIFEST.sha256 기록 순서로만 재현됐다.",
+  "reproduction": [
+    "역사적 readiness v4 package의 PACKAGE-MANIFEST.sha256 각 record에서 SHA-256, size와 relative path를 읽는다",
+    "record를 manifest 원래 순서로 직렬화해 SHA-256을 계산하고 seal 저장값과 대조한다",
+    "forward-slash relative path의 UTF-8 byte ordinal 순서로 정렬해 같은 canonical line을 직렬화하고 seal 선언과 대조한다"
+  ],
+  "evidence": [
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro는 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84가 manifest record order로는 재현되지만 선언된 ordinal path sort의 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd와 다름을 독립 재계산했다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "v4 package의 actual file set 304개, manifest entry 303개, 개별 SHA-256 303/303과 seal self-hash 4db8dd69d00b564e5c38a2b5829469e4ac6ef0e9437113a8598954a8a0c15fb5는 일치해 payload 변조와 canonicalization 계약 실패를 구분할 수 있다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "repository-owned canonical builder/verifier는 normalized relative path, UTF-8 byte ordinal sort, exact LF와 duplicate·casefold·Unicode line-separator rejection을 공유하며 역사적 v4 order mismatch fixture를 포함한 13개 model-free 회귀를 통과했다"
+    }
+  ],
+  "root_cause": "readiness seal aggregate를 기존 PACKAGE-MANIFEST.sha256 record 순서로 계산하면서 seal에는 ordinal path sort라고 선언했다. 생성자와 독립 검증자가 함께 호출하는 repository-owned canonical builder/verifier가 없었기 때문에 package별 임시 생성 로직과 선언된 계약이 갈라졌다.",
+  "considered_options": [
+    {
+      "option": "역사적 v4 seal 선언을 manifest record order로 수정하거나 같은 ZIP을 재봉인",
+      "decision": "rejected",
+      "reason": "이미 외부 심사에 제출한 역사 Evidence를 사후 수정하면 심사 대상 identity와 감사 추적이 깨진다"
+    },
+    {
+      "option": "manifest record order를 새 canonical contract로 채택",
+      "decision": "rejected",
+      "reason": "입력 순서에 따라 aggregate가 달라지고 seal 선언의 portable ordinal contract와도 맞지 않는다"
+    },
+    {
+      "option": "공용 canonical builder/verifier를 저장소에 두고 fresh package를 새 identity로 생성",
+      "decision": "adopted",
+      "reason": "생성과 검증이 동일한 엄격한 path normalization, ordering과 serialization 계약을 사용하고 역사적 v4를 그대로 보존할 수 있다"
+    }
+  ],
+  "resolution": "repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개는 통과했지만 fresh readiness package와 독립 재심사가 아직 없으므로 investigating을 유지한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_readiness_package.py",
+    "tools/benchmark-runner/scripts/build_profile_r_readiness_integrity.py",
+    "tools/benchmark-runner/tests/test_realistic_readiness_package.py",
+    "tools/benchmark-runner/tests/fixtures/profile-r-readiness-v4-order-mismatch.json"
+  ],
+  "regression_tests": [
+    "manifest 입력 순서가 달라도 normalized UTF-8 byte ordinal 순서의 aggregate가 동일한 회귀",
+    "역사적 v4 fixture에서 저장 manifest-order aggregate와 선언된 ordinal aggregate 불일치를 재현하는 회귀",
+    "path traversal, absolute path, duplicate, casefold collision과 NFC alias를 거부하는 회귀",
+    "CRLF 또는 Unicode Zl/Zp line separator가 canonical manifest parser를 우회하지 못하는 회귀",
+    "builder로 생성한 manifest와 seal을 별도 verifier가 exact file set, size, hash, aggregate와 self-hash에서 재계산하는 회귀"
+  ],
+  "verification": [
+    "readiness integrity model-free 회귀 13 passed",
+    "역사적 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84와 canonical ordinal aggregate 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd가 다름을 fixture로 보존",
+    "역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존"
+  ],
+  "remaining_risks": [
+    "역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다",
+    "교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다",
+    "q17-equivalent qualification, 새 0-turn candidate와 acceptance 두 번은 아직 생성하거나 실행하지 않았다"
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md"
+  ]
+}

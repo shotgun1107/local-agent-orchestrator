@@ -4,7 +4,7 @@
   "cell_id": "r-p04-reserve-isolation",
   "checker_run_status": "completed",
   "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-  "envelope_sha256": "b7e6deed8cca0e19ba348979599adbf52d8ec0054eb5e5daf6e38edff0bc7b82",
+  "envelope_sha256": "03c5639e0a57b131cec5a9be1d93cc2c651c451c8a0c716a025fd5cb4b418430",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "a100906eda1bdff0b6006e7d702d3e781b72bc1c98ce250db8cbd87144acfc50",
-  "workspace_before_sha256": "a100906eda1bdff0b6006e7d702d3e781b72bc1c98ce250db8cbd87144acfc50",
+  "workspace_after_sha256": "09b877aa0177f78acdf973e437fd7540df8e7c11d382597a2f86517a56c311f0",
+  "workspace_before_sha256": "09b877aa0177f78acdf973e437fd7540df8e7c11d382597a2f86517a56c311f0",
   "workspace_mutated": false
 }

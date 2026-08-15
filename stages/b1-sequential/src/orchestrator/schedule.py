@@ -329,6 +329,7 @@ class Orchestrator:
             self.workspace,
             temp_root=self.check_temp_root,
             hostile_git_probe=self.check_temp_hostile_git_probe,
+            termination_grace_seconds=self.policy.interrupt_grace_seconds,
         )
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
@@ -374,6 +375,7 @@ class Orchestrator:
             self.workspace,
             temp_root=self.check_temp_root,
             hostile_git_probe=self.check_temp_hostile_git_probe,
+            termination_grace_seconds=self.policy.interrupt_grace_seconds,
         )
         with ControllerLock(self.state_root):
             with Ledger(self.state_root / "ledger.sqlite") as ledger:
@@ -949,6 +951,7 @@ class Orchestrator:
                     definition,
                     self.workspace,
                     temp_root=self.check_temp_root,
+                    termination_grace_seconds=self.policy.interrupt_grace_seconds,
                 )
                 check_base = f"{base}/checks/{check_name}"
                 stdout_artifact = self._persist(

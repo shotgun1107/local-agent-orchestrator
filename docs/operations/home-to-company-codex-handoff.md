@@ -1,7 +1,7 @@
 # 집 로컬 → 회사 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_home_to_company_handoff`
-- revision: 8
+- revision: 9
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -17,9 +17,9 @@
 > 사용한다. dirty file, stash, detached HEAD, local-only commit 또는 ignored/tracked 충돌이
 > 있으면 reset·clean·stash·rebase로 숨기지 말고 보고 후 멈춘다.
 >
-> 최신성 경고: §1~§9는 SS1 v6 집→회사 전달 당시의 역사 기록이다. 현재 인수 정본은
-> 이 문서 §10과 `company-to-home-codex-handoff.md` §31이다. 앞 절의 Cell 2 재개 지시는
-> 현재 실행 승인으로 사용하지 않는다.
+> 최신성 경고: §1~§11은 각 시점의 역사 기록이다. 현재 인수 정본은 이 문서 §12와
+> `company-to-home-codex-handoff.md` §33이다. 앞 절의 Cell 재개 또는 readiness v4
+> 재심사 지시는 현재 실행 승인으로 사용하지 않는다.
 
 ## 1. 이번 반환의 핵심
 
@@ -292,3 +292,32 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
 다음은 readiness v4의 독립 읽기 전용 재심사다. 회사 PC는 이 원격 branch를 ff-only로
 동기화해도 실제 SS1/B1/Cell 3을 자동 실행하지 않는다. 독립 승인과 사용자 Cell별 승인이
 모두 있어야 새 fresh pair를 열 수 있다.
+
+## 12. 2026-08-15 readiness v4 NO-GO 교정 반환 checkpoint
+
+이 절이 최신 집→회사 보고다.
+
+- ChatGPT Pro v4는 per-file payload와 seal self-hash, hidden Judge 및 하위 identity
+  chain을 인정했지만 잔여 P1 3건으로 `NO_GO`를 판정했다. 저장 readiness aggregate
+  `a137c73a...ac84`는 manifest order로만 재현되고 declared ordinal aggregate는
+  `33e5e6d5...2246dd`다. 역사적 v4를 수정하거나 재봉인하지 않는다.
+- R07에는 `assert 1 + 1 == 2`, 도달 불가능 branch와 local/shadowed assertion helper
+  우회가 있었고 내부 최대 900초와 외부 timeout 900초 사이 cleanup 여유가 없었다.
+- 후속 model-free 교정은 canonical readiness builder/verifier, bounded constant folding,
+  reachable control flow, pytest provenance와 Windows Job Object process-tree cleanup을
+  추가했다. 외부 R07 Check는 1020초, 내부 R07과 model-turn 상한은 각각 900초로
+  역할을 분리했다.
+- 현재 확인한 범위는 readiness `13 passed`, R07 `31 passed`, timeout `13 passed`, B1
+  `88 passed`, Phase D `17 passed`다. Worker snapshot은 130파일·cache 0이고, Judge
+  bundle은 35파일, aggregate
+  `8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`이다. 전체
+  Runner 결과는 아직 기록하지 않는다.
+- 새 source 때문에 q16, qualification v13, Phase E v12와 acceptance v4는 다음 live
+  입력으로 stale하다. q17-equivalent qualification과 후속 candidate, acceptance,
+  readiness package는 아직 생성하지 않았다.
+
+회사는 origin 최신 tip을 ff-only로 인수하되 위 수치를 반복 검증한다는 이유로 actual
+model을 실행하지 않는다. 먼저 clean source와 전체 model-free 회귀를 확인하고, 그 다음
+새 qualification → 0-turn candidate → acceptance 두 번 → canonical readiness package →
+독립 재심사 순서를 따른다. 재심사 GO와 사용자 Cell별 승인 전 SS1/B1/Cell 3은 계속
+`NO-GO`이며 automatic continuation은 금지한다.
