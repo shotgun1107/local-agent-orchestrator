@@ -601,17 +601,20 @@ model turn은 계속 `NO_GO`다.
   reference 8/8, 적대 oracle 변조 7/7 기대 일치가 확인됐다.
 - production-shaped acceptance 두 경로와 영향 회귀는 통과했다. Docker·SDK·model turn은
   실행하지 않았다. incident는 `DEV-20260814-002`와 `DEV-20260815-001`이다.
+- 최종 검증 대상 code/test checkpoint는
+  `21f3743bbb4f822e27628ce018c52b92a597ae08`, tree
+  `2dfc1b77fcb971456b63fa01ff3338cbe49d76d4`다. clean source에서 Runner
+  `428 passed, 4 skipped`, B1 `86 passed`다. skip은 symlink 권한 1개와 명시적
+  Docker/SDK opt-in 3개다.
 
 ### 미래
 
-1. 이 변경을 commit해 clean source identity를 만든다.
-2. clean HEAD에서 Runner 전체 428개를 처음부터 실행하고 실패하면 수정 후 다시 처음부터
-   반복한다.
-3. 전체 통과 뒤 새 source bundle로 Docker Profile R qualification을 model-free로 다시
+1. 기록 commit까지 포함한 최종 clean source identity를 확인한다.
+2. 새 source bundle로 Docker Profile R qualification을 model-free로 다시
    만든다.
-4. qualification에 결합한 새 Phase E 0-turn candidate와 exact acceptance/readiness를
+3. qualification에 결합한 새 Phase E 0-turn candidate와 exact acceptance/readiness를
    만든다.
-5. 독립 readiness 승인과 사용자 별도 live 승인 전 SS1·B1·Cell 3은 실행하지 않는다.
+4. 독립 readiness 승인과 사용자 별도 live 승인 전 SS1·B1·Cell 3은 실행하지 않는다.
 
 기존 q15 raw, Phase E v11 candidate, v11 SS1/B1 seal은 역사적 실패 Evidence로 그대로
 보존한다. 수정·재봉인·성공 재분류하지 않는다.
