@@ -125,8 +125,258 @@ def adapt_public_s2_test(payload: bytes) -> bytes:
     assert c2_result["property_status"] == "pass"''',
         1,
     )
+    create_anchor = "def _create_s2_source_repository(tmp_path: Path) -> tuple[Path, Path, Path]:"
+    if text.count(create_anchor) != 1:
+        raise RuntimeError("historical S2 source-repository helper changed")
+    legacy_helper = '''def _write_legacy_b1_project(workspace: Path) -> None:
+    project_path = workspace / ".orchestrator" / "project.yaml"
+    project = yaml.safe_load(project_path.read_text(encoding="utf-8"))
+    project_path.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": project["schema_version"],
+                "project_id": project["project_id"],
+                "purpose": "legacy S2 model-free fixture",
+                "requirements": ["preserve the public S2 contract"],
+                "task_order": ["T1", "T2", "T3"],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+        newline="\\n",
+    )
+
+
+'''
+    text = text.replace(create_anchor, legacy_helper + create_anchor, 1)
+    old_fixture_copy = '''        shutil.copytree(FIXTURE_ROOT / fixture_id, target)
+    _git(source, "init", "-q", "-b", "main")'''
+    new_fixture_copy = '''        shutil.copytree(FIXTURE_ROOT / fixture_id, target)
+        _write_legacy_b1_project(target)
+        _canonicalize_prepared_b1_project(target)
+    _git(source, "init", "-q", "-b", "main")'''
+    if text.count(old_fixture_copy) != 1:
+        raise RuntimeError("historical S2 source fixture copy contract changed")
+    text = text.replace(old_fixture_copy, new_fixture_copy, 1)
+    completed_anchor = "def _completed_result(paths: list[str]) -> dict[str, object]:"
+    if text.count(completed_anchor) != 1:
+        raise RuntimeError("historical S2 completed-result helper changed")
+    canonicalization = '''def _canonicalize_prepared_b1_project(workspace: Path) -> dict[str, object]:
+    project_path = workspace / ".orchestrator" / "project.yaml"
+    legacy = yaml.safe_load(project_path.read_text(encoding="utf-8"))
+    assert set(legacy) == {
+        "schema_version",
+        "project_id",
+        "purpose",
+        "requirements",
+        "task_order",
+    }
+    capabilities = yaml.safe_load(
+        (workspace / ".orchestrator" / "capabilities.yaml").read_text(encoding="utf-8")
+    )["profiles"]
+    policies = yaml.safe_load(
+        (workspace / ".orchestrator" / "policies.yaml").read_text(encoding="utf-8")
+    )["policies"]
+    assert len(capabilities) == len(policies) == 1
+    canonical = {
+        "schema_version": legacy["schema_version"],
+        "project_id": legacy["project_id"],
+        "core_compat": ">=0.1,<0.2",
+        "repository_root": ".",
+        "default_capability_profile": next(iter(capabilities)),
+        "default_policy": next(iter(policies)),
+    }
+    project_path.write_text(
+        yaml.safe_dump(canonical, sort_keys=False),
+        encoding="utf-8",
+        newline="\\n",
+    )
+    return canonical
+
+
+def test_s2_b1_preflight_canonicalizes_legacy_project_pack(tmp_path: Path) -> None:
+    for fixture_id in (CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID):
+        workspace = tmp_path / fixture_id
+        shutil.copytree(FIXTURE_ROOT / fixture_id, workspace)
+        _write_legacy_b1_project(workspace)
+        legacy = yaml.safe_load(
+            (workspace / ".orchestrator" / "project.yaml").read_text(encoding="utf-8")
+        )
+        assert set(legacy) == {
+            "schema_version",
+            "project_id",
+            "purpose",
+            "requirements",
+            "task_order",
+        }
+        canonical = _canonicalize_prepared_b1_project(workspace)
+        assert set(canonical) == {
+            "schema_version",
+            "project_id",
+            "core_compat",
+            "repository_root",
+            "default_capability_profile",
+            "default_policy",
+        }
+
+
+'''
+    text = text.replace(completed_anchor, canonicalization + completed_anchor, 1)
     if "GOLDEN_ROOT" in text or "benchmarks/posthoc-checks" in text:
         raise RuntimeError("public S2 test still names a hidden golden path")
+    return text.encode("utf-8")
+
+
+def adapt_public_s1_test(payload: bytes) -> bytes:
+    """Make the selected legacy S1 regressions hermetic in a one-commit W.
+
+    The historical tests intentionally bind frozen fixtures to commits that are
+    not present in a materialized Profile R Worker repository.  Keep the same
+    production paths and assertions, but give those tests a local Git source
+    whose manifests bind the fixture bytes that are actually under test.
+    """
+
+    text = payload.decode("utf-8")
+    import_anchor = "import shutil\n"
+    if text.count(import_anchor) != 1:
+        raise RuntimeError("historical S1 import surface changed")
+    text = text.replace(
+        import_anchor,
+        "import os\n" + import_anchor + "import subprocess\nimport tempfile\n",
+        1,
+    )
+    old_git = '''def _git() -> Path:
+    executable = shutil.which("git")
+    assert executable is not None
+    return Path(executable)
+'''
+    if old_git not in text:
+        raise RuntimeError("historical S1 Git helper contract changed")
+    helper = old_git + '''
+
+def _fixture_git(repository: Path, *arguments: str) -> str:
+    completed = subprocess.run(
+        [
+            str(_git()),
+            "-c",
+            "core.longpaths=true",
+            "-C",
+            str(repository),
+            *arguments,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return completed.stdout.strip()
+
+
+def _write_self_contained_manifest(source: Path, relative: str) -> None:
+    value = yaml.safe_load((REPOSITORY_ROOT / relative).read_text(encoding="utf-8"))
+    commit = _fixture_git(source, "rev-parse", "HEAD")
+    for fixture in value["fixtures"]:
+        fixture["commit"] = commit
+        fixture["git_tree"] = _fixture_git(
+            source,
+            "rev-parse",
+            f"HEAD:{fixture['path']}",
+        )
+    destination = source / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(
+        yaml.safe_dump(value, sort_keys=False),
+        encoding="utf-8",
+        newline="\\n",
+    )
+
+
+def _create_self_contained_s1_repository(tmp_path: Path) -> Path:
+    _ = tmp_path
+    source = Path(tempfile.mkdtemp(prefix="s1-", dir=os.environ["TEMP"]))
+    for fixture_id in (
+        "code-change",
+        "document-read",
+        "sequential-code-change",
+        "sequential-document",
+    ):
+        destination = source / "benchmarks" / "fixtures" / fixture_id
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(REPOSITORY_ROOT / "benchmarks" / "fixtures" / fixture_id, destination)
+    shutil.copytree(
+        SUITE_ROOT,
+        source / "benchmarks" / "suites" / "sdk-routing-v1",
+    )
+    source.mkdir(parents=True, exist_ok=True)
+    _fixture_git(source, "init", "-q", "-b", "main")
+    _fixture_git(source, "config", "core.autocrlf", "false")
+    _fixture_git(source, "config", "user.name", "routing-s1-test")
+    _fixture_git(source, "config", "user.email", "routing-s1@test.invalid")
+    _fixture_git(source, "add", "-A")
+    _fixture_git(source, "commit", "-q", "-m", "self-contained S1 fixtures")
+    for relative in (
+        "benchmarks/manifests/b0-b1-frozen.yaml",
+        "benchmarks/manifests/b0-b1-sequential-followup.yaml",
+    ):
+        _write_self_contained_manifest(source, relative)
+    return source
+
+
+@pytest.fixture
+def self_contained_s1_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
+    source = _create_self_contained_s1_repository(tmp_path)
+    suite_root = source / "benchmarks" / "suites" / "sdk-routing-v1"
+    monkeypatch.setitem(globals(), "REPOSITORY_ROOT", source)
+    monkeypatch.setitem(globals(), "SUITE_ROOT", suite_root)
+    monkeypatch.setitem(globals(), "SUITE_PATH", suite_root / "suite.yaml")
+    monkeypatch.setitem(
+        globals(),
+        "STAGE_PATH",
+        suite_root / "stages" / "s1-baseline.yaml",
+    )
+    try:
+        yield source
+    finally:
+        shutil.rmtree(source, ignore_errors=True)
+'''
+    text = text.replace(old_git, helper, 1)
+    signature_replacements = {
+        '''def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees() -> None:''': '''def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees(
+    self_contained_s1_source: Path,
+) -> None:''',
+        '''def test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy() -> None:''': '''def test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy(
+    self_contained_s1_source: Path,
+) -> None:''',
+        '''def test_model_free_runner_executes_exactly_one_next_cell_and_seals(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:''': '''def test_model_free_runner_executes_exactly_one_next_cell_and_seals(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    self_contained_s1_source: Path,
+) -> None:''',
+        '''def test_model_free_status_and_export_reject_an_incomplete_suite(
+    tmp_path: Path,
+) -> None:''': '''def test_model_free_status_and_export_reject_an_incomplete_suite(
+    tmp_path: Path,
+    self_contained_s1_source: Path,
+) -> None:''',
+        '''def test_all_eight_model_free_cells_seal_export_and_detect_tampering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:''': '''def test_all_eight_model_free_cells_seal_export_and_detect_tampering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    self_contained_s1_source: Path,
+) -> None:''',
+    }
+    for old, new in signature_replacements.items():
+        if text.count(old) != 1:
+            raise RuntimeError("historical S1 selected regression signature changed")
+        text = text.replace(old, new, 1)
     return text.encode("utf-8")
 
 
@@ -230,6 +480,8 @@ def project_reference(repository: Path, pristine: Path, solution: Path, mapping:
         payload = apply_mapping(git_blob(repository, REFERENCE_COMMIT, relative), mapping)
         if relative == "tools/benchmark-runner/tests/test_routing_s2.py":
             payload = adapt_public_s2_test(payload)
+        elif relative == "tools/benchmark-runner/tests/test_routing_suite.py":
+            payload = adapt_public_s1_test(payload)
         write_bytes(solution, relative, payload)
     for record in composition["records"]:
         if record["category"] != "golden_or_export_mirror":
@@ -338,6 +590,52 @@ def mutate_operator(root: Path) -> None:
     path.write_bytes(canonical_json(value))
 
 
+_S2_WORKER_TEST_NAMES = (
+    "test_s2_stage_discriminator_rejects_cross_branch_bytes",
+    "test_s2_frozen_fixture_manifest_matches_live_model_controls",
+    "test_s2_retry_reserve_is_independent_and_never_recycles_early_turns",
+    "test_s2_b1_preflight_canonicalizes_legacy_project_pack",
+    "test_s2_fake_four_cell_plan_judge_property_seal_export",
+    "test_s2_posthoc_fixture_outputs_and_label_parity",
+)
+_SUITE_WORKER_TEST_NAMES = (
+    "test_routing_manifests_and_generated_schemas_match_contracts",
+    "test_complexity_profiles_are_recomputed_from_frozen_fixture_trees",
+    "test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy",
+    "test_model_free_runner_executes_exactly_one_next_cell_and_seals",
+    "test_model_free_status_and_export_reject_an_incomplete_suite",
+    "test_all_eight_model_free_cells_seal_export_and_detect_tampering",
+)
+
+
+def replace_worker_test_oracles(root: Path, mode: str) -> None:
+    if mode not in {"noop", "skip", "assert_false"}:
+        raise ValueError(f"unsupported Worker test-oracle mutation: {mode}")
+
+    def module(names: tuple[str, ...]) -> bytes:
+        lines = ['"""Adversarial Worker-owned test replacement."""', ""]
+        if mode == "skip":
+            lines.extend(("import pytest", ""))
+        for name in names:
+            if mode == "skip":
+                lines.append('@pytest.mark.skip(reason="adversarial Worker skip")')
+            lines.append(f"def {name}() -> None:")
+            lines.append("    pass" if mode in {"noop", "skip"} else '    assert False, "adversarial Worker assertion"')
+            lines.append("")
+        return ("\n".join(lines).rstrip() + "\n").encode("utf-8")
+
+    write_bytes(
+        root,
+        "tools/benchmark-runner/tests/test_routing_s2.py",
+        module(_S2_WORKER_TEST_NAMES),
+    )
+    write_bytes(
+        root,
+        "tools/benchmark-runner/tests/test_routing_suite.py",
+        module(_SUITE_WORKER_TEST_NAMES),
+    )
+
+
 MUTATIONS: tuple[tuple[str, str, Callable[[Path], None]], ...] = (
     ("r-p01-legacy-bytes", "R-P01-LEGACY-BYTES", mutate_legacy_bytes),
     ("r-p02-stage-discriminator", "R-P02-STAGE-DISCRIMINATOR", mutate_stage_discriminator),
@@ -357,6 +655,71 @@ def load_checker(checker_path: Path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def validate_public_r07_reference(solution: Path) -> dict[str, object]:
+    """Run the exact protected public R07 entrypoint against projected W."""
+
+    with tempfile.TemporaryDirectory(prefix="profile-r-public-r07-") as raw:
+        temp_root = Path(raw).resolve()
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "TEMP": str(temp_root),
+                "TMP": str(temp_root),
+                "TMPDIR": str(temp_root),
+                "PYTHONUTF8": "1",
+            }
+        )
+        environment.pop("PYTHONPATH", None)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(solution / "benchmark_checks" / "check_profile_r.py"),
+                "R07",
+            ],
+            cwd=solution,
+            env=environment,
+            capture_output=True,
+            timeout=900,
+            check=False,
+        )
+    stdout = completed.stdout.decode("utf-8", errors="replace")
+    evidence_prefix = "CHECK_ENVIRONMENT_EVIDENCE:"
+    evidence_lines = [
+        line[len(evidence_prefix) :]
+        for line in stdout.splitlines()
+        if line.startswith(evidence_prefix)
+    ]
+    evidence: dict[str, Any] = {}
+    if len(evidence_lines) == 1:
+        try:
+            candidate = json.loads(evidence_lines[0])
+        except json.JSONDecodeError:
+            candidate = None
+        if isinstance(candidate, dict):
+            evidence = candidate
+    pytest_counts = evidence.get("pytest")
+    passed = (
+        completed.returncode == 0
+        and stdout.splitlines()[-1:] == ["R07_PUBLIC_CONTRACT_OK"]
+        and pytest_counts
+        == {"tests": 12, "failures": 0, "errors": 0, "skipped": 0, "warnings": 0}
+        and int(evidence.get("growth_margin", -1)) >= 32
+        and int(evidence.get("growth_probe_path_length", -1)) >= 261
+    )
+    return {
+        "schema_version": 1,
+        "entrypoint": "benchmark_checks/check_profile_r.py R07",
+        "return_code": completed.returncode,
+        "stdout_sha256": sha256(completed.stdout),
+        "stderr_sha256": sha256(completed.stderr),
+        "pytest": pytest_counts,
+        "growth_margin": evidence.get("growth_margin"),
+        "growth_probe_path_length": evidence.get("growth_probe_path_length"),
+        "contract_ok_marker": "R07_PUBLIC_CONTRACT_OK" in stdout.splitlines(),
+        "passed": passed,
+    }
 
 
 def file_manifest(root: Path, *, exclude: set[str]) -> list[dict[str, object]]:
@@ -484,6 +847,12 @@ def build(repository: Path) -> dict[str, object]:
         temporary = Path(raw)
         solution = temporary / "solution"
         project_reference(repository, pristine, solution, mapping, composition)
+        public_r07_result = validate_public_r07_reference(solution)
+        write_bytes(
+            judge_root,
+            "evidence/public-r07-reference.json",
+            pretty_json(public_r07_result),
+        )
         reference_patch = patch_bytes(pristine, solution)
         write_bytes(judge_root, "reference.patch", reference_patch)
         pristine_eval = temporary / "eval-pristine"
@@ -515,6 +884,83 @@ def build(repository: Path) -> dict[str, object]:
             statuses = {item["property_id"]: item["status"] for item in result["properties"]}
             mutation_summaries.append({"mutation_id": mutation_id, "target_property_id": target_property, "statuses": statuses})
 
+        adversarial_summaries = []
+        for mode in ("noop", "skip", "assert_false"):
+            adversarial = temporary / f"adversarial-worker-tests-{mode}"
+            copy_tree(solution, adversarial)
+            replace_worker_test_oracles(adversarial, mode)
+            result = checker.evaluate_workspace(
+                adversarial,
+                experiment_id="phase-d-profile-r",
+                cell_id=f"worker-tests-{mode}",
+            )
+            statuses = {
+                item["property_id"]: item["status"]
+                for item in result["properties"]
+            }
+            matched = result["aggregate_status"] == "pass" and set(statuses.values()) == {"pass"}
+            adversarial_summaries.append(
+                {
+                    "case_id": f"worker-tests-{mode}",
+                    "worker_test_mode": mode,
+                    "implementation_mutation": None,
+                    "target_property_id": None,
+                    "aggregate_status": result["aggregate_status"],
+                    "statuses": statuses,
+                    "matched_expectation": matched,
+                }
+            )
+
+        co_mutations = (
+            ("r-p02-stage-discriminator", "R-P02-STAGE-DISCRIMINATOR", mutate_stage_discriminator),
+            ("r-p04-reserve-isolation", "R-P04-RESERVE-ISOLATION", mutate_reserve),
+            ("r-p06-export-roundtrip", "R-P06-EXPORT-ROUNDTRIP", mutate_export),
+            ("r-p07-cross-checkout", "R-P07-CROSS-CHECKOUT-REPRO", mutate_checkout),
+        )
+        for mutation_id, target_property, mutate in co_mutations:
+            adversarial = temporary / f"adversarial-{mutation_id}-plus-noop"
+            copy_tree(solution, adversarial)
+            mutate(adversarial)
+            replace_worker_test_oracles(adversarial, "noop")
+            result = checker.evaluate_workspace(
+                adversarial,
+                experiment_id="phase-d-profile-r",
+                cell_id=f"{mutation_id}-plus-noop",
+            )
+            statuses = {
+                item["property_id"]: item["status"]
+                for item in result["properties"]
+            }
+            matched = (
+                result["aggregate_status"] == "fail"
+                and statuses.get(target_property) == "fail"
+            )
+            adversarial_summaries.append(
+                {
+                    "case_id": f"{mutation_id}-plus-noop",
+                    "worker_test_mode": "noop",
+                    "implementation_mutation": mutation_id,
+                    "target_property_id": target_property,
+                    "aggregate_status": result["aggregate_status"],
+                    "statuses": statuses,
+                    "matched_expectation": matched,
+                }
+            )
+        write_bytes(
+            judge_root,
+            "evidence/adversarial-worker-test-oracle.json",
+            pretty_json(
+                {
+                    "schema_version": 1,
+                    "worker_test_paths": [
+                        "tools/benchmark-runner/tests/test_routing_s2.py",
+                        "tools/benchmark-runner/tests/test_routing_suite.py",
+                    ],
+                    "cases": adversarial_summaries,
+                }
+            ),
+        )
+
         reference_ok = reference_result["aggregate_status"] == "pass"
         pristine_failed = pristine_result["aggregate_status"] == "fail"
         mutation_ok = all(
@@ -526,6 +972,10 @@ def build(repository: Path) -> dict[str, object]:
             )
             for item in mutation_summaries
         )
+        adversarial_ok = all(
+            item["matched_expectation"] for item in adversarial_summaries
+        )
+        public_r07_ok = public_r07_result["passed"] is True
         forbidden = load_json(judge_root / "solution-leakage-catalog.json")
         worker_files = [path for path in pristine.rglob("*") if path.is_file()]
         leakage_hits = []
@@ -540,12 +990,21 @@ def build(repository: Path) -> dict[str, object]:
             f"- Reference aggregate: {reference_result['aggregate_status']}\n"
             f"- Pristine aggregate: {pristine_result['aggregate_status']}\n"
             f"- Negative mutation contracts: {'pass' if mutation_ok else 'fail'}\n"
+            f"- Adversarial Worker test-oracle contracts: {'pass' if adversarial_ok else 'fail'}\n"
+            f"- Exact public R07 projected-reference run: {'pass' if public_r07_ok else 'fail'}\n"
             f"- Forbidden Worker literal hits: {len(leakage_hits)}\n"
             "- The public S2 regression consumes current fixture outputs and never reads the hidden golden tree.\n"
             "- This source bundle does not claim the protected Judge runtime filesystem/no-network boundary.\n"
         )
         write_bytes(judge_root, "evidence/anonymization-review.md", review.encode("utf-8"))
-        eligible = reference_ok and pristine_failed and mutation_ok and not leakage_hits
+        eligible = (
+            reference_ok
+            and pristine_failed
+            and mutation_ok
+            and adversarial_ok
+            and public_r07_ok
+            and not leakage_hits
+        )
         eligibility = load_json(judge_root / "challenge-eligibility.json")
         eligibility.update({
             "status": "PROFILE_R_SOURCE_BUNDLE_VERIFIED" if eligible else "CHALLENGE_NOT_READY",
@@ -555,6 +1014,8 @@ def build(repository: Path) -> dict[str, object]:
             "reference_aggregate_status": reference_result["aggregate_status"],
             "pristine_aggregate_status": pristine_result["aggregate_status"],
             "negative_mutation_count": len(mutation_summaries),
+            "adversarial_worker_test_oracle_count": len(adversarial_summaries),
+            "public_r07_reference_verified": public_r07_ok,
         })
         write_bytes(judge_root, "challenge-eligibility.json", pretty_json(eligibility))
 

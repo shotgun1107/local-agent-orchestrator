@@ -6069,10 +6069,10 @@ index 1afa781513c71ae2329ecd660c50c7c67b521f8b..56ca7001b9419ffd3841912bdcf241bc
          judge_dir = tmp_path / "judge"
 diff --git a/tools/benchmark-runner/tests/test_routing_s2.py b/tools/benchmark-runner/tests/test_routing_s2.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..3e4dc829d62fb0d0e2c7c5dbd42cb1b34cad6172
+index 0000000000000000000000000000000000000000..9f58904b7df2b1515f4f1d9536dfd1f6e863132c
 --- /dev/null
 +++ b/tools/benchmark-runner/tests/test_routing_s2.py
-@@ -0,0 +1,763 @@
+@@ -0,0 +1,843 @@
 +from __future__ import annotations
 +
 +import json
@@ -6360,12 +6360,33 @@ index 0000000000000000000000000000000000000000..3e4dc829d62fb0d0e2c7c5dbd42cb1b3
 +    return result.stdout.strip()
 +
 +
++def _write_legacy_b1_project(workspace: Path) -> None:
++    project_path = workspace / ".orchestrator" / "project.yaml"
++    project = yaml.safe_load(project_path.read_text(encoding="utf-8"))
++    project_path.write_text(
++        yaml.safe_dump(
++            {
++                "schema_version": project["schema_version"],
++                "project_id": project["project_id"],
++                "purpose": "legacy S2 model-free fixture",
++                "requirements": ["preserve the public S2 contract"],
++                "task_order": ["T1", "T2", "T3"],
++            },
++            sort_keys=False,
++        ),
++        encoding="utf-8",
++        newline="\n",
++    )
++
++
 +def _create_s2_source_repository(tmp_path: Path) -> tuple[Path, Path, Path]:
 +    source = tmp_path / "source"
 +    for fixture_id in (CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID):
 +        target = source / "benchmarks" / "fixtures" / "routing-v1" / "intermediate" / fixture_id
 +        target.parent.mkdir(parents=True, exist_ok=True)
 +        shutil.copytree(FIXTURE_ROOT / fixture_id, target)
++        _write_legacy_b1_project(target)
++        _canonicalize_prepared_b1_project(target)
 +    _git(source, "init", "-q", "-b", "main")
 +    _git(source, "config", "user.name", "routing-s2-test")
 +    _git(source, "config", "user.email", "routing-s2@test.invalid")
@@ -6477,6 +6498,65 @@ index 0000000000000000000000000000000000000000..3e4dc829d62fb0d0e2c7c5dbd42cb1b3
 +        newline="\n",
 +    )
 +    return source, suite_path, stage_path
++
++
++def _canonicalize_prepared_b1_project(workspace: Path) -> dict[str, object]:
++    project_path = workspace / ".orchestrator" / "project.yaml"
++    legacy = yaml.safe_load(project_path.read_text(encoding="utf-8"))
++    assert set(legacy) == {
++        "schema_version",
++        "project_id",
++        "purpose",
++        "requirements",
++        "task_order",
++    }
++    capabilities = yaml.safe_load(
++        (workspace / ".orchestrator" / "capabilities.yaml").read_text(encoding="utf-8")
++    )["profiles"]
++    policies = yaml.safe_load(
++        (workspace / ".orchestrator" / "policies.yaml").read_text(encoding="utf-8")
++    )["policies"]
++    assert len(capabilities) == len(policies) == 1
++    canonical = {
++        "schema_version": legacy["schema_version"],
++        "project_id": legacy["project_id"],
++        "core_compat": ">=0.1,<0.2",
++        "repository_root": ".",
++        "default_capability_profile": next(iter(capabilities)),
++        "default_policy": next(iter(policies)),
++    }
++    project_path.write_text(
++        yaml.safe_dump(canonical, sort_keys=False),
++        encoding="utf-8",
++        newline="\n",
++    )
++    return canonical
++
++
++def test_s2_b1_preflight_canonicalizes_legacy_project_pack(tmp_path: Path) -> None:
++    for fixture_id in (CONFIG_FIXTURE_ID, INCIDENT_FIXTURE_ID):
++        workspace = tmp_path / fixture_id
++        shutil.copytree(FIXTURE_ROOT / fixture_id, workspace)
++        _write_legacy_b1_project(workspace)
++        legacy = yaml.safe_load(
++            (workspace / ".orchestrator" / "project.yaml").read_text(encoding="utf-8")
++        )
++        assert set(legacy) == {
++            "schema_version",
++            "project_id",
++            "purpose",
++            "requirements",
++            "task_order",
++        }
++        canonical = _canonicalize_prepared_b1_project(workspace)
++        assert set(canonical) == {
++            "schema_version",
++            "project_id",
++            "core_compat",
++            "repository_root",
++            "default_capability_profile",
++            "default_policy",
++        }
 +
 +
 +def _completed_result(paths: list[str]) -> dict[str, object]:
@@ -6837,10 +6917,117 @@ index 0000000000000000000000000000000000000000..3e4dc829d62fb0d0e2c7c5dbd42cb1b3
 +    verified = verify_routing_s2_nonlive_export(Path(exported["results_root"]))
 +    assert verified["export_sha256"] == exported["export_sha256"]
 diff --git a/tools/benchmark-runner/tests/test_routing_suite.py b/tools/benchmark-runner/tests/test_routing_suite.py
-index a7cdd1e51eab5a920fd2c09e5a1b7f4d412f4ca6..4a2aaf9c68ed98386672936136a60c23ebf73951 100644
+index a7cdd1e51eab5a920fd2c09e5a1b7f4d412f4ca6..3e602827f4989b0e5ceafc542a8a765a11709af1 100644
 --- a/tools/benchmark-runner/tests/test_routing_suite.py
 +++ b/tools/benchmark-runner/tests/test_routing_suite.py
-@@ -252,7 +252,7 @@ def _b1_fake_fixture(fixture_id: str) -> dict[str, object]:
+@@ -2,7 +2,10 @@ from __future__ import annotations
+ 
+ import hashlib
+ import json
++import os
+ import shutil
++import subprocess
++import tempfile
+ import sys
+ from datetime import datetime, timezone
+ from pathlib import Path
+@@ -99,6 +102,95 @@ def _git() -> Path:
+     return Path(executable)
+ 
+ 
++def _fixture_git(repository: Path, *arguments: str) -> str:
++    completed = subprocess.run(
++        [
++            str(_git()),
++            "-c",
++            "core.longpaths=true",
++            "-C",
++            str(repository),
++            *arguments,
++        ],
++        check=True,
++        capture_output=True,
++        text=True,
++        encoding="utf-8",
++    )
++    return completed.stdout.strip()
++
++
++def _write_self_contained_manifest(source: Path, relative: str) -> None:
++    value = yaml.safe_load((REPOSITORY_ROOT / relative).read_text(encoding="utf-8"))
++    commit = _fixture_git(source, "rev-parse", "HEAD")
++    for fixture in value["fixtures"]:
++        fixture["commit"] = commit
++        fixture["git_tree"] = _fixture_git(
++            source,
++            "rev-parse",
++            f"HEAD:{fixture['path']}",
++        )
++    destination = source / relative
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    destination.write_text(
++        yaml.safe_dump(value, sort_keys=False),
++        encoding="utf-8",
++        newline="\n",
++    )
++
++
++def _create_self_contained_s1_repository(tmp_path: Path) -> Path:
++    _ = tmp_path
++    source = Path(tempfile.mkdtemp(prefix="s1-", dir=os.environ["TEMP"]))
++    for fixture_id in (
++        "code-change",
++        "document-read",
++        "sequential-code-change",
++        "sequential-document",
++    ):
++        destination = source / "benchmarks" / "fixtures" / fixture_id
++        destination.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copytree(REPOSITORY_ROOT / "benchmarks" / "fixtures" / fixture_id, destination)
++    shutil.copytree(
++        SUITE_ROOT,
++        source / "benchmarks" / "suites" / "sdk-routing-v1",
++    )
++    source.mkdir(parents=True, exist_ok=True)
++    _fixture_git(source, "init", "-q", "-b", "main")
++    _fixture_git(source, "config", "core.autocrlf", "false")
++    _fixture_git(source, "config", "user.name", "routing-s1-test")
++    _fixture_git(source, "config", "user.email", "routing-s1@test.invalid")
++    _fixture_git(source, "add", "-A")
++    _fixture_git(source, "commit", "-q", "-m", "self-contained S1 fixtures")
++    for relative in (
++        "benchmarks/manifests/b0-b1-frozen.yaml",
++        "benchmarks/manifests/b0-b1-sequential-followup.yaml",
++    ):
++        _write_self_contained_manifest(source, relative)
++    return source
++
++
++@pytest.fixture
++def self_contained_s1_source(
++    tmp_path: Path,
++    monkeypatch: pytest.MonkeyPatch,
++) -> Path:
++    source = _create_self_contained_s1_repository(tmp_path)
++    suite_root = source / "benchmarks" / "suites" / "sdk-routing-v1"
++    monkeypatch.setitem(globals(), "REPOSITORY_ROOT", source)
++    monkeypatch.setitem(globals(), "SUITE_ROOT", suite_root)
++    monkeypatch.setitem(globals(), "SUITE_PATH", suite_root / "suite.yaml")
++    monkeypatch.setitem(
++        globals(),
++        "STAGE_PATH",
++        suite_root / "stages" / "s1-baseline.yaml",
++    )
++    try:
++        yield source
++    finally:
++        shutil.rmtree(source, ignore_errors=True)
++
++
+ def _artifacts() -> tuple[ArtifactIdentity, list[ArtifactIdentity]]:
+     runner_sha256 = runner_source_sha256()
+     return (
+@@ -252,7 +344,7 @@ def _b1_fake_fixture(fixture_id: str) -> dict[str, object]:
  def test_routing_manifests_and_generated_schemas_match_contracts(tmp_path: Path) -> None:
      suite = load_routing_suite(SUITE_PATH)
      stage = load_routing_stage(STAGE_PATH)
@@ -6849,3 +7036,49 @@ index a7cdd1e51eab5a920fd2c09e5a1b7f4d412f4ca6..4a2aaf9c68ed98386672936136a60c23
      assert suite.status == "frozen_before_execution"
      assert stage.status == "frozen_before_execution"
      assert stage.purpose == "calibration_only"
+@@ -295,7 +387,9 @@ def test_routing_manifests_and_generated_schemas_match_contracts(tmp_path: Path)
+         type(stage).model_validate(stage_payload)
+ 
+ 
+-def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees() -> None:
++def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees(
++    self_contained_s1_source: Path,
++) -> None:
+     stage = load_routing_stage(STAGE_PATH)
+     declarations = {profile.fixture_id: profile.complexity for profile in stage.profiles}
+     fixtures = {}
+@@ -315,7 +409,9 @@ def test_complexity_profiles_are_recomputed_from_frozen_fixture_trees() -> None:
+         assert calculated == declared
+ 
+ 
+-def test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy() -> None:
++def test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy(
++    self_contained_s1_source: Path,
++) -> None:
+     plan = _plan()
+     assert [(cell.fixture_id, cell.variant_id) for cell in plan.cells] == [
+         ("code-change", "c2"),
+@@ -341,6 +437,7 @@ def test_s1_plan_has_exact_eight_cell_order_and_calibration_only_policy() -> Non
+ def test_model_free_runner_executes_exactly_one_next_cell_and_seals(
+     tmp_path: Path,
+     monkeypatch: pytest.MonkeyPatch,
++    self_contained_s1_source: Path,
+ ) -> None:
+     monkeypatch.syspath_prepend(str(B1_SOURCE_ROOT))
+     from orchestrator.contract import RunSpec
+@@ -420,6 +517,7 @@ def test_model_free_runner_executes_exactly_one_next_cell_and_seals(
+ 
+ def test_model_free_status_and_export_reject_an_incomplete_suite(
+     tmp_path: Path,
++    self_contained_s1_source: Path,
+ ) -> None:
+     plan = _plan()
+     experiment_dir = initialize_routing_s1_experiment(tmp_path / "state", plan)
+@@ -444,6 +542,7 @@ def test_model_free_status_and_export_reject_an_incomplete_suite(
+ def test_all_eight_model_free_cells_seal_export_and_detect_tampering(
+     tmp_path: Path,
+     monkeypatch: pytest.MonkeyPatch,
++    self_contained_s1_source: Path,
+ ) -> None:
+     monkeypatch.syspath_prepend(str(B1_SOURCE_ROOT))
+     plan = _plan()

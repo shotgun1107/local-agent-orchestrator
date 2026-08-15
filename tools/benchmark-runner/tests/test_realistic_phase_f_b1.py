@@ -27,6 +27,7 @@ from benchmark_runner.realistic_phase_f import (
 from benchmark_runner.realistic_phase_f_b1 import (
     PHASE_F_B1_EVIDENCE_FILENAME,
     ProfileRPhaseFB1Backend,
+    _b1_adapter_outcome,
 )
 from benchmark_runner.realistic_phase_f_finalize import (
     FakePhaseFJudgePort,
@@ -43,6 +44,27 @@ CANDIDATE_ROOT = (
     / "artifacts"
     / "sdk-routing-realistic-high-difficulty-phase-e-v1"
 )
+
+
+def test_b1_environment_failure_is_not_labeled_as_product_failure() -> None:
+    report = {
+        "tasks": [
+            {
+                "attempts": [
+                    {"failure_kind": "check_environment", "state": "FAILED"}
+                ]
+            }
+        ]
+    }
+
+    assert _b1_adapter_outcome("FAILED", report) == (
+        "infrastructure_error",
+        "check_environment",
+    )
+    assert _b1_adapter_outcome(
+        "FAILED",
+        {"tasks": [{"attempts": [{"failure_kind": "check_failed"}]}]},
+    ) == ("failed", "b1_failed")
 
 
 def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(

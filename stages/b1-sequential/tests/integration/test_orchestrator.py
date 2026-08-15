@@ -197,6 +197,69 @@ def test_check_process_error_is_environment_failure_and_never_retries(
     assert snapshot["checks"][0]["state"] == "ERROR"
 
 
+def test_environment_diagnostic_is_preserved_as_verifier_evidence(
+    tmp_path: Path,
+    project_factory,
+) -> None:
+    root = project_factory()
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    diagnostic = {
+        "command_ordinal": 1,
+        "path_lengths": {
+            "deepest_observed": 209,
+            "git_config": 263,
+            "growth_target": 261,
+            "probe_file": 261,
+            "probe_relative": 204,
+            "probe_repository": 251,
+            "temp_root": 123,
+        },
+        "return_code": 128,
+        "safe_error_code": "GIT_INIT_FAILED_PATH_LIMIT",
+        "schema_version": 1,
+        "stage": "r07_path_growth_git",
+        "stderr_sha256": "a" * 64,
+    }
+    encoded = json.dumps(
+        diagnostic,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    checks["checks"]["test_check"]["argv"] = [
+        sys.executable,
+        "-c",
+        (
+            "print('CHECK_FAILURE_CLASS:ENVIRONMENT'); "
+            f"print('CHECK_ENVIRONMENT_DIAGNOSTIC:{encoded}'); "
+            "raise SystemExit(1)"
+        ),
+    ]
+    checks_path.write_text(
+        yaml.safe_dump(checks, sort_keys=False),
+        encoding="utf-8",
+    )
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise environment diagnostic evidence")
+
+    state = tmp_path / "state"
+    _, snapshot = execute(root, state, make_spec())
+
+    attempts = snapshot["tasks"][0]["attempts"]
+    assert len(attempts) == 1
+    assert attempts[0]["failure_kind"] == "check_environment"
+    artifacts = [
+        artifact
+        for artifact in snapshot["artifacts"]
+        if artifact["kind"] == "check_result"
+        and artifact["relative_path"].endswith("/environment-diagnostic.json")
+    ]
+    assert len(artifacts) == 1
+    diagnostic_path = state / artifacts[0]["relative_path"]
+    assert json.loads(diagnostic_path.read_text(encoding="utf-8")) == diagnostic
+
+
 def test_public_checker_permission_error_is_environment_failure_and_never_retries(
     tmp_path: Path,
     project_factory,

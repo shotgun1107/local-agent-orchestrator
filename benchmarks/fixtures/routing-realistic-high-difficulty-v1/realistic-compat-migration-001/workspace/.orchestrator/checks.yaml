@@ -40,7 +40,7 @@ checks:
     kind: command
     argv: ["python", "benchmark_checks/check_profile_r.py", "R07"]
     cwd: "."
-    timeout_seconds: 120
+    timeout_seconds: 900
     expected_exit_codes: [0]
   r08_contract:
     kind: command

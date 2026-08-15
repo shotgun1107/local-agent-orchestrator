@@ -3,8 +3,8 @@
   "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
   "cell_id": "r-p03-plan-binding",
   "checker_run_status": "completed",
-  "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
-  "envelope_sha256": "02e4fd4d265df3b80e42b33a8dfdcfeda400aefcde5e9df8e5f223df6e39b612",
+  "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
+  "envelope_sha256": "89756fd52678c1c8a7ea4c588f1b960b6cae9f712892472b2e0794199faec07f",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -30,7 +30,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
       "evidence_refs": [
         {
@@ -57,7 +57,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -73,8 +73,8 @@
           "sha256": "dda303eefaef295bbad9f3b8e1f4764eaf0e4f795e329d7d1f683172c1ab2210"
         },
         {
-          "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "9dd213c84cb2a1398e9f720e1be2af54ba6039b131aa0dfcd9801e38f81dcc17"
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "28963c3179b2708cb41890008f8292a1210612317b59f29ca15bc88bf6003f85"
         }
       ],
       "prerequisite_ids": [],
@@ -84,7 +84,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -105,7 +105,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -117,7 +117,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -136,7 +136,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -149,7 +149,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -161,7 +161,7 @@
       "status": "blocked_by_prerequisite"
     },
     {
-      "checker_sha256": "1f14a31231cc0e6af850c6efdb754b5ca54a978d9dabacab6bc906c770f72e03",
+      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
       "description": "A prerequisite property did not pass.",
       "evidence_refs": [],
       "prerequisite_ids": [
@@ -175,7 +175,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "966ad555cca1ca4bc23b1bea7d302de00df79b286692654a5028111fbc059b57",
-  "workspace_before_sha256": "966ad555cca1ca4bc23b1bea7d302de00df79b286692654a5028111fbc059b57",
+  "workspace_after_sha256": "c8580efce19db22a6ba494262cb1811a61393a6422e6f122c100b0692e6f700d",
+  "workspace_before_sha256": "c8580efce19db22a6ba494262cb1811a61393a6422e6f122c100b0692e6f700d",
   "workspace_mutated": false
 }

@@ -42,10 +42,20 @@ def _git() -> Path:
 def _prepare(tmp_path: Path, fixture_id: str):
     manifest = load_frozen_manifest(MANIFEST_PATH)
     fixture = next(item for item in manifest.fixtures if item.id == fixture_id)
-    return FixtureRestorer(REPOSITORY_ROOT, str(_git())).restore(
+    prepared = FixtureRestorer(REPOSITORY_ROOT, str(_git())).restore(
         fixture,
         tmp_path / fixture_id,
     )
+    for key, value in (
+        ("user.name", "benchmark-runner-test"),
+        ("user.email", "benchmark-runner-test@example.invalid"),
+    ):
+        subprocess.run(
+            [str(_git()), "-C", str(prepared.workspace), "config", key, value],
+            check=True,
+            capture_output=True,
+        )
+    return prepared
 
 
 def test_check_environment_contract_is_exact(tmp_path: Path, monkeypatch) -> None:

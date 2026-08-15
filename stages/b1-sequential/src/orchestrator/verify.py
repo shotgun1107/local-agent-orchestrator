@@ -5,6 +5,7 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -39,7 +40,41 @@ from .contract import (
 PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 16_384
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
+CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+CHECK_ENVIRONMENT_DIAGNOSTIC_MAX_BYTES = 4_096
+CHECK_ENVIRONMENT_DIAGNOSTIC_KEYS = frozenset(
+    {
+        "schema_version",
+        "stage",
+        "command_ordinal",
+        "return_code",
+        "stderr_sha256",
+        "safe_error_code",
+        "path_lengths",
+    }
+)
+CHECK_ENVIRONMENT_STAGE_PATTERN = re.compile(r"[a-z][a-z0-9_]{0,63}\Z")
+CHECK_ENVIRONMENT_ERROR_CODE_PATTERN = re.compile(r"[A-Z][A-Z0-9_]{0,95}\Z")
+CHECK_ENVIRONMENT_PATH_LENGTH_KEYS = frozenset(
+    {
+        "temp_root",
+        "junit_file",
+        "deepest_observed",
+        "growth_target",
+        "probe_repository",
+        "probe_relative",
+        "probe_file",
+        "git_config",
+    }
+)
+CHECK_ENVIRONMENT_ORDINAL_MAX = 64
+CHECK_ENVIRONMENT_RETURN_CODE_MIN = -(2**31)
+CHECK_ENVIRONMENT_RETURN_CODE_MAX = (2**32) - 1
+CHECK_ENVIRONMENT_PATH_LENGTH_MAX = 1_000_000
 CHECK_TEMP_MARKER = ".lao-check-allocation"
+CHECK_TEMP_ALLOCATION_ID_LENGTH = 32
+CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX = ("git-probe", ".git", "config")
+CHECK_TEMP_HOSTILE_TRACKED_PATH_LENGTH = 320
 WINDOWS_LEGACY_PATH_LIMIT = 260
 
 
@@ -126,6 +161,7 @@ def validate_external_check_temp_root(
     *,
     forbidden_roots: Iterable[Path],
     required_descendant_headroom: int = 0,
+    required_allocation_suffixes: Iterable[tuple[str, ...]] = (),
     require_ntfs: bool = False,
 ) -> Path:
     raw = Path(root)
@@ -157,6 +193,28 @@ def validate_external_check_temp_root(
             "check_environment",
             "Check temp root does not preserve the required Windows path headroom",
         )
+    for suffix in required_allocation_suffixes:
+        candidate = resolved / ("a" * CHECK_TEMP_ALLOCATION_ID_LENGTH)
+        for component in suffix:
+            part = PurePosixPath(component)
+            if (
+                len(part.parts) != 1
+                or part.parts[0] in {"", ".", ".."}
+                or "\\" in component
+            ):
+                raise VerificationError(
+                    "check_environment",
+                    "Check temp required allocation suffix is invalid",
+                )
+            candidate /= component
+        if os.name == "nt" and len(str(candidate)) >= WINDOWS_LEGACY_PATH_LIMIT:
+            raise VerificationError(
+                "check_environment",
+                (
+                    "Check temp root does not preserve exact Windows path headroom "
+                    f"for allocation descendant {'/'.join(suffix)}"
+                ),
+            )
     if require_ntfs and os.name == "nt":
         filesystem = _windows_filesystem_name(resolved)
         if filesystem is None or filesystem.casefold() != "ntfs":
@@ -292,6 +350,124 @@ def extract_public_check_feedback(result: CheckResult) -> PublicCheckFeedback:
         transmitted_bytes=transmitted,
         truncated=truncated,
     )
+
+
+def extract_check_environment_diagnostic(result: CheckResult) -> dict[str, Any] | None:
+    """Parse one bounded, canonical verifier-only environment diagnostic record."""
+
+    payloads = [
+        line[len(CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX):]
+        for stream in (result.stdout, result.stderr)
+        for line in stream.splitlines()
+        if line.startswith(CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX)
+    ]
+    if not payloads:
+        return None
+    if len(payloads) != 1:
+        raise VerificationError(
+            "check_environment",
+            "Check emitted multiple environment diagnostic records",
+        )
+    encoded = payloads[0].encode("utf-8")
+    if len(encoded) > CHECK_ENVIRONMENT_DIAGNOSTIC_MAX_BYTES:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic record exceeds the byte limit",
+        )
+    try:
+        value = json.loads(encoded)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic record is invalid JSON",
+        ) from exc
+    if type(value) is not dict or canonical_json(value) != payloads[0]:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic record is not canonical version 1",
+        )
+    if set(value) != CHECK_ENVIRONMENT_DIAGNOSTIC_KEYS:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic record has an unexpected schema",
+        )
+    schema_version = value["schema_version"]
+    stage = value["stage"]
+    command_ordinal = value["command_ordinal"]
+    return_code = value["return_code"]
+    stderr_sha256 = value["stderr_sha256"]
+    safe_error_code = value["safe_error_code"]
+    path_lengths = value["path_lengths"]
+    if type(schema_version) is not int or schema_version != 1:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic schema version is invalid",
+        )
+    if (
+        not isinstance(stage, str)
+        or CHECK_ENVIRONMENT_STAGE_PATTERN.fullmatch(stage) is None
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic stage is invalid",
+        )
+    if (
+        type(command_ordinal) is not int
+        or not 0 <= command_ordinal <= CHECK_ENVIRONMENT_ORDINAL_MAX
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic command ordinal is invalid",
+        )
+    if return_code is not None and (
+        type(return_code) is not int
+        or not CHECK_ENVIRONMENT_RETURN_CODE_MIN
+        <= return_code
+        <= CHECK_ENVIRONMENT_RETURN_CODE_MAX
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic return code is invalid",
+        )
+    if (
+        not isinstance(stderr_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", stderr_sha256) is None
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic stderr hash is invalid",
+        )
+    if (
+        not isinstance(safe_error_code, str)
+        or CHECK_ENVIRONMENT_ERROR_CODE_PATTERN.fullmatch(safe_error_code) is None
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic safe error code is invalid",
+        )
+    if (
+        type(path_lengths) is not dict
+        or not set(path_lengths).issubset(CHECK_ENVIRONMENT_PATH_LENGTH_KEYS)
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic path-length keys are invalid",
+        )
+    if any(
+        type(path_length) is not int
+        or not 0 <= path_length <= CHECK_ENVIRONMENT_PATH_LENGTH_MAX
+        for path_length in path_lengths.values()
+    ):
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic path length is invalid",
+        )
+    if result.failure_classification is not CheckFailureClassification.ENVIRONMENT:
+        raise VerificationError(
+            "check_environment",
+            "Check environment diagnostic record lacks ENVIRONMENT classification",
+        )
+    return value
 
 
 def path_matches(path: str, patterns: Iterable[str]) -> bool:
@@ -577,6 +753,11 @@ def isolated_check_temp_directory(temp_root: Path) -> Iterator[CheckTempAllocati
 
     root = Path(temp_root).resolve()
     allocation_id = uuid.uuid4().hex
+    if len(allocation_id) != CHECK_TEMP_ALLOCATION_ID_LENGTH:
+        raise VerificationError(
+            "check_environment",
+            "Check temp allocation identifier length differs",
+        )
     allocation = root / allocation_id
     marker = allocation / CHECK_TEMP_MARKER
     try:
@@ -675,6 +856,11 @@ def build_check_environment(
             "TEMP": str(temp_path),
             "TMP": str(temp_path),
             "TMPDIR": str(temp_path),
+            # Some production checks call Path.home().  Bind both platform
+            # conventions to the secret-free, Check-owned allocation instead
+            # of inheriting the operator's real profile directory.
+            "HOME": str(temp_path),
+            "USERPROFILE": str(temp_path),
         }
     )
     if git_safe_directory is not None:
@@ -687,9 +873,100 @@ def build_check_environment(
     return environment
 
 
-def preflight_check_environment(workspace: GitWorkspace, *, temp_root: Path) -> None:
+def _hostile_check_git_probe(
+    workspace: GitWorkspace,
+    *,
+    allocation: CheckTempAllocation,
+    environment: dict[str, str],
+) -> None:
+    """Exercise Git bootstrap and a long tracked descendant below the real allocation."""
+
+    repository = allocation.path / CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX[0]
+    try:
+        repository.mkdir(parents=False, exist_ok=False)
+    except OSError as exc:
+        raise VerificationError(
+            "check_environment",
+            "hostile external Check Git probe repository is unavailable",
+        ) from exc
+    leaf = "probe.txt"
+    descendant = repository
+    while len(str(descendant / leaf)) < CHECK_TEMP_HOSTILE_TRACKED_PATH_LENGTH:
+        remaining = CHECK_TEMP_HOSTILE_TRACKED_PATH_LENGTH - len(str(descendant / leaf)) - 1
+        descendant /= "g" * min(max(remaining, 1), 40)
+    try:
+        descendant.mkdir(parents=True, exist_ok=False)
+        probe_file = descendant / leaf
+        probe_file.write_text("hostile external Check Git probe\n", encoding="utf-8")
+    except OSError as exc:
+        raise VerificationError(
+            "check_environment",
+            "hostile external Check tracked path is unavailable",
+        ) from exc
+    relative = probe_file.relative_to(repository).as_posix()
+    commands = (
+        ("git_init", [str(workspace.git_executable), "-C", str(repository), "init", "-q"]),
+        ("git_add", [str(workspace.git_executable), "-C", str(repository), "add", "--", relative]),
+        (
+            "git_status",
+            [
+                str(workspace.git_executable),
+                "-C",
+                str(repository),
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ],
+        ),
+    )
+    for stage, command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=workspace.root,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=30,
+                shell=False,
+                env=environment,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise VerificationError(
+                "check_environment",
+                f"hostile external Check Git probe could not run ({stage})",
+            ) from exc
+        if completed.returncode != 0:
+            stderr_sha256 = sha256_bytes(completed.stderr or b"")
+            raise VerificationError(
+                "check_environment",
+                (
+                    "hostile external Check Git probe failed "
+                    f"({stage}, exit={completed.returncode}, stderr_sha256={stderr_sha256})"
+                ),
+            )
+    if relative.encode("utf-8") not in (completed.stdout or b""):
+        raise VerificationError(
+            "check_environment",
+            "hostile external Check Git probe did not stage the tracked descendant",
+        )
+
+
+def preflight_check_environment(
+    workspace: GitWorkspace,
+    *,
+    temp_root: Path,
+    hostile_git_probe: bool = False,
+) -> None:
     """Fail before model dispatch unless a Check subprocess can use its temp root."""
 
+    if hostile_git_probe:
+        validate_external_check_temp_root(
+            temp_root,
+            forbidden_roots=(),
+            required_allocation_suffixes=(CHECK_TEMP_GIT_BOOTSTRAP_SUFFIX,),
+        )
     with isolated_check_temp_directory(temp_root) as allocation:
         environment = build_check_environment(
             temp_directory=allocation.path,
@@ -724,6 +1001,12 @@ def preflight_check_environment(workspace: GitWorkspace, *, temp_root: Path) -> 
             raise VerificationError(
                 "check_environment",
                 "external Check temp probe failed",
+            )
+        if hostile_git_probe:
+            _hostile_check_git_probe(
+                workspace,
+                allocation=allocation,
+                environment=environment,
             )
 
 

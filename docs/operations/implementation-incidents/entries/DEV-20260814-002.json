@@ -9,7 +9,7 @@
   "discovered_at": "2026-08-14T03:10:52Z",
   "resolved_at": null,
   "discovered_by": "Phase F Profile R B1 회사 v8 live run",
-  "symptom": "R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 experiment/cell/workspace 경로를 만들어 git init이 Filename too long으로 실패했고 재시도도 같은 이유로 실패했다",
+  "symptom": "Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 checker가 뒤이어 만든 자체 path-growth Git 저장소가 Windows 경로 한계를 넘어서 ENVIRONMENT로 실패했다. 같은 checker는 이름만 맞춘 no-op 테스트를 통과시킬 수 있어 유효한 구현은 거부하고 실질 assertion 없는/no-op 회귀시험은 허용하는 역전된 시험 경계였다.",
   "reproduction": [
     "raw root C:\\lao-phase-f-live-66e6607b-company-pair-2의 B1 R07 attempt 001과 002 check result를 읽는다",
     "Worker workspace에서 python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py를 실행한다"
@@ -17,7 +17,7 @@
   "evidence": [
     {
       "kind": "direct-observation",
-      "detail": "2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. 공개 Evidence만으로 구체 ENVIRONMENT 분기는 아직 식별되지 않았다."
+      "detail": "2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. v11 봉인 시점의 공개 Evidence만으로는 구체 ENVIRONMENT 분기를 식별하지 못했다."
     },
     {
       "kind": "direct-observation",
@@ -82,9 +82,25 @@
     {
       "kind": "reproducible-test",
       "detail": "source 33463a3의 Phase E v11 0-turn 후보로 production-shaped acceptance를 독립 root에서 2회 통과했고 각 실행은 Cell 1·2만 seal, 공개 Check 16/16, cleanup residue와 hash mismatch 0이었다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "2026-08-15 보존 v11 B1 workspace의 byte-exact 복사본에서 R07을 재현한 결과 선택된 공개 pytest는 4/4 통과했고, 그 다음 checker 자체의 git init이 Filename too long return code 128로 실패했다"
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "checker가 관측한 최장 Worker 경로에 32자를 더한 뒤 그 아래에 git-probe/.git/config까지 생성해 자신이 측정하려는 경계보다 더 긴 저장소 루트를 만들고 있었다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "Worker 소유 test_routing_s2.py를 이름만 맞춘 pass 함수로 바꾼 적대 복사본이 기존 R07_PUBLIC_CONTRACT_OK를 받았고, 실질 구현의 더 긴 경로는 반대로 ENVIRONMENT로 거부됐다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "교정 뒤 공개 R07은 정확한 12개 case를 실행하고 short-root Git에서 260자를 넘는 tracked descendant를 add·lookup했다. 전용 적대 회귀 13개와 production-shaped B1 acceptance 두 경로가 통과했다"
     }
   ],
-  "root_cause": "B1 Check용 TEMP를 Worker workspace의 Git metadata 아래에 두는 격리 정책과 S2 회귀가 내부에서 다시 experiment/cell/workspace를 만드는 구조가 결합해 Windows 경로 길이 한계를 넘었다. preflight와 단위시험은 실제 child pytest와 nested Git 깊이를 관통하지 않았고, core.longpaths는 첫 git init 뒤에 설정됐다. 환경성 Check 실패도 제품 assertion과 구분되지 않아 두 번째 model Attempt를 소비했다.",
+  "root_cause": "과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다.",
   "considered_options": [
     {
       "option": "같은 live Cell을 다시 실행",
@@ -107,7 +123,7 @@
       "reason": "단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다"
     }
   ],
-  "resolution": "Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68df에서 새 Worker snapshot에 재결합했다. q15 qualification v12는 CHALLENGE_READY 9/9, Phase E v11 후보는 0-turn으로 별도 검증됐고 exact-candidate acceptance 2회도 통과했다. revision 3 readiness package의 독립 재심사가 남아 있으므로 incident는 investigating과 Live NO-GO를 유지한다.",
+  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. model-free 통합 검증은 통과했지만 새 source의 clean 전체 회귀·Docker qualification·0-turn candidate가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/verify.py",
     "stages/b1-sequential/src/orchestrator/schedule.py",
@@ -115,14 +131,19 @@
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py",
-    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py"
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
+    "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py"
   ],
   "regression_tests": [
     "실제 Phase F→B1→Check→pytest→nested Git 깊이에서 R01~R08을 관통하는 Windows model-free 회귀를 독립 root에서 2회 실행",
     "Check별 외부 short TEMP allocation이 live builder부터 실제 Check까지 전달되고 종료 뒤 residue 0인 회귀",
     "Worker materialization, B1 GitWorkspace와 nested fixture restore의 첫 Git 명령부터 longpaths·autocrlf·config origin이 통제되는 회귀",
     "환경 또는 미분류 Check 실패가 두 번째 B1 Attempt나 model turn을 생성하지 않는 회귀",
-    "claim 작성 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 작성 뒤 seal state 실패에서 같은 Cell 재실행과 다음 Cell dispatch를 차단하는 회귀"
+    "claim 작성 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 작성 뒤 seal state 실패에서 같은 Cell 재실행과 다음 Cell dispatch를 차단하는 회귀",
+    "R07 필수 공개 시험의 exact 12-case 수집·실행과 no-op·skip·case-count mismatch 거부 회귀",
+    "short-root Git 저장소의 260자 초과 tracked descendant add·lookup과 실제 B1 allocation suffix를 포함하는 hostile preflight 회귀",
+    "환경진단 marker의 strict Schema·Evidence 보존·Worker feedback 비노출 회귀"
   ],
   "verification": [
     "B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨",
@@ -145,13 +166,19 @@
     "B1 전체 83 passed, Profile R 영향 회귀 30 passed, Judge·fixture 회귀 16 passed와 1 opt-in skipped",
     "q15 Profile R Docker 9-Cell CHALLENGE_READY와 기대 일치 9/9, 별도 verifier 통과, 잔여 container 0",
     "Phase E v11 후보가 source 33463a3과 qualification v12에 0 model turn으로 결합되고 별도 verifier를 통과",
-    "Phase E v11 exact-candidate acceptance 2회가 84.30s와 94.24s에 통과하고 원시 Evidence hash mismatch 0"
+    "Phase E v11 exact-candidate acceptance 2회가 84.30s와 94.24s에 통과하고 원시 Evidence hash mismatch 0",
+    "R07 공개 checker 적대 회귀 13 passed",
+    "B1 verifier 11 passed, scheduler 환경진단 3 passed, B1 Measurement/live 타깃 4 passed",
+    "교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로가 각각 8 Task, 16 Check, R07 12 case로 통과",
+    "영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
-    "live-readiness package 봉인과 독립 재심사가 끝나지 않았다",
+    "새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
-    "새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
+    "새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다",
+    "현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다",
+    "새 Worker·Judge source identity로 Docker qualification과 Phase E 0-turn candidate를 다시 만들어야 한다"
   ],
   "related_commits": [
     "80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a",

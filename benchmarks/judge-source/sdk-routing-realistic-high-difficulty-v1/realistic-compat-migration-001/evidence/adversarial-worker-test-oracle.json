@@ -1,0 +1,135 @@
+{
+  "cases": [
+    {
+      "aggregate_status": "pass",
+      "case_id": "worker-tests-noop",
+      "implementation_mutation": null,
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "pass",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "pass",
+        "R-P07-CROSS-CHECKOUT-REPRO": "pass",
+        "R-P08-OPERATOR-CONTRACT": "pass"
+      },
+      "target_property_id": null,
+      "worker_test_mode": "noop"
+    },
+    {
+      "aggregate_status": "pass",
+      "case_id": "worker-tests-skip",
+      "implementation_mutation": null,
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "pass",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "pass",
+        "R-P07-CROSS-CHECKOUT-REPRO": "pass",
+        "R-P08-OPERATOR-CONTRACT": "pass"
+      },
+      "target_property_id": null,
+      "worker_test_mode": "skip"
+    },
+    {
+      "aggregate_status": "pass",
+      "case_id": "worker-tests-assert_false",
+      "implementation_mutation": null,
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "pass",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "pass",
+        "R-P07-CROSS-CHECKOUT-REPRO": "pass",
+        "R-P08-OPERATOR-CONTRACT": "pass"
+      },
+      "target_property_id": null,
+      "worker_test_mode": "assert_false"
+    },
+    {
+      "aggregate_status": "fail",
+      "case_id": "r-p02-stage-discriminator-plus-noop",
+      "implementation_mutation": "r-p02-stage-discriminator",
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "fail",
+        "R-P03-PLAN-BINDING": "blocked_by_prerequisite",
+        "R-P04-RESERVE-ISOLATION": "blocked_by_prerequisite",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "blocked_by_prerequisite",
+        "R-P07-CROSS-CHECKOUT-REPRO": "blocked_by_prerequisite",
+        "R-P08-OPERATOR-CONTRACT": "blocked_by_prerequisite"
+      },
+      "target_property_id": "R-P02-STAGE-DISCRIMINATOR",
+      "worker_test_mode": "noop"
+    },
+    {
+      "aggregate_status": "fail",
+      "case_id": "r-p04-reserve-isolation-plus-noop",
+      "implementation_mutation": "r-p04-reserve-isolation",
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "fail",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "pass",
+        "R-P07-CROSS-CHECKOUT-REPRO": "pass",
+        "R-P08-OPERATOR-CONTRACT": "pass"
+      },
+      "target_property_id": "R-P04-RESERVE-ISOLATION",
+      "worker_test_mode": "noop"
+    },
+    {
+      "aggregate_status": "fail",
+      "case_id": "r-p06-export-roundtrip-plus-noop",
+      "implementation_mutation": "r-p06-export-roundtrip",
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "pass",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "fail",
+        "R-P07-CROSS-CHECKOUT-REPRO": "blocked_by_prerequisite",
+        "R-P08-OPERATOR-CONTRACT": "blocked_by_prerequisite"
+      },
+      "target_property_id": "R-P06-EXPORT-ROUNDTRIP",
+      "worker_test_mode": "noop"
+    },
+    {
+      "aggregate_status": "fail",
+      "case_id": "r-p07-cross-checkout-plus-noop",
+      "implementation_mutation": "r-p07-cross-checkout",
+      "matched_expectation": true,
+      "statuses": {
+        "R-P01-LEGACY-BYTES": "pass",
+        "R-P02-STAGE-DISCRIMINATOR": "pass",
+        "R-P03-PLAN-BINDING": "pass",
+        "R-P04-RESERVE-ISOLATION": "pass",
+        "R-P05-LIFECYCLE-REUSE": "pass",
+        "R-P06-EXPORT-ROUNDTRIP": "pass",
+        "R-P07-CROSS-CHECKOUT-REPRO": "fail",
+        "R-P08-OPERATOR-CONTRACT": "pass"
+      },
+      "target_property_id": "R-P07-CROSS-CHECKOUT-REPRO",
+      "worker_test_mode": "noop"
+    }
+  ],
+  "schema_version": 1,
+  "worker_test_paths": [
+    "tools/benchmark-runner/tests/test_routing_s2.py",
+    "tools/benchmark-runner/tests/test_routing_suite.py"
+  ]
+}

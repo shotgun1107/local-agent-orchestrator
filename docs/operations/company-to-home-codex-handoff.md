@@ -1,8 +1,8 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 20
-- 작성일: 2026-08-14
+- revision: 21
+- 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
 - 정본 우선순위: 회사 로컬의 검증된 clean commit/tree → push된 origin branch → 집 로컬
@@ -576,3 +576,42 @@ model turn은 계속 `NO_GO`다.
 잔여 P0/P1 0과 `GO_ONE_FRESH_PAIR`를 판정하더라도 실제 SS1/B1은 사용자 별도 승인이
 필요하다. 그 전까지 실제 model Cell과 Cell 3은 `NO_GO`, route는
 `ROUTING_INCONCLUSIVE`, `DEV-20260814-002`는 `investigating`이다.
+
+## 31. 2026-08-15 R07·Judge 적대 감사와 새 model-free 교정
+
+이 절은 §30과 그 뒤 실제 v11 pair보다 최신인 source checkpoint다.
+
+### 과거
+
+- v11 B1은 R01~R06 뒤 R07 `ENVIRONMENT`로 멈췄다. 적대 재현 결과 공개 pytest 4개는
+  실제로 통과했고, checker 자신의 지나치게 긴 Git probe가 실패한 것이 정확한 원인이었다.
+- 기존 R07은 이름만 맞춘 no-op 공개 시험을 통과시킬 수 있었다. 숨은 Judge의
+  R-P02·R-P04·R-P06·R-P07도 Worker 소유 pytest를 oracle로 실행해 불량 구현과 테스트를
+  같이 바꾸면 false pass가 가능했다. 따라서 q15와 Phase E v11의 과거 Judge PASS는 새
+  source에 대한 독립 증거가 아니다.
+
+### 현재
+
+- R07은 exact 12 공개 case를 모두 실행하고 빈 시험·skip·case-count mismatch를 거부한다.
+  Git long-path는 짧은 repository 아래 260자 초과 tracked descendant로 실제 검증한다.
+- B1은 실제 allocation suffix까지 포함하는 hostile Git preflight를 model 호출 전에 하고,
+  안전한 환경진단만 Evidence/seal에 보존한다. 환경 실패를 Worker 품질 실패로 세거나
+  retry feedback으로 노출하지 않는다.
+- Judge는 Worker 시험을 신뢰하지 않고 전용 보호 검사로 실제 동작을 재계산한다. 정상
+  reference 8/8, 적대 oracle 변조 7/7 기대 일치가 확인됐다.
+- production-shaped acceptance 두 경로와 영향 회귀는 통과했다. Docker·SDK·model turn은
+  실행하지 않았다. incident는 `DEV-20260814-002`와 `DEV-20260815-001`이다.
+
+### 미래
+
+1. 이 변경을 commit해 clean source identity를 만든다.
+2. clean HEAD에서 Runner 전체 428개를 처음부터 실행하고 실패하면 수정 후 다시 처음부터
+   반복한다.
+3. 전체 통과 뒤 새 source bundle로 Docker Profile R qualification을 model-free로 다시
+   만든다.
+4. qualification에 결합한 새 Phase E 0-turn candidate와 exact acceptance/readiness를
+   만든다.
+5. 독립 readiness 승인과 사용자 별도 live 승인 전 SS1·B1·Cell 3은 실행하지 않는다.
+
+기존 q15 raw, Phase E v11 candidate, v11 SS1/B1 seal은 역사적 실패 Evidence로 그대로
+보존한다. 수정·재봉인·성공 재분류하지 않는다.
