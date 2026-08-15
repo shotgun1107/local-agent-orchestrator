@@ -332,6 +332,10 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
             f"R{number:02d}",
         ]
         assert check["timeout_seconds"] == (900 if number == 7 else 120)
+    policies = yaml.safe_load(
+        (WORKER_ROOT / ".orchestrator/policies.yaml").read_text(encoding="utf-8")
+    )["policies"]
+    assert policies["b1_safe"]["check_timeout_seconds"] == 900
 
 
 def test_profile_r_public_check_is_model_free_and_compiles() -> None:

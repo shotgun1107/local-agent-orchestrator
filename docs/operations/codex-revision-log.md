@@ -2401,7 +2401,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   self-contained fixture repository와 manifest를 만든다. R06에 posthoc checker write
   scope를 명시했고 Check HOME/USERPROFILE은 secret-free external TEMP로 고정했다.
 - 최종 source bundle은 35 files,
-  `payload_aggregate_sha256=3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94`로
+  `payload_aggregate_sha256=0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5`로
   `PROFILE_R_SOURCE_BUNDLE_VERIFIED`를 반환했다. Worker snapshot은 130 files, source와
   file-set·size·SHA mismatch 0이다.
 - production-shaped B1 acceptance는 표준 경로와 더 깊은 유효 Worker 경로에서 각각
@@ -2416,3 +2416,7 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 통합 diff 감사에서 R07 외부 timeout이 내부 최대 720초보다 짧은 120초인 P1과
   도달 불가능·정적 참 assertion을 허용하는 P2를 추가로 찾았다. 외부 제한을 900초로
   맞추고 해당 우회까지 거부하는 적대 회귀를 추가해 R07 전용 시험은 `13 passed`다.
+- clean checkpoint의 첫 전체 Runner 실행은 `217 passed, 1 skipped` 뒤 R07의 900초가
+  Profile R policy 상한 120초를 넘는다는 설정 gate에서 fail-fast로 멈췄다. policy 상한도
+  900초로 맞추고 직접 실패 시험과 정책 계약 시험 `2 passed`를 확인했다. 이 부분을 새
+  commit으로 고정한 뒤 전체 428개는 다시 0%부터 실행한다.

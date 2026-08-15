@@ -98,6 +98,10 @@
     {
       "kind": "reproducible-test",
       "detail": "교정 뒤 공개 R07은 정확한 12개 case를 실행하고 short-root Git에서 260자를 넘는 tracked descendant를 add·lookup했다. 전용 적대 회귀 13개와 production-shaped B1 acceptance 두 경로가 통과했다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "clean checkpoint의 첫 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 900초가 project policy 120초를 초과한다는 configuration gate에서 중단됐다. Profile R policy 상한을 900초로 일치시킨 뒤 해당 B1 실행과 timeout 계약 시험 2개가 통과했다"
     }
   ],
   "root_cause": "과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다.",
@@ -170,7 +174,9 @@
     "R07 공개 checker 적대 회귀 13 passed",
     "B1 verifier 11 passed, scheduler 환경진단 3 passed, B1 Measurement/live 타깃 4 passed",
     "교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로가 각각 8 Task, 16 Check, R07 12 case로 통과",
-    "영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected"
+    "영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected",
+    "첫 clean 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 policy timeout mismatch를 발견해 fail-fast 중단",
+    "Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",

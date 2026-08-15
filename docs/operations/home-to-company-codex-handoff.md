@@ -252,7 +252,7 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
 - 공개 R07 exact 12-case 실행, 실제 long tracked path Git 동작, strict 환경진단과
   model 전 hostile preflight를 구현했다.
 - Judge-owned 보호 검사와 7개 oracle 공격 회귀를 추가했다. 최종 35-file source bundle은
-  aggregate `3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94`로
+  aggregate `0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5`로
   자체 검증됐다.
 - production-shaped B1 acceptance 두 경로와 영향 회귀
   `125 passed, 1 opt-in skipped`가 통과했다. 실제 model·SDK·Docker 호출은 0회다.

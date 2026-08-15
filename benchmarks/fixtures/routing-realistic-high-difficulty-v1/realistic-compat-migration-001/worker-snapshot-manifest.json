@@ -47,9 +47,9 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/policies.yaml",
-      "source_sha256": "20d0a5b9995a6c3c08c6a38c23e6a9671d3c8541d3b3148caa0c341b5c17fedb",
+      "source_sha256": "d3c426d08ded1c27ff3f9189cb80ce5a817fbe28be661ee5cdbfce228d86110b",
       "source_size": 377,
-      "worker_sha256": "20d0a5b9995a6c3c08c6a38c23e6a9671d3c8541d3b3148caa0c341b5c17fedb",
+      "worker_sha256": "d3c426d08ded1c27ff3f9189cb80ce5a817fbe28be661ee5cdbfce228d86110b",
       "worker_size": 377
     },
     {
@@ -1635,5 +1635,5 @@
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
   "worker_total_bytes": 1210385,
-  "worker_tree_aggregate_sha256": "93b9d7ac28fdf0247f16228a07a2a9ca9104c7b1bbfaf7ccaee1ac15d1ef05a7"
+  "worker_tree_aggregate_sha256": "98d04ec1d991a3c3ee6500d72b6401d41fd41c2d62dab4286b25ced30f4365f8"
 }
