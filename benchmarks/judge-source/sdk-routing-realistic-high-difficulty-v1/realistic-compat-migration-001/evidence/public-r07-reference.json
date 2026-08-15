@@ -1,18 +1,25 @@
 {
   "contract_ok_marker": true,
   "entrypoint": "benchmark_checks/check_profile_r.py R07",
-  "growth_margin": 32,
-  "growth_probe_path_length": 294,
-  "passed": true,
-  "pytest": {
-    "errors": 0,
-    "failures": 0,
-    "skipped": 0,
-    "tests": 12,
-    "warnings": 0
+  "evidence_projection": {
+    "growth_margin": 32,
+    "growth_probe_minimum_path_length": 261,
+    "growth_probe_minimum_satisfied": true,
+    "probe_repository_shorter_than_growth_path": true,
+    "pytest": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 12,
+      "warnings": 0
+    },
+    "schema_version": 1
   },
+  "evidence_projection_sha256": "53669cc9cc0a63aa438a52782812d9b4d23f7a97df9e89cc98a25efad111c35b",
+  "outer_timeout_seconds": 1020,
+  "passed": true,
   "return_code": 0,
   "schema_version": 1,
   "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "stdout_sha256": "8a32ddd1aab18eda27daae8cd6fa08cde33f22ee75bde5d1d8e94a798aaebd18"
+  "stdout_contract": "one canonical Evidence line followed by R07_PUBLIC_CONTRACT_OK"
 }

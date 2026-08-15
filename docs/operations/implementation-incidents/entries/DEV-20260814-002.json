@@ -102,9 +102,21 @@
     {
       "kind": "reproducible-test",
       "detail": "clean checkpoint의 첫 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 900초가 project policy 120초를 초과한다는 configuration gate에서 중단됐다. Profile R policy 상한을 900초로 일치시킨 뒤 해당 B1 실행과 timeout 계약 시험 2개가 통과했다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v4 심사는 bounded static evaluator가 BinOp를 해석하지 않고 UNKNOWN assertion을 substantive로 인정하며, local no-op raises 호출도 provenance 없이 인정해 assert 1 + 1 == 2, if 1 - 1 아래의 도달 불가능 assert, shadowed raises()로 우회할 수 있음을 P1로 판정했다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "같은 심사는 R07 내부 명시 상한이 collection 120초 + pytest 600초 + Git 6회×30초 = 900초인데 외부 Check와 policy도 900초여서 parse, startup, diagnostic, process-tree 종료와 cleanup 여유가 0임을 P1로 판정했다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "후속 model-free 교정은 bounded constant folding, reachable control flow와 pytest import provenance를 검사하고, Windows Job Object가 timeout 또는 root 조기 종료 뒤 descendants 0을 확인한 후 TEMP를 정리한다. 현재 R07 적대 회귀 31 passed, timeout unit/integration 13 passed, B1 전체 88 passed, Phase D fixture 17 passed다"
     }
   ],
-  "root_cause": "과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다.",
+  "root_cause": "과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 1차 AST 교정도 UNKNOWN을 곧 substantive로 인정해 constant folding, 도달 불가능 branch, local 또는 shadowed assertion helper와 pytest import provenance를 충분히 구분하지 못했다. 또한 내부 최악 예산 900초와 외부 Check 제한을 같은 900초로 둬 process-tree 종료와 cleanup 여유를 남기지 않았다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다.",
   "considered_options": [
     {
       "option": "같은 live Cell을 다시 실행",
@@ -127,7 +139,7 @@
       "reason": "단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다"
     }
   ],
-  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. q16 qualification v13, Phase E v12 0-turn candidate와 exact acceptance 두 번, readiness v4 package까지 새 identity로 만들었으며 독립 readiness 재심사가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.",
+  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. 현재 R07 적대 회귀 31개, timeout 회귀 13개, B1 88개와 Phase D fixture 17개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개고, 재생성한 Judge bundle은 35파일과 payload aggregate 8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0으로 검증됐다. 새 q17-equivalent qualification과 후속 identity chain 및 독립 readiness 재심사가 아직 없어 incident는 investigating과 Live NO-GO를 유지한다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/verify.py",
     "stages/b1-sequential/src/orchestrator/schedule.py",
@@ -135,7 +147,11 @@
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/checks.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/policies.yaml",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/.orchestrator/checks.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/.orchestrator/policies.yaml",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
     "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py"
   ],
@@ -147,7 +163,9 @@
     "claim 작성 뒤 state 실패, DISPATCH_CLAIMED 뒤 backend 예외, result 작성 뒤 seal state 실패에서 같은 Cell 재실행과 다음 Cell dispatch를 차단하는 회귀",
     "R07 필수 공개 시험의 exact 12-case 수집·실행과 no-op·skip·case-count mismatch 거부 회귀",
     "short-root Git 저장소의 260자 초과 tracked descendant add·lookup과 실제 B1 allocation suffix를 포함하는 hostile preflight 회귀",
-    "환경진단 marker의 strict Schema·Evidence 보존·Worker feedback 비노출 회귀"
+    "환경진단 marker의 strict Schema·Evidence 보존·Worker feedback 비노출 회귀",
+    "constant-folded 정적 참, 도달 불가능 branch, local·shadowed assertion helper와 위조 pytest provenance를 거부하는 적대 회귀",
+    "외부 timeout 또는 root process 조기 종료 시 Windows Job Object descendants, TEMP와 lock residue가 0이고 Worker feedback이 생성되지 않는 회귀"
   ],
   "verification": [
     "B1 v8 R01~R06은 첫 Attempt에 통과하고 R07에서만 긴 경로 오류가 재현됨",
@@ -182,11 +200,14 @@
     "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
     "Phase E v12 후보가 source 3cb5593과 qualification v13에 model turn 0으로 결합되고 별도 verifier와 Phase E 전체 11 passed를 통과",
     "Phase E v12 exact-candidate acceptance 2회가 77.22s와 76.79s에 통과하고 각 실행은 R07 12 case, Check 16/16, Cell 3 미실행과 residue 0을 보존",
-    "readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f"
+    "readiness v4 package 304파일의 per-file exact set/hash와 seal self-hash, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f는 재현됐지만 선언된 ordinal aggregate는 불일치해 역사적 NO-GO Evidence로 보존",
+    "후속 model-free R07 적대 회귀 31 passed, timeout unit/integration 13 passed, B1 전체 88 passed, Phase D fixture 17 passed",
+    "재생성한 Judge bundle 35파일의 payload aggregate 8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0, Worker snapshot 130파일과 cache 0개 확인"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
-    "새 Worker·Judge source 기준 live-readiness v4 package는 봉인됐지만 독립 재심사가 끝나지 않았다",
+    "readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다",
+    "교정된 source를 새 qualification, 0-turn candidate, acceptance 두 번과 canonical readiness package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
     "독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
@@ -235,6 +256,7 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md",
     "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md"
   ]
 }

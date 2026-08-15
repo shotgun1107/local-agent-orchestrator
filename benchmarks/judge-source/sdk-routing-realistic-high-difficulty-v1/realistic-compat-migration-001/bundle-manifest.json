@@ -38,57 +38,57 @@
     },
     {
       "path": "evidence/mutations/r-p01-legacy-bytes.json",
-      "sha256": "f4a02d7976b06da423b313340dddd5708849721634f56cc27d09b3b692a495e0",
+      "sha256": "64a36427bd67c4e759bd52d745c2ab611935575da6fa7f2e4febe501d51eba77",
       "size": 9256
     },
     {
       "path": "evidence/mutations/r-p02-stage-discriminator.json",
-      "sha256": "0b6238800247825299778d86949e8ef2bebc95c21e05b2708a39db28a12d8217",
+      "sha256": "37efe438f70634a35c11ea083e29ca0182526bc479cf4e94b2290a9402ef28e1",
       "size": 6779
     },
     {
       "path": "evidence/mutations/r-p03-plan-binding.json",
-      "sha256": "0206f82755f0cc6aa6b6713b63b43809132e0901e30077df27bf67612dcf5881",
+      "sha256": "ebc5b1fe9fdb130fe0b23b2e473498a82e9a7d049cb6561c368b71148b100eb7",
       "size": 7183
     },
     {
       "path": "evidence/mutations/r-p04-reserve-isolation.json",
-      "sha256": "d85ae41a991aa5b60a24a8b7a0aaba699cee3958e793370a782763ab974c2c00",
+      "sha256": "9f557526ccc32f047e42d9644d9bfb35048a3a5d13e7e642ba030a42407687d5",
       "size": 9275
     },
     {
       "path": "evidence/mutations/r-p05-lifecycle-reuse.json",
-      "sha256": "7552771c03db099b7bd0d8dfdb821d7fde6d45abf481323d662cef4230080fb1",
+      "sha256": "0afba44025745c8d7d07c1eae9c7001900eab22cf16c9c536d46e936b5197129",
       "size": 9275
     },
     {
       "path": "evidence/mutations/r-p06-export-roundtrip.json",
-      "sha256": "0ff311a2e57031ad25b9d1672f617f5d4abff5b195ac0887b37a5001dd9d6eab",
+      "sha256": "5ffec86d173ae875cd4f0e3ccf9f9eb82df685bf9d21c79e5cf6df9419765e79",
       "size": 7975
     },
     {
       "path": "evidence/mutations/r-p07-cross-checkout.json",
-      "sha256": "adb38e8b80bf10972f645388c4bb95b425c70928c519f412ef1acd4b282fe097",
+      "sha256": "cc1f3d9a09fd36d2405481c935e2ea0b74911ba4e97a71f6df792df6ca832687",
       "size": 9253
     },
     {
       "path": "evidence/mutations/r-p08-operator-contract.json",
-      "sha256": "cf302d039daa914dbcc531467f07d416d384ff8ba7a80719f1421dfef8216616",
+      "sha256": "f1aeb7a90e7dd43c28b7cca3e842a0b819c8f66c67d8145e12ba9e801a46f356",
       "size": 9261
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "97ff40ca9440485f03f8b4bc612fe26806319f501f6ffbf28069f4a019228f54",
+      "sha256": "7607e2d18c658b1a1709d62ae64bb94c9c94f82a5232108ac98d6f4a22ba14d3",
       "size": 6586
     },
     {
       "path": "evidence/public-r07-reference.json",
-      "sha256": "709e7d0894be9819db25b29b76e0a3d0003871e608c907d274ce2391072244a6",
-      "size": 493
+      "sha256": "644e27c401868afc38fc455b5a45d022e7be7333ec8e7a6718be3e27398e42fe",
+      "size": 807
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "05dc015e837cf712740ebabbce34e3c7179c5a8bc29a4d5df24f684c456c37b4",
+      "sha256": "cf39027ac169bdb2e75ed42ba02741c6daa6dd4f3bd187fea063a1b97f130421",
       "size": 9249
     },
     {
@@ -177,7 +177,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5",
+  "payload_aggregate_sha256": "c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

@@ -70,19 +70,27 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     root = project_factory()
     captured = {}
 
-    def fake_run(argv, **kwargs):
+    def fake_run(argv, *, cwd, environment, timeout_seconds, termination_grace_seconds):
         captured["argv"] = argv
-        captured.update(kwargs)
-        temp_path = Path(kwargs["env"]["TEMP"])
+        captured.update(
+            {
+                "cwd": cwd,
+                "env": environment,
+                "timeout": timeout_seconds,
+                "termination_grace_seconds": termination_grace_seconds,
+                "shell": False,
+            }
+        )
+        temp_path = Path(environment["TEMP"])
         assert temp_path.is_dir()
         assert temp_path.parent == (root.parent / "external-check-temp").resolve()
         (temp_path / "write-probe.txt").write_text("ok", encoding="utf-8")
-        return subprocess.CompletedProcess(argv, 0, "ok", "")
+        return subprocess.CompletedProcess(argv, 0, "ok", ""), False
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret-value")
     monkeypatch.setenv("CODEX_API_KEY", "must-not-be-forwarded")
     monkeypatch.setenv("UNRELATED_USER_SETTING", "must-not-be-forwarded")
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr("orchestrator.verify._run_bounded_check_process", fake_run)
     check = CommandCheck(kind="command", argv=["python", "-V"], cwd=".", timeout_seconds=3, expected_exit_codes=[0])
     result = run_command_check(
         "unit",
@@ -92,6 +100,8 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     )
     assert result.state == "PASSED"
     assert captured["shell"] is False
+    assert captured["timeout"] == 3
+    assert captured["termination_grace_seconds"] == 15.0
     assert captured["argv"] == [str(Path(os.sys.executable).resolve()), "-V"]
     assert result.argv == ["python", "-V"]
     assert result.failure_classification is None
@@ -177,8 +187,14 @@ def test_check_environment_preflight_ignores_inaccessible_host_temp(
     monkeypatch.setenv("TMPDIR", str(inaccessible))
 
     check_temp_root = root.parent / "explicit-check-temp"
+    workspace = GitWorkspace(root)
+
+    def reject_unbounded_subprocess_run(*_args, **_kwargs):
+        raise AssertionError("Check preflight must use the process-tree runner")
+
+    monkeypatch.setattr(subprocess, "run", reject_unbounded_subprocess_run)
     preflight_check_environment(
-        GitWorkspace(root),
+        workspace,
         temp_root=check_temp_root,
         hostile_git_probe=True,
     )

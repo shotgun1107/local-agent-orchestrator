@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,12 @@ def _load_checker():
     spec = importlib.util.spec_from_file_location("r07_public_checker_adversarial", CHECKER_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
     return module
 
 
@@ -60,8 +66,23 @@ def _write_test(path: Path, source: str) -> None:
         "value = 1",
         "assert True",
         "assert 1 == 1",
+        "assert 1 + 1 == 2",
+        "value = 1\n    assert value + 1 == 2",
         "if False:\n        assert False",
+        "if 1 - 1:\n        assert False",
+        "while 2 - 2:\n        assert False",
+        "for _ in ():\n        assert False",
+        "match 0:\n        case 1:\n            assert False",
+        "try:\n        value = 1\n    except Exception:\n        assert False",
         "value = object()\n    assert value == value",
+        "def raises():\n        return None\n    raises()",
+        "def skip():\n        return None\n    skip()",
+        (
+            "class Local:\n"
+            "        def fail(self):\n"
+            "            return None\n"
+            "    Local().fail()"
+        ),
         "return None",
         "return\n    assert False",
         "print('no contract assertion')",
@@ -94,6 +115,100 @@ def test_r07_executes_and_rejects_an_assert_false_regression(tmp_path: Path) -> 
     assert result.returncode != 0
     with pytest.raises(checker.PublicContractError, match="regressions failed"):
         checker._require_r07_pytest_success(result)
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        (
+            "import pytest\n\n"
+            "def test_declared():\n"
+            "    with pytest.raises(ValueError):\n"
+            "        int('not-an-integer')\n"
+        ),
+        (
+            "from pytest import raises as expect_raises\n\n"
+            "def test_declared():\n"
+            "    with expect_raises(ValueError):\n"
+            "        int('not-an-integer')\n"
+        ),
+        (
+            "def test_declared(tmp_path):\n"
+            "    assert tmp_path.exists()\n"
+        ),
+    ),
+)
+def test_r07_accepts_dynamic_or_trusted_assertion_provenance(
+    tmp_path: Path,
+    source: str,
+) -> None:
+    checker = _load_checker()
+    path = tmp_path / "test_valid.py"
+    _write_test(path, source)
+
+    checker._require_substantive_test_functions(path, {"test_declared"})
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        (
+            "import pytest\n\n"
+            "def test_declared():\n"
+            "    pytest.raises(Exception)\n"
+        ),
+        (
+            "import pytest\n\n"
+            "def test_declared():\n"
+            "    class Local:\n"
+            "        def raises(self, *_args):\n"
+            "            return None\n"
+            "    pytest = Local()\n"
+            "    pytest.raises(Exception)\n"
+        ),
+        (
+            "from pytest import raises as expect_raises\n\n"
+            "def expect_raises(*_args):\n"
+            "    return None\n\n"
+            "def test_declared():\n"
+            "    expect_raises(Exception)\n"
+        ),
+    ),
+)
+def test_r07_rejects_unused_or_shadowed_pytest_contract_calls(
+    tmp_path: Path,
+    source: str,
+) -> None:
+    checker = _load_checker()
+    path = tmp_path / "test_shadowed.py"
+    _write_test(path, source)
+
+    with pytest.raises(checker.PublicContractError, match="must contain executable"):
+        checker._require_substantive_test_functions(path, {"test_declared"})
+
+
+@pytest.mark.parametrize("module_name", ("fake_helper", "json"))
+def test_r07_rejects_worker_local_import_provenance(
+    tmp_path: Path,
+    module_name: str,
+) -> None:
+    checker = _load_checker()
+    _write_test(
+        tmp_path / f"{module_name}.py",
+        "def always_true():\n    return True\n",
+    )
+    path = tmp_path / "test_local_import.py"
+    _write_test(
+        path,
+        (
+            f"from {module_name} import always_true\n\n"
+            "def test_declared():\n"
+            "    assert always_true()\n"
+        ),
+    )
+
+    with pytest.raises(checker.PublicContractError, match="must contain executable"):
+        checker._require_substantive_test_functions(path, {"test_declared"})
 
 
 def test_r07_exact_counts_reject_a_skipped_regression(tmp_path: Path) -> None:
@@ -148,7 +263,12 @@ def test_r07_runs_every_collected_case_and_tracks_a_long_descendant(
     )
     _write_test(
         legacy_source,
-        "def test_legacy():\n    value = 'legacy'\n    assert value == 'legacy'\n",
+        (
+            "import pytest\n\n"
+            "@pytest.mark.parametrize('value', ['legacy'])\n"
+            "def test_legacy(value):\n"
+            "    assert value == 'legacy'\n"
+        ),
     )
     checker._require_substantive_test_functions(required_source, {"test_required"})
     checker._require_substantive_test_functions(legacy_source, {"test_legacy"})

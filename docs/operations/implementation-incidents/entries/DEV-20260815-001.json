@@ -31,6 +31,10 @@
     {
       "kind": "reproducible-test",
       "detail": "Worker 테스트만 no-op, skip 또는 assert-false로 바꾼 3개 case는 정상 구현에서 hidden Judge 결과를 바꾸지 않았고, 구현과 테스트 동시변조 4개 case는 모두 차단됐다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v4 심사는 Worker 소유 pytest를 oracle로 쓰지 않는 점, Judge-owned protected behavior 재계산과 7개 Worker-oracle 공격 Evidence를 확인해 숨은 Judge 독립 oracle closure를 closed로 판정했다"
     }
   ],
   "root_cause": "독립 Judge가 Worker 산출 코드의 동작을 직접 검사하지 않고 Worker가 함께 수정할 수 있는 공개 테스트를 oracle로 사용했다. Evidence에는 현재 파일 hash만 기록됐고 신뢰 가능한 테스트 정본이나 Judge 전용 검사와 결합되지 않아 구현과 oracle의 동시변조를 구분할 수 없었다.",
@@ -51,7 +55,7 @@
       "reason": "기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다"
     }
   ],
-  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개, q16 qualification v13 9/9, Phase E v12 0-turn candidate와 exact acceptance 두 번이 통과했으며 readiness v4 독립 재심사가 남아 있어 investigating을 유지한다.",
+  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. R07 source가 다시 바뀌었으므로 새 q17-equivalent qualification이 composite source를 재인증하고 새 readiness 심사가 끝나기 전까지 이 incident는 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
@@ -78,10 +82,12 @@
     "clean source 21f3743에서 B1 전체 86 passed",
     "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
     "Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과",
-    "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 manifest와 seal 및 ZIP 재해제 검증 mismatch 0, ZIP SHA-256 00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f"
+    "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 per-file exact set/hash 및 seal self-hash는 일치했지만, declared ordinal payload aggregate는 불일치해 package 전체 승인 근거로 쓰지 않음",
+    "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정"
   ],
   "remaining_risks": [
-    "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. 새 readiness v4 독립 재심사가 남았다",
+    "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
+    "Pro v4는 hidden Judge를 closed로 판정했지만 후속 R07 source 변경 뒤 composite source의 새 qualification과 readiness 재심사가 남았다",
     "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
@@ -106,6 +112,8 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md",
     "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
+    "docs/operations/implementation-incidents/entries/DEV-20260815-002.json"
   ]
 }

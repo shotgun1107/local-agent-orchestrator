@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -381,6 +382,151 @@ def test_public_checker_import_permission_error_stops_before_retry_or_next_task(
     assert snapshot["tasks"][1]["attempts"] == []
     assert runtime.turn_count == 1
     assert len(runtime.initial_feedbacks) == 1
+
+
+@pytest.mark.parametrize(
+    ("detached_output", "leader_exits_early"),
+    ((False, True), (True, False)),
+    ids=("leader-exits-with-inherited-pipes", "detached-output-holds-temp-lock"),
+)
+def test_outer_check_timeout_reaps_nested_child_and_never_retries(
+    tmp_path: Path,
+    project_factory,
+    detached_output: bool,
+    leader_exits_early: bool,
+) -> None:
+    root = project_factory()
+    child_pid_path = tmp_path / "nested-child.pid"
+    child_code = (
+        "import os,pathlib,time;"
+        f"pathlib.Path({str(child_pid_path)!r}).write_text(str(os.getpid()),encoding='ascii');"
+        "lock=pathlib.Path(os.environ['TEMP'])/'nested-child.lock';"
+        "handle=lock.open('w');handle.write('held');handle.flush();"
+        "time.sleep(60)"
+    )
+    detached_arguments = (
+        ",stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,"
+        "stderr=subprocess.DEVNULL,close_fds=True"
+        if detached_output
+        else ""
+    )
+    leader_terminal = "raise SystemExit(0)" if leader_exits_early else "time.sleep(60)"
+    parent_code = (
+        "import pathlib,subprocess,sys,time;"
+        f"pid_path=pathlib.Path({str(child_pid_path)!r});"
+        f"subprocess.Popen([sys.executable,'-c',{child_code!r}]{detached_arguments});"
+        "deadline=time.monotonic()+5;"
+        "\nwhile not pid_path.is_file() and time.monotonic()<deadline: time.sleep(0.01)"
+        "\nif not pid_path.is_file(): raise RuntimeError('nested child did not start')"
+        # The first case exits the leader before timeout; the second keeps the
+        # leader alive but detaches all child output while it holds TEMP open.
+        f"\n{leader_terminal}"
+    )
+    checks_path = root / ".orchestrator" / "checks.yaml"
+    checks = yaml.safe_load(checks_path.read_text(encoding="utf-8"))
+    checks["checks"]["test_check"].update(
+        {
+            "argv": ["python", "-c", parent_code],
+            "timeout_seconds": 1,
+        }
+    )
+    checks_path.write_text(yaml.safe_dump(checks, sort_keys=False), encoding="utf-8")
+    git(root, "add", ".orchestrator/checks.yaml")
+    git(root, "commit", "-m", "exercise nested Check timeout")
+
+    runtime = FakeRuntime()
+    state = tmp_path / "state"
+    check_temp_root = tmp_path / "check-temp"
+    orchestrator = Orchestrator(
+        load_project(root),
+        state_root=state,
+        check_temp_root=check_temp_root,
+        runtime_port=runtime,
+        runtime_profile_override={"runtime": "fake"},
+        auth_method_override="none",
+    )
+    try:
+        run_id = orchestrator.start(make_spec())
+    finally:
+        orchestrator.close()
+
+    assert child_pid_path.is_file()
+    child_pid = int(child_pid_path.read_text(encoding="ascii"))
+
+    def child_is_running() -> bool:
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel32.OpenProcess.argtypes = [
+                wintypes.DWORD,
+                wintypes.BOOL,
+                wintypes.DWORD,
+            ]
+            kernel32.OpenProcess.restype = wintypes.HANDLE
+            kernel32.GetExitCodeProcess.argtypes = [
+                wintypes.HANDLE,
+                ctypes.POINTER(wintypes.DWORD),
+            ]
+            kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+            kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+            kernel32.CloseHandle.restype = wintypes.BOOL
+            handle = kernel32.OpenProcess(0x1000, False, child_pid)
+            if not handle:
+                error = ctypes.get_last_error()
+                if error == 87:  # ERROR_INVALID_PARAMETER: PID no longer exists.
+                    return False
+                raise OSError(error, "OpenProcess failed while checking nested child")
+            exit_code = wintypes.DWORD()
+            try:
+                if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                    raise OSError(
+                        ctypes.get_last_error(),
+                        "GetExitCodeProcess failed while checking nested child",
+                    )
+                return exit_code.value == 259
+            finally:
+                if not kernel32.CloseHandle(handle):
+                    raise OSError(
+                        ctypes.get_last_error(),
+                        "CloseHandle failed while checking nested child",
+                    )
+        try:
+            os.kill(child_pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+
+    deadline = time.monotonic() + 2
+    while child_is_running() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert child_is_running() is False
+    assert check_temp_root.is_dir()
+    assert list(check_temp_root.iterdir()) == []
+
+    with Ledger(state / "ledger.sqlite") as ledger:
+        snapshot = ledger.load_run_snapshot(run_id)
+        attempt = snapshot["tasks"][0]["attempts"][0]
+        event = ledger.connection.execute(
+            """SELECT payload_json FROM events
+               WHERE aggregate_id=? AND event_type='attempt_finished'""",
+            (attempt["attempt_id"],),
+        ).fetchone()
+    assert snapshot["run"]["state"] == "FAILED"
+    assert len(snapshot["tasks"][0]["attempts"]) == 1
+    assert attempt["failure_kind"] == "check_environment"
+    assert snapshot["checks"][0]["state"] == "ERROR"
+    assert runtime.turn_count == 1
+    assert runtime.initial_feedbacks == [None]
+    feedback = json.loads(event["payload_json"])["public_check_feedback"]
+    assert feedback["messages"] == []
+    assert feedback["transmitted_bytes"] == 0
+
+    # The lock file is a durable owner record, so residue means an active lock,
+    # not file presence.  A fresh controller must be able to acquire it now.
+    with ControllerLock(state):
+        pass
 
 
 def test_transient_failure_creates_new_attempt_with_unique_artifacts(tmp_path: Path, project_factory) -> None:

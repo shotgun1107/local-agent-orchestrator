@@ -4,7 +4,7 @@
   "cell_id": "reference",
   "checker_run_status": "completed",
   "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-  "envelope_sha256": "653f39211c4031b22d9c885fdeb627a3f7a20529b366725ffe475c951b04ba2d",
+  "envelope_sha256": "ba2a13cf717b795702c3235f0be6522f233e278a1c0636e5118c408f517cd124",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "51e4fa95ce0c3fe0b04cacb2fbd6b413f23820472f24dd6553b2c1c31dd0c05d",
-  "workspace_before_sha256": "51e4fa95ce0c3fe0b04cacb2fbd6b413f23820472f24dd6553b2c1c31dd0c05d",
+  "workspace_after_sha256": "0b2fc448057305aa05a02354c119e6eaf7b7d4969c1194860f86ffcc90933633",
+  "workspace_before_sha256": "0b2fc448057305aa05a02354c119e6eaf7b7d4969c1194860f86ffcc90933633",
   "workspace_mutated": false
 }
