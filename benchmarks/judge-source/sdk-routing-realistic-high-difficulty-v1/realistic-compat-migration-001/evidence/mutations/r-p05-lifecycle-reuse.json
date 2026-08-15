@@ -4,7 +4,7 @@
   "cell_id": "r-p05-lifecycle-reuse",
   "checker_run_status": "completed",
   "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-  "envelope_sha256": "3c545d937497a85b2d2c4383a65c69f847c249391d1e139267366036822675bf",
+  "envelope_sha256": "bcea397db1e8ea50b6cdae3a3b78b3fcfa0188bbd7bd44ae0d91b8bf7d5b3d27",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -223,7 +223,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "c4b5c980d1c45f0925c0dd88c3b504e21281971fdc4b26512e3d6438bec66c3a",
-  "workspace_before_sha256": "c4b5c980d1c45f0925c0dd88c3b504e21281971fdc4b26512e3d6438bec66c3a",
+  "workspace_after_sha256": "bf9796a57312748bff721b2a5c76dcbe1fa016ca44cb4877de38010bf2132f9b",
+  "workspace_before_sha256": "bf9796a57312748bff721b2a5c76dcbe1fa016ca44cb4877de38010bf2132f9b",
   "workspace_mutated": false
 }

@@ -4,7 +4,7 @@
   "cell_id": "pristine",
   "checker_run_status": "completed",
   "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-  "envelope_sha256": "7952c8736a1e05fda0ae80f2a89cef6eda27b73e5452fdb2ee05da87089fce1c",
+  "envelope_sha256": "4a3594d85a5dc78c439bfdbde0cb0b6ac3ac342224c0089ea9edb6da3b00d978",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -162,7 +162,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "fdf005fe29fada5dc177e88b2dd07b7f37b5ed10f0848160532f4505c4c0e9f5",
-  "workspace_before_sha256": "fdf005fe29fada5dc177e88b2dd07b7f37b5ed10f0848160532f4505c4c0e9f5",
+  "workspace_after_sha256": "f34c999c46759c59d3d87ff7d608244c6b26534b8e9c6a85f49b587f137de7b0",
+  "workspace_before_sha256": "f34c999c46759c59d3d87ff7d608244c6b26534b8e9c6a85f49b587f137de7b0",
   "workspace_mutated": false
 }

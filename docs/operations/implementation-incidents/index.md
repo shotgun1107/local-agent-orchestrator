@@ -3324,6 +3324,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - `source-inspection`: checker가 관측한 최장 Worker 경로에 32자를 더한 뒤 그 아래에 git-probe/.git/config까지 생성해 자신이 측정하려는 경계보다 더 긴 저장소 루트를 만들고 있었다
 - `reproducible-test`: Worker 소유 test_routing_s2.py를 이름만 맞춘 pass 함수로 바꾼 적대 복사본이 기존 R07_PUBLIC_CONTRACT_OK를 받았고, 실질 구현의 더 긴 경로는 반대로 ENVIRONMENT로 거부됐다
 - `reproducible-test`: 교정 뒤 공개 R07은 정확한 12개 case를 실행하고 short-root Git에서 260자를 넘는 tracked descendant를 add·lookup했다. 전용 적대 회귀 13개와 production-shaped B1 acceptance 두 경로가 통과했다
+- `reproducible-test`: clean checkpoint의 첫 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 900초가 project policy 120초를 초과한다는 configuration gate에서 중단됐다. Profile R policy 상한을 900초로 일치시킨 뒤 해당 B1 실행과 timeout 계약 시험 2개가 통과했다
 
 ### 근본 원인
 
@@ -3390,6 +3391,8 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - B1 verifier 11 passed, scheduler 환경진단 3 passed, B1 Measurement/live 타깃 4 passed
 - 교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로가 각각 8 Task, 16 Check, R07 12 case로 통과
 - 영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected
+- 첫 clean 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 policy timeout mismatch를 발견해 fail-fast 중단
+- Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed
 
 ### 남은 위험
 
@@ -3458,7 +3461,7 @@ R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공
 
 ### 채택한 해결
 
-R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94로 재생성됐다. clean 전체 회귀와 새 Docker qualification이 남아 있어 investigating을 유지한다.
+R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean 전체 회귀와 새 Docker qualification이 남아 있어 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3482,7 +3485,7 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 정상 reference hidden Judge 8/8 pass
 - Worker test-only 변조 3개와 구현·테스트 동시변조 4개 적대 case가 기대 결과와 일치
 - 최종 Profile R source bundle builder가 PROFILE_R_SOURCE_BUNDLE_VERIFIED를 반환
-- 최종 bundle file_count 35, payload aggregate 3353cc07c6db30b43d542230009f1aab0e0e44f0211c902d0aa7b17fce140c94
+- 최종 bundle file_count 35, payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5
 - 교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로 통과
 - 영향 범위 회귀 125 passed, 1 opt-in skipped
 
