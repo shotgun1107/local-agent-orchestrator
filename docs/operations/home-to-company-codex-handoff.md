@@ -284,9 +284,10 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
 - production-shaped acceptance 두 번은 `77.22s`, `76.79s`에 통과했다. 각 실행은
   R07 exact 12 case, 공개 Check 16/16, Cell 1·2 SEALED, Cell 3·4 PLANNED, residue와
   model turn 0을 원시 Evidence와 JUnit에 보존한다.
-- readiness v4 입력에는 q16 9-Cell sealed payload 전체, candidate와 두 acceptance raw가
-  포함된다. package manifest와 readiness seal은 이 clean record commit 뒤 생성·검증하고
-  정확한 ZIP hash는 후속 결과 문서에 남긴다.
+- readiness v4 ZIP은 record commit `d80e8e4...c86a4`에서 만들었다. q16 sealed payload
+  전체, candidate와 두 acceptance raw를 포함하며 manifest와 readiness seal, ZIP 재해제
+  검증 mismatch는 0이다. ZIP SHA-256은
+  `00c4a2217c9df0614d6a845942e4e95713fa14531631c7fd7ff6e5df36844b2f`다.
 
 다음은 readiness v4의 독립 읽기 전용 재심사다. 회사 PC는 이 원격 branch를 ff-only로
 동기화해도 실제 SS1/B1/Cell 3을 자동 실행하지 않는다. 독립 승인과 사용자 Cell별 승인이
