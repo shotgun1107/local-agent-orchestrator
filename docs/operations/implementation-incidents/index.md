@@ -3339,7 +3339,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 채택한 해결
 
-2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. model-free 통합 검증은 통과했지만 새 source의 clean 전체 회귀·Docker qualification·0-turn candidate가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.
+2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. 새 source의 Docker qualification·0-turn candidate·readiness가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3393,6 +3393,8 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 영향 범위 회귀 125 passed, 1 opt-in skipped, 2개의 이미 독립 통과한 acceptance parameter deselected
 - 첫 clean 전체 Runner 회귀는 217 passed, 1 skipped 뒤 R07 policy timeout mismatch를 발견해 fail-fast 중단
 - Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed
+- clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
+- clean source 21f3743에서 B1 전체 86 passed
 
 ### 남은 위험
 
@@ -3400,12 +3402,11 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
-- 현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다
 - 새 Worker·Judge source identity로 Docker qualification과 Phase E 0-turn candidate를 다시 만들어야 한다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3461,7 +3462,7 @@ R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공
 
 ### 채택한 해결
 
-R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean 전체 회귀와 새 Docker qualification이 남아 있어 investigating을 유지한다.
+R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했으며 새 Docker qualification이 남아 있어 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3488,16 +3489,17 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 최종 bundle file_count 35, payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5
 - 교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로 통과
 - 영향 범위 회귀 125 passed, 1 opt-in skipped
+- clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
+- clean source 21f3743에서 B1 전체 86 passed
 
 ### 남은 위험
 
-- 현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다
 - 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다
 - 새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md

@@ -256,8 +256,10 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
   자체 검증됐다.
 - production-shaped B1 acceptance 두 경로와 영향 회귀
   `125 passed, 1 opt-in skipped`가 통과했다. 실제 model·SDK·Docker 호출은 0회다.
-- 현재 source를 commit한 clean HEAD에서 전체 Runner 428개를 다시 통과하기 전에는 교정을
-  완료로 선언하지 않는다.
+- 최종 검증 대상 code/test checkpoint는
+  `21f3743bbb4f822e27628ce018c52b92a597ae08`, tree
+  `2dfc1b77fcb971456b63fa01ff3338cbe49d76d4`다. clean source에서 Runner
+  `428 passed, 4 skipped`, B1 `86 passed`다.
 
 ### 회사에서 이어받을 조건
 

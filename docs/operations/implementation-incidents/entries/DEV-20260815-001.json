@@ -51,7 +51,7 @@
       "reason": "기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다"
     }
   ],
-  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean 전체 회귀와 새 Docker qualification이 남아 있어 investigating을 유지한다.",
+  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. 최종 source bundle은 35개 파일과 payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5로 재생성됐다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했으며 새 Docker qualification이 남아 있어 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
@@ -73,14 +73,18 @@
     "최종 Profile R source bundle builder가 PROFILE_R_SOURCE_BUNDLE_VERIFIED를 반환",
     "최종 bundle file_count 35, payload aggregate 0379c39a639ce81ca9f147ddcfb68e93a0f0240de394ccb2c595daa71b1b9bf5",
     "교정된 production-shaped B1 acceptance 표준·deep-worker 두 경로 통과",
-    "영향 범위 회귀 125 passed, 1 opt-in skipped"
+    "영향 범위 회귀 125 passed, 1 opt-in skipped",
+    "clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped",
+    "clean source 21f3743에서 B1 전체 86 passed"
   ],
   "remaining_risks": [
-    "현재 변경을 commit한 clean source에서 전체 Runner 회귀를 처음부터 다시 통과해야 한다",
     "기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다",
     "새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
-  "related_commits": [],
+  "related_commits": [
+    "112c4738d9a6b9304192d60b4222a8b0ccff1353",
+    "d0e40bf1d26823c693922d13342c77edf6b836dd"
+  ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",
     "docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md",

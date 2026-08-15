@@ -2420,3 +2420,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   Profile R policy 상한 120초를 넘는다는 설정 gate에서 fail-fast로 멈췄다. policy 상한도
   900초로 맞추고 직접 실패 시험과 정책 계약 시험 `2 passed`를 확인했다. 이 부분을 새
   commit으로 고정한 뒤 전체 428개는 다시 0%부터 실행한다.
+- 두 번째 전체 실행은 `294 passed, 4 skipped` 뒤 mocked S1 candidate 시험이 호스트
+  Python `3.12.13`을 읽어 frozen `3.12.10` admission에서 중단됐다. production gate는
+  완화하지 않고 mocked dispatch 시험만 정확한 `3.12.10` identity를 주입했다.
+- 세 번째 전체 실행은 `384 passed, 4 skipped` 뒤 mocked SDK Worker가 Windows 기본
+  CRLF로 파일을 써 Judge `diff_check`에 실패했다. Judge를 완화하지 않고 mock write를
+  LF byte로 고정했다.
+- 최종 clean code/test checkpoint는
+  `21f3743bbb4f822e27628ce018c52b92a597ae08`, tree
+  `2dfc1b77fcb971456b63fa01ff3338cbe49d76d4`다. 이 source에서 Runner 전체는
+  `428 passed, 4 skipped in 577.85s`, B1 전체는 `86 passed in 29.14s`다. skip 4개는
+  Windows symlink 권한 1개와 Docker/SDK 명시 opt-in 3개다. actual model·SDK thread/turn,
+  Codex, Docker workload와 network 호출은 0회다.
