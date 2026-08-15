@@ -3395,6 +3395,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed
 - clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
 - clean source 21f3743에서 B1 전체 86 passed
+- 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
 
 ### 남은 위험
 
@@ -3402,7 +3403,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
-- 새 Worker·Judge source identity로 Docker qualification과 Phase E 0-turn candidate를 다시 만들어야 한다
+- 새 Docker qualification v13은 통과했지만 이를 stage에 결합한 Phase E 0-turn candidate와 readiness를 다시 만들어야 한다
 
 ### 추적 정보
 
@@ -3491,10 +3492,11 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 영향 범위 회귀 125 passed, 1 opt-in skipped
 - clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped
 - clean source 21f3743에서 B1 전체 86 passed
+- 새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산
 
 ### 남은 위험
 
-- 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다
+- 기존 q15 qualification, Phase E v11 candidate와 readiness 심사는 새 Judge source를 인증하지 않는다. q16 qualification v13은 통과했지만 새 candidate/readiness가 남았다
 - 새 Docker qualification과 0-turn candidate 및 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보

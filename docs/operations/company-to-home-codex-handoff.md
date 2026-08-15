@@ -606,15 +606,16 @@ model turn은 계속 `NO_GO`다.
   `2dfc1b77fcb971456b63fa01ff3338cbe49d76d4`다. clean source에서 Runner
   `428 passed, 4 skipped`, B1 `86 passed`다. skip은 symlink 권한 1개와 명시적
   Docker/SDK opt-in 3개다.
+- 새 source `754a64c...e38b92`의 q16 Docker qualification은
+  `CHALLENGE_READY`, 기대 일치 9/9, model turn 0이다. 별도 verifier와 잔여 container 0
+  확인을 통과했고 qualification v13과 stage binding으로 기록했다.
 
 ### 미래
 
 1. 기록 commit까지 포함한 최종 clean source identity를 확인한다.
-2. 새 source bundle로 Docker Profile R qualification을 model-free로 다시
+2. qualification v13에 결합한 새 Phase E 0-turn candidate와 exact acceptance/readiness를
    만든다.
-3. qualification에 결합한 새 Phase E 0-turn candidate와 exact acceptance/readiness를
-   만든다.
-4. 독립 readiness 승인과 사용자 별도 live 승인 전 SS1·B1·Cell 3은 실행하지 않는다.
+3. 독립 readiness 승인과 사용자 별도 live 승인 전 SS1·B1·Cell 3은 실행하지 않는다.
 
 기존 q15 raw, Phase E v11 candidate, v11 SS1/B1 seal은 역사적 실패 Evidence로 그대로
 보존한다. 수정·재봉인·성공 재분류하지 않는다.

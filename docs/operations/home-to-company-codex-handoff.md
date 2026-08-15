@@ -260,6 +260,8 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
   `21f3743bbb4f822e27628ce018c52b92a597ae08`, tree
   `2dfc1b77fcb971456b63fa01ff3338cbe49d76d4`다. clean source에서 Runner
   `428 passed, 4 skipped`, B1 `86 passed`다.
+- 새 source `754a64c...e38b92`의 q16 Docker qualification은
+  `CHALLENGE_READY`, 기대 일치 9/9, model turn 0이며 qualification v13으로 기록했다.
 
 ### 회사에서 이어받을 조건
 
