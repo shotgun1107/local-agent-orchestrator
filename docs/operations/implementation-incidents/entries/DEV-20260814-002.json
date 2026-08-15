@@ -17,6 +17,10 @@
   "evidence": [
     {
       "kind": "direct-observation",
+      "detail": "2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. 공개 Evidence만으로 구체 ENVIRONMENT 분기는 아직 식별되지 않았다."
+    },
+    {
+      "kind": "direct-observation",
       "detail": "두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다"
     },
     {
@@ -164,6 +168,7 @@
     "33463a30e642a9fe70fda20a9bca90d963b36f97"
   ],
   "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md",
     "docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md",
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md",

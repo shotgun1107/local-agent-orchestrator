@@ -3302,6 +3302,7 @@ R07 공개 pytest가 Worker workspace의 Git metadata 아래에 다시 긴 exper
 
 ### 증거
 
+- `direct-observation`: 2026-08-15 Phase E v11 fresh live pair에서 B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가 CHECK_FAILURE_CLASS:ENVIRONMENT를 반환했다. Controller는 failure kind check_environment로 즉시 중단해 R07 두 번째 Attempt와 R08 model turn을 만들지 않았다. Cell 2는 7 turns로 봉인됐고 Cell 3은 PLANNED로 남았다. 공개 Evidence만으로 구체 ENVIRONMENT 분기는 아직 식별되지 않았다.
 - `direct-observation`: 두 Attempt 모두 nested state/experiment/cell/workspace/.git/config에서 Filename too long으로 종료됐고 공개 Check가 traceback과 재실행 명령을 보존했다
 - `direct-observation`: 재시도 Worker는 전달된 오류에 대응해 _preserve_git_longpaths를 추가했지만 이미 지나치게 긴 물리 경로 자체는 줄이지 못했다
 - `source-inspection`: Check TEMP는 Worker .git 아래에 있고 preflight는 임시파일 하나만 생성하며 fixture restore는 첫 git init 뒤에야 local core.longpaths를 설정한다
@@ -3386,6 +3387,7 @@ Pro revision 2의 잔여 P0를 commit 1ecff6c에서 닫고 Judge bundle을 dad68
 ### 추적 정보
 
 - 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-phase-f-environment-closure-r1.md

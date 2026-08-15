@@ -2352,3 +2352,24 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - actual Worker, SDK thread/start, turn/start와 model turn은 0이다. 다음은 revision 3
   readiness package의 읽기 전용 Pro 재심사이며, 그 전에는 Live와
   `DEV-20260814-002` closure를 주장하지 않는다.
+
+## Profile R Phase F 집 v11 실제 SS1→B1 pair
+
+- 작업일: 2026-08-15. 사용자 승인 아래 Phase E v11의 같은 fresh state에서 Profile R
+  SS1 Cell 1과 B1 Cell 2를 별도 명령으로 각각 한 번 실행했다. 0-turn 사전점검은 ChatGPT
+  구독 인증, SDK `0.144.4`, `gpt-5.6-sol`을 확인했고 API-key 환경 이름은 없었다.
+- SS1은 1 session·10 turns로 R01~R08과 자기검토를 끝냈다. 독립 Docker Judge는
+  `R-P05-LIFECYCLE-REUSE`, `R-P06-EXPORT-ROUNDTRIP`을 실패로 판정했다. total token은
+  `20,454,944`, sealed wall은 `3,634.453s`다.
+- B1은 R01~R06을 첫 Attempt에 통과했지만 R07 첫 Check가
+  `CHECK_FAILURE_CLASS:ENVIRONMENT`를 반환했다. 두 번째 R07 Attempt와 R08은 생성되지
+  않았다. actual model turns는 7, total token은 `13,281,801`, sealed wall은
+  `2,946.313s`다. fail-closed non-retry 교정은 실제 실행에서 작동했다.
+- 두 Cell seal은 별도 finalization verifier를 통과했다. Cell 1·2는 `SEALED`, Cell 3·4는
+  `PLANNED`, automatic continuation은 false, 잔여 `phase-f-r-*` container는 0이다.
+- B1이 R08까지 같은 작업량을 끝내지 못했으므로 시간·token·품질 우열은 판정하지 않는다.
+  상태는 `PAIR_SEALED / COMPARISON_INVALID_ENVIRONMENT / ROUTING_INCONCLUSIVE`다. R07의
+  구체 ENVIRONMENT 분기는 현재 공개 Evidence만으로 미확인이고 `DEV-20260814-002`는 계속
+  investigating이다. 자동 live 재실행과 Cell 3은 금지한다.
+- 상세 결과는
+  `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md`다.
