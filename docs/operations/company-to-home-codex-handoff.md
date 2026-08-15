@@ -1,7 +1,7 @@
 # 회사 로컬 → 집 로컬 현재 작업 인수인계
 
 - 문서 상태: `current_company_to_home_handoff`
-- revision: 21
+- revision: 22
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 - 전달 branch: `codex/phase-d-artifacts`
@@ -619,3 +619,30 @@ model turn은 계속 `NO_GO`다.
 
 기존 q15 raw, Phase E v11 candidate, v11 SS1/B1 seal은 역사적 실패 Evidence로 그대로
 보존한다. 수정·재봉인·성공 재분류하지 않는다.
+
+## 32. 2026-08-15 qualification v13 → Phase E v12 → readiness v4
+
+이 절이 현재 최신 집 PC 정본이다.
+
+### 완료
+
+- qualification/stage commit `9035cef739864b45d0b1bc9ab442bbc5294fa5f9` 뒤
+  acceptance가 새 `v12`를 가리키는 source
+  `3cb559355f0feb0403ef486dcce14a9cc8c25506`, tree
+  `68fa82b5a62e0dc9720c5989d34d84a8ce00ee0f`를 먼저 고정했다.
+- Phase E v12 candidate는 experiment `exp_20260815_3a34f942_1`, Plan
+  `3a34f942...9c44af`, seal `0268930e...fd54f`, actual model turn 0이다. 별도 verifier와
+  clean commit의 Phase E 전체 `11 passed`를 통과했다.
+- exact candidate acceptance는 서로 다른 short root에서 두 번 정식 실행됐다. 결과는
+  `1 passed in 77.22s`, `1 passed in 76.79s`다. 매번 Cell 1·2만 SEALED, Cell 3·4
+  PLANNED, R01~R08 8/8, 전체 Check 16/16, R07 12 case, residue와 model turn 0이다.
+- readiness v4 package 입력은 q16 sealed payload 전체, qualification v13, candidate v12,
+  두 acceptance와 source/test snapshot으로 고정했다. 이 문서를 포함하는 clean record
+  commit에서 최종 ZIP을 생성하며 정확한 ZIP hash는 package 밖의 후속 결과 문서에 남긴다.
+
+### 현재 관문
+
+readiness v4를 ChatGPT Pro가 읽기 전용으로 독립 재심사해야 한다. 그 결과 전까지
+`DEV-20260814-002`, `DEV-20260815-001`은 `investigating`, 실제 SS1/B1/Cell 3은
+`NO-GO`, route는 `ROUTING_INCONCLUSIVE`다. 심사가 `GO_ONE_FRESH_PAIR`를 내더라도
+SS1과 B1은 사용자가 각각 별도로 승인해야 하며 자동 continuation은 금지한다.

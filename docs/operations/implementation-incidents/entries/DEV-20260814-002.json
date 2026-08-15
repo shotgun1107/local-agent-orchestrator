@@ -127,7 +127,7 @@
       "reason": "단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다"
     }
   ],
-  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. 새 source의 Docker qualification·0-turn candidate·readiness가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.",
+  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고, 필수 공개 회귀를 정확히 12 case 수집·실행하며 skip·warning·빈 테스트·정적 참 assertion·도달 불가능 assertion을 거부하도록 교정했다. 내부 collection 120초와 실행 600초를 포괄하도록 production r07_contract 외부 제한과 Profile R policy 상한을 900초로 맞췄다. B1 사전점검은 실제 allocation과 Git suffix를 포함한 hostile Git 동작을 model 호출 전에 수행한다. ENVIRONMENT 진단은 경로 원문 없이 bounded canonical JSON으로 Evidence와 seal에 보존하고 Worker feedback에는 노출하지 않는다. clean source의 Runner 전체 428개와 B1 전체 86개가 통과했다. q16 qualification v13, Phase E v12 0-turn candidate와 exact acceptance 두 번, readiness v4 package까지 새 identity로 만들었으며 독립 readiness 재심사가 남아 있어 incident는 investigating과 Live NO-GO를 유지한다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/verify.py",
     "stages/b1-sequential/src/orchestrator/schedule.py",
@@ -179,14 +179,16 @@
     "Profile R policy timeout 교정 뒤 직접 실패 시험과 정책 계약 시험 2 passed",
     "clean source 21f3743에서 Benchmark Runner 전체 428 passed, 4 opt-in/environment skipped",
     "clean source 21f3743에서 B1 전체 86 passed",
-    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산"
+    "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
+    "Phase E v12 후보가 source 3cb5593과 qualification v13에 model turn 0으로 결합되고 별도 verifier와 Phase E 전체 11 passed를 통과",
+    "Phase E v12 exact-candidate acceptance 2회가 77.22s와 76.79s에 통과하고 각 실행은 R07 12 case, Check 16/16, Cell 3 미실행과 residue 0을 보존",
+    "readiness v4 package 304파일의 manifest, payload aggregate, seal self-hash와 ZIP 재해제 exact set/hash 검증 mismatch 0"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
-    "새 Worker·Judge source 기준 live-readiness package 봉인과 독립 재심사가 끝나지 않았다",
+    "새 Worker·Judge source 기준 live-readiness v4 package는 봉인됐지만 독립 재심사가 끝나지 않았다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
-    "새 readiness package와 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다",
-    "새 Docker qualification v13은 통과했지만 이를 stage에 결합한 Phase E 0-turn candidate와 readiness를 다시 만들어야 한다"
+    "독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
     "80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a",
@@ -202,7 +204,13 @@
     "915bdc903d577d186c0f2721fa2be225a310a7fd",
     "33463a30e642a9fe70fda20a9bca90d963b36f97",
     "112c4738d9a6b9304192d60b4222a8b0ccff1353",
-    "d0e40bf1d26823c693922d13342c77edf6b836dd"
+    "d0e40bf1d26823c693922d13342c77edf6b836dd",
+    "21f3743bbb4f822e27628ce018c52b92a597ae08",
+    "754a64caf99b719ff2ec780b3e59d83b69e38b92",
+    "9035cef739864b45d0b1bc9ab442bbc5294fa5f9",
+    "3cb559355f0feb0403ef486dcce14a9cc8c25506",
+    "d015a899cdf7d13bc811a9d5ea4ff2071466f981",
+    "ee6caa79439b01b930bb64f33fe26af43b524594"
   ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md",
@@ -221,6 +229,10 @@
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v2.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v12-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v11-result.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v3-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v3-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v13-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v12-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v4-result.md",
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md"
   ]
 }
