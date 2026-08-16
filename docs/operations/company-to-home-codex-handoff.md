@@ -727,6 +727,9 @@ continuation은 금지한다.
   보존한다.
 - q16, qualification v13, candidate v12, acceptance v4와 readiness v4는 수정하지 않고
   역사 Evidence로 보존한다. q17은 이들을 새 source의 성공 자료로 재분류하지 않는다.
+- q17/stage record commit `886bf6348dc417c64e6590ffa4a33fa430e35125`의 clean
+  status에서 Phase E stage/candidate builder 회귀 `11 passed in 29.21s`와 implementation
+  log check 58 entry가 통과했다. candidate·SDK·model 실행은 0이다.
 
 ### 현재와 다음 관문
 

@@ -2539,6 +2539,10 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   versioned qualification v14 projection SHA-256은
   `1ce6054f2969f5d0c0ee05476823a2b05e8e8d46da53f8c334f63c2959ddc06b`다.
   path-free Docker 환경 기록도 v14 옆에 추가했다.
+- q17/stage record commit `886bf6348dc417c64e6590ffa4a33fa430e35125`의 clean
+  status에서 Phase E stage/candidate builder 회귀 전체 `11 passed in 29.21s`와
+  implementation log check 58 entry를 확인했다. 이는 model-free 회귀이며 Phase E v13
+  candidate 생성, SDK thread/turn 또는 model 실행이 아니다.
 - q17은 Docker Judge의 reference와 고장판 판별만 재인증한다. Phase E v13 0-turn
   candidate, exact acceptance 두 번, canonical readiness package와 독립 재심사는 아직
   수행하지 않았다. 다음 관문은 Phase E v13 0-turn candidate 생성에 대한 사용자 별도

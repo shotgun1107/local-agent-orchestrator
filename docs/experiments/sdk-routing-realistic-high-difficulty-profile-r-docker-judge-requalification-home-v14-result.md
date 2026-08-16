@@ -44,9 +44,16 @@ Docker context, client, daemon과 image identity는 qualification 옆
 존재하지 않았다. Docker qualification만 실행했으며 SDK thread/turn과 실제 model turn은
 0회다.
 
+q17/stage record commit `886bf6348dc417c64e6590ffa4a33fa430e35125`의 clean
+status에서 `tools/benchmark-runner/tests/test_realistic_phase_e.py` 전체는
+`11 passed in 29.21s`, implementation log check는 58 entry로 통과했다. 이는
+model-free stage/candidate builder 회귀이며 candidate 생성, SDK thread/turn 또는 model
+실행이 아니다.
+
 이 결과는 q17 source의 Docker Judge 기준답안과 8개 고장판 판별만 증명한다. 실제
 SS1/B1 성능이나 route를 증명하지 않는다. 다음 단계는 qualification v14를 결합한 clean
 source에서 새 Phase E 0-turn candidate를 만드는 것이며 실제 model Cell은 계속 `NO_GO`다.
+candidate 생성은 사용자 별도 승인 대기 상태다.
 
 비차단 보강점으로 `docker-environment.json`에는 아직 전용 strict schema와 self-hash가
 없다. 현재 bytes는 path-free이고 qualification identity와 일치하며 이 파일의 SHA-256은
