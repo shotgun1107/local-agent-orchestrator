@@ -62,7 +62,7 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.total_turn_ceiling == 40
     assert stage.dispatch.automatic_continuation is False
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v13/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/qualification.json"
     )
 
 
@@ -71,13 +71,16 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
         REPOSITORY
         / "benchmarks"
         / "artifacts"
-        / "profile-r-docker-judge-qualification-v13"
+        / "profile-r-docker-judge-qualification-v14"
         / "qualification.json"
     )
     qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads((path.parent / "docker-environment.json").read_text(encoding="utf-8"))
 
     assert qualification["schema_version"] == 1
     assert qualification["profile"] == "R"
+    assert qualification["source_commit"] == "6cc1063c457fe3153d45ac869af7d588f3208628"
+    assert qualification["batch_id"] == "profile-r-docker-matrix-q17-home"
     assert qualification["status"] == "CHALLENGE_READY"
     assert qualification["challenge_ready"] is True
     assert qualification["model_turns"] == 0
@@ -90,6 +93,17 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
     assert cells[0]["aggregate_status"] == "pass"
     assert all(cell["matched_expectation"] is True for cell in cells)
     assert all(cell["aggregate_status"] == "fail" for cell in cells[1:])
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 9,
+        "cell_count": 9,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(qualification["image_reference"].split("@", 1)[1])
 
 
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:

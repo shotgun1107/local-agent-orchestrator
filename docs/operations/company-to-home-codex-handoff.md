@@ -707,3 +707,34 @@ q17과 후속 artifact는 아직 존재하지 않으므로 hash, PASS 또는 com
 않는다. 새 심사에서 P0/P1 0과 `GO_ONE_FRESH_PAIR`를 받기 전 실제 SS1/B1/Cell 3은
 `NO-GO`다. GO가 나와도 SS1과 B1은 사용자가 Cell별로 따로 승인해야 하며 automatic
 continuation은 금지한다.
+
+## 34. 2026-08-16 q17 qualification v14 완료와 Phase E v13 관문
+
+§33은 q17 실행 전 checkpoint의 역사 기록이다. 현재 최신 회사→집 관문은 이 절이다.
+
+### 완료
+
+- source `6cc1063c457fe3153d45ac869af7d588f3208628`에서 batch
+  `profile-r-docker-matrix-q17-home`을 raw root
+  `C:\q17\profile-r-docker-matrix-q17-home`에 실행했다. Docker image는
+  `local-agent-orchestrator/profile-r-judge@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89`다.
+- qualification v14는 `CHALLENGE_READY`, 기대 일치 `9/9`, model turn 0이다. reference
+  R-P01~R-P08은 8/8 pass했고 mutation 8개는 각 target property를 실패시켰다. 별도
+  verifier도 `CHALLENGE_READY True 9 9 0`을 재계산했으며 잔여 container·cache는 0이다.
+- sealed record 47개, manifest/result/seal self-hash는 각각 `4a280266...21dce`,
+  `4fd14487...b078`, `e6bed8da...d62`다. payload aggregate는 `4dba53e2...3ef0`,
+  projection SHA-256은 `1ce6054f...c06b`다. path-free Docker 환경 v14 기록도 함께
+  보존한다.
+- q16, qualification v13, candidate v12, acceptance v4와 readiness v4는 수정하지 않고
+  역사 Evidence로 보존한다. q17은 이들을 새 source의 성공 자료로 재분류하지 않는다.
+
+### 현재와 다음 관문
+
+q17은 Docker Judge 기준답안과 8개 고장판 판별만 재인증했다. Phase E v13 0-turn
+candidate, exact acceptance 두 번, canonical readiness package와 독립 ChatGPT Pro
+재심사는 아직 없다. 다음 행동은 Phase E v13 0-turn candidate 생성에 대한 사용자 별도
+승인을 받는 것이다.
+
+`DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`,
+`DEV-20260815-003`은 계속 `investigating`이다. 실제 SDK thread/turn과 model turn은 0이며
+SS1/B1/Cell 3, route 결정과 automatic continuation은 계속 `NO-GO`다.

@@ -55,7 +55,7 @@
       "reason": "기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다"
     }
   ],
-  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. R07 source가 다시 바뀌었으므로 새 q17-equivalent qualification이 composite source를 재인증하고 새 readiness 심사가 끝나기 전까지 이 incident는 investigating을 유지한다.",
+  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 composite source를 CHALLENGE_READY, 기대 일치 9/9, model turn 0으로 재인증했다. 다만 새 Phase E v13 candidate와 readiness 심사가 끝나기 전까지 이 incident는 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
@@ -83,11 +83,12 @@
     "새 source 754a64c의 q16 Docker qualification은 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier가 같은 결과를 재계산",
     "Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과",
     "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 per-file exact set/hash 및 seal self-hash는 일치했지만, declared ordinal payload aggregate는 불일치해 package 전체 승인 근거로 쓰지 않음",
-    "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정"
+    "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정",
+    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0"
   ],
   "remaining_risks": [
     "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
-    "Pro v4는 hidden Judge를 closed로 판정했지만 후속 R07 source 변경 뒤 composite source의 새 qualification과 readiness 재심사가 남았다",
+    "Pro v4는 hidden Judge를 closed로 판정했고 q17이 composite source를 재인증했지만 Phase E v13 candidate와 readiness 재심사가 남았다",
     "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
@@ -99,7 +100,8 @@
     "3cb559355f0feb0403ef486dcce14a9cc8c25506",
     "d015a899cdf7d13bc811a9d5ea4ff2071466f981",
     "ee6caa79439b01b930bb64f33fe26af43b524594",
-    "d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4"
+    "d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4",
+    "6cc1063c457fe3153d45ac869af7d588f3208628"
   ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",
@@ -114,6 +116,7 @@
     "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
-    "docs/operations/implementation-incidents/entries/DEV-20260815-002.json"
+    "docs/operations/implementation-incidents/entries/DEV-20260815-002.json",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md"
   ]
 }
