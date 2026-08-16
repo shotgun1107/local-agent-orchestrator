@@ -36,11 +36,21 @@ model Cell은 시작하지 않았다.
 
 - R07 적대 회귀: `31 passed`
 - readiness canonicalization: `13 passed`
-- timeout unit/integration: `13 passed`
-- B1 전체: `88 passed`
-- Phase D 전체: 최신 projection/cache 회귀 두 건 추가 전 `18 passed`
+- timeout unit/integration: `15 passed`
+- B1 전체: `90 passed`
+- Phase D 전체: `20 passed`
 - 최신 projection/cache 집중 시험: `5 passed`
 - Judge full builder: 연속 2회 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, byte diff 0
+
+최초 Phase D 전체 실행의 17 pass/3 fail은 sandbox checkout의 Git dubious ownership이었다.
+전역 Git 설정을 바꾸지 않고 process-local safe.directory만 적용한 재실행에서
+`20 passed in 9.07s`를 확인했다.
+
+최종 회귀 중 성공한 root가 종료됐지만 Job Object `ActiveProcesses`가 일시적으로 1인 상태를
+실제 descendant로 오인하는 Windows 회계 경합도 재현했다. active PID 목록에서 root PID만
+남으면 bounded accounting grace 동안 0을 기다리고, 다른 PID가 있으면 genuine descendant로
+즉시 fail·terminate하도록 교정했다. 새 unit 2개를 포함한 timeout 15개, B1 90개와 외부
+`C:\` 짧은 TEMP hostile preflight 20회 연속 실행이 통과했다.
 
 전체 Runner의 임시 실행은 `458 passed, 4 skipped, 5 failed`였다. 다섯 실패는 현재 dirty
 source의 의도된 clean-source gate 1건, 한글 임시경로 JSON 표기 1건, sandbox가
@@ -54,10 +64,8 @@ clean commit 뒤 권한 있는 짧은 ASCII root에서 다시 실행해야 한�
 - `DEV-20260814-002`, `DEV-20260815-001`은 보강됐다.
 - seal ordering 결함 `DEV-20260815-002`가 새로 작성됐다.
 - readiness v4 erratum, revision log, 양방향 handoff와 역사 동기화 문서가 수정됐다.
-- 새 Judge 재현성 incident `DEV-20260815-003`을 추가하고 문서 수치를 최종 aggregate와
-  검증 결과로 갱신하려던 마지막 patch는 context mismatch로 전체 실패했다. 따라서
-  `DEV-20260815-003.json`은 아직 없고, 일부 문서에는 임시 aggregate `8b59eeec...`와
-  Phase D `17 passed`가 남아 있다. 다음 세션에서 먼저 바로잡아야 한다.
+- Judge 재현성 incident `DEV-20260815-003`을 추가했다. 최근 문서의 임시 aggregate와
+  Phase D 수치는 최종 연속 재현값 `c0690b7b...8609`와 `20 passed`로 교정했다.
 - incident index는 아직 render하지 않았다.
 
 ## 다음 세션의 정확한 순서
@@ -66,15 +74,12 @@ clean commit 뒤 권한 있는 짧은 ASCII root에서 다시 실행해야 한�
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
-3. `DEV-20260815-003`을 추가한다. 원인은 R07 raw stdout의 transient absolute path hash,
-   closure Evidence는 연속 두 builder의 aggregate `c0690b7b...8609`와 root 36파일 diff 0이다.
-4. 최근 문서의 `8b59eeec...`를 최종 `c0690b7b...8609`로 바꾸고 Phase D 전체를 실제로
-   재실행한 뒤에만 최종 pass 개수를 쓴다.
-5. Phase D 전체, readiness 13, R07 31, timeout 13, B1 88을 확인한다.
-6. implementation-log `validate -> render -> check`와 harness unittest를 실행한다.
-7. 모든 수정과 기록을 clean commit으로 만든 뒤, 권한 있는 짧은 ASCII basetemp에서
+3. readiness 13, R07 31, timeout 15, B1 90의 최종 재확인 상태를 모은다. Phase D 전체는
+   process-local safe.directory 환경에서 20 passed로 확인됐다.
+4. implementation-log `validate -> render -> check`와 harness unittest를 실행한다.
+5. 모든 수정과 기록을 clean commit으로 만든 뒤, 권한 있는 짧은 ASCII basetemp에서
    Runner 전체를 다시 실행한다. dirty-source나 sandbox 실패를 성공으로 합치지 않는다.
-8. 전체 회귀가 통과하고 source identity가 clean해진 뒤에만 q17-equivalent Docker
+6. 전체 회귀가 통과하고 source identity가 clean해진 뒤에만 q17-equivalent Docker
    qualification을 검토한다.
 
 ## 계속 금지
@@ -84,4 +89,3 @@ clean commit 뒤 권한 있는 짧은 ASCII root에서 다시 실행해야 한�
 - q17, 새 candidate·acceptance·readiness의 자동 시작
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기
-

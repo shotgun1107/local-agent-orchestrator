@@ -675,12 +675,22 @@ SS1과 B1은 사용자가 각각 별도로 승인해야 하며 자동 continuati
 - R07 내부 상한 900초와 외부 Check 1020초, model-turn 상한 900초를 분리했다. Windows
   Job Object runner는 timeout 또는 root 조기 종료 뒤 descendant 0 확인 후 TEMP를 정리하며
   hostile preflight도 같은 경계를 사용한다.
-- 현재 model-free Evidence는 readiness `13 passed`, R07 `31 passed`, timeout `13 passed`,
-  B1 `88 passed`, Phase D `17 passed`다. Worker snapshot은 130파일·cache 0이고 Judge
-  bundle은 35파일, aggregate
-  `8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`이다. 전체
-  Runner는 진행 중이라 결과를 정본화하지 않는다.
-- `DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`는 모두
+- 현재 model-free Evidence는 readiness `13 passed`, R07 `31 passed`, timeout `15 passed`,
+  B1 `90 passed`, Phase D `20 passed`다. 최초 Phase D 17 pass/3 fail은 sandbox Git dubious
+  ownership이었고 process-local safe.directory 환경에서 전체 20개가 통과했다. Worker
+  snapshot은 130파일·cache 0이다.
+- Windows Job 회계가 종료 직후 root PID 하나를 실제 descendant로 오인하던 경합은 active
+  PID 목록으로 분리했다. root만 남으면 bounded grace 동안 0을 기다리고 다른 PID가 있으면
+  즉시 fail·terminate한다. 새 unit 2개와 외부 `C:\` 짧은 TEMP hostile preflight 20회
+  연속 실행이 통과했다.
+- R07 raw stdout의 transient TEMP 절대경로 hash 때문에 Judge bundle이 재생성마다 달라진
+  결함은 `DEV-20260815-003`으로 분리했다. portable projection과 exact two-line contract
+  교정 뒤 연속 두 full build는 모두 35 payload file aggregate
+  `c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609`를
+  반환했고 root 36파일 exact diff·cache는 0이다. 전체 Runner는 아직 최종 통과로
+  정본화하지 않는다.
+- `DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`,
+  `DEV-20260815-003`은 모두
   `investigating`이다. actual model turn은 실행하지 않았다.
 
 ### 다음 관문
