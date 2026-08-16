@@ -1136,6 +1136,82 @@ def _windows_job_active_processes(job_handle: int) -> int:
     return int(information.ActiveProcesses)
 
 
+def _windows_job_active_process_ids(job_handle: int) -> tuple[int, ...]:
+    """Return active process IDs currently accounted to a Windows Job."""
+
+    import ctypes
+    from ctypes import wintypes
+
+    class JOBOBJECT_BASIC_PROCESS_ID_LIST_HEADER(ctypes.Structure):
+        _fields_ = [
+            ("NumberOfAssignedProcesses", wintypes.DWORD),
+            ("NumberOfProcessIdsInList", wintypes.DWORD),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.QueryInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+    ]
+    kernel32.QueryInformationJobObject.restype = wintypes.BOOL
+    header_size = ctypes.sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST_HEADER)
+    process_id_size = ctypes.sizeof(ctypes.c_size_t)
+    capacity = 8
+    while True:
+        buffer = ctypes.create_string_buffer(
+            header_size + (capacity * process_id_size)
+        )
+        if kernel32.QueryInformationJobObject(
+            wintypes.HANDLE(job_handle),
+            3,
+            buffer,
+            len(buffer),
+            None,
+        ):
+            header = JOBOBJECT_BASIC_PROCESS_ID_LIST_HEADER.from_buffer(buffer)
+            count = int(header.NumberOfProcessIdsInList)
+            if count > capacity:
+                raise OSError("Windows Job returned an invalid active process list")
+            process_ids = (ctypes.c_size_t * count).from_buffer(
+                buffer,
+                header_size,
+            )
+            return tuple(int(process_id) for process_id in process_ids)
+        error = ctypes.get_last_error()
+        if error != 234:  # ERROR_MORE_DATA
+            raise OSError(error, "QueryInformationJobObject process list failed")
+        header = JOBOBJECT_BASIC_PROCESS_ID_LIST_HEADER.from_buffer(buffer)
+        capacity = max(
+            capacity * 2,
+            int(header.NumberOfAssignedProcesses),
+        )
+
+
+def _windows_job_has_active_descendants_after_root_exit(
+    job_handle: int,
+    *,
+    root_process_id: int,
+    accounting_grace_seconds: float,
+) -> bool:
+    """Ignore only bounded, stale accounting for an exited Job root process."""
+
+    deadline = time.monotonic() + max(float(accounting_grace_seconds), 0.0)
+    while True:
+        active_process_ids = _windows_job_active_process_ids(job_handle)
+        if any(process_id != root_process_id for process_id in active_process_ids):
+            return True
+        if not active_process_ids:
+            return False
+        if time.monotonic() >= deadline:
+            raise OSError(
+                "Check Job still accounts the exited root process after completion grace"
+            )
+        time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
+
+
 def _create_windows_kill_on_close_job() -> int:
     """Create a Windows Job whose close operation kills every descendant."""
 
@@ -1319,7 +1395,11 @@ def _run_bounded_check_process(
             if not timed_out:
                 active_descendants = (
                     windows_job_handle is not None
-                    and _windows_job_active_processes(windows_job_handle) != 0
+                    and _windows_job_has_active_descendants_after_root_exit(
+                        windows_job_handle,
+                        root_process_id=process.pid,
+                        accounting_grace_seconds=termination_grace_seconds,
+                    )
                 ) or (
                     os.name != "nt" and _posix_process_group_has_members(process.pid)
                 )

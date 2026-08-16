@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+import orchestrator.verify as verify_module
 from orchestrator.contract import CheckResult, CommandCheck
 from orchestrator.verify import (
     ArtifactStore,
@@ -118,6 +119,46 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     assert captured["env"]["TEMP"] == captured["env"]["TMP"]
     assert captured["env"]["TEMP"] == captured["env"]["TMPDIR"]
     assert not Path(captured["env"]["TEMP"]).exists()
+
+
+def test_windows_job_descendant_check_allows_transient_exited_root_accounting(
+    monkeypatch,
+) -> None:
+    observations = iter(((1234,), (1234,), ()))
+    monkeypatch.setattr(
+        verify_module,
+        "_windows_job_active_process_ids",
+        lambda _job_handle: next(observations),
+    )
+    monkeypatch.setattr(verify_module.time, "sleep", lambda _seconds: None)
+
+    assert (
+        verify_module._windows_job_has_active_descendants_after_root_exit(
+            99,
+            root_process_id=1234,
+            accounting_grace_seconds=1.0,
+        )
+        is False
+    )
+
+
+def test_windows_job_descendant_check_rejects_genuine_descendant(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        verify_module,
+        "_windows_job_active_process_ids",
+        lambda _job_handle: (1234, 5678),
+    )
+
+    assert (
+        verify_module._windows_job_has_active_descendants_after_root_exit(
+            99,
+            root_process_id=1234,
+            accounting_grace_seconds=1.0,
+        )
+        is True
+    )
 
 
 def test_check_environment_contract_is_exact(monkeypatch, tmp_path: Path) -> None:

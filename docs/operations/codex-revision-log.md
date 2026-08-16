@@ -2494,10 +2494,22 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   `task_timeout_seconds`는 900초로 분리했다. Windows Check와 hostile preflight는 같은
   bounded Job Object runner를 사용하며 descendant 0 확인 뒤 TEMP를 정리한다.
 - 현재 model-free 확인은 readiness integrity `13 passed`, R07 적대 회귀 `31 passed`,
-  timeout unit/integration `13 passed`, B1 전체 `88 passed`, Phase D fixture `17 passed`다.
-  Worker snapshot은 130파일·cache 0이고, Judge bundle은 35파일,
-  `payload_aggregate_sha256=8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`으로
-  재생성됐다. 전체 Runner는 아직 진행 중이므로 결과를 기록하지 않는다.
+  timeout unit/integration `15 passed`, B1 전체 `90 passed`, Phase D fixture `20 passed`다.
+  최초 Phase D 17 pass/3 fail은 sandbox checkout의 Git dubious ownership이 원인이었고,
+  전역 Git 설정을 바꾸지 않은 process-local safe.directory 환경에서 전체 20개가 통과했다.
+  Worker snapshot은 130파일·cache 0이다.
+- 최종 회귀 중 성공한 root가 종료된 직후 Job Object `ActiveProcesses=1`이 잠시 남는 상태를
+  실제 descendant로 오인하는 Windows 회계 경합을 재현했다. active PID 목록에서 root만
+  남으면 bounded grace 동안 0을 기다리고 다른 PID가 있으면 genuine descendant로 즉시
+  fail·terminate하도록 교정했다. 새 unit 2개와 외부 `C:\` 짧은 TEMP hostile preflight
+  20회 연속 실행이 통과했다.
+- Judge bundle 연속 재생성에서는 R07 raw stdout에 포함된 transient TEMP 절대경로 hash 때문에
+  같은 source의 aggregate가 `b2f73ded...8875`와 `9f75a8a1...c67c`로 달라지는 별도
+  결정론 결함을 발견했다. `DEV-20260815-003`으로 분리하고 portable Evidence projection과
+  exact two-line stdout contract를 적용했다. 교정 뒤 연속 두 full build는 모두 35 payload
+  file aggregate `c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609`를
+  반환했으며, manifest를 포함한 root 36파일 exact diff와 cache는 0이다. 전체 Runner는
+  아직 최종 통과로 기록하지 않는다.
 - R07 source와 readiness tooling이 바뀌었기 때문에 q16, qualification v13, Phase E v12,
   acceptance v4는 새 source의 live 입력으로 stale하다. q17-equivalent qualification은 아직
   실행하지 않았고 새 candidate·acceptance·readiness도 만들지 않았다. fresh identity chain과

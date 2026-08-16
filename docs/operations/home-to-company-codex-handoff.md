@@ -307,11 +307,19 @@ Controller state와 Cell 1 봉인 원본은 집 raw root에만 있다.
   reachable control flow, pytest provenance와 Windows Job Object process-tree cleanup을
   추가했다. 외부 R07 Check는 1020초, 내부 R07과 model-turn 상한은 각각 900초로
   역할을 분리했다.
-- 현재 확인한 범위는 readiness `13 passed`, R07 `31 passed`, timeout `13 passed`, B1
-  `88 passed`, Phase D `17 passed`다. Worker snapshot은 130파일·cache 0이고, Judge
-  bundle은 35파일, aggregate
-  `8b59eeec909af4d9a6258c14964c4d50ace4f1d8db25e87dfce5e31960d262e0`이다. 전체
-  Runner 결과는 아직 기록하지 않는다.
+- 현재 확인한 범위는 readiness `13 passed`, R07 `31 passed`, timeout `15 passed`, B1
+  `90 passed`, Phase D `20 passed`다. 최초 17 pass/3 fail은 sandbox Git dubious ownership
+  때문이었고 process-local safe.directory 환경에서 20개 전체가 통과했다. Worker snapshot은
+  130파일·cache 0이다.
+- 성공한 root 종료 직후 Job Object가 `ActiveProcesses=1`을 잠시 보고하는 Windows 회계
+  경합은 active PID 목록으로 root-only와 genuine descendant를 구분하도록 교정했다. 새 unit
+  2개와 외부 `C:\` 짧은 TEMP hostile preflight 20회 연속 실행이 통과했다.
+- R07 raw stdout의 transient TEMP 절대경로를 hash하던 Judge bundle 결정론 결함은
+  `DEV-20260815-003`으로 분리했다. portable projection과 exact two-line contract 교정 뒤
+  연속 두 full build는 모두 35 payload file aggregate
+  `c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609`를
+  반환했고 root 36파일 exact diff·cache는 0이다. 전체 Runner 결과는 아직 최종 통과로
+  기록하지 않는다.
 - 새 source 때문에 q16, qualification v13, Phase E v12와 acceptance v4는 다음 live
   입력으로 stale하다. q17-equivalent qualification과 후속 candidate, acceptance,
   readiness package는 아직 생성하지 않았다.
