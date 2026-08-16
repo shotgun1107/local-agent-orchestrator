@@ -52,10 +52,12 @@ model Cell은 시작하지 않았다.
 즉시 fail·terminate하도록 교정했다. 새 unit 2개를 포함한 timeout 15개, B1 90개와 외부
 `C:\` 짧은 TEMP hostile preflight 20회 연속 실행이 통과했다.
 
-전체 Runner의 임시 실행은 `458 passed, 4 skipped, 5 failed`였다. 다섯 실패는 현재 dirty
-source의 의도된 clean-source gate 1건, 한글 임시경로 JSON 표기 1건, sandbox가
-`C:\lao-*`에 쓰지 못한 `WinError 5` 3건이었다. 최종 전체 회귀 통과로 주장하지 않는다.
-clean commit 뒤 권한 있는 짧은 ASCII root에서 다시 실행해야 한다.
+과거 dirty/sandbox 임시 실행의 `458 passed, 4 skipped, 5 failed`는 최종 결과로 세지 않았다.
+clean source commit `e2579a3963db85e7e7d2691aa8776ce8d5a96c9a`를 권한 있는 짧은
+ASCII basetemp `C:\lao-runner-clean-e2579a3`에서 다시 실행해
+`466 passed, 4 skipped in 473.40s`, 실패 0을 확인했다. skip은 symlink 생성 불가 1개와
+명시적 model-free Docker smoke·full Docker dry-run·zero-turn SDK preflight opt-in 각 1개다.
+선택 시험은 실행되지 않아 Docker·SDK·model 실행은 0회다.
 
 ## 저장소 기록 상태
 
@@ -77,10 +79,8 @@ clean commit 뒤 권한 있는 짧은 ASCII root에서 다시 실행해야 한�
 3. readiness 13, R07 31, timeout 15, B1 90의 최종 재확인 상태를 모은다. Phase D 전체는
    process-local safe.directory 환경에서 20 passed로 확인됐다.
 4. implementation-log `validate -> render -> check`와 harness unittest를 실행한다.
-5. 모든 수정과 기록을 clean commit으로 만든 뒤, 권한 있는 짧은 ASCII basetemp에서
-   Runner 전체를 다시 실행한다. dirty-source나 sandbox 실패를 성공으로 합치지 않는다.
-6. 전체 회귀가 통과하고 source identity가 clean해진 뒤에만 q17-equivalent Docker
-   qualification을 검토한다.
+5. 전체 회귀를 통과한 clean source identity를 기록과 함께 확인한다.
+6. 사용자 승인을 받은 뒤에만 q17-equivalent Docker qualification을 검토한다.
 
 ## 계속 금지
 

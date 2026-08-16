@@ -687,18 +687,21 @@ SS1과 B1은 사용자가 각각 별도로 승인해야 하며 자동 continuati
   결함은 `DEV-20260815-003`으로 분리했다. portable projection과 exact two-line contract
   교정 뒤 연속 두 full build는 모두 35 payload file aggregate
   `c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609`를
-  반환했고 root 36파일 exact diff·cache는 0이다. 전체 Runner는 아직 최종 통과로
-  정본화하지 않는다.
+  반환했고 root 36파일 exact diff·cache는 0이다.
+- clean source `e2579a3963db85e7e7d2691aa8776ce8d5a96c9a`를 권한 있는 짧은 ASCII
+  basetemp에서 전체 Runner로 실행해 `466 passed, 4 skipped in 473.40s`, 실패 0을
+  확인했다. skip은 symlink 생성 불가 1개와 명시적 model-free Docker smoke·full Docker
+  dry-run·zero-turn SDK preflight opt-in 각 1개다. 선택 시험은 실행되지 않아
+  Docker·SDK·model 실행은 0회다.
 - `DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`,
   `DEV-20260815-003`은 모두
   `investigating`이다. actual model turn은 실행하지 않았다.
 
 ### 다음 관문
 
-1. 전체 model-free 회귀와 clean source identity를 고정한다.
-2. 새 q17-equivalent Docker qualification을 실행한다.
-3. 그 source에 결합한 새 Phase E 0-turn candidate와 exact acceptance 두 번을 만든다.
-4. canonical readiness package를 새 identity로 봉인하고 독립 ChatGPT Pro 재심사를 받는다.
+1. 사용자 승인을 받은 뒤 새 q17-equivalent Docker qualification을 실행한다.
+2. 그 source에 결합한 새 Phase E 0-turn candidate와 exact acceptance 두 번을 만든다.
+3. canonical readiness package를 새 identity로 봉인하고 독립 ChatGPT Pro 재심사를 받는다.
 
 q17과 후속 artifact는 아직 존재하지 않으므로 hash, PASS 또는 commit을 미리 기록하지
 않는다. 새 심사에서 P0/P1 0과 `GO_ONE_FRESH_PAIR`를 받기 전 실제 SS1/B1/Cell 3은
