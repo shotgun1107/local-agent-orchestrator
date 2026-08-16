@@ -2519,3 +2519,28 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   고정됐지만 q17-equivalent qualification은 아직 실행하지 않았고 새
   candidate·acceptance·readiness도 만들지 않았다. fresh identity chain과
   독립 재심사 전 실제 SS1/B1/Cell 3 및 route 결정은 계속 `NO_GO`다.
+
+## Profile R Docker 재자격 q17·qualification v14
+
+- 작업일: 2026-08-16. clean regression 기록을 포함한 source
+  `6cc1063c457fe3153d45ac869af7d588f3208628`에서 기존 q16과 qualification v13을
+  덮지 않고 공식 batch `profile-r-docker-matrix-q17-home`을 raw root
+  `C:\q17\profile-r-docker-matrix-q17-home`에 실행했다. 고정 image는
+  `local-agent-orchestrator/profile-r-judge@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89`다.
+- reference는 R-P01~R-P08 `8/8 pass`, negative mutation 8개는 각 사전 등록 target
+  property를 실패시켰다. 전체 결과는 `CHALLENGE_READY`, 기대 일치 `9/9`, model turn
+  0이다. 별도 verifier도 정확히 `CHALLENGE_READY True 9 9 0`을 재계산했고 잔여
+  container와 transient cache는 0이다.
+- sealed record는 47개다. manifest/result/seal self-hash는 각각
+  `4a280266790f80a1498a55424a700851f56fe8e00bed0ec2a15c62ce06721dce`,
+  `4fd1448764cd170eb096ed6799c2971a2bc0d662a090118923608f61df79b078`,
+  `e6bed8da25341c96ddd350641b65cee78c00a6281f7709765bf7ace20553ad62`다.
+  payload aggregate는 `4dba53e212e8791839a3e5bc2a77b82859cd3e65aa57750efeb9169e43a33ef0`,
+  versioned qualification v14 projection SHA-256은
+  `1ce6054f2969f5d0c0ee05476823a2b05e8e8d46da53f8c334f63c2959ddc06b`다.
+  path-free Docker 환경 기록도 v14 옆에 추가했다.
+- q17은 Docker Judge의 reference와 고장판 판별만 재인증한다. Phase E v13 0-turn
+  candidate, exact acceptance 두 번, canonical readiness package와 독립 재심사는 아직
+  수행하지 않았다. 다음 관문은 Phase E v13 0-turn candidate 생성에 대한 사용자 별도
+  승인이다. 실제 SDK thread/turn과 model turn은 0이며 SS1/B1/Cell 3과 route 결정은 계속
+  `NO_GO`다.

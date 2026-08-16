@@ -47,7 +47,7 @@
       "reason": "생성과 검증이 동일한 엄격한 path normalization, ordering과 serialization 계약을 사용하고 역사적 v4를 그대로 보존할 수 있다"
     }
   ],
-  "resolution": "repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개는 통과했지만 fresh readiness package와 독립 재심사가 아직 없으므로 investigating을 유지한다.",
+  "resolution": "repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개와 source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14 CHALLENGE_READY 9/9은 통과했지만 fresh candidate, readiness package와 독립 재심사가 아직 없으므로 investigating을 유지한다.",
   "affected_files": [
     "tools/benchmark-runner/src/benchmark_runner/realistic_readiness_package.py",
     "tools/benchmark-runner/scripts/build_profile_r_readiness_integrity.py",
@@ -64,17 +64,21 @@
   "verification": [
     "readiness integrity model-free 회귀 13 passed",
     "역사적 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84와 canonical ordinal aggregate 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd가 다름을 fixture로 보존",
-    "역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존"
+    "역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존",
+    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0"
   ],
   "remaining_risks": [
     "역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다",
     "교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다",
-    "q17-equivalent qualification, 새 0-turn candidate와 acceptance 두 번은 아직 생성하거나 실행하지 않았다"
+    "q17 qualification v14는 통과했지만 새 Phase E v13 0-turn candidate와 acceptance 두 번은 아직 생성하거나 실행하지 않았다"
   ],
-  "related_commits": [],
+  "related_commits": [
+    "6cc1063c457fe3153d45ac869af7d588f3208628"
+  ],
   "source_references": [
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md"
   ]
 }

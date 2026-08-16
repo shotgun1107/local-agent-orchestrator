@@ -1,16 +1,17 @@
-# 집 Codex 임시 체크포인트 — Profile R readiness v4 P1 교정
+# 집 Codex 체크포인트 — Profile R readiness v4 P1 교정과 q17 완료
 
 - 기록 시각: 2026-08-16 KST
 - branch: `codex/phase-d-artifacts`
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
-- 상태: `WIP_NOT_LIVE_READY`
-- 실제 model·SDK thread/turn·Docker qualification: 이번 교정 구간에서 0회
+- q17 source: `6cc1063c457fe3153d45ac869af7d588f3208628`
+- 상태: `Q17_CHALLENGE_READY_LIVE_NOT_APPROVED`
+- 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
 
-사용자가 취침을 위해 임시 정지를 요청했다. 실행 중인 시험이나 builder process는 없다.
-q17-equivalent qualification, 새 Phase E candidate, acceptance, readiness package와 실제
-model Cell은 시작하지 않았다.
+초기에는 사용자 취침 때문에 임시 정지했으며 이후 model-free 교정과 q17까지 재개했다.
+현재 실행 중인 시험이나 builder process는 없다. Phase E v13 candidate, acceptance,
+readiness package와 실제 model Cell은 시작하지 않았다.
 
 ## 확인·구현된 것
 
@@ -59,6 +60,26 @@ ASCII basetemp `C:\lao-runner-clean-e2579a3`에서 다시 실행해
 명시적 model-free Docker smoke·full Docker dry-run·zero-turn SDK preflight opt-in 각 1개다.
 선택 시험은 실행되지 않아 Docker·SDK·model 실행은 0회다.
 
+## q17 qualification v14
+
+- batch: `profile-r-docker-matrix-q17-home`
+- raw root: `C:\q17\profile-r-docker-matrix-q17-home`
+- source: `6cc1063c457fe3153d45ac869af7d588f3208628`
+- image: `local-agent-orchestrator/profile-r-judge@sha256:5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89`
+- 판정: `CHALLENGE_READY`, 기대 일치 `9/9`, model turn 0
+- reference: R-P01~R-P08 `8/8 pass`
+- mutation: 8개 모두 각 target property `fail`
+- sealed record: 47개
+- manifest/result/seal self-hash: `4a280266...21dce` / `4fd14487...b078` /
+  `e6bed8da...d62`
+- payload aggregate: `4dba53e212e8791839a3e5bc2a77b82859cd3e65aa57750efeb9169e43a33ef0`
+- projection SHA-256: `1ce6054f2969f5d0c0ee05476823a2b05e8e8d46da53f8c334f63c2959ddc06b`
+- 별도 verifier: `CHALLENGE_READY True 9 9 0`
+- 잔여 container/cache: 0
+
+q17은 Docker Judge 판별만 재인증한다. 실제 SDK thread/turn과 model turn은 0이며
+Phase E candidate나 Live 승인을 대신하지 않는다.
+
 ## 저장소 기록 상태
 
 - Pro v4 원문은
@@ -76,16 +97,16 @@ ASCII basetemp `C:\lao-runner-clean-e2579a3`에서 다시 실행해
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
-3. readiness 13, R07 31, timeout 15, B1 90의 최종 재확인 상태를 모은다. Phase D 전체는
-   process-local safe.directory 환경에서 20 passed로 확인됐다.
+3. q17 qualification v14와 Docker 환경 기록을 source identity에 결합한다.
 4. implementation-log `validate -> render -> check`와 harness unittest를 실행한다.
-5. 전체 회귀를 통과한 clean source identity를 기록과 함께 확인한다.
-6. 사용자 승인을 받은 뒤에만 q17-equivalent Docker qualification을 검토한다.
+5. 사용자 승인을 받은 뒤에만 Phase E v13 0-turn candidate를 생성한다.
+6. 그 뒤에도 exact acceptance 두 번, canonical readiness package와 독립 재심사를 차례로
+   통과하기 전 Live를 열지 않는다.
 
 ## 계속 금지
 
 - 실제 SS1/B1/Cell 3 model 실행
 - SDK thread/start 또는 turn/start
-- q17, 새 candidate·acceptance·readiness의 자동 시작
+- Phase E v13 candidate·acceptance·readiness의 자동 시작
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기
