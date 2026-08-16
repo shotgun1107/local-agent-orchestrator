@@ -3331,6 +3331,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - `review-finding`: 같은 심사는 R07 내부 명시 상한이 collection 120초 + pytest 600초 + Git 6회×30초 = 900초인데 외부 Check와 policy도 900초여서 parse, startup, diagnostic, process-tree 종료와 cleanup 여유가 0임을 P1로 판정했다
 - `reproducible-test`: 후속 model-free 교정은 bounded constant folding, reachable control flow와 pytest import provenance를 검사하고, Windows Job Object가 timeout 또는 root 조기 종료 뒤 descendants 0을 확인한 후 TEMP를 정리한다. 현재 R07 적대 회귀 31 passed, timeout unit/integration 15 passed, B1 전체 90 passed, Phase D fixture 20 passed다
 - `reproducible-test`: 최종 회귀에서 성공한 root process가 종료된 직후 Job Object ActiveProcesses가 일시적으로 1인 상태를 genuine descendant로 오인해 B1이 87/88로 흔들리는 회계 경합을 재현했다. active PID 목록으로 root PID만 남은 상태와 다른 descendant PID를 구분하도록 교정한 뒤 새 unit 2개를 포함한 timeout unit/integration 15 passed, B1 전체 90 passed, 외부 C:\ 짧은 TEMP의 hostile preflight 20회 연속 pass를 확인했다
+- `reproducible-test`: clean source commit e2579a3963db85e7e7d2691aa8776ce8d5a96c9a를 권한 있는 짧은 ASCII basetemp C:\lao-runner-clean-e2579a3에서 전체 Runner로 검증해 466 passed, 4 skipped, 0 failed in 473.40s를 확인했다. skip 4개는 symlink 생성 불가 1개와 명시적 model-free Docker smoke·full Docker dry-run·zero-turn SDK preflight opt-in 각 1개이며 Docker·SDK·model 실행은 0회였다
 
 ### 근본 원인
 
@@ -3345,7 +3346,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 채택한 해결
 
-2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. 새 q17-equivalent qualification과 후속 identity chain 및 독립 readiness 재심사가 아직 없어 incident는 investigating과 Live NO-GO를 유지한다.
+2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했고 선택형 Docker·SDK·model 실행은 0회였다. 새 q17-equivalent qualification과 후속 identity chain 및 독립 readiness 재심사가 아직 없어 incident는 investigating과 Live NO-GO를 유지한다.
 
 ### 수정 파일
 
@@ -3414,6 +3415,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 후속 model-free R07 적대 회귀 31 passed, timeout unit/integration 15 passed, B1 전체 90 passed, Phase D fixture 20 passed
 - active PID 기반 Job accounting 회귀 2개 추가 후 외부 C:\ 짧은 TEMP hostile preflight 20회 연속 pass
 - 교정 후 연속 두 full build가 모두 Judge bundle 35 payload file의 aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환하고 root 36파일 exact diff 0, Worker snapshot 130파일과 cache 0개 확인
+- clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; skip은 symlink 권한 1개와 명시적 Docker·SDK opt-in 3개이며 실제 Docker·SDK·model 실행 0회
 
 ### 남은 위험
 
@@ -3425,7 +3427,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3654,7 +3656,7 @@ Judge builder가 R07의 의미상 결과가 아니라 raw stdout 전체를 hash�
 
 ### 채택한 해결
 
-public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 조건만 canonical portable projection으로 만들고 그 projection hash를 봉인한다. raw stdout hash 대신 첫 줄 canonical Evidence와 둘째 줄 R07_PUBLIC_CONTRACT_OK만 허용하는 exact two-line contract를 검증한다. Judge derivation 전후에는 __pycache__와 .pytest_cache를 fail-closed로 거부한다. 교정 후 full builder 연속 두 번의 payload aggregate는 모두 c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609였고 root 36파일 exact diff와 cache는 0이다. 다만 새 clean source의 qualification, candidate, acceptance와 독립 readiness 재심사가 아직 없으므로 status는 investigating을 유지한다.
+public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 조건만 canonical portable projection으로 만들고 그 projection hash를 봉인한다. raw stdout hash 대신 첫 줄 canonical Evidence와 둘째 줄 R07_PUBLIC_CONTRACT_OK만 허용하는 exact two-line contract를 검증한다. Judge derivation 전후에는 __pycache__와 .pytest_cache를 fail-closed로 거부한다. 교정 후 full builder 연속 두 번의 payload aggregate는 모두 c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609였고 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했으며 선택형 Docker·SDK·model 실행은 0회였다. 다만 새 clean source의 qualification, candidate, acceptance와 독립 readiness 재심사가 아직 없으므로 status는 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3676,6 +3678,7 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - 교정 후 full build 2회 모두 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609
 - bundle-manifest.json을 포함한 root 36파일의 exact file set·size·SHA-256 diff 0
 - Worker snapshot 130파일과 Judge root 모두 transient cache 0
+- clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; 선택형 Docker·SDK·model 실행 0회
 
 ### 남은 위험
 
@@ -3685,7 +3688,7 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 
 ### 추적 정보
 
-- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2
+- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py

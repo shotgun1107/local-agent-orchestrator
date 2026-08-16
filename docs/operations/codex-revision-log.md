@@ -2508,9 +2508,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   결정론 결함을 발견했다. `DEV-20260815-003`으로 분리하고 portable Evidence projection과
   exact two-line stdout contract를 적용했다. 교정 뒤 연속 두 full build는 모두 35 payload
   file aggregate `c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609`를
-  반환했으며, manifest를 포함한 root 36파일 exact diff와 cache는 0이다. 전체 Runner는
-  아직 최종 통과로 기록하지 않는다.
+  반환했으며, manifest를 포함한 root 36파일 exact diff와 cache는 0이다.
+- clean source commit `e2579a3963db85e7e7d2691aa8776ce8d5a96c9a`를 권한 있는 짧은
+  ASCII basetemp `C:\lao-runner-clean-e2579a3`에서 전체 Runner로 실행해
+  `466 passed, 4 skipped in 473.40s`, 실패 0을 확인했다. skip은 symlink 생성 불가 1개와
+  명시적 model-free Docker smoke, full Docker dry-run, zero-turn SDK preflight opt-in 각
+  1개다. 선택 시험은 실행되지 않아 이번 전체 회귀의 Docker·SDK·model 실행은 0회다.
 - R07 source와 readiness tooling이 바뀌었기 때문에 q16, qualification v13, Phase E v12,
-  acceptance v4는 새 source의 live 입력으로 stale하다. q17-equivalent qualification은 아직
-  실행하지 않았고 새 candidate·acceptance·readiness도 만들지 않았다. fresh identity chain과
+  acceptance v4는 새 source의 live 입력으로 stale하다. clean model-free source 관문은
+  고정됐지만 q17-equivalent qualification은 아직 실행하지 않았고 새
+  candidate·acceptance·readiness도 만들지 않았다. fresh identity chain과
   독립 재심사 전 실제 SS1/B1/Cell 3 및 route 결정은 계속 `NO_GO`다.
