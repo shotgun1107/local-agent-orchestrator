@@ -13,7 +13,8 @@ readiness v4 package와 그 `NO_GO` 판정을 수정하거나 새 성공 근거�
 
 다른 내용보다 먼저 다음을 독립 재계산하라.
 
-1. ZIP 자체 SHA-256이 `START-HERE.md`에 기록된 값과 일치하는가.
+1. ZIP 자체 SHA-256이 ZIP 밖의 첨부 메시지에 기록된 값과 일치하는가. ZIP 내부 파일에
+   자기 자신의 ZIP hash를 넣으라는 자기참조 요구를 하지 마라.
 2. ZIP의 실제 payload와 `PACKAGE-MANIFEST.sha256`의 exact file set, size, SHA-256이
    일치하는가.
 3. `readiness-seal.json`의 self-hash와 payload aggregate가 repository-owned canonical
@@ -24,10 +25,11 @@ readiness v4 package와 그 `NO_GO` 판정을 수정하거나 새 성공 근거�
 ZIP SHA-256과 package record commit은 이 프롬프트에서 추정하지 않는다. 다음 값을 공식
 identity로 사용하라.
 
-- ZIP SHA-256: **`START-HERE.md`에 기록된 값**
+- ZIP SHA-256: **ZIP과 함께 제공된 첨부 메시지의 값**
 - package record commit: **`START-HERE.md`와 `readiness-seal.json`에 기록된 값**
 
-둘 중 하나가 없거나 서로 다르면 `NO_GO`다.
+첨부 메시지에 ZIP SHA-256이 없거나 실제 ZIP hash와 다르거나, package record commit이
+내부 두 파일 사이에서 다르면 `NO_GO`다.
 
 ## 2. 새 identity chain을 exact count와 hash로 대조하라
 

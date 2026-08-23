@@ -119,6 +119,9 @@ ZIP과 seal hash는 아직 존재하지 않는다.
 5. readiness v5를 ChatGPT Pro에 읽기 전용 독립 심사한다.
 6. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
+ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
+메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.
+
 ## 계속 금지
 
 - 실제 SS1/B1/Cell 3 model 실행
