@@ -56,7 +56,7 @@
       "reason": "q17 raw, qualification, Docker environment, Judge/fixture/image 입력은 변하지 않고 downstream Phase E binding만 바뀌므로 재자격 근거가 없다"
     }
   ],
-  "resolution": "v2 Phase E stage/source binding/candidate seal 계약과 회귀를 구현한 뒤 새 Phase E v15 zero-turn candidate, acceptance v7 두 회차와 readiness v7 package를 생성해 독립 Pro 재심사를 받아야 한다.",
+  "resolution": "v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder와 verifier는 committed Docker environment bytes를 hash하고 qualification source·batch·status·model turns·image와 교차 확인하며, 동일 path/SHA를 source binding, Plan과 seal에 직접 봉인한다. v15 zero-turn candidate와 acceptance v7 두 회차까지 통과했으며 readiness v7 package와 독립 Pro 재심사가 남았다.",
   "affected_files": [
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py",
     "benchmarks/suites/sdk-routing-realistic-high-difficulty-v1/stages/realistic-high-difficulty-initial.json",
@@ -71,21 +71,29 @@
   ],
   "verification": [
     "readiness v6 Pro review P0 0, P1-1 OPEN/BLOCKING, final NO_GO",
-    "q17 raw/qualification/environment identity는 유지되므로 새 q17 실행 없이 Phase E downstream closure만 수행"
+    "q17 raw/qualification/environment identity는 유지되므로 새 q17 실행 없이 Phase E downstream closure만 수행",
+    "clean source c7fde69d9e873bd8a8a3db8e73619660c1844883 Phase E v2 회귀 26 passed, v15 record 뒤 exact identity 회귀 포함 27 passed",
+    "v15 candidate schema 2, experiment exp_20260823_c09b6abc_1, Plan c09b6abc...ce90, seal 2af49f56...df0d, environment SHA 70c43e49...f1b5, model turn 0",
+    "acceptance v7 A1/A2 94.14s/98.06s, 각 exact 10 files, manifest 8/8, JUnit 1/0/0/0, scope/evidence true, secret/residue/model 0"
   ],
   "remaining_risks": [
-    "새 v2 binding 구현과 model-free 회귀가 아직 실행되지 않았다",
     "v14 candidate, acceptance v6와 readiness v6는 역사 NO_GO Evidence로만 보존해야 한다",
-    "v15 candidate, acceptance v7, readiness v7와 Pro GO 전 실제 SS1/B1/Cell 3은 NO_GO다"
+    "v15 candidate와 acceptance v7은 완료됐지만 readiness v7 package와 Pro 재심사는 아직 없다",
+    "readiness v7 Pro GO 전 실제 SS1/B1/Cell 3은 NO_GO다"
   ],
   "related_commits": [
     "86b1af04df9534f0f4bba29af40a5e115f8c0ed4",
-    "dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9"
+    "dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9",
+    "c4fb396fd8fa4766851077c230835a05a09a259a",
+    "c7fde69d9e873bd8a8a3db8e73619660c1844883",
+    "e42eaa1fead16c82927a6cefe2b55ec13e9161ee"
   ],
   "source_references": [
     "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v6.md",
     "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v6-package-result.md",
-    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py"
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v15-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v7-result.md"
   ]
 }

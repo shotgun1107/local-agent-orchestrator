@@ -841,3 +841,22 @@ Docker environment path/SHA를 직접 넣고 Git bytes로 재계산하는 것이
 zero-turn candidate, acceptance v7 두 회차, readiness v7 package와 Pro 재심사가 필요하다.
 q17 input·Docker identity·Judge/fixture/image가 변하지 않는 한 q17은 재실행하지 않는다.
 actual model turn은 0이며 실제 SS1/B1/Cell 3과 Live는 계속 `NO_GO`다.
+
+## 39. 2026-08-23 Phase E v15·acceptance v7 완료 checkpoint
+
+§38은 binding 구현 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- v2 binding source는 `c7fde69d9e873bd8a8a3db8e73619660c1844883`, tree는
+  `4c678371c1f1532fd9d120831b9fc50e23970d25`다. exact Docker environment path/SHA는
+  source binding, Plan과 candidate seal 세 곳에 직접 결합되고 verifier가 Git bytes로
+  재계산한다. 과거 v1/v12~v14 verification은 유지된다.
+- v15 candidate는 experiment `exp_20260823_c09b6abc_1`, Plan `c09b6abc...ce90`,
+  seal `2af49f56...df0d`, seal file `8d638023...231d`, model turn 0이다.
+- official acceptance v7 root는 `C:\lao-readiness-v7-c7fde69-clean-exact`다. A1/A2는
+  `94.14s`/`98.06s`, exact 10파일, manifest 8/8, JUnit `1/0/0/0`, lifecycle
+  `SEALED, SEALED, PLANNED, PLANNED`, scope/evidence true, secret/residue/model 0이다.
+- 잘못된 tracked-candidate 순서로 실행한 첫 root `C:\lao-readiness-v7-c7fde69-exact`는
+  공식 결과가 아니며 수정·재분류하지 않는다.
+
+다음 model-free 관문은 readiness v7 package record/prompt 조립, 외부 ZIP 봉인·검증과
+ChatGPT Pro 재심사다. q17은 재실행하지 않는다. 실제 SS1/B1/Cell 3과 Live는 `NO_GO`다.
