@@ -1,18 +1,19 @@
-# 집 Codex 체크포인트 — Phase E v13 acceptance 완료와 readiness v5 대기
+# 집 Codex 체크포인트 — readiness v5 로컬 NO-GO와 v14/v6 closure
 
 - 기록 시각: 2026-08-16 KST
 - branch: `codex/phase-d-artifacts`
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
-- current source: `20053fc7ffb4794fddd16858bd1a56ece3314e93`
-- current record HEAD: `32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`
-- 상태: `V13_ACCEPTANCE_COMPLETE_READINESS_V5_PENDING`
+- current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
+- current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
+- 상태: `V5_REJECTED_V14_ACCEPTANCE_COMPLETE_V6_PACKAGE_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
 
 초기에는 사용자 취침 때문에 임시 정지했으며 이후 model-free 교정과 q17까지 재개했다.
-현재 실행 중인 시험이나 builder process는 없다. Phase E v13 candidate와 acceptance v5는
-완료됐고 readiness v5 package와 실제 model Cell은 시작하지 않았다.
+현재 실행 중인 시험이나 builder process는 없다. readiness v5는 scope P1로 로컬
+`NO_GO` 처리했고 v14 candidate와 acceptance v6까지 교정 검증했다. readiness v6 package와
+실제 model Cell은 시작하지 않았다.
 
 ## 확인·구현된 것
 
@@ -94,7 +95,18 @@ margin 32와 residue/model 0을 보존한다.
 binding/candidate/prompt commit은 각각 `20053fc7ffb4794fddd16858bd1a56ece3314e93`,
 `112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0`,
 `32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`다. readiness v5 package record commit,
-ZIP과 seal hash는 아직 존재하지 않는다.
+readiness v5 record `6fd9f8df4a45e3c73df1f5a799663268a78f9bb2`는 SS1
+`scope_ok=false`를 놓친 418/417/416파일 package다. Pro 제출 전에 거부했으며 역사
+Evidence로만 보존한다. 새 `DEV-20260823-001`이 이 P1을 추적한다.
+
+v14 candidate는 experiment `exp_20260823_bba38a2e_1`, Plan `bba38a2e...1841e`,
+seal `ab0fc7dd...1d4b0`, file `ca84ee54...d9531`, model 0이다. acceptance v6 두 번은
+`75.396s`, `77.043s`, exact 10파일, manifest 8/8, JUnit `1/0/0/0`, 양 variant
+scope/evidence true, secret 0, raw SS1 Evidence, R07 12/12와 residue/model 0을 확인했다.
+readiness v6 package record, ZIP과 seal hash는 아직 존재하지 않는다.
+v14 candidate·v6 acceptance·v5 거부 결과 commit은
+`75d94d3caa0784a3d69f082339256b619d2df889`, v6 Pro prompt commit은
+`4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0`다.
 
 ## 저장소 기록 상태
 
@@ -113,10 +125,9 @@ ZIP과 seal hash는 아직 존재하지 않는다.
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
-3. q17/v14, v13 candidate와 acceptance v5 두 root를 canonical readiness v5 package로
-   조립하고 독립 verifier로 검사한다.
-4. package record commit과 ZIP/hash는 실제 생성·검증 뒤에만 기록한다.
-5. readiness v5를 ChatGPT Pro에 읽기 전용 독립 심사한다.
+3. 기록된 v14 candidate, acceptance v6와 v6 Pro prompt를 입력으로 고정한다.
+4. canonical readiness v6 package를 새 identity로 조립하고 독립 verifier로 검사한다.
+5. 실제 생성 뒤에만 package record/ZIP/hash를 기록하고 ChatGPT Pro에 읽기 전용 심사한다.
 6. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
@@ -126,6 +137,6 @@ ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완�
 
 - 실제 SS1/B1/Cell 3 model 실행
 - SDK thread/start 또는 turn/start
-- readiness v5 이후 실제 Cell의 자동 시작
+- readiness v6 이후 실제 Cell의 자동 시작
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기

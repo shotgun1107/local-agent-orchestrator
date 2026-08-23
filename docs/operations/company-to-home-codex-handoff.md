@@ -764,5 +764,30 @@ hash를 추정하거나 미리 기록하지 않는다. 다음은 canonical packa
 ChatGPT Pro 심사다. 네 incident는 계속 `investigating`이며 실제 SDK thread/turn, model
 turn, SS1/B1/Cell 3, route와 Live는 `NO-GO`다.
 
+## 36. 2026-08-23 readiness v5 로컬 NO-GO와 v14/v6 closure
+
+§35는 scope 결함 발견 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- readiness v5 record `6fd9f8df4a45e3c73df1f5a799663268a78f9bb2`, tree
+  `a8a4177f4d65df774b7c64bf9109ac0e24abaa2e`의 package는 418/417/416파일,
+  aggregate `05c83c...85fe`, seal `534758...ca34`, ZIP `f707ed...d24b`였다. Pro 제출 전
+  SS1 Measurement 두 개가 모두 `scope_ok=false`임을 발견해 로컬 `NO_GO`로 보존했다.
+- Fake runtime이 R03 manifest를 R02에서 썼고 acceptance는 integrity를 검사하지 않았으며
+  package는 SS1 adapter Evidence를 빠뜨렸다. downstream은 scope 실패를 fail-closed해
+  P1로 분류했고 `DEV-20260823-001`로 추적한다.
+- closure source/tree는 `c5e1ae2df58554970ffd98d17946ac94393c3a5d` /
+  `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`다. effect를 R03으로 이동하고 per-task
+  scope 회귀, raw SS1 Evidence와 SS1/B1 scope·evidence·secret assertion을 추가했다.
+- v14 candidate는 experiment `exp_20260823_bba38a2e_1`, Plan `bba38a2e...1841e`,
+  seal `ab0fc7dd...1d4b0`, file `ca84ee54...d9531`, model 0이다. acceptance v6 A1/A2는
+  `75.396s`, `77.043s`, exact 10파일, manifest 8/8, JUnit `1/0/0/0`, scope/evidence
+  true, secret 0, raw SS1 Evidence, R07 12/12와 residue/model 0을 확인했다.
+
+candidate·acceptance·v5 거부 결과는 `75d94d3caa0784a3d69f082339256b619d2df889`,
+v6 Pro prompt는 `4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0`에 기록됐다. 다음은 canonical
+readiness v6 package 조립·검증과 독립 Pro 심사다. v6 package/ZIP/record/seal hash는
+아직 기록하지 않는다. 모든 incident는
+`investigating`, 실제 SS1/B1/Cell 3, route와 Live는 `NO-GO`다.
+
 ZIP SHA-256은 ZIP 내부에 자기참조로 넣지 않는다. 완성 뒤 외부 첨부 메시지로 전달하고,
 내부 `START-HERE.md`와 readiness seal은 package record commit·tree를 결합한다.

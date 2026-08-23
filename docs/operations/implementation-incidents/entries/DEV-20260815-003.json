@@ -71,11 +71,12 @@
     "Worker snapshot 130파일과 Judge root 모두 transient cache 0",
     "clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; 선택형 Docker·SDK·model 실행 0회",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 잔여 container/cache 0",
-    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번이 exact 9파일, manifest 7/7, R07 12/12, residue/model turn 0으로 통과"
+    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번이 exact 9파일, manifest 7/7, R07 12/12, residue/model turn 0으로 통과",
+    "readiness v5는 SS1 scope P1로 로컬 NO_GO; v14/v6 closure는 raw SS1 Evidence를 포함한 exact 10파일/manifest 8/8, integrity true와 model 0을 보존"
   ],
   "remaining_risks": [
     "이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다",
-    "교정 source의 q17, Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package는 아직 생성되지 않았다",
+    "readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package는 아직 생성되지 않았다",
     "독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다"
   ],
   "related_commits": [
@@ -84,7 +85,10 @@
     "6cc1063c457fe3153d45ac869af7d588f3208628",
     "20053fc7ffb4794fddd16858bd1a56ece3314e93",
     "112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0",
-    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9"
+    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
+    "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
+    "75d94d3caa0784a3d69f082339256b619d2df889",
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
   ],
   "source_references": [
     "docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md",
