@@ -2571,3 +2571,6 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   아직 canonical readiness v5 package, package record commit, ZIP과 package seal hash는
   존재하지 않으므로 기록하지 않는다. 다음 관문은 canonical package 조립·검증과 독립
   ChatGPT Pro 심사다. 실제 SS1/B1/Cell 3, route와 Live는 계속 `NO_GO`다.
+- package 조립 직전, ZIP 내부 `START-HERE.md`가 같은 ZIP의 SHA-256을 가져야 한다는
+  자기참조 요구를 제거했다. ZIP hash는 완성 뒤 외부 첨부 메시지에 기록하고, 내부
+  `START-HERE.md`와 seal은 package record commit·tree를 결합한다.

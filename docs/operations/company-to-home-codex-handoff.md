@@ -763,3 +763,6 @@ canonical readiness v5 package는 아직 없다. package record commit, ZIP, man
 hash를 추정하거나 미리 기록하지 않는다. 다음은 canonical package 조립·검증과 독립
 ChatGPT Pro 심사다. 네 incident는 계속 `investigating`이며 실제 SDK thread/turn, model
 turn, SS1/B1/Cell 3, route와 Live는 `NO-GO`다.
+
+ZIP SHA-256은 ZIP 내부에 자기참조로 넣지 않는다. 완성 뒤 외부 첨부 메시지로 전달하고,
+내부 `START-HERE.md`와 readiness seal은 package record commit·tree를 결합한다.
