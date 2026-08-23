@@ -47,7 +47,7 @@
       "reason": "생성과 검증이 동일한 엄격한 path normalization, ordering과 serialization 계약을 사용하고 역사적 v4를 그대로 보존할 수 있다"
     }
   ],
-  "resolution": "repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개와 source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14 CHALLENGE_READY 9/9은 통과했지만 fresh candidate, readiness package와 독립 재심사가 아직 없으므로 investigating을 유지한다.",
+  "resolution": "repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개와 source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14 CHALLENGE_READY 9/9을 통과했다. fresh candidate v14, acceptance v6와 canonical readiness v6 package도 만들어 로컬 read-only 감사 P0/P1 0을 확인했다. 외부 Pro 재심사는 아직 없으므로 investigating을 유지한다.",
   "affected_files": [
     "tools/benchmark-runner/src/benchmark_runner/realistic_readiness_package.py",
     "tools/benchmark-runner/scripts/build_profile_r_readiness_integrity.py",
@@ -67,12 +67,13 @@
     "역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0",
     "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번은 model turn 0, exact manifest 7/7과 residue 0으로 통과",
-    "readiness v5는 SS1 scope P1로 로컬 NO_GO; closure acceptance v6 exact 10파일/manifest 8/8과 양 variant integrity true를 확인"
+    "readiness v5는 SS1 scope P1로 로컬 NO_GO; closure acceptance v6 exact 10파일/manifest 8/8과 양 variant integrity true를 확인",
+    "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...과 로컬 read-only integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
     "역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다",
     "교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다",
-    "readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package와 독립 재심사는 아직 없다"
+    "교정된 canonical readiness v6 package는 존재하고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사는 아직 없다"
   ],
   "related_commits": [
     "6cc1063c457fe3153d45ac869af7d588f3208628",
@@ -81,7 +82,8 @@
     "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
     "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
     "75d94d3caa0784a3d69f082339256b619d2df889",
-    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0",
+    "86b1af04df9534f0f4bba29af40a5e115f8c0ed4"
   ],
   "source_references": [
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",

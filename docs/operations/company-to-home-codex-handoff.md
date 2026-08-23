@@ -791,3 +791,31 @@ readiness v6 package 조립·검증과 독립 Pro 심사다. v6 package/ZIP/reco
 
 ZIP SHA-256은 ZIP 내부에 자기참조로 넣지 않는다. 완성 뒤 외부 첨부 메시지로 전달하고,
 내부 `START-HERE.md`와 readiness seal은 package record commit·tree를 결합한다.
+
+## 37. 2026-08-23 readiness v6 package 조립과 로컬 이중 감사 완료
+
+§36은 package 조립 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- package record는 `86b1af04df9534f0f4bba29af40a5e115f8c0ed4`, tree는
+  `30de76ac53e25ddea99c1e66f0116a8478b47ac7`이다.
+- `profile-r-live-readiness-v6-86b1af0.zip`은 1,821,994 bytes, 425 entry이며 SHA-256은
+  `13706617a42005e65f8cba9b36c471a207c79b40f848c75a387a40a3bf99aab2`다.
+- package total/manifest/payload는 `425/424/423`, manifest SHA-256은
+  `369ea42979ae539cda2a86a709310b82aaeca8a4ba3f29d0c34c976635714c80`, payload aggregate는
+  `51e261bef08068a7ccda1aa931cf35d7dcd19956f6006348a0e935d10cf4bf01`다.
+- readiness seal self-hash는
+  `267093053536e239ac65357660db4b8a4c7a4c4b4b2a9c86d5f891b9b32dabad`, seal file SHA-256은
+  `102587082bbb535b95b5b01d5bdc132286a48b23d060aa05c73657d13cc80d14`다.
+- 원본 package와 별도 ZIP 해제본의 file·directory·content diff, reparse point와 cache는
+  모두 0이다. credential 실제 검출도 0이다.
+- 서로 다른 두 read-only 감사가 무결성과 identity/scope를 분리해 확인했고 P0/P1은 0이다.
+  acceptance A1/A2는 각각 exact 10파일, manifest 8/8이며 raw SS1 adapter Evidence와 양
+  variant의 `scope_ok=true`, `evidence_hashes_ok=true`, secret 0을 보존한다.
+- 알려진 P2는 path-free `docker-environment.json`의 전용 strict schema/self-hash 부재다.
+  exact bytes는 SHA-256 `70c43e49...f1b5`로 qualification, candidate와 readiness seal에
+  결합돼 있어 이번 package를 차단하지 않는다.
+
+다음 관문은 이 ZIP과 외부 ZIP SHA-256을 ChatGPT Pro에 전달하는 읽기 전용 재심사다.
+아직 `GO_ONE_FRESH_PAIR`를 받은 것이 아니므로 다섯 incident는 `investigating`, 실제
+SS1/B1/Cell 3과 Live는 `NO_GO`다. Pro가 GO를 내더라도 SS1과 B1은 사용자가 각각 별도로
+승인해야 하며 자동 continuation은 금지한다. actual model turn은 계속 0이다.

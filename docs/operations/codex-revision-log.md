@@ -2606,3 +2606,26 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - package 조립 직전, ZIP 내부 `START-HERE.md`가 같은 ZIP의 SHA-256을 가져야 한다는
   자기참조 요구를 제거했다. ZIP hash는 완성 뒤 외부 첨부 메시지에 기록하고, 내부
   `START-HERE.md`와 seal은 package record commit·tree를 결합한다.
+
+## readiness v6 package와 로컬 독립 이중 감사
+
+- package record `86b1af04df9534f0f4bba29af40a5e115f8c0ed4`, tree
+  `30de76ac53e25ddea99c1e66f0116a8478b47ac7`를 입력으로 canonical readiness v6 package를
+  조립했다. ZIP은 `profile-r-live-readiness-v6-86b1af0.zip`, 1,821,994 bytes,
+  425 entry이며 SHA-256은
+  `13706617a42005e65f8cba9b36c471a207c79b40f848c75a387a40a3bf99aab2`다.
+- total/manifest/payload는 `425/424/423`이다. manifest file SHA-256은
+  `369ea42979ae539cda2a86a709310b82aaeca8a4ba3f29d0c34c976635714c80`, payload aggregate는
+  `51e261bef08068a7ccda1aa931cf35d7dcd19956f6006348a0e935d10cf4bf01`, seal self-hash는
+  `267093053536e239ac65357660db4b8a4c7a4c4b4b2a9c86d5f891b9b32dabad`, seal file SHA-256은
+  `102587082bbb535b95b5b01d5bdc132286a48b23d060aa05c73657d13cc80d14`다.
+- 원본, ZIP과 별도 해제본의 exact file/content diff는 0이며 duplicate, unsafe path,
+  link/reparse point와 cache는 0이다. 실제 credential 검출은 0이다.
+- 첫 read-only 감사는 manifest 424/424와 canonical aggregate/seal/ZIP을 독립 재계산해
+  mismatch 0, P0/P1 0을 냈다. 둘째 감사는 q17 47+2, qualification 2, candidate 6,
+  acceptance 10×2와 commit/tree chain을 다시 확인했고, 양 acceptance의 SS1/B1
+  scope/evidence true, secret/boundary/residue/model 0을 확인해 P0/P1 0을 냈다.
+- `docker-environment.json`의 전용 strict schema/self-hash 부재는 알려진 P2다. exact bytes가
+  SHA-256 `70c43e49...f1b5`로 상위 identity에 결합된 사실은 확인했다.
+- 다음 관문은 ChatGPT Pro의 읽기 전용 재심사다. 그 전까지 incident는 `investigating`,
+  실제 SS1/B1/Cell 3과 Live는 `NO_GO`다. actual model turn은 0이다.
