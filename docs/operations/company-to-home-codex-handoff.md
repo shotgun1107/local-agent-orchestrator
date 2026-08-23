@@ -741,3 +741,25 @@ candidate, exact acceptance 두 번, canonical readiness package와 독립 ChatG
 `DEV-20260814-002`, `DEV-20260815-001`, `DEV-20260815-002`,
 `DEV-20260815-003`은 계속 `investigating`이다. 실제 SDK thread/turn과 model turn은 0이며
 SS1/B1/Cell 3, route 결정과 automatic continuation은 계속 `NO-GO`다.
+
+## 35. 2026-08-23 Phase E v13·acceptance v5 완료와 readiness v5 심사 대기
+
+§34는 Phase E v13 후보 생성 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- source `20053fc7ffb4794fddd16858bd1a56ece3314e93`, tree
+  `e5dc19a5cb056a972cef17f6e544a58aa4132231`에서 정식 v13 후보를 만들었다. experiment
+  `exp_20260823_00f2916f_1`, Plan `00f2916f...fc25`, seal `1d9df197...26bb`, seal file
+  `476737...69a`, model turn 0이다.
+- `b41c395` source의 앞선 후보는 binding 변경으로 stale해져 정식 acceptance 전에
+  제거했다. 두 preflight 모두 account/model-list만 조회했고 thread/turn/model은 0이다.
+- acceptance v5 A1/A2는 `78.08s`, `74.95s`에 통과했다. 각 root는 exact 9파일,
+  manifest 7/7, JUnit `1/0/0/0`, lifecycle `SEALED, SEALED, PLANNED, PLANNED`, public
+  8/8, Check 16/16, R07 12/12를 보존한다. path/growth는 `251/283`, `265/297`, margin
+  32이며 residue와 model turn은 0이다.
+- candidate·acceptance record는 `112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0`,
+  readiness v5 Pro prompt는 `32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`에 기록됐다.
+
+canonical readiness v5 package는 아직 없다. package record commit, ZIP, manifest와 seal
+hash를 추정하거나 미리 기록하지 않는다. 다음은 canonical package 조립·검증과 독립
+ChatGPT Pro 심사다. 네 incident는 계속 `investigating`이며 실제 SDK thread/turn, model
+turn, SS1/B1/Cell 3, route와 Live는 `NO-GO`다.

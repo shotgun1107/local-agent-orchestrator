@@ -3417,18 +3417,19 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 교정 후 연속 두 full build가 모두 Judge bundle 35 payload file의 aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환하고 root 36파일 exact diff 0, Worker snapshot 130파일과 cache 0개 확인
 - clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; skip은 symlink 권한 1개와 명시적 Docker·SDK opt-in 3개이며 실제 Docker·SDK·model 실행 0회
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0, 잔여 container/cache 0
+- Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
 - readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다
-- q17 qualification v14는 통과했지만 새 0-turn candidate, acceptance 두 번과 canonical readiness package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다
+- Phase E v13 0-turn candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3453,6 +3454,9 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
 
 ## DEV-20260815-001 — Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴
 
@@ -3526,16 +3530,17 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 per-file exact set/hash 및 seal self-hash는 일치했지만, declared ordinal payload aggregate는 불일치해 package 전체 승인 근거로 쓰지 않음
 - ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
+- Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과
 
 ### 남은 위험
 
 - 기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다
-- Pro v4는 hidden Judge를 closed로 판정했고 q17이 composite source를 재인증했지만 Phase E v13 candidate와 readiness 재심사가 남았다
+- Pro v4는 hidden Judge를 closed로 판정했고 q17과 Phase E v13 acceptance가 통과했지만 canonical readiness v5 package와 재심사가 남았다
 - 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md
@@ -3550,6 +3555,9 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md
 - 출처: docs/operations/implementation-incidents/entries/DEV-20260815-002.json
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
 
 ## DEV-20260815-002 — Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함
 
@@ -3610,20 +3618,24 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 - 역사적 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84와 canonical ordinal aggregate 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd가 다름을 fixture로 보존
 - 역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
+- Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번은 model turn 0, exact manifest 7/7과 residue 0으로 통과
 
 ### 남은 위험
 
 - 역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다
 - 교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다
-- q17 qualification v14는 통과했지만 새 Phase E v13 0-turn candidate와 acceptance 두 번은 아직 생성하거나 실행하지 않았다
+- Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package와 독립 재심사는 아직 없다
 
 ### 추적 정보
 
-- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628
+- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
 
 ## DEV-20260815-003 — Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐
 
@@ -3686,17 +3698,21 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - Worker snapshot 130파일과 Judge root 모두 transient cache 0
 - clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; 선택형 Docker·SDK·model 실행 0회
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 잔여 container/cache 0
+- Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번이 exact 9파일, manifest 7/7, R07 12/12, residue/model turn 0으로 통과
 
 ### 남은 위험
 
 - 이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다
-- 교정 source의 q17 qualification v14는 통과했지만 Phase E v13 0-turn candidate, acceptance 두 번과 canonical readiness package는 아직 생성되지 않았다
+- 교정 source의 q17, Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package는 아직 생성되지 않았다
 - 독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628
+- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
