@@ -64,7 +64,7 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v13"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v14"
 )
 REFERENCE_PATCH = (
     REPOSITORY
@@ -187,6 +187,7 @@ def _write_acceptance_evidence(
     payload_root.mkdir()
     sources = {
         "phase-f-state.json": experiment_dir / PHASE_F_STATE_FILENAME,
+        "ss1-adapter-evidence.json": artifact_root / ss1_cell_id / PHASE_F_SS1_EVIDENCE_FILENAME,
         "ss1-measurement.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_MEASUREMENT_FILENAME,
         "ss1-cell-seal.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_CELL_SEAL_FILENAME,
         "b1-adapter-evidence.json": artifact_root / b1_cell_id / "b1-adapter-evidence.json",
@@ -358,6 +359,8 @@ def _runtime_factory(
                 "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
                 "schema_version: 1\nstage_id: s2-intermediate\n",
             ),
+        ),
+        "R03": (
             (
                 "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
                 "schema_version: 1\nstatus: fake\n",
@@ -464,6 +467,20 @@ def test_profile_r_task_compilation_preserves_order_and_classifies_predecessors(
     assert by_id["R04"].predecessor_artifacts[0].sha256 != ""
     assert all(task.read_scope == sorted(task.read_scope) for task in tasks)
     assert all(task.write_scope == sorted(task.write_scope) for task in tasks)
+
+
+def test_model_free_fake_effects_stay_within_each_task_write_scope() -> None:
+    workspace = REPOSITORY / PROFILE_R_WORKER_RELATIVE
+    tasks = build_profile_r_ss1_tasks(workspace)
+    runtime = _runtime_factory([])(workspace)
+
+    for task in tasks:
+        script = runtime.scripts[task.task_id]
+        assert isinstance(script, FakeTurnScript)
+        assert all(
+            any(path_matches_write_scope(path, scope) for scope in task.write_scope)
+            for path, _content in script.effects
+        ), task.task_id
 
 
 def test_profile_r_task_hashes_are_refreshed_after_predecessor_output_exists(
@@ -758,13 +775,21 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         PhaseFCellLifecycle.PLANNED.value,
     ]
     for cell_id in (first.executed_cell_id, second.executed_cell_id):
-        assert (
+        sealed_root = (
             artifact_root
             / cell_id
             / PHASE_F_FINAL_DIRECTORY
             / PHASE_F_SEALED_DIRECTORY
-            / PHASE_F_CELL_SEAL_FILENAME
+        )
+        assert (
+            sealed_root / PHASE_F_CELL_SEAL_FILENAME
         ).is_file()
+        measurement = json.loads(
+            (sealed_root / PHASE_F_MEASUREMENT_FILENAME).read_text(encoding="utf-8")
+        )
+        assert measurement["integrity"]["scope_ok"] is True
+        assert measurement["integrity"]["evidence_hashes_ok"] is True
+        assert measurement["integrity"]["secret_findings"] == []
     cell_three = after_b1["cells"][2]
     assert not (
         experiment_dir
