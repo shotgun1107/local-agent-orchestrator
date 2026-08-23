@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260823-001",
+  "title": "Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함",
+  "status": "investigating",
+  "stage": "phase-f-profile-r",
+  "category": "test",
+  "discovered_at": "2026-08-23T13:01:22Z",
+  "resolved_at": null,
+  "discovered_by": "readiness v5 package 제출 전 SS1 Measurement과 acceptance Evidence 대조",
+  "symptom": "acceptance v5 A1과 A2는 pytest가 통과했지만 SS1 Measurement의 integrity.scope_ok가 모두 false였다. Fake _runtime_factory가 R03 소유 manifest를 R02 실행 중 기록했으며 acceptance는 integrity를 assertion하지 않았고 package는 SS1 adapter Evidence를 포함하지 않았다.",
+  "reproduction": [
+    "역사적 acceptance v5 A1/A2의 SS1 Measurement integrity.scope_ok 값을 확인한다",
+    "Fake _runtime_factory가 Task R02 처리 중 생성한 파일을 per-task allowed write scope와 대조한다",
+    "acceptance assertion과 readiness v5 payload 목록에서 SS1 adapter Evidence 및 SS1/B1 scope·evidence·secret 검사를 확인한다"
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "acceptance v5 A1/A2의 SS1 Measurement는 모두 scope_ok=false였지만 acceptance는 통과했고 외부 readiness v5 package에는 SS1 adapter Evidence가 없었다"
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "Fake _runtime_factory가 R03 Task 소유 manifest를 R02 실행 중 기록해 task별 allowed write scope를 위반했다"
+    },
+    {
+      "kind": "inference",
+      "detail": "Measurement와 downstream routing은 scope_ok=false를 fail-closed로 보존하므로 실제 잘못된 route나 Live GO로 승격되지는 않는다. 결함은 acceptance와 package가 이 실패를 차단·노출하지 못한 P1이며 제어면 우회를 허용한 P0는 아니다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "readiness v5 외부 package record 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, tree a8a4177f4d65df774b7c64bf9109ac0e24abaa2e는 total 418, manifest 417, payload 416, aggregate 05c83c...85fe, seal 534758...ca34, ZIP f707ed...d24b였지만 Pro 제출 전에 로컬 NO_GO로 폐기 판정하고 역사 Evidence로 보존했다"
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "교정 source c5e1ae2df58554970ffd98d17946ac94393c3a5d의 acceptance v6 A1/A2는 75.396s와 77.043s에 통과했고 exact 10 files, manifest 8/8, JUnit 1/0/0/0, SS1/B1 scope_ok·evidence_hashes_ok true, secret finding 0과 raw SS1 adapter Evidence를 보존했다"
+    }
+  ],
+  "root_cause": "Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 선행 Task R02에서 실행됐다. 동시에 acceptance contract는 public Check와 lifecycle·residue만 확인하고 SS1/B1 Measurement의 scope_ok, evidence_hashes_ok, secret_findings를 필수 assertion으로 두지 않았으며, readiness payload도 B1 adapter Evidence만 포함해 SS1의 원시 원인을 독립 검토할 수 없었다.",
+  "considered_options": [
+    {
+      "option": "R02 allowed write scope에 R03 manifest를 추가",
+      "decision": "rejected",
+      "reason": "실제 task ownership 위반을 허용 목록 확장으로 숨겨 fixture 의미를 약화한다"
+    },
+    {
+      "option": "Measurement scope assertion만 추가하고 SS1 raw Evidence는 계속 생략",
+      "decision": "rejected",
+      "reason": "실패 차단은 가능하지만 외부 package가 SS1 원시 scope 계산을 독립 재검증할 수 없다"
+    },
+    {
+      "option": "effect를 R03으로 이동하고 task별 scope 회귀, 양 variant integrity assertion과 SS1 Evidence export를 함께 추가",
+      "decision": "adopted",
+      "reason": "fixture 의미, fail-closed acceptance와 package 감사 가능성을 동시에 복구한다"
+    },
+    {
+      "option": "기존 readiness v5 package를 수정하거나 그대로 Pro에 제출",
+      "decision": "rejected",
+      "reason": "이미 확인된 scope 결함과 Evidence 누락을 가진 역사 identity를 성공 자료로 재분류할 수 없다"
+    }
+  ],
+  "resolution": "현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번은 scope/evidence/boundary를 통과했지만 canonical readiness v6 package와 독립 Pro 심사가 아직 없어 investigating과 Live NO_GO를 유지한다.",
+  "affected_files": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/candidate-seal.json",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/execution-plan.json",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/files.sha256",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/phase-e-preflight.json",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/source-bindings.json",
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/stage-manifest.json"
+  ],
+  "regression_tests": [
+    "Fake effect가 각 task의 allowed write scope 안에서만 파일을 생성하는 per-task 회귀",
+    "SS1과 B1 Measurement의 scope_ok·evidence_hashes_ok true와 secret finding 0을 acceptance가 필수 검사하는 회귀",
+    "SS1 adapter Evidence를 포함한 exact 10-file/8-record acceptance bundle 회귀",
+    "서로 다른 root 두 번에서 lifecycle, public Check, R07, boundary와 residue가 같은 계약을 만족하는 production-shaped acceptance"
+  ],
+  "verification": [
+    "v14 candidate source/tree c5e1ae2df58554970ffd98d17946ac94393c3a5d/3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, actual model turn 0",
+    "acceptance v6 A1 75.396s, A2 77.043s 통과",
+    "각 acceptance exact 10 files, manifest 8/8, JUnit tests/failures/errors/skipped 1/0/0/0",
+    "각 SS1/B1 scope_ok=true, evidence_hashes_ok=true, secret finding 0과 raw SS1 adapter Evidence 포함",
+    "각 R07 12/12, boundary·TEMP/process/lock residue와 actual model turn 0",
+    "v14 candidate·v6 acceptance·v5 거부 결과 commit 75d94d3caa0784a3d69f082339256b619d2df889와 v6 Pro prompt commit 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0 기록"
+  ],
+  "remaining_risks": [
+    "역사적 readiness v5 package는 로컬 NO_GO Evidence로만 보존하며 Pro 승인이나 Live 근거로 사용할 수 없다",
+    "v14 candidate, acceptance v6와 새 Pro prompt는 기록됐으며 canonical readiness v6 package를 새 identity로 만들어야 한다",
+    "독립 Pro 심사와 사용자 Cell별 승인 전 실제 SS1/B1/Cell 3, route와 Live는 NO_GO다"
+  ],
+  "related_commits": [
+    "6fd9f8df4a45e3c73df1f5a799663268a78f9bb2",
+    "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
+    "75d94d3caa0784a3d69f082339256b619d2df889",
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
+  ],
+  "source_references": [
+    "docs/operations/codex-revision-log.md",
+    "docs/operations/company-to-home-codex-handoff.md",
+    "docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ]
+}

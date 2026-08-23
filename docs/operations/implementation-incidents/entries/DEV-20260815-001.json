@@ -85,11 +85,12 @@
     "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 per-file exact set/hash 및 seal self-hash는 일치했지만, declared ordinal payload aggregate는 불일치해 package 전체 승인 근거로 쓰지 않음",
     "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0",
-    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과"
+    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과",
+    "readiness v5는 SS1 scope gap으로 로컬 NO_GO; closure acceptance v6 두 번은 raw SS1 Evidence와 SS1/B1 scope/evidence true, secret/residue/model 0을 보존"
   ],
   "remaining_risks": [
     "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
-    "Pro v4는 hidden Judge를 closed로 판정했고 q17과 Phase E v13 acceptance가 통과했지만 canonical readiness v5 package와 재심사가 남았다",
+    "hidden Judge closure는 유지되지만 acceptance v5/readiness v5 scope P1 교정 뒤 canonical readiness v6 package와 재심사가 남았다",
     "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
@@ -105,7 +106,10 @@
     "6cc1063c457fe3153d45ac869af7d588f3208628",
     "20053fc7ffb4794fddd16858bd1a56ece3314e93",
     "112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0",
-    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9"
+    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
+    "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
+    "75d94d3caa0784a3d69f082339256b619d2df889",
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
   ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",

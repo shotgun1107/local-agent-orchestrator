@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 58건
+- 전체: 59건
 - 해결: 52건
-- 조사 중: 6건
+- 조사 중: 7건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -71,6 +71,7 @@
 | DEV-20260815-001 | investigating | phase-d-profile-r | test | Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴 |
 | DEV-20260815-002 | investigating | phase-f-profile-r | tooling | Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함 |
 | DEV-20260815-003 | investigating | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
+| DEV-20260823-001 | investigating | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3418,18 +3419,19 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; skip은 symlink 권한 1개와 명시적 Docker·SDK opt-in 3개이며 실제 Docker·SDK·model 실행 0회
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0, 잔여 container/cache 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0
+- readiness v5는 SS1 scope_ok=false 누락으로 Pro 전 로컬 NO_GO; closure source c5e1ae2df58554970ffd98d17946ac94393c3a5d acceptance v6 두 번은 exact 10파일, scope/evidence true, secret/residue/model 0으로 통과
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
 - readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다
-- Phase E v13 0-turn candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다
+- acceptance v5와 readiness v5는 scope P1 때문에 역사 NO_GO이며 closure를 canonical readiness v6 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3531,16 +3533,17 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과
+- readiness v5는 SS1 scope gap으로 로컬 NO_GO; closure acceptance v6 두 번은 raw SS1 Evidence와 SS1/B1 scope/evidence true, secret/residue/model 0을 보존
 
 ### 남은 위험
 
 - 기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다
-- Pro v4는 hidden Judge를 closed로 판정했고 q17과 Phase E v13 acceptance가 통과했지만 canonical readiness v5 package와 재심사가 남았다
+- hidden Judge closure는 유지되지만 acceptance v5/readiness v5 scope P1 교정 뒤 canonical readiness v6 package와 재심사가 남았다
 - 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md
@@ -3619,16 +3622,17 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 - 역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번은 model turn 0, exact manifest 7/7과 residue 0으로 통과
+- readiness v5는 SS1 scope P1로 로컬 NO_GO; closure acceptance v6 exact 10파일/manifest 8/8과 양 variant integrity true를 확인
 
 ### 남은 위험
 
 - 역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다
 - 교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다
-- Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package와 독립 재심사는 아직 없다
+- readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package와 독립 재심사는 아직 없다
 
 ### 추적 정보
 
-- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
+- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
@@ -3699,16 +3703,17 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; 선택형 Docker·SDK·model 실행 0회
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 잔여 container/cache 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번이 exact 9파일, manifest 7/7, R07 12/12, residue/model turn 0으로 통과
+- readiness v5는 SS1 scope P1로 로컬 NO_GO; v14/v6 closure는 raw SS1 Evidence를 포함한 exact 10파일/manifest 8/8, integrity true와 model 0을 보존
 
 ### 남은 위험
 
 - 이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다
-- 교정 source의 q17, Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package는 아직 생성되지 않았다
+- readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package는 아직 생성되지 않았다
 - 독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9
+- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
@@ -3716,3 +3721,84 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
+
+## DEV-20260823-001 — Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함
+
+- 상태: `investigating`
+- 단계: `phase-f-profile-r`
+- 분류: `test`
+- 발견: 2026-08-23T13:01:22Z / readiness v5 package 제출 전 SS1 Measurement과 acceptance Evidence 대조
+- 해결: 미해결
+
+### 증상
+
+acceptance v5 A1과 A2는 pytest가 통과했지만 SS1 Measurement의 integrity.scope_ok가 모두 false였다. Fake _runtime_factory가 R03 소유 manifest를 R02 실행 중 기록했으며 acceptance는 integrity를 assertion하지 않았고 package는 SS1 adapter Evidence를 포함하지 않았다.
+
+### 재현
+
+- 역사적 acceptance v5 A1/A2의 SS1 Measurement integrity.scope_ok 값을 확인한다
+- Fake _runtime_factory가 Task R02 처리 중 생성한 파일을 per-task allowed write scope와 대조한다
+- acceptance assertion과 readiness v5 payload 목록에서 SS1 adapter Evidence 및 SS1/B1 scope·evidence·secret 검사를 확인한다
+
+### 증거
+
+- `direct-observation`: acceptance v5 A1/A2의 SS1 Measurement는 모두 scope_ok=false였지만 acceptance는 통과했고 외부 readiness v5 package에는 SS1 adapter Evidence가 없었다
+- `source-inspection`: Fake _runtime_factory가 R03 Task 소유 manifest를 R02 실행 중 기록해 task별 allowed write scope를 위반했다
+- `inference`: Measurement와 downstream routing은 scope_ok=false를 fail-closed로 보존하므로 실제 잘못된 route나 Live GO로 승격되지는 않는다. 결함은 acceptance와 package가 이 실패를 차단·노출하지 못한 P1이며 제어면 우회를 허용한 P0는 아니다
+- `direct-observation`: readiness v5 외부 package record 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, tree a8a4177f4d65df774b7c64bf9109ac0e24abaa2e는 total 418, manifest 417, payload 416, aggregate 05c83c...85fe, seal 534758...ca34, ZIP f707ed...d24b였지만 Pro 제출 전에 로컬 NO_GO로 폐기 판정하고 역사 Evidence로 보존했다
+- `reproducible-test`: 교정 source c5e1ae2df58554970ffd98d17946ac94393c3a5d의 acceptance v6 A1/A2는 75.396s와 77.043s에 통과했고 exact 10 files, manifest 8/8, JUnit 1/0/0/0, SS1/B1 scope_ok·evidence_hashes_ok true, secret finding 0과 raw SS1 adapter Evidence를 보존했다
+
+### 근본 원인
+
+Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 선행 Task R02에서 실행됐다. 동시에 acceptance contract는 public Check와 lifecycle·residue만 확인하고 SS1/B1 Measurement의 scope_ok, evidence_hashes_ok, secret_findings를 필수 assertion으로 두지 않았으며, readiness payload도 B1 adapter Evidence만 포함해 SS1의 원시 원인을 독립 검토할 수 없었다.
+
+### 검토한 해결안
+
+- `rejected` R02 allowed write scope에 R03 manifest를 추가 — 실제 task ownership 위반을 허용 목록 확장으로 숨겨 fixture 의미를 약화한다
+- `rejected` Measurement scope assertion만 추가하고 SS1 raw Evidence는 계속 생략 — 실패 차단은 가능하지만 외부 package가 SS1 원시 scope 계산을 독립 재검증할 수 없다
+- `adopted` effect를 R03으로 이동하고 task별 scope 회귀, 양 variant integrity assertion과 SS1 Evidence export를 함께 추가 — fixture 의미, fail-closed acceptance와 package 감사 가능성을 동시에 복구한다
+- `rejected` 기존 readiness v5 package를 수정하거나 그대로 Pro에 제출 — 이미 확인된 scope 결함과 Evidence 누락을 가진 역사 identity를 성공 자료로 재분류할 수 없다
+
+### 채택한 해결
+
+현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번은 scope/evidence/boundary를 통과했지만 canonical readiness v6 package와 독립 Pro 심사가 아직 없어 investigating과 Live NO_GO를 유지한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/candidate-seal.json
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/execution-plan.json
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/files.sha256
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/phase-e-preflight.json
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/source-bindings.json
+- benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/stage-manifest.json
+
+### 회귀시험
+
+- Fake effect가 각 task의 allowed write scope 안에서만 파일을 생성하는 per-task 회귀
+- SS1과 B1 Measurement의 scope_ok·evidence_hashes_ok true와 secret finding 0을 acceptance가 필수 검사하는 회귀
+- SS1 adapter Evidence를 포함한 exact 10-file/8-record acceptance bundle 회귀
+- 서로 다른 root 두 번에서 lifecycle, public Check, R07, boundary와 residue가 같은 계약을 만족하는 production-shaped acceptance
+
+### 검증 결과
+
+- v14 candidate source/tree c5e1ae2df58554970ffd98d17946ac94393c3a5d/3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, actual model turn 0
+- acceptance v6 A1 75.396s, A2 77.043s 통과
+- 각 acceptance exact 10 files, manifest 8/8, JUnit tests/failures/errors/skipped 1/0/0/0
+- 각 SS1/B1 scope_ok=true, evidence_hashes_ok=true, secret finding 0과 raw SS1 adapter Evidence 포함
+- 각 R07 12/12, boundary·TEMP/process/lock residue와 actual model turn 0
+- v14 candidate·v6 acceptance·v5 거부 결과 commit 75d94d3caa0784a3d69f082339256b619d2df889와 v6 Pro prompt commit 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0 기록
+
+### 남은 위험
+
+- 역사적 readiness v5 package는 로컬 NO_GO Evidence로만 보존하며 Pro 승인이나 Live 근거로 사용할 수 없다
+- v14 candidate, acceptance v6와 새 Pro prompt는 기록됐으며 canonical readiness v6 package를 새 identity로 만들어야 한다
+- 독립 Pro 심사와 사용자 Cell별 승인 전 실제 SS1/B1/Cell 3, route와 Live는 NO_GO다
+
+### 추적 정보
+
+- 관련 커밋: 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 출처: docs/operations/codex-revision-log.md
+- 출처: docs/operations/company-to-home-codex-handoff.md
+- 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py

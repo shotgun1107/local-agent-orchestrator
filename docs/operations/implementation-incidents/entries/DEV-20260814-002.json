@@ -214,12 +214,13 @@
     "교정 후 연속 두 full build가 모두 Judge bundle 35 payload file의 aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환하고 root 36파일 exact diff 0, Worker snapshot 130파일과 cache 0개 확인",
     "clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; skip은 symlink 권한 1개와 명시적 Docker·SDK opt-in 3개이며 실제 Docker·SDK·model 실행 0회",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0, 잔여 container/cache 0",
-    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0"
+    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0",
+    "readiness v5는 SS1 scope_ok=false 누락으로 Pro 전 로컬 NO_GO; closure source c5e1ae2df58554970ffd98d17946ac94393c3a5d acceptance v6 두 번은 exact 10파일, scope/evidence true, secret/residue/model 0으로 통과"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
     "readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다",
-    "Phase E v13 0-turn candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다",
+    "acceptance v5와 readiness v5는 scope P1 때문에 역사 NO_GO이며 closure를 canonical readiness v6 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
     "독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
@@ -249,7 +250,10 @@
     "6cc1063c457fe3153d45ac869af7d588f3208628",
     "20053fc7ffb4794fddd16858bd1a56ece3314e93",
     "112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0",
-    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9"
+    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
+    "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
+    "75d94d3caa0784a3d69f082339256b619d2df889",
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
   ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md",

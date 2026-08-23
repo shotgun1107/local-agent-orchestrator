@@ -2571,6 +2571,38 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   아직 canonical readiness v5 package, package record commit, ZIP과 package seal hash는
   존재하지 않으므로 기록하지 않는다. 다음 관문은 canonical package 조립·검증과 독립
   ChatGPT Pro 심사다. 실제 SS1/B1/Cell 3, route와 Live는 계속 `NO_GO`다.
+
+## readiness v5 로컬 NO-GO와 SS1 scope closure 후보
+
+- 작업일: 2026-08-23. 외부 readiness v5 package record
+  `6fd9f8df4a45e3c73df1f5a799663268a78f9bb2`, tree
+  `a8a4177f4d65df774b7c64bf9109ac0e24abaa2e`는 total 418파일, manifest 417항목,
+  payload 416파일, aggregate `05c83c...85fe`, seal `534758...ca34`, ZIP
+  `f707ed...d24b`였다. 그러나 Pro 제출 전에 acceptance v5 A1/A2의 SS1 Measurement가
+  모두 `scope_ok=false`임을 발견해 package를 로컬 `NO_GO`로 폐기 판정하고 역사
+  Evidence로 보존했다.
+- 원인은 Fake `_runtime_factory`가 R03 소유 manifest를 R02 실행 중 기록한 task ownership
+  위반이다. acceptance는 SS1/B1 integrity를 assertion하지 않았고 package는 SS1 adapter
+  Evidence를 누락했다. Measurement와 downstream routing은 scope 실패를 fail-closed로
+  보존했으므로 P0가 아닌 P1로 분류해 `DEV-20260823-001`로 추적한다.
+- closure source `c5e1ae2df58554970ffd98d17946ac94393c3a5d`, tree
+  `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`는 effect를 R02에서 R03으로 옮기고 task별
+  scope 회귀, SS1 adapter Evidence export와 양 variant scope/evidence/secret assertion을
+  추가했다.
+- v14 candidate는 experiment `exp_20260823_bba38a2e_1`, Plan
+  `bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e`, seal
+  `ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0`, seal file
+  `ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531`, model turn 0이다.
+- acceptance v6 A1/A2는 `75.396s`, `77.043s`에 통과했다. 각 root는 exact 10파일,
+  manifest 8/8, JUnit `1/0/0/0`, SS1/B1 `scope_ok=true`, `evidence_hashes_ok=true`,
+  secret finding 0과 raw SS1 Evidence를 보존한다. R07 12/12, boundary·residue와 model
+  turn도 0이다.
+- v14 candidate·v6 acceptance·v5 거부 결과는
+  `75d94d3caa0784a3d69f082339256b619d2df889`, v6 Pro prompt는
+  `4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0`에 기록됐다. 다음은 canonical readiness
+  v6 package를 새 identity로 조립·검증하고 독립 Pro 심사를 받는 것이다.
+  v6 package record, ZIP과 seal hash는 아직 없으므로 기록하지 않는다. 네 기존 incident와
+  새 `DEV-20260823-001`은 `investigating`, 실제 SS1/B1/Cell 3과 Live는 `NO_GO`다.
 - package 조립 직전, ZIP 내부 `START-HERE.md`가 같은 ZIP의 SHA-256을 가져야 한다는
   자기참조 요구를 제거했다. ZIP hash는 완성 뒤 외부 첨부 메시지에 기록하고, 내부
   `START-HERE.md`와 seal은 package record commit·tree를 결합한다.
