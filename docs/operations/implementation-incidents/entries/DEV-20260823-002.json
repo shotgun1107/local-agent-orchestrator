@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260823-002",
+  "title": "Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음",
+  "status": "investigating",
+  "stage": "phase-e-profile-r",
+  "category": "implementation",
+  "discovered_at": "2026-08-23T13:50:39Z",
+  "resolved_at": null,
+  "discovered_by": "ChatGPT Pro Profile R Live readiness revision 6 읽기 전용 재심사",
+  "symptom": "readiness v6 package와 Docker environment bytes 자체의 SHA-256은 일치하지만 Phase E v14 candidate source-bindings와 candidate seal에는 docker-environment.json 경로와 exact SHA-256이 없다. 따라서 qualification에서 candidate로 넘어가는 환경 artifact identity edge를 candidate 자체로 검증할 수 없어 Pro가 NO_GO를 판정했다.",
+  "reproduction": [
+    "Phase E v14 candidate의 source-bindings.json, execution-plan.json과 candidate-seal.json에서 Docker environment path 및 SHA-256을 찾는다",
+    "realistic_phase_e.py의 PhaseEProfileBinding과 _profile_binding()이 qualification.json 외에 committed docker-environment.json bytes를 읽고 hash하는지 확인한다",
+    "readiness v6 prompt가 요구한 qualification, candidate, readiness seal의 exact Docker environment hash chain과 실제 artifact를 대조한다"
+  ],
+  "evidence": [
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro v6는 package 425파일, manifest 424, payload 423, seal과 ZIP 무결성 및 이전 scope P1 네 closure를 모두 통과시켰지만 candidate 경계의 Docker environment exact-hash 누락을 P1 OPEN/BLOCKING으로 판정했다"
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "PhaseEProfileBinding은 qualification path/SHA와 q17 manifest/result/seal SHA만 보존하고 Docker environment path/SHA 필드가 없으며 _profile_binding()은 qualification.json만 Git bytes로 읽는다"
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "v14 candidate source-bindings.json과 candidate seal에는 70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5가 없고 package manifest와 최종 readiness seal에만 존재한다"
+    },
+    {
+      "kind": "inference",
+      "detail": "candidate source_tree가 현재 tracked blob을 transitively 포함하는 사실만으로는 builder/verifier가 environment artifact 존재·exact SHA·qualification 일치를 요구하지 않으므로 frozen v6 identity 계약을 닫지 못한다"
+    }
+  ],
+  "root_cause": "Phase E Profile R binding 설계가 qualification.json과 q17 self-hash만 명시적으로 결합하고 별도 path-free docker-environment.json을 informational sidecar로 남겼다. candidate builder와 verifier가 이 sidecar의 committed path와 exact SHA-256을 canonical binding, Plan fingerprint와 candidate seal에 포함하지 않았다.",
+  "considered_options": [
+    {
+      "option": "source_tree가 환경 파일 blob을 포함하므로 기존 candidate를 그대로 승인",
+      "decision": "rejected",
+      "reason": "일반 repository snapshot 결합일 뿐 candidate verifier가 environment artifact identity를 직접 요구하지 않아 frozen v6 계약을 만족하지 않는다"
+    },
+    {
+      "option": "최종 readiness seal의 Docker environment SHA만으로 앞선 candidate edge를 대체",
+      "decision": "rejected",
+      "reason": "사후 package 결합은 qualification에서 candidate로 넘어갈 때의 누락을 소급해서 닫지 못한다"
+    },
+    {
+      "option": "v2 Phase E binding에서 Docker environment path/SHA를 source binding, Plan과 seal에 직접 포함하고 verifier가 Git bytes로 재계산",
+      "decision": "adopted",
+      "reason": "과거 v1 artifact 호환성을 보존하면서 새 candidate가 exact 환경 bytes를 사용했다는 사실을 fail-closed로 검증한다"
+    },
+    {
+      "option": "q17 Docker 9-Cell을 즉시 재실행",
+      "decision": "rejected",
+      "reason": "q17 raw, qualification, Docker environment, Judge/fixture/image 입력은 변하지 않고 downstream Phase E binding만 바뀌므로 재자격 근거가 없다"
+    }
+  ],
+  "resolution": "v2 Phase E stage/source binding/candidate seal 계약과 회귀를 구현한 뒤 새 Phase E v15 zero-turn candidate, acceptance v7 두 회차와 readiness v7 package를 생성해 독립 Pro 재심사를 받아야 한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py",
+    "benchmarks/suites/sdk-routing-realistic-high-difficulty-v1/stages/realistic-high-difficulty-initial.json",
+    "tools/benchmark-runner/tests/test_realistic_phase_e.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ],
+  "regression_tests": [
+    "v2 stage가 Profile R Docker environment path를 요구하고 Profile I에는 허용하지 않는 검증",
+    "candidate builder가 source commit의 exact Docker environment bytes를 hash해 binding, Plan과 seal에 동일하게 기록하는 회귀",
+    "환경 path·bytes·SHA 또는 binding/Plan/seal 중 하나의 불일치를 verifier가 거부하는 negative 회귀",
+    "과거 Phase E v12~v14 v1 candidate를 byte 수정 없이 계속 검증하는 호환성 회귀"
+  ],
+  "verification": [
+    "readiness v6 Pro review P0 0, P1-1 OPEN/BLOCKING, final NO_GO",
+    "q17 raw/qualification/environment identity는 유지되므로 새 q17 실행 없이 Phase E downstream closure만 수행"
+  ],
+  "remaining_risks": [
+    "새 v2 binding 구현과 model-free 회귀가 아직 실행되지 않았다",
+    "v14 candidate, acceptance v6와 readiness v6는 역사 NO_GO Evidence로만 보존해야 한다",
+    "v15 candidate, acceptance v7, readiness v7와 Pro GO 전 실제 SS1/B1/Cell 3은 NO_GO다"
+  ],
+  "related_commits": [
+    "86b1af04df9534f0f4bba29af40a5e115f8c0ed4",
+    "dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9"
+  ],
+  "source_references": [
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v6.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v6-package-result.md",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py"
+  ]
+}

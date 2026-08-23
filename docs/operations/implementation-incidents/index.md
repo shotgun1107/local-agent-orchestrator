@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 59건
-- 해결: 52건
-- 조사 중: 7건
+- 전체: 60건
+- 해결: 57건
+- 조사 중: 3건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -67,11 +67,12 @@
 | DEV-20260813-002 | resolved | b1-sequential | integration | B1 재시도가 공개 Check traceback 없이 실패 노드만 전달함 |
 | DEV-20260813-003 | resolved | phase-f-profile-r | test | Phase F B1 live 공개 Check가 TEMP 권한과 CRLF 차이로 실패함 |
 | DEV-20260814-001 | resolved | phase-f-profile-r | implementation | Phase F SS1 실행기가 부분 실패를 봉인하지 못하고 실제 원인을 가림 |
-| DEV-20260814-002 | investigating | phase-f-profile-r | test | B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과 |
-| DEV-20260815-001 | investigating | phase-d-profile-r | test | Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴 |
-| DEV-20260815-002 | investigating | phase-f-profile-r | tooling | Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함 |
-| DEV-20260815-003 | investigating | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
-| DEV-20260823-001 | investigating | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
+| DEV-20260814-002 | resolved | phase-f-profile-r | test | B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과 |
+| DEV-20260815-001 | resolved | phase-d-profile-r | test | Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴 |
+| DEV-20260815-002 | resolved | phase-f-profile-r | tooling | Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함 |
+| DEV-20260815-003 | resolved | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
+| DEV-20260823-001 | resolved | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
+| DEV-20260823-002 | investigating | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3289,11 +3290,11 @@ completed outcome일 때만 여덟 Task Evidence를 모두 요구하고 non-comp
 
 ## DEV-20260814-002 — B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r`
 - 분류: `test`
 - 발견: 2026-08-14T03:10:52Z / Phase F Profile R B1 회사 v8 live run
-- 해결: 미해결
+- 해결: 2026-08-23T13:50:39Z
 
 ### 증상
 
@@ -3333,6 +3334,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - `reproducible-test`: 후속 model-free 교정은 bounded constant folding, reachable control flow와 pytest import provenance를 검사하고, Windows Job Object가 timeout 또는 root 조기 종료 뒤 descendants 0을 확인한 후 TEMP를 정리한다. 현재 R07 적대 회귀 31 passed, timeout unit/integration 15 passed, B1 전체 90 passed, Phase D fixture 20 passed다
 - `reproducible-test`: 최종 회귀에서 성공한 root process가 종료된 직후 Job Object ActiveProcesses가 일시적으로 1인 상태를 genuine descendant로 오인해 B1이 87/88로 흔들리는 회계 경합을 재현했다. active PID 목록으로 root PID만 남은 상태와 다른 descendant PID를 구분하도록 교정한 뒤 새 unit 2개를 포함한 timeout unit/integration 15 passed, B1 전체 90 passed, 외부 C:\ 짧은 TEMP의 hostile preflight 20회 연속 pass를 확인했다
 - `reproducible-test`: clean source commit e2579a3963db85e7e7d2691aa8776ce8d5a96c9a를 권한 있는 짧은 ASCII basetemp C:\lao-runner-clean-e2579a3에서 전체 Runner로 검증해 466 passed, 4 skipped, 0 failed in 473.40s를 확인했다. skip 4개는 symlink 생성 불가 1개와 명시적 model-free Docker smoke·full Docker dry-run·zero-turn SDK preflight opt-in 각 1개이며 Docker·SDK·model 실행은 0회였다
+- `review-finding`: ChatGPT Pro readiness v6 독립 재심사는 R07 exact 12-case·bounded evaluator·timeout 분리, Windows process-tree와 hostile preflight fail-closed를 포함한 이 incident의 이전 closure 항목을 모두 closed로 판정했다
 
 ### 근본 원인
 
@@ -3424,11 +3426,8 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 남은 위험
 
-- Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
-- readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다
-- canonical readiness v6 package의 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사 전에는 Live를 열 수 없다
-- Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
-- 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
+- 이 incident의 R07·timeout·Windows process 경계 closure는 Pro v6에서 closed로 확정됐다
+- 전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다
 
 ### 추적 정보
 
@@ -3460,14 +3459,16 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260823-002.json
 
 ## DEV-20260815-001 — Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-d-profile-r`
 - 분류: `test`
 - 발견: 2026-08-15T08:00:13Z / R07 관련 하네스 전체 적대 model-free 감사
-- 해결: 미해결
+- 해결: 2026-08-23T13:50:39Z
 
 ### 증상
 
@@ -3486,6 +3487,7 @@ R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공
 - `reproducible-test`: Judge-owned protected_behavior_checks.py로 전환한 뒤 정상 reference는 8/8 pass했고 P02, P04, P06 구현과 Worker 테스트를 함께 변조한 공격은 각각 목표 property에서 fail했다
 - `reproducible-test`: Worker 테스트만 no-op, skip 또는 assert-false로 바꾼 3개 case는 정상 구현에서 hidden Judge 결과를 바꾸지 않았고, 구현과 테스트 동시변조 4개 case는 모두 차단됐다
 - `review-finding`: ChatGPT Pro readiness v4 심사는 Worker 소유 pytest를 oracle로 쓰지 않는 점, Judge-owned protected behavior 재계산과 7개 Worker-oracle 공격 Evidence를 확인해 숨은 Judge 독립 oracle closure를 closed로 판정했다
+- `review-finding`: ChatGPT Pro readiness v6 독립 재심사는 hidden Judge의 Worker pytest 비의존성과 q17 9/9을 포함한 이 incident의 이전 closure를 closed로 재확인했다
 
 ### 근본 원인
 
@@ -3539,9 +3541,8 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 
 ### 남은 위험
 
-- 기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다
-- hidden Judge closure와 canonical readiness v6 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 재심사가 남았다
-- 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
+- 이 incident의 hidden Judge 독립성 closure는 Pro v6에서 closed로 확정됐다
+- 전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다
 
 ### 추적 정보
 
@@ -3563,14 +3564,16 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260823-002.json
 
 ## DEV-20260815-002 — Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r`
 - 분류: `tooling`
 - 발견: 2026-08-15T14:43:46Z / ChatGPT Pro Profile R live-readiness v4 read-only adversarial review
-- 해결: 미해결
+- 해결: 2026-08-23T13:50:39Z
 
 ### 증상
 
@@ -3587,6 +3590,7 @@ readiness v4의 개별 payload와 seal self-hash는 재현됐지만 seal의 저�
 - `review-finding`: ChatGPT Pro는 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84가 manifest record order로는 재현되지만 선언된 ordinal path sort의 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd와 다름을 독립 재계산했다
 - `direct-observation`: v4 package의 actual file set 304개, manifest entry 303개, 개별 SHA-256 303/303과 seal self-hash 4db8dd69d00b564e5c38a2b5829469e4ac6ef0e9437113a8598954a8a0c15fb5는 일치해 payload 변조와 canonicalization 계약 실패를 구분할 수 있다
 - `reproducible-test`: repository-owned canonical builder/verifier는 normalized relative path, UTF-8 byte ordinal sort, exact LF와 duplicate·casefold·Unicode line-separator rejection을 공유하며 역사적 v4 order mismatch fixture를 포함한 13개 model-free 회귀를 통과했다
+- `review-finding`: ChatGPT Pro readiness v6 독립 재심사는 package ordering, aggregate, seal self-hash와 공용 canonical builder/verifier를 재계산해 이 incident를 closed로 판정했다
 
 ### 근본 원인
 
@@ -3629,9 +3633,8 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 
 ### 남은 위험
 
-- 역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다
-- 교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다
-- 교정된 canonical readiness v6 package는 존재하고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사는 아직 없다
+- 역사적 readiness v4는 계속 NO_GO 역사 Evidence이며 이 incident의 canonical ordering closure는 Pro v6에서 closed로 확정됐다
+- 전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다
 
 ### 추적 정보
 
@@ -3643,14 +3646,16 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260823-002.json
 
 ## DEV-20260815-003 — Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-d-profile-r`
 - 분류: `tooling`
 - 발견: 2026-08-15T15:00:00Z / readiness v4 P1 교정 뒤 Judge source bundle 연속 재생성 대조
-- 해결: 미해결
+- 해결: 2026-08-23T13:50:39Z
 
 ### 증상
 
@@ -3668,6 +3673,7 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 - `source-inspection`: R07 성공 stdout의 첫 Evidence line에는 실행마다 달라지는 TEMP 절대경로가 포함됐고 builder는 그 raw stdout 전체 SHA-256을 public-r07-reference Evidence에 저장했다
 - `reproducible-test`: 서로 다른 절대경로를 가진 동일 의미 R07 Evidence 두 개가 같은 portable projection을 생성하고, stdout은 canonical Evidence line 한 줄과 R07_PUBLIC_CONTRACT_OK 한 줄의 exact two-line contract를 만족해야 한다
 - `reproducible-test`: 교정 후 full builder 연속 두 번은 모두 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했고, bundle-manifest.json을 포함한 root 36파일의 exact file set·size·SHA-256 차이는 0이며 transient cache는 0개였다
+- `review-finding`: ChatGPT Pro readiness v6 독립 재심사는 R07 portable Evidence, exact two-line stdout와 transient cache fail-closed를 재검산해 이 incident를 closed로 판정했다
 
 ### 근본 원인
 
@@ -3711,9 +3717,8 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 
 ### 남은 위험
 
-- 이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다
-- 교정된 canonical readiness v6 package는 생성되고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사가 남았다
-- 독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다
+- 이 incident의 Judge bundle 결정론 closure는 Pro v6에서 closed로 확정됐으며 SS1/B1 우위를 별도로 주장하지 않는다
+- 전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다
 
 ### 추적 정보
 
@@ -3725,14 +3730,16 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260823-002.json
 
 ## DEV-20260823-001 — Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r`
 - 분류: `test`
 - 발견: 2026-08-23T13:01:22Z / readiness v5 package 제출 전 SS1 Measurement과 acceptance Evidence 대조
-- 해결: 미해결
+- 해결: 2026-08-23T13:50:39Z
 
 ### 증상
 
@@ -3751,6 +3758,7 @@ acceptance v5 A1과 A2는 pytest가 통과했지만 SS1 Measurement의 integrity
 - `inference`: Measurement와 downstream routing은 scope_ok=false를 fail-closed로 보존하므로 실제 잘못된 route나 Live GO로 승격되지는 않는다. 결함은 acceptance와 package가 이 실패를 차단·노출하지 못한 P1이며 제어면 우회를 허용한 P0는 아니다
 - `direct-observation`: readiness v5 외부 package record 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, tree a8a4177f4d65df774b7c64bf9109ac0e24abaa2e는 total 418, manifest 417, payload 416, aggregate 05c83c...85fe, seal 534758...ca34, ZIP f707ed...d24b였지만 Pro 제출 전에 로컬 NO_GO로 폐기 판정하고 역사 Evidence로 보존했다
 - `reproducible-test`: 교정 source c5e1ae2df58554970ffd98d17946ac94393c3a5d의 acceptance v6 A1/A2는 75.396s와 77.043s에 통과했고 exact 10 files, manifest 8/8, JUnit 1/0/0/0, SS1/B1 scope_ok·evidence_hashes_ok true, secret finding 0과 raw SS1 adapter Evidence를 보존했다
+- `review-finding`: ChatGPT Pro readiness v6 독립 재심사는 R02/R03 effect ownership, task별 write_scope 회귀, SS1/B1 integrity 직접 assertion과 SS1 adapter Evidence hash chain 네 항목을 모두 closed로 판정했다
 
 ### 근본 원인
 
@@ -3796,9 +3804,8 @@ Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 �
 
 ### 남은 위험
 
-- 역사적 readiness v5 package는 로컬 NO_GO Evidence로만 보존하며 Pro 승인이나 Live 근거로 사용할 수 없다
-- canonical readiness v6 package와 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 심사가 남았다
-- 독립 Pro 심사와 사용자 Cell별 승인 전 실제 SS1/B1/Cell 3, route와 Live는 NO_GO다
+- 역사적 readiness v5 package는 계속 로컬 NO_GO Evidence이며 이 incident의 scope closure는 Pro v6에서 closed로 확정됐다
+- 전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다
 
 ### 추적 정보
 
@@ -3807,3 +3814,78 @@ Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 �
 - 출처: docs/operations/company-to-home-codex-handoff.md
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260823-002.json
+
+## DEV-20260823-002 — Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음
+
+- 상태: `investigating`
+- 단계: `phase-e-profile-r`
+- 분류: `implementation`
+- 발견: 2026-08-23T13:50:39Z / ChatGPT Pro Profile R Live readiness revision 6 읽기 전용 재심사
+- 해결: 미해결
+
+### 증상
+
+readiness v6 package와 Docker environment bytes 자체의 SHA-256은 일치하지만 Phase E v14 candidate source-bindings와 candidate seal에는 docker-environment.json 경로와 exact SHA-256이 없다. 따라서 qualification에서 candidate로 넘어가는 환경 artifact identity edge를 candidate 자체로 검증할 수 없어 Pro가 NO_GO를 판정했다.
+
+### 재현
+
+- Phase E v14 candidate의 source-bindings.json, execution-plan.json과 candidate-seal.json에서 Docker environment path 및 SHA-256을 찾는다
+- realistic_phase_e.py의 PhaseEProfileBinding과 _profile_binding()이 qualification.json 외에 committed docker-environment.json bytes를 읽고 hash하는지 확인한다
+- readiness v6 prompt가 요구한 qualification, candidate, readiness seal의 exact Docker environment hash chain과 실제 artifact를 대조한다
+
+### 증거
+
+- `review-finding`: ChatGPT Pro v6는 package 425파일, manifest 424, payload 423, seal과 ZIP 무결성 및 이전 scope P1 네 closure를 모두 통과시켰지만 candidate 경계의 Docker environment exact-hash 누락을 P1 OPEN/BLOCKING으로 판정했다
+- `source-inspection`: PhaseEProfileBinding은 qualification path/SHA와 q17 manifest/result/seal SHA만 보존하고 Docker environment path/SHA 필드가 없으며 _profile_binding()은 qualification.json만 Git bytes로 읽는다
+- `direct-observation`: v14 candidate source-bindings.json과 candidate seal에는 70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5가 없고 package manifest와 최종 readiness seal에만 존재한다
+- `inference`: candidate source_tree가 현재 tracked blob을 transitively 포함하는 사실만으로는 builder/verifier가 environment artifact 존재·exact SHA·qualification 일치를 요구하지 않으므로 frozen v6 identity 계약을 닫지 못한다
+
+### 근본 원인
+
+Phase E Profile R binding 설계가 qualification.json과 q17 self-hash만 명시적으로 결합하고 별도 path-free docker-environment.json을 informational sidecar로 남겼다. candidate builder와 verifier가 이 sidecar의 committed path와 exact SHA-256을 canonical binding, Plan fingerprint와 candidate seal에 포함하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` source_tree가 환경 파일 blob을 포함하므로 기존 candidate를 그대로 승인 — 일반 repository snapshot 결합일 뿐 candidate verifier가 environment artifact identity를 직접 요구하지 않아 frozen v6 계약을 만족하지 않는다
+- `rejected` 최종 readiness seal의 Docker environment SHA만으로 앞선 candidate edge를 대체 — 사후 package 결합은 qualification에서 candidate로 넘어갈 때의 누락을 소급해서 닫지 못한다
+- `adopted` v2 Phase E binding에서 Docker environment path/SHA를 source binding, Plan과 seal에 직접 포함하고 verifier가 Git bytes로 재계산 — 과거 v1 artifact 호환성을 보존하면서 새 candidate가 exact 환경 bytes를 사용했다는 사실을 fail-closed로 검증한다
+- `rejected` q17 Docker 9-Cell을 즉시 재실행 — q17 raw, qualification, Docker environment, Judge/fixture/image 입력은 변하지 않고 downstream Phase E binding만 바뀌므로 재자격 근거가 없다
+
+### 채택한 해결
+
+v2 Phase E stage/source binding/candidate seal 계약과 회귀를 구현한 뒤 새 Phase E v15 zero-turn candidate, acceptance v7 두 회차와 readiness v7 package를 생성해 독립 Pro 재심사를 받아야 한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
+- benchmarks/suites/sdk-routing-realistic-high-difficulty-v1/stages/realistic-high-difficulty-initial.json
+- tools/benchmark-runner/tests/test_realistic_phase_e.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+
+### 회귀시험
+
+- v2 stage가 Profile R Docker environment path를 요구하고 Profile I에는 허용하지 않는 검증
+- candidate builder가 source commit의 exact Docker environment bytes를 hash해 binding, Plan과 seal에 동일하게 기록하는 회귀
+- 환경 path·bytes·SHA 또는 binding/Plan/seal 중 하나의 불일치를 verifier가 거부하는 negative 회귀
+- 과거 Phase E v12~v14 v1 candidate를 byte 수정 없이 계속 검증하는 호환성 회귀
+
+### 검증 결과
+
+- readiness v6 Pro review P0 0, P1-1 OPEN/BLOCKING, final NO_GO
+- q17 raw/qualification/environment identity는 유지되므로 새 q17 실행 없이 Phase E downstream closure만 수행
+
+### 남은 위험
+
+- 새 v2 binding 구현과 model-free 회귀가 아직 실행되지 않았다
+- v14 candidate, acceptance v6와 readiness v6는 역사 NO_GO Evidence로만 보존해야 한다
+- v15 candidate, acceptance v7, readiness v7와 Pro GO 전 실제 SS1/B1/Cell 3은 NO_GO다
+
+### 추적 정보
+
+- 관련 커밋: 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v6.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v6-package-result.md
+- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
