@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -290,5 +291,36 @@ def test_checked_in_hardened_r07_v13_candidate_verifies_against_its_source_commi
     )
     assert seal.seal_sha256 == (
         "1d9df197dad859feb37831e696552a0639b00fe3498f7c0871c95b06e0af26bb"
+    )
+    assert seal.actual_model_turns == 0
+
+
+def test_checked_in_hardened_r07_v14_candidate_verifies_against_its_source_commit() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v14"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads((candidate / "source-bindings.json").read_text(encoding="utf-8"))
+
+    assert seal.source_commit == "c5e1ae2df58554970ffd98d17946ac94393c3a5d"
+    assert bindings["source_tree"] == "3f42f200145de525d2bfe9ca8e6bca5705c0cab9"
+    assert bindings["bindings_sha256"] == (
+        "f82c4acd367dd8babecec79c8d43c5989648277cbea8d962ea05f8230ccd632d"
+    )
+    assert seal.experiment_id == "exp_20260823_bba38a2e_1"
+    assert seal.plan_fingerprint == (
+        "bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e"
+    )
+    assert seal.seal_sha256 == (
+        "ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0"
+    )
+    assert seal.files_manifest_sha256 == (
+        "de498c920448390227af72cb7b273a754868e6abbc45534f1b8dc7bc43fc04ba"
+    )
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531"
     )
     assert seal.actual_model_turns == 0
