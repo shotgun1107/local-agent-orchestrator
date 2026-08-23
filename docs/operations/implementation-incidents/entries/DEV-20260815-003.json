@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260815-003",
   "title": "Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-d-profile-r",
   "category": "tooling",
   "discovered_at": "2026-08-15T15:00:00Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-23T13:50:39Z",
   "discovered_by": "readiness v4 P1 교정 뒤 Judge source bundle 연속 재생성 대조",
   "symptom": "같은 tracked source와 같은 R07 성공 결과로 Judge bundle을 연속 생성했지만 payload aggregate가 b2f73ded4863a8604155768b7a7e6a113f6476d1e9e40b0669974e5c7978875와 9f75a8a17fdbdd323a8b6613929d134bbf98bd99c3c6889f9423c6d3ac17c67c로 달라졌다.",
   "reproduction": [
@@ -31,6 +31,10 @@
     {
       "kind": "reproducible-test",
       "detail": "교정 후 full builder 연속 두 번은 모두 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했고, bundle-manifest.json을 포함한 root 36파일의 exact file set·size·SHA-256 차이는 0이며 transient cache는 0개였다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v6 독립 재심사는 R07 portable Evidence, exact two-line stdout와 transient cache fail-closed를 재검산해 이 incident를 closed로 판정했다"
     }
   ],
   "root_cause": "Judge builder가 R07의 의미상 결과가 아니라 raw stdout 전체를 hash했다. raw stdout에는 새 TEMP root의 절대경로가 들어가므로 같은 source와 같은 검사 결과여도 실행마다 Evidence byte와 상위 bundle aggregate가 달라졌다.",
@@ -76,9 +80,8 @@
     "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...과 로컬 integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
-    "이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다",
-    "교정된 canonical readiness v6 package는 생성되고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사가 남았다",
-    "독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다"
+    "이 incident의 Judge bundle 결정론 closure는 Pro v6에서 closed로 확정됐으며 SS1/B1 우위를 별도로 주장하지 않는다",
+    "전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다"
   ],
   "related_commits": [
     "c4d34c738c834e1ad254a87d994cea5b06c1b6c2",
@@ -99,6 +102,8 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
+    "docs/operations/implementation-incidents/entries/DEV-20260823-002.json"
   ]
 }

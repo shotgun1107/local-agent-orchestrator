@@ -13,7 +13,7 @@
 - readiness seal self-hash: `267093053536e239ac65357660db4b8a4c7a4c4b4b2a9c86d5f891b9b32dabad`
 - readiness seal file SHA-256: `102587082bbb535b95b5b01d5bdc132286a48b23d060aa05c73657d13cc80d14`
 - actual model turns: `0`
-- 현재 상태: `PACKAGE_VERIFIED / EXTERNAL_PRO_REVIEW_PENDING / LIVE_NO_GO`
+- 현재 상태: `PACKAGE_VERIFIED / EXTERNAL_PRO_NO_GO / LIVE_NO_GO`
 
 ## 조립 범위
 
@@ -57,14 +57,33 @@ fake fixture였고 실제 key·token·password·cookie·private key는 아니었
   JUnit `1/0/0/0`, boundary·residue·model turn 0
 - package record까지 single-parent commit chain과 tree 연결 단절 0
 
-감사 결과 P0/P1은 없다. `docker-environment.json`에 전용 strict schema와 독립 self-hash가
-없는 점은 알려진 P2다. 다만 그 exact bytes는 위 SHA-256으로 qualification, candidate와
-readiness seal에 결합돼 있어 이번 package identity를 차단하지 않는다.
+당시 로컬 감사는 P0/P1이 없고 exact Docker environment bytes가 candidate까지 결합됐다고
+판단했다. 이후 ChatGPT Pro는 이 판단이 `source_tree`의 일반적 snapshot 결합과 explicit
+environment artifact binding을 혼동했다고 지적했다. 실제 candidate binding과 seal에는
+Docker environment path/SHA가 없으므로 이 로컬 결론은 외부 심사에서 기각됐다.
+
+## 외부 ChatGPT Pro revision 6 재심사
+
+공홈 ChatGPT Pro는 package·q17·qualification bytes, candidate six-file mechanics,
+acceptance v6 두 회차와 이전 P1 closure를 읽기 전용으로 재계산했다.
+
+- package 무결성: `PASS`
+- readiness v5 폐기 P1 네 건: 모두 `closed`
+- 그 밖의 이전 P0/P1 closure: 모두 `closed`
+- 새 P0: 없음
+- 새 P1: candidate가 exact `docker-environment.json` path/SHA를 canonical source binding,
+  Plan과 candidate seal에 결합하지 않음
+- 최종 판정: `NO_GO`
+
+환경 파일 자체의 SHA `70c43e49...f1b5`가 맞고 최종 readiness seal에 들어 있는 것과,
+candidate가 그 exact artifact를 사용했다고 증명하는 것은 별도 계약이다. 후자가 누락됐으므로
+final seal이 앞선 qualification→candidate edge를 소급해서 닫을 수 없다. 새 결함은
+`DEV-20260823-002`로 추적한다.
 
 ## 현재 관문
 
-이 결과는 package를 외부 ChatGPT Pro의 읽기 전용 재심사 입력으로 사용할 수 있다는 뜻이다.
-아직 `GO_ONE_FRESH_PAIR`를 받은 것은 아니다. Pro 심사 전에는 관련 incident를
-`investigating`으로 유지하며 실제 SS1, B1, Cell 3, SDK thread/turn과 model turn은
-`NO_GO`다. Pro가 GO를 내더라도 SS1과 B1은 사용자가 각각 별도로 승인해야 하고 자동 연속
-실행하지 않는다.
+v6 package는 역사 `NO_GO` Evidence로 보존한다. 다음은 v2 Phase E binding에서 Docker
+environment path/SHA를 직접 봉인하고 새 v15 zero-turn candidate, acceptance v7 두 회차와
+readiness v7 package를 만드는 것이다. q17 raw·qualification·Docker environment·Judge
+입력은 변하지 않으므로 이 binding-only 수정 때문에 q17을 재실행하지 않는다. 새 Pro GO와
+사용자 Cell별 승인 전 실제 SS1, B1, Cell 3, SDK thread/turn과 model turn은 `NO_GO`다.

@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260814-002",
   "title": "B1 R07 공개 S2 시험의 중첩 Git 경로가 Windows 길이 제한을 초과",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-f-profile-r",
   "category": "test",
   "discovered_at": "2026-08-14T03:10:52Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-23T13:50:39Z",
   "discovered_by": "Phase F Profile R B1 회사 v8 live run",
   "symptom": "Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 checker가 뒤이어 만든 자체 path-growth Git 저장소가 Windows 경로 한계를 넘어서 ENVIRONMENT로 실패했다. 같은 checker는 이름만 맞춘 no-op 테스트를 통과시킬 수 있어 유효한 구현은 거부하고 실질 assertion 없는/no-op 회귀시험은 허용하는 역전된 시험 경계였다.",
   "reproduction": [
@@ -122,6 +122,10 @@
     {
       "kind": "reproducible-test",
       "detail": "clean source commit e2579a3963db85e7e7d2691aa8776ce8d5a96c9a를 권한 있는 짧은 ASCII basetemp C:\\lao-runner-clean-e2579a3에서 전체 Runner로 검증해 466 passed, 4 skipped, 0 failed in 473.40s를 확인했다. skip 4개는 symlink 생성 불가 1개와 명시적 model-free Docker smoke·full Docker dry-run·zero-turn SDK preflight opt-in 각 1개이며 Docker·SDK·model 실행은 0회였다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v6 독립 재심사는 R07 exact 12-case·bounded evaluator·timeout 분리, Windows process-tree와 hostile preflight fail-closed를 포함한 이 incident의 이전 closure 항목을 모두 closed로 판정했다"
     }
   ],
   "root_cause": "과거 결함은 B1 Check TEMP와 nested Git 깊이를 실제 실행 형태로 검증하지 않아 발생했다. v11의 직접 원인은 공개 pytest가 아니라 checker의 path-growth probe가 긴 경로 자체를 Git 저장소 루트로 사용한 것이었다. 동시에 checker가 일부 필수 함수는 존재와 이름만 확인하고 실행하지 않아 Worker가 no-op 테스트로 계약을 우회할 수 있었다. 1차 AST 교정도 UNKNOWN을 곧 substantive로 인정해 constant folding, 도달 불가능 branch, local 또는 shadowed assertion helper와 pytest import provenance를 충분히 구분하지 못했다. 또한 내부 최악 예산 900초와 외부 Check 제한을 같은 900초로 둬 process-tree 종료와 cleanup 여유를 남기지 않았다. 사전점검도 실제 32자 allocation과 Git 내부 suffix를 포함하지 않아 이 차이를 잡지 못했다. 후속 Job Object 교정은 ActiveProcesses 숫자만 보고 성공한 root PID의 종료 회계 지연과 실제 descendant 생존을 구분하지 않아 간헐적 false failure를 만들었다.",
@@ -219,11 +223,8 @@
     "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 read-only integrity·semantic audit의 P0/P1은 0"
   ],
   "remaining_risks": [
-    "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
-    "readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다",
-    "canonical readiness v6 package의 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사 전에는 Live를 열 수 없다",
-    "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
-    "독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
+    "이 incident의 R07·timeout·Windows process 경계 closure는 Pro v6에서 closed로 확정됐다",
+    "전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다"
   ],
   "related_commits": [
     "80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a",
@@ -284,6 +285,8 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
+    "docs/operations/implementation-incidents/entries/DEV-20260823-002.json"
   ]
 }

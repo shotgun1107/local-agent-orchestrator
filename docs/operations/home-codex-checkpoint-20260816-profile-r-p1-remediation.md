@@ -5,15 +5,15 @@
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `V5_REJECTED_V6_PACKAGE_VERIFIED_EXTERNAL_REVIEW_PENDING`
+- 상태: `V6_PRO_NO_GO_PHASE_E_ENV_BINDING_P1`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
 
 초기에는 사용자 취침 때문에 임시 정지했으며 이후 model-free 교정과 q17까지 재개했다.
-현재 실행 중인 시험이나 builder process는 없다. readiness v5는 scope P1로 로컬
-`NO_GO` 처리했고 v14 candidate와 acceptance v6까지 교정 검증했다. readiness v6 package는
-조립·검증을 마쳤으며 실제 model Cell은 시작하지 않았다.
+현재 실행 중인 시험이나 builder process는 없다. readiness v5 scope P1은 v14 candidate와
+acceptance v6에서 닫혔지만, readiness v6 Pro 재심사가 candidate의 exact Docker environment
+binding 누락을 새 P1로 찾아 `NO_GO`를 냈다. 실제 model Cell은 시작하지 않았다.
 
 ## 확인·구현된 것
 
@@ -130,9 +130,10 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
 3. 기록된 v14 candidate, acceptance v6와 v6 Pro prompt를 입력으로 고정한다.
-4. 생성·독립 검증이 끝난 canonical readiness v6 ZIP과 외부 SHA-256을 ChatGPT Pro에
-   읽기 전용으로 전달한다.
-5. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
+4. v2 Phase E binding에 Docker environment path/SHA를 직접 봉인하고 verifier가 Git bytes로
+   재계산하게 한다.
+5. 새 v15 zero-turn candidate, acceptance v7 두 회차와 readiness v7 package를 만든다.
+6. Pro 재심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
 메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.

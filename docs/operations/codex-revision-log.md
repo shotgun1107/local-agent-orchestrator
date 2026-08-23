@@ -2629,3 +2629,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   SHA-256 `70c43e49...f1b5`로 상위 identity에 결합된 사실은 확인했다.
 - 다음 관문은 ChatGPT Pro의 읽기 전용 재심사다. 그 전까지 incident는 `investigating`,
   실제 SS1/B1/Cell 3과 Live는 `NO_GO`다. actual model turn은 0이다.
+
+## readiness v6 ChatGPT Pro NO-GO와 Phase E environment binding 결함
+
+- 공홈 ChatGPT Pro에 v6 ZIP과 외부 SHA-256을 제출했다. 실제 첨부 bytes SHA는
+  `13706617a42005e65f8cba9b36c471a207c79b40f848c75a387a40a3bf99aab2`로 일치했다.
+- package 425파일, manifest 424/424, payload 423, canonical aggregate와 seal은 독립
+  재계산을 통과했다. acceptance v6 exact 10×2와 이전 scope P1 네 closure도 모두 닫혔다.
+- 새 P1은 Phase E v14 candidate가 `docker-environment.json`의 exact path/SHA를 source
+  binding, Plan과 candidate seal에 명시하지 않은 것이다. `PhaseEProfileBinding`에는
+  qualification/q17 hash만 있고 `_profile_binding()`도 qualification bytes만 읽는다.
+- source tree의 일반 snapshot 결합과 최종 readiness seal의 사후 environment SHA 결합은
+  candidate verifier가 environment artifact를 직접 검증하는 계약을 대신하지 못한다.
+- 새 `DEV-20260823-002`를 열었고 최종 판정은 `NO_GO`다. 실제 model turn은 0이다.
+- 다음은 v1 historical candidate 호환성을 유지하는 v2 Phase E binding과 회귀를 구현한 뒤
+  v15 zero-turn candidate, acceptance v7 두 회차, readiness v7와 Pro 재심사를 만드는
+  model-free closure다. Judge/fixture/Docker identity가 불변이면 q17은 재실행하지 않는다.

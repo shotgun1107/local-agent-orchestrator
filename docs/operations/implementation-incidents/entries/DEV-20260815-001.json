@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260815-001",
   "title": "Profile R 숨은 Judge가 Worker 소유 테스트를 독립 oracle로 신뢰해 변조 구현을 통과시킴",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-d-profile-r",
   "category": "test",
   "discovered_at": "2026-08-15T08:00:13Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-23T13:50:39Z",
   "discovered_by": "R07 관련 하네스 전체 적대 model-free 감사",
   "symptom": "R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공개 pytest 함수를 실행했다. 알려진 불량 구현과 해당 테스트의 no-op 변조를 함께 적용하면 실제 속성이 깨졌는데도 aggregate pass가 가능했다.",
   "reproduction": [
@@ -35,6 +35,10 @@
     {
       "kind": "review-finding",
       "detail": "ChatGPT Pro readiness v4 심사는 Worker 소유 pytest를 oracle로 쓰지 않는 점, Judge-owned protected behavior 재계산과 7개 Worker-oracle 공격 Evidence를 확인해 숨은 Judge 독립 oracle closure를 closed로 판정했다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v6 독립 재심사는 hidden Judge의 Worker pytest 비의존성과 q17 9/9을 포함한 이 incident의 이전 closure를 closed로 재확인했다"
     }
   ],
   "root_cause": "독립 Judge가 Worker 산출 코드의 동작을 직접 검사하지 않고 Worker가 함께 수정할 수 있는 공개 테스트를 oracle로 사용했다. Evidence에는 현재 파일 hash만 기록됐고 신뢰 가능한 테스트 정본이나 Judge 전용 검사와 결합되지 않아 구현과 oracle의 동시변조를 구분할 수 없었다.",
@@ -90,9 +94,8 @@
     "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
-    "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
-    "hidden Judge closure와 canonical readiness v6 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 재심사가 남았다",
-    "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
+    "이 incident의 hidden Judge 독립성 closure는 Pro v6에서 closed로 확정됐다",
+    "전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다"
   ],
   "related_commits": [
     "112c4738d9a6b9304192d60b4222a8b0ccff1353",
@@ -130,6 +133,8 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
+    "docs/operations/implementation-incidents/entries/DEV-20260823-002.json"
   ]
 }

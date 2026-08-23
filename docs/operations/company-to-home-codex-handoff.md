@@ -819,3 +819,25 @@ ZIP SHA-256은 ZIP 내부에 자기참조로 넣지 않는다. 완성 뒤 외부
 아직 `GO_ONE_FRESH_PAIR`를 받은 것이 아니므로 다섯 incident는 `investigating`, 실제
 SS1/B1/Cell 3과 Live는 `NO_GO`다. Pro가 GO를 내더라도 SS1과 B1은 사용자가 각각 별도로
 승인해야 하며 자동 continuation은 금지한다. actual model turn은 계속 0이다.
+
+## 38. 2026-08-23 readiness v6 Pro NO-GO와 Docker environment binding P1
+
+§37은 외부 심사 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- 공홈 ChatGPT Pro는 v6 ZIP SHA-256, 425-file package, 424-record manifest, 423 payload,
+  aggregate와 seal을 독립 재계산해 package 무결성을 통과시켰다.
+- readiness v5를 폐기한 scope P1 네 건과 이전 R07/readiness/Windows/hidden-Judge closure는
+  모두 `closed`로 판정했다.
+- 새 P0는 없지만 `DEV-20260823-002` P1을 발견했다. Phase E v14 candidate의
+  `source-bindings.json`, Plan과 candidate seal에는 exact `docker-environment.json`
+  path/SHA `70c43e49...f1b5`가 없다.
+- `source_tree`가 현재 blob을 포함하고 최종 readiness seal이 environment SHA를 기록하는
+  것만으로는 candidate builder/verifier가 그 환경 artifact를 직접 요구하지 않으므로
+  qualification→candidate identity edge를 닫지 못한다.
+- 최종 판정은 `NO_GO`이며 v14 candidate, acceptance v6와 readiness v6는 역사 Evidence다.
+
+다음 model-free 작업은 과거 v1 candidate verification을 보존하면서 v2 Phase E binding에
+Docker environment path/SHA를 직접 넣고 Git bytes로 재계산하는 것이다. 그 뒤 새 v15
+zero-turn candidate, acceptance v7 두 회차, readiness v7 package와 Pro 재심사가 필요하다.
+q17 input·Docker identity·Judge/fixture/image가 변하지 않는 한 q17은 재실행하지 않는다.
+actual model turn은 0이며 실제 SS1/B1/Cell 3과 Live는 계속 `NO_GO`다.

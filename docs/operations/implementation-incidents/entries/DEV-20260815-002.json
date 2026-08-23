@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260815-002",
   "title": "Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-f-profile-r",
   "category": "tooling",
   "discovered_at": "2026-08-15T14:43:46Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-23T13:50:39Z",
   "discovered_by": "ChatGPT Pro Profile R live-readiness v4 read-only adversarial review",
   "symptom": "readiness v4의 개별 payload와 seal self-hash는 재현됐지만 seal의 저장 payload aggregate는 선언된 ordinal path sort가 아니라 PACKAGE-MANIFEST.sha256 기록 순서로만 재현됐다.",
   "reproduction": [
@@ -27,6 +27,10 @@
     {
       "kind": "reproducible-test",
       "detail": "repository-owned canonical builder/verifier는 normalized relative path, UTF-8 byte ordinal sort, exact LF와 duplicate·casefold·Unicode line-separator rejection을 공유하며 역사적 v4 order mismatch fixture를 포함한 13개 model-free 회귀를 통과했다"
+    },
+    {
+      "kind": "review-finding",
+      "detail": "ChatGPT Pro readiness v6 독립 재심사는 package ordering, aggregate, seal self-hash와 공용 canonical builder/verifier를 재계산해 이 incident를 closed로 판정했다"
     }
   ],
   "root_cause": "readiness seal aggregate를 기존 PACKAGE-MANIFEST.sha256 record 순서로 계산하면서 seal에는 ordinal path sort라고 선언했다. 생성자와 독립 검증자가 함께 호출하는 repository-owned canonical builder/verifier가 없었기 때문에 package별 임시 생성 로직과 선언된 계약이 갈라졌다.",
@@ -71,9 +75,8 @@
     "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...과 로컬 read-only integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
-    "역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다",
-    "교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다",
-    "교정된 canonical readiness v6 package는 존재하고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사는 아직 없다"
+    "역사적 readiness v4는 계속 NO_GO 역사 Evidence이며 이 incident의 canonical ordering closure는 Pro v6에서 closed로 확정됐다",
+    "전체 Live NO_GO는 새 Docker environment identity edge P1을 추적하는 DEV-20260823-002에 따른다"
   ],
   "related_commits": [
     "6cc1063c457fe3153d45ac869af7d588f3208628",
@@ -92,6 +95,8 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
-    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md",
+    "docs/operations/implementation-incidents/entries/DEV-20260823-002.json"
   ]
 }
