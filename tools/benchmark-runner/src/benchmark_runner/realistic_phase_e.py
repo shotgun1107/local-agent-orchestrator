@@ -12,7 +12,7 @@ import hashlib
 import json
 import subprocess
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal, Mapping
 
 import yaml
@@ -28,6 +28,7 @@ from benchmark_runner.contract import (
     StrictModel,
     present_api_key_environment_names,
     utc_now,
+    validate_relative_path,
 )
 from benchmark_runner.plan import (
     assert_plan_integrity,
@@ -122,7 +123,13 @@ class PhaseEProfileSpec(StrictModel):
     worker_manifest_path: str = Field(min_length=1)
     judge_path: str = Field(min_length=1)
     qualification_path: str = Field(min_length=1)
+    docker_environment_path: str | None = None
     task_count: Literal[8]
+
+    @field_validator("docker_environment_path")
+    @classmethod
+    def environment_path_is_safe(cls, value: str | None) -> str | None:
+        return validate_relative_path(value) if value is not None else None
 
 
 class PhaseECellSpec(StrictModel):
@@ -162,7 +169,7 @@ class PhaseEClaimPolicy(StrictModel):
 
 
 class PhaseEStageManifest(StrictModel):
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     status: Literal["frozen_before_model_use"]
     suite_id: Literal["sdk-routing-realistic-high-difficulty-v1"]
     stage_id: Literal["realistic-high-difficulty-initial"]
@@ -192,6 +199,23 @@ class PhaseEStageManifest(StrictModel):
             "evidence-bound-incident-repair",
         ]:
             raise ValueError("Phase E profile order differs")
+        profile_r, profile_i = self.profiles
+        if self.schema_version == 1:
+            if any(item.docker_environment_path is not None for item in self.profiles):
+                raise ValueError("Phase E v1 profiles cannot claim Docker environment identity")
+        else:
+            expected_environment = str(
+                PurePosixPath(profile_r.qualification_path).with_name(
+                    "docker-environment.json"
+                )
+            )
+            if profile_r.docker_environment_path != expected_environment:
+                raise ValueError(
+                    "Phase E v2 Profile R requires its qualification sibling "
+                    "docker-environment.json"
+                )
+            if profile_i.docker_environment_path is not None:
+                raise ValueError("Phase E v2 Profile I cannot claim Docker environment identity")
         expected = [
             (1, "repository-wide-compatibility-migration", "ss1"),
             (2, "repository-wide-compatibility-migration", "b1"),
@@ -239,12 +263,27 @@ class PhaseEProfileBinding(StrictModel):
     qualification_manifest_sha256: Sha256
     qualification_result_sha256: Sha256
     qualification_seal_sha256: Sha256
+    docker_environment_path: str | None = None
+    docker_environment_sha256: Sha256 | None = None
     task_count: Literal[8]
     challenge_ready: Literal[True]
 
+    @field_validator("docker_environment_path")
+    @classmethod
+    def environment_path_is_safe(cls, value: str | None) -> str | None:
+        return validate_relative_path(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def environment_identity_is_complete(self) -> "PhaseEProfileBinding":
+        if (self.docker_environment_path is None) != (
+            self.docker_environment_sha256 is None
+        ):
+            raise ValueError("Phase E Docker environment identity must be path/SHA complete")
+        return self
+
 
 class PhaseESourceBindings(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_tree: str = Field(pattern=r"^[0-9a-f]{40}$")
     stage_manifest_path: Literal[PHASE_E_STAGE_RELATIVE]
@@ -261,7 +300,33 @@ class PhaseESourceBindings(StrictModel):
 
     @model_validator(mode="after")
     def self_hash_matches(self) -> "PhaseESourceBindings":
-        payload = self.model_dump(mode="json", exclude={"bindings_sha256"})
+        profile_r, profile_i = self.profiles
+        if self.schema_version == 1:
+            if any(item.docker_environment_path is not None for item in self.profiles):
+                raise ValueError("Phase E v1 bindings cannot claim Docker environment identity")
+        else:
+            expected_environment = str(
+                PurePosixPath(profile_r.qualification_path).with_name(
+                    "docker-environment.json"
+                )
+            )
+            if (
+                profile_r.profile_id != "repository-wide-compatibility-migration"
+                or profile_r.docker_environment_path != expected_environment
+                or profile_r.docker_environment_sha256 is None
+            ):
+                raise ValueError("Phase E v2 Profile R Docker environment identity differs")
+            if (
+                profile_i.profile_id != "evidence-bound-incident-repair"
+                or profile_i.docker_environment_path is not None
+                or profile_i.docker_environment_sha256 is not None
+            ):
+                raise ValueError("Phase E v2 Profile I cannot claim Docker environment identity")
+        payload = self.model_dump(
+            mode="json",
+            exclude={"bindings_sha256"},
+            exclude_none=True,
+        )
         if self.bindings_sha256 != canonical_sha256(payload):
             raise ValueError("Phase E source-bindings hash mismatch")
         return self
@@ -274,7 +339,7 @@ class PhaseECandidateFile(StrictModel):
 
 
 class PhaseECandidateSeal(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     kind: Literal[PHASE_E_CANDIDATE_KIND] = PHASE_E_CANDIDATE_KIND
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     experiment_id: str
@@ -283,6 +348,8 @@ class PhaseECandidateSeal(StrictModel):
     planned_initial_model_turns: Literal[32]
     planned_model_turn_ceiling: Literal[40]
     actual_model_turns: Literal[0]
+    docker_environment_path: str | None = None
+    docker_environment_sha256: Sha256 | None = None
     payload_files: list[PhaseECandidateFile] = Field(min_length=4, max_length=4)
     files_manifest_sha256: Sha256
     seal_sha256: Sha256
@@ -294,9 +361,24 @@ class PhaseECandidateSeal(StrictModel):
             raise ValueError("Phase E candidate payload file set differs")
         return values
 
+    @field_validator("docker_environment_path")
+    @classmethod
+    def environment_path_is_safe(cls, value: str | None) -> str | None:
+        return validate_relative_path(value) if value is not None else None
+
     @model_validator(mode="after")
     def self_hash_matches(self) -> "PhaseECandidateSeal":
-        payload = self.model_dump(mode="json", exclude={"seal_sha256"})
+        has_path = self.docker_environment_path is not None
+        has_sha = self.docker_environment_sha256 is not None
+        if self.schema_version == 1 and (has_path or has_sha):
+            raise ValueError("Phase E v1 seal cannot claim Docker environment identity")
+        if self.schema_version == 2 and not (has_path and has_sha):
+            raise ValueError("Phase E v2 seal requires Docker environment path/SHA")
+        payload = self.model_dump(
+            mode="json",
+            exclude={"seal_sha256"},
+            exclude_none=True,
+        )
         if self.seal_sha256 != canonical_sha256(payload):
             raise ValueError("Phase E candidate seal hash mismatch")
         return self
@@ -425,6 +507,39 @@ def _profile_binding(
         or qualification.get("snapshot_id") != profile.snapshot_id
     ):
         raise PhaseECandidateError(f"{profile.snapshot_id} qualification is not ready")
+    docker_environment_sha256 = None
+    if profile.docker_environment_path is not None:
+        docker_environment_bytes = _git_bytes(
+            repository,
+            commit,
+            profile.docker_environment_path,
+        )
+        docker_environment = _json(
+            docker_environment_bytes,
+            profile.docker_environment_path,
+        )
+        environment_qualification = docker_environment.get("qualification")
+        environment_image = docker_environment.get("image")
+        if (
+            type(docker_environment.get("schema_version")) is not int
+            or docker_environment.get("schema_version") != 1
+            or not isinstance(environment_qualification, dict)
+            or not isinstance(environment_image, dict)
+            or environment_qualification.get("source_commit")
+            != qualification.get("source_commit")
+            or environment_qualification.get("batch_id")
+            != qualification.get("batch_id")
+            or environment_qualification.get("status")
+            != qualification.get("status")
+            or environment_qualification.get("actual_model_turns")
+            != qualification.get("model_turns")
+            or environment_image.get("reference")
+            != qualification.get("image_reference")
+        ):
+            raise PhaseECandidateError(
+                f"{profile.snapshot_id} Docker environment and qualification differ"
+            )
+        docker_environment_sha256 = _sha256(docker_environment_bytes)
     judge_bundle = f"{profile.judge_path}/bundle-manifest.json"
     return PhaseEProfileBinding(
         profile_id=profile.profile_id,
@@ -447,6 +562,8 @@ def _profile_binding(
         qualification_manifest_sha256=str(qualification["manifest_sha256"]),
         qualification_result_sha256=str(qualification["result_sha256"]),
         qualification_seal_sha256=str(qualification["seal_sha256"]),
+        docker_environment_path=profile.docker_environment_path,
+        docker_environment_sha256=docker_environment_sha256,
         task_count=profile.task_count,
         challenge_ready=True,
     )
@@ -460,7 +577,7 @@ def build_source_bindings(
     repository = repository.resolve()
     profiles = [_profile_binding(repository, source_commit, item) for item in stage.profiles]
     values: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": stage.schema_version,
         "source_commit": source_commit,
         "source_tree": _git_text(repository, "rev-parse", f"{source_commit}^{{tree}}"),
         "stage_manifest_path": PHASE_E_STAGE_RELATIVE,
@@ -486,9 +603,30 @@ def build_source_bindings(
         "runtime_boundary_bundle_sha256": _sha256(
             _git_bytes(repository, source_commit, RUNTIME_BOUNDARY_FILES["seal"])
         ),
-        "profiles": [item.model_dump(mode="json") for item in profiles],
+        "profiles": [
+            item.model_dump(mode="json", exclude_none=True) for item in profiles
+        ],
     }
     return PhaseESourceBindings(**values, bindings_sha256=canonical_sha256(values))
+
+
+def _docker_environment_identity(
+    bindings: PhaseESourceBindings,
+) -> dict[str, str]:
+    """Return the v2 Profile R identity and no fields for historical v1."""
+
+    if bindings.schema_version == 1:
+        return {}
+    profile_r = bindings.profiles[0]
+    if (
+        profile_r.docker_environment_path is None
+        or profile_r.docker_environment_sha256 is None
+    ):
+        raise PhaseECandidateError("Phase E v2 Profile R Docker environment is missing")
+    return {
+        "docker_environment_path": profile_r.docker_environment_path,
+        "docker_environment_sha256": profile_r.docker_environment_sha256,
+    }
 
 
 def probe_phase_e_preflight(
@@ -684,6 +822,18 @@ def build_phase_e_plan(
             ),
         ),
     ]
+    environment_fingerprint = {
+        "source_commit": source_commit,
+        "source_tree": bindings.source_tree,
+        "source_bindings_sha256": bindings.bindings_sha256,
+        "model": stage.model,
+        "reasoning_effort": stage.reasoning_effort,
+        "auth_method": stage.auth_method,
+        "runtime_contract_version": str(stage.runtime_contract.version),
+        "permission_profile_id": stage.runtime_contract.permission_profile_id,
+        "legacy_sandbox_arguments": "false",
+        **_docker_environment_identity(bindings),
+    }
     base = build_sdk_controlled_plan(
         source_manifest_path=PHASE_E_STAGE_RELATIVE,
         source_manifest_sha256=bindings.stage_manifest_sha256,
@@ -714,17 +864,7 @@ def build_phase_e_plan(
             "route_decision_allowed": False,
             "phase_f_model_usage_approved": False,
         },
-        environment_fingerprint={
-            "source_commit": source_commit,
-            "source_tree": bindings.source_tree,
-            "source_bindings_sha256": bindings.bindings_sha256,
-            "model": stage.model,
-            "reasoning_effort": stage.reasoning_effort,
-            "auth_method": stage.auth_method,
-            "runtime_contract_version": str(stage.runtime_contract.version),
-            "permission_profile_id": stage.runtime_contract.permission_profile_id,
-            "legacy_sandbox_arguments": "false",
-        },
+        environment_fingerprint=environment_fingerprint,
         created_at=created_at or utc_now(),
         revision=revision,
         seed=0,
@@ -799,7 +939,10 @@ def create_phase_e_candidate(
     output_root.mkdir(parents=True, exist_ok=False)
     atomic_write(output_root / "execution-plan.json", canonical_json_bytes(plan))
     atomic_write(output_root / "phase-e-preflight.json", canonical_json_bytes(preflight))
-    atomic_write(output_root / "source-bindings.json", canonical_json_bytes(bindings))
+    atomic_write(
+        output_root / "source-bindings.json",
+        canonical_json_bytes(bindings.model_dump(mode="json", exclude_none=True)),
+    )
     atomic_write(
         output_root / "stage-manifest.json",
         _git_bytes(repository, source_commit, PHASE_E_STAGE_RELATIVE),
@@ -808,7 +951,7 @@ def create_phase_e_candidate(
     files_bytes = _files_manifest_bytes(records)
     atomic_write(output_root / "files.sha256", files_bytes)
     values = {
-        "schema_version": 1,
+        "schema_version": bindings.schema_version,
         "kind": PHASE_E_CANDIDATE_KIND,
         "source_commit": source_commit,
         "experiment_id": plan.experiment_id,
@@ -817,11 +960,15 @@ def create_phase_e_candidate(
         "planned_initial_model_turns": 32,
         "planned_model_turn_ceiling": 40,
         "actual_model_turns": 0,
+        **_docker_environment_identity(bindings),
         "payload_files": [item.model_dump(mode="json") for item in records],
         "files_manifest_sha256": _sha256(files_bytes),
     }
     seal = PhaseECandidateSeal(**values, seal_sha256=canonical_sha256(values))
-    atomic_write(output_root / "candidate-seal.json", canonical_json_bytes(seal))
+    atomic_write(
+        output_root / "candidate-seal.json",
+        canonical_json_bytes(seal.model_dump(mode="json", exclude_none=True)),
+    )
     verify_phase_e_candidate(repository, output_root)
     return seal
 
@@ -854,6 +1001,50 @@ def verify_phase_e_candidate(repository: Path, candidate_root: Path) -> PhaseECa
         (candidate_root / "stage-manifest.json").read_bytes()
     )
     assert_plan_integrity(plan)
+    if not (
+        stage.schema_version == bindings.schema_version == seal.schema_version
+    ):
+        raise PhaseECandidateError("Phase E candidate schema versions differ")
+    binding_environment = _docker_environment_identity(bindings)
+    environment_fields = (
+        "docker_environment_path",
+        "docker_environment_sha256",
+    )
+    plan_environment = {
+        key: plan.environment_fingerprint[key]
+        for key in environment_fields
+        if key in plan.environment_fingerprint
+    }
+    seal_environment = {
+        key: value
+        for key, value in {
+            "docker_environment_path": seal.docker_environment_path,
+            "docker_environment_sha256": seal.docker_environment_sha256,
+        }.items()
+        if value is not None
+    }
+    if (
+        plan_environment != binding_environment
+        or seal_environment != binding_environment
+    ):
+        raise PhaseECandidateError(
+            "Phase E Docker environment identity differs across binding, Plan, and seal"
+        )
+    if binding_environment:
+        source_environment_sha256 = _sha256(
+            _git_bytes(
+                repository,
+                seal.source_commit,
+                binding_environment["docker_environment_path"],
+            )
+        )
+        if (
+            source_environment_sha256
+            != binding_environment["docker_environment_sha256"]
+        ):
+            raise PhaseECandidateError(
+                "Phase E Docker environment SHA differs from source commit Git bytes"
+            )
     if (
         plan.experiment_id != seal.experiment_id
         or plan.plan_fingerprint != seal.plan_fingerprint

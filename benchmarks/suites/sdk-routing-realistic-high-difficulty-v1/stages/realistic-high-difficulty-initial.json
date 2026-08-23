@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "frozen_before_model_use",
   "suite_id": "sdk-routing-realistic-high-difficulty-v1",
   "stage_id": "realistic-high-difficulty-initial",
@@ -30,6 +30,7 @@
       "worker_manifest_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json",
       "judge_path": "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001",
       "qualification_path": "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/qualification.json",
+      "docker_environment_path": "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/docker-environment.json",
       "task_count": 8
     },
     {
