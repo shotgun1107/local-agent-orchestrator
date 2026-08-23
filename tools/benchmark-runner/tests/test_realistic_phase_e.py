@@ -602,3 +602,50 @@ def test_checked_in_hardened_r07_v14_candidate_verifies_against_its_source_commi
         "ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531"
     )
     assert seal.actual_model_turns == 0
+
+
+def test_checked_in_environment_bound_v15_candidate_verifies_against_its_source_commit() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v15"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads((candidate / "source-bindings.json").read_text(encoding="utf-8"))
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r, profile_i = bindings["profiles"]
+    expected_path = (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "docker-environment.json"
+    )
+    expected_sha = "70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5"
+
+    assert seal.schema_version == 2
+    assert seal.source_commit == "c7fde69d9e873bd8a8a3db8e73619660c1844883"
+    assert bindings["source_tree"] == "4c678371c1f1532fd9d120831b9fc50e23970d25"
+    assert bindings["bindings_sha256"] == (
+        "a1b1df5b0f9e6afae66d135082c0f599362040e04618cd665550db8997a58787"
+    )
+    assert profile_r["docker_environment_path"] == expected_path
+    assert profile_r["docker_environment_sha256"] == expected_sha
+    assert "docker_environment_path" not in profile_i
+    assert "docker_environment_sha256" not in profile_i
+    assert plan["environment_fingerprint"]["docker_environment_path"] == expected_path
+    assert plan["environment_fingerprint"]["docker_environment_sha256"] == expected_sha
+    assert seal.docker_environment_path == expected_path
+    assert seal.docker_environment_sha256 == expected_sha
+    assert seal.experiment_id == "exp_20260823_c09b6abc_1"
+    assert seal.plan_fingerprint == (
+        "c09b6abcd5264b115b7d575a049b806f1f9caa700be037438cc550c5aafbce90"
+    )
+    assert seal.seal_sha256 == (
+        "2af49f567071bc0694fa965f12f34bcfb616c6ebda97f4b491fedbdb54b6df0d"
+    )
+    assert seal.files_manifest_sha256 == (
+        "4c87754ebaa95157e20981d5d28a6204830f303b76997b6801fe1ecb24d7afc3"
+    )
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "8d638023b2daf1a030095dd7153007eac91faa07fb5d5246e80b9aad0cbd231d"
+    )
+    assert seal.actual_model_turns == 0
