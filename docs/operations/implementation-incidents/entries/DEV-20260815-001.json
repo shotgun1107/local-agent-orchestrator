@@ -84,11 +84,12 @@
     "Phase E v12 후보와 exact-candidate acceptance 두 번이 새 protected Judge source에 결합돼 Check 16/16, residue와 model turn 0으로 통과",
     "readiness v4 package가 q16 sealed payload 전체와 oracle 적대 Evidence를 포함하고 per-file exact set/hash 및 seal self-hash는 일치했지만, declared ordinal payload aggregate는 불일치해 package 전체 승인 근거로 쓰지 않음",
     "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정",
-    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0"
+    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0",
+    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과"
   ],
   "remaining_risks": [
     "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
-    "Pro v4는 hidden Judge를 closed로 판정했고 q17이 composite source를 재인증했지만 Phase E v13 candidate와 readiness 재심사가 남았다",
+    "Pro v4는 hidden Judge를 closed로 판정했고 q17과 Phase E v13 acceptance가 통과했지만 canonical readiness v5 package와 재심사가 남았다",
     "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
@@ -101,7 +102,10 @@
     "d015a899cdf7d13bc811a9d5ea4ff2071466f981",
     "ee6caa79439b01b930bb64f33fe26af43b524594",
     "d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4",
-    "6cc1063c457fe3153d45ac869af7d588f3208628"
+    "6cc1063c457fe3153d45ac869af7d588f3208628",
+    "20053fc7ffb4794fddd16858bd1a56ece3314e93",
+    "112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0",
+    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9"
   ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",
@@ -117,6 +121,9 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
     "docs/operations/implementation-incidents/entries/DEV-20260815-002.json",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
   ]
 }

@@ -2548,3 +2548,26 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   수행하지 않았다. 다음 관문은 Phase E v13 0-turn candidate 생성에 대한 사용자 별도
   승인이다. 실제 SDK thread/turn과 model turn은 0이며 SS1/B1/Cell 3과 route 결정은 계속
   `NO_GO`다.
+
+## Phase E v13 0-turn 후보·exact acceptance v5와 readiness v5 심사 대기
+
+- 작업일: 2026-08-23. qualification v14 stage binding과 Phase F acceptance 입력을 v13으로
+  고정한 source `20053fc7ffb4794fddd16858bd1a56ece3314e93`, tree
+  `e5dc19a5cb056a972cef17f6e544a58aa4132231`에서 정식 후보를 만들었다. experiment는
+  `exp_20260823_00f2916f_1`, Plan fingerprint는
+  `00f2916fdc41f4912e19648adb3d15a84e39118749544162ad83045b6ac1fc25`, seal은
+  `1d9df197dad859feb37831e696552a0639b00fe3498f7c0871c95b06e0af26bb`, seal file은
+  `4767377196589df06575584ab70b8d307ab1ca948e6a4fdae23c02882badb69a`이며 model turn은 0이다.
+- 앞선 `b41c395` source 후보는 acceptance binding 변경 뒤 정식 acceptance 전에 제거했고
+  Evidence로 승격하지 않았다. 폐기 후보와 정식 후보의 preflight는 account/model-list만
+  조회했으며 SDK thread, SDK turn과 model turn은 0이었다.
+- acceptance v5는 같은 후보를 서로 다른 state/TEMP root에서 두 번 실행했다. A1은
+  `78.08s`, A2는 `74.95s`에 통과했다. 각 root는 exact 9파일, manifest 7/7, JUnit
+  `1/0/0/0`, lifecycle `SEALED, SEALED, PLANNED, PLANNED`, public 8/8, Check 16/16,
+  R07 12/12를 보존한다. path/growth는 `251/283`, `265/297`, margin은 32이며 residue와
+  model turn은 0이다.
+- candidate·acceptance record는 `112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0`,
+  readiness v5 Pro prompt는 `32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`에 기록됐다.
+  아직 canonical readiness v5 package, package record commit, ZIP과 package seal hash는
+  존재하지 않으므로 기록하지 않는다. 다음 관문은 canonical package 조립·검증과 독립
+  ChatGPT Pro 심사다. 실제 SS1/B1/Cell 3, route와 Live는 계속 `NO_GO`다.

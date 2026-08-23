@@ -65,20 +65,27 @@
     "readiness integrity model-free 회귀 13 passed",
     "역사적 v4 저장 aggregate a137c73a423de7bd4b270b7e7f1c1da2a4b8cdfda1c9da625988062839daac84와 canonical ordinal aggregate 33e5e6d59ffe750f11dad875c5fe7859c2c373d6875f5a47ef5e0c91ec2246dd가 다름을 fixture로 보존",
     "역사적 v4 per-file exact set/hash와 seal self-hash는 그대로 보존",
-    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0"
+    "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0",
+    "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번은 model turn 0, exact manifest 7/7과 residue 0으로 통과"
   ],
   "remaining_risks": [
     "역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다",
     "교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다",
-    "q17 qualification v14는 통과했지만 새 Phase E v13 0-turn candidate와 acceptance 두 번은 아직 생성하거나 실행하지 않았다"
+    "Phase E v13 candidate와 acceptance 두 번은 통과했지만 canonical readiness v5 package와 독립 재심사는 아직 없다"
   ],
   "related_commits": [
-    "6cc1063c457fe3153d45ac869af7d588f3208628"
+    "6cc1063c457fe3153d45ac869af7d588f3208628",
+    "20053fc7ffb4794fddd16858bd1a56ece3314e93",
+    "112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0",
+    "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9"
   ],
   "source_references": [
     "docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md",
     "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-docker-judge-requalification-home-v14-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-home-v13-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v5-result.md",
+    "docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v5.md"
   ]
 }

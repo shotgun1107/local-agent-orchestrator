@@ -1,17 +1,18 @@
-# 집 Codex 체크포인트 — Profile R readiness v4 P1 교정과 q17 완료
+# 집 Codex 체크포인트 — Phase E v13 acceptance 완료와 readiness v5 대기
 
 - 기록 시각: 2026-08-16 KST
 - branch: `codex/phase-d-artifacts`
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
-- q17 source: `6cc1063c457fe3153d45ac869af7d588f3208628`
-- 상태: `Q17_CHALLENGE_READY_LIVE_NOT_APPROVED`
+- current source: `20053fc7ffb4794fddd16858bd1a56ece3314e93`
+- current record HEAD: `32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`
+- 상태: `V13_ACCEPTANCE_COMPLETE_READINESS_V5_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
 
 초기에는 사용자 취침 때문에 임시 정지했으며 이후 model-free 교정과 q17까지 재개했다.
-현재 실행 중인 시험이나 builder process는 없다. Phase E v13 candidate, acceptance,
-readiness package와 실제 model Cell은 시작하지 않았다.
+현재 실행 중인 시험이나 builder process는 없다. Phase E v13 candidate와 acceptance v5는
+완료됐고 readiness v5 package와 실제 model Cell은 시작하지 않았다.
 
 ## 확인·구현된 것
 
@@ -81,7 +82,19 @@ ASCII basetemp `C:\lao-runner-clean-e2579a3`에서 다시 실행해
 
 q17은 Docker Judge 판별만 재인증한다. 실제 SDK thread/turn과 model turn은 0이며
 Phase E candidate나 Live 승인을 대신하지 않는다.
-다음 Phase E v13 0-turn candidate 생성은 사용자 별도 승인 대기 상태다.
+Phase E v13 후보는 experiment `exp_20260823_00f2916f_1`, Plan `00f2916f...fc25`,
+seal `1d9df197...26bb`, seal file `476737...69a`, model turn 0이다. stale `b41c395`
+후보는 정식 acceptance 전에 제거했고 두 preflight 모두 account/model-list만 조회했다.
+
+acceptance v5는 같은 source/tree와 후보를 서로 다른 root에서 두 번 실행해 `78.08s`,
+`74.95s`에 통과했다. 각 실행은 exact 9파일, manifest 7/7, JUnit `1/0/0/0`, lifecycle
+`SEALED, SEALED, PLANNED, PLANNED`, public 8/8, Check 16/16, R07 12/12, path growth
+margin 32와 residue/model 0을 보존한다.
+
+binding/candidate/prompt commit은 각각 `20053fc7ffb4794fddd16858bd1a56ece3314e93`,
+`112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0`,
+`32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9`다. readiness v5 package record commit,
+ZIP과 seal hash는 아직 존재하지 않는다.
 
 ## 저장소 기록 상태
 
@@ -100,16 +113,16 @@ Phase E candidate나 Live 승인을 대신하지 않는다.
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
-3. q17 qualification v14와 Docker 환경 기록을 source identity에 결합한다.
-4. implementation-log `validate -> render -> check`와 harness unittest를 실행한다.
-5. 사용자 승인을 받은 뒤에만 Phase E v13 0-turn candidate를 생성한다.
-6. 그 뒤에도 exact acceptance 두 번, canonical readiness package와 독립 재심사를 차례로
-   통과하기 전 Live를 열지 않는다.
+3. q17/v14, v13 candidate와 acceptance v5 두 root를 canonical readiness v5 package로
+   조립하고 독립 verifier로 검사한다.
+4. package record commit과 ZIP/hash는 실제 생성·검증 뒤에만 기록한다.
+5. readiness v5를 ChatGPT Pro에 읽기 전용 독립 심사한다.
+6. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
 ## 계속 금지
 
 - 실제 SS1/B1/Cell 3 model 실행
 - SDK thread/start 또는 turn/start
-- Phase E v13 candidate·acceptance·readiness의 자동 시작
+- readiness v5 이후 실제 Cell의 자동 시작
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기
