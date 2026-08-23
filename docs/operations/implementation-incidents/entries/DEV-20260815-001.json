@@ -55,7 +55,7 @@
       "reason": "기존 Judge PASS가 해당 속성의 독립 증거가 아니므로 새 source bundle과 Docker qualification이 필요하다"
     }
   ],
-  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 composite source를 CHALLENGE_READY, 기대 일치 9/9, model turn 0으로 재인증했다. 다만 새 Phase E v13 candidate와 readiness 심사가 끝나기 전까지 이 incident는 investigating을 유지한다.",
+  "resolution": "R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 composite source를 CHALLENGE_READY, 기대 일치 9/9, model turn 0으로 재인증했다. candidate v14, acceptance v6와 canonical readiness v6 package의 로컬 감사도 P0/P1 0을 확인했다. 외부 Pro 재심사가 끝나기 전까지 이 incident는 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
@@ -86,11 +86,12 @@
     "ChatGPT Pro readiness v4가 숨은 Judge 독립 oracle closure를 closed로 판정",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0",
     "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과",
-    "readiness v5는 SS1 scope gap으로 로컬 NO_GO; closure acceptance v6 두 번은 raw SS1 Evidence와 SS1/B1 scope/evidence true, secret/residue/model 0을 보존"
+    "readiness v5는 SS1 scope gap으로 로컬 NO_GO; closure acceptance v6 두 번은 raw SS1 Evidence와 SS1/B1 scope/evidence true, secret/residue/model 0을 보존",
+    "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
     "기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다",
-    "hidden Judge closure는 유지되지만 acceptance v5/readiness v5 scope P1 교정 뒤 canonical readiness v6 package와 재심사가 남았다",
+    "hidden Judge closure와 canonical readiness v6 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 재심사가 남았다",
     "독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
   "related_commits": [
@@ -109,7 +110,8 @@
     "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
     "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
     "75d94d3caa0784a3d69f082339256b619d2df889",
-    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0",
+    "86b1af04df9534f0f4bba29af40a5e115f8c0ed4"
   ],
   "source_references": [
     "docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md",

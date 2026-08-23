@@ -60,7 +60,7 @@
       "reason": "이미 확인된 scope 결함과 Evidence 누락을 가진 역사 identity를 성공 자료로 재분류할 수 없다"
     }
   ],
-  "resolution": "현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번은 scope/evidence/boundary를 통과했지만 canonical readiness v6 package와 독립 Pro 심사가 아직 없어 investigating과 Live NO_GO를 유지한다.",
+  "resolution": "현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번과 canonical readiness v6 package의 로컬 read-only 이중 감사는 scope/evidence/boundary와 package identity에서 P0/P1 0을 확인했다. 외부 Pro 심사는 아직 없어 investigating과 Live NO_GO를 유지한다.",
   "affected_files": [
     "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py",
     "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v14/candidate-seal.json",
@@ -82,18 +82,20 @@
     "각 acceptance exact 10 files, manifest 8/8, JUnit tests/failures/errors/skipped 1/0/0/0",
     "각 SS1/B1 scope_ok=true, evidence_hashes_ok=true, secret finding 0과 raw SS1 adapter Evidence 포함",
     "각 R07 12/12, boundary·TEMP/process/lock residue와 actual model turn 0",
-    "v14 candidate·v6 acceptance·v5 거부 결과 commit 75d94d3caa0784a3d69f082339256b619d2df889와 v6 Pro prompt commit 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0 기록"
+    "v14 candidate·v6 acceptance·v5 거부 결과 commit 75d94d3caa0784a3d69f082339256b619d2df889와 v6 Pro prompt commit 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0 기록",
+    "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...; 로컬 read-only integrity·semantic audit P0/P1 0"
   ],
   "remaining_risks": [
     "역사적 readiness v5 package는 로컬 NO_GO Evidence로만 보존하며 Pro 승인이나 Live 근거로 사용할 수 없다",
-    "v14 candidate, acceptance v6와 새 Pro prompt는 기록됐으며 canonical readiness v6 package를 새 identity로 만들어야 한다",
+    "canonical readiness v6 package와 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 심사가 남았다",
     "독립 Pro 심사와 사용자 Cell별 승인 전 실제 SS1/B1/Cell 3, route와 Live는 NO_GO다"
   ],
   "related_commits": [
     "6fd9f8df4a45e3c73df1f5a799663268a78f9bb2",
     "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
     "75d94d3caa0784a3d69f082339256b619d2df889",
-    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0",
+    "86b1af04df9534f0f4bba29af40a5e115f8c0ed4"
   ],
   "source_references": [
     "docs/operations/codex-revision-log.md",

@@ -147,7 +147,7 @@
       "reason": "단일 PC·단일 Controller·비정상 종료 시 pair 폐기 조건에서 다음 한 pair에는 운영상 이연하고 B2/B3 또는 자동 복구 전에 다시 필수화한다"
     }
   ],
-  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했고 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier도 같은 결과를 재계산했다. Phase E v13 candidate, acceptance와 독립 readiness 재심사는 아직 없어 incident는 investigating과 Live NO-GO를 유지한다.",
+  "resolution": "2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했고 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier도 같은 결과를 재계산했다. candidate v14, acceptance v6와 canonical readiness v6 package의 로컬 감사도 P0/P1 0을 확인했다. 외부 Pro 재심사 전까지 incident는 investigating과 Live NO_GO를 유지한다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/verify.py",
     "stages/b1-sequential/src/orchestrator/schedule.py",
@@ -215,12 +215,13 @@
     "clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a 전체 Runner 466 passed, 4 skipped, 0 failed in 473.40s; skip은 symlink 권한 1개와 명시적 Docker·SDK opt-in 3개이며 실제 Docker·SDK·model 실행 0회",
     "source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0, 잔여 container/cache 0",
     "Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0",
-    "readiness v5는 SS1 scope_ok=false 누락으로 Pro 전 로컬 NO_GO; closure source c5e1ae2df58554970ffd98d17946ac94393c3a5d acceptance v6 두 번은 exact 10파일, scope/evidence true, secret/residue/model 0으로 통과"
+    "readiness v5는 SS1 scope_ok=false 누락으로 Pro 전 로컬 NO_GO; closure source c5e1ae2df58554970ffd98d17946ac94393c3a5d acceptance v6 두 번은 exact 10파일, scope/evidence true, secret/residue/model 0으로 통과",
+    "canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 read-only integrity·semantic audit의 P0/P1은 0"
   ],
   "remaining_risks": [
     "Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다",
     "readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다",
-    "acceptance v5와 readiness v5는 scope P1 때문에 역사 NO_GO이며 closure를 canonical readiness v6 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다",
+    "canonical readiness v6 package의 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사 전에는 Live를 열 수 없다",
     "Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다",
     "독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다"
   ],
@@ -253,7 +254,8 @@
     "32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9",
     "c5e1ae2df58554970ffd98d17946ac94393c3a5d",
     "75d94d3caa0784a3d69f082339256b619d2df889",
-    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0"
+    "4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0",
+    "86b1af04df9534f0f4bba29af40a5e115f8c0ed4"
   ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md",

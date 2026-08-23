@@ -1,19 +1,19 @@
-# 집 Codex 체크포인트 — readiness v5 로컬 NO-GO와 v14/v6 closure
+# 집 Codex 체크포인트 — readiness v5 로컬 NO-GO와 readiness v6 재심사 입력
 
-- 기록 시각: 2026-08-16 KST
+- 최신 갱신: 2026-08-23 KST
 - branch: `codex/phase-d-artifacts`
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `V5_REJECTED_V14_ACCEPTANCE_COMPLETE_V6_PACKAGE_PENDING`
+- 상태: `V5_REJECTED_V6_PACKAGE_VERIFIED_EXTERNAL_REVIEW_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
 
 초기에는 사용자 취침 때문에 임시 정지했으며 이후 model-free 교정과 q17까지 재개했다.
 현재 실행 중인 시험이나 builder process는 없다. readiness v5는 scope P1로 로컬
-`NO_GO` 처리했고 v14 candidate와 acceptance v6까지 교정 검증했다. readiness v6 package와
-실제 model Cell은 시작하지 않았다.
+`NO_GO` 처리했고 v14 candidate와 acceptance v6까지 교정 검증했다. readiness v6 package는
+조립·검증을 마쳤으며 실제 model Cell은 시작하지 않았다.
 
 ## 확인·구현된 것
 
@@ -103,7 +103,11 @@ v14 candidate는 experiment `exp_20260823_bba38a2e_1`, Plan `bba38a2e...1841e`,
 seal `ab0fc7dd...1d4b0`, file `ca84ee54...d9531`, model 0이다. acceptance v6 두 번은
 `75.396s`, `77.043s`, exact 10파일, manifest 8/8, JUnit `1/0/0/0`, 양 variant
 scope/evidence true, secret 0, raw SS1 Evidence, R07 12/12와 residue/model 0을 확인했다.
-readiness v6 package record, ZIP과 seal hash는 아직 존재하지 않는다.
+readiness v6 package는 record `86b1af04df9534f0f4bba29af40a5e115f8c0ed4`, tree
+`30de76ac53e25ddea99c1e66f0116a8478b47ac7`로 조립했다. total/manifest/payload는
+`425/424/423`, ZIP SHA-256은 `13706617a42005e65f8cba9b36c471a207c79b40f848c75a387a40a3bf99aab2`,
+seal self-hash는 `267093053536e239ac65357660db4b8a4c7a4c4b4b2a9c86d5f891b9b32dabad`다.
+원본과 별도 ZIP 해제본의 mismatch는 0이고, 두 read-only 감사에서 P0/P1 0을 확인했다.
 v14 candidate·v6 acceptance·v5 거부 결과 commit은
 `75d94d3caa0784a3d69f082339256b619d2df889`, v6 Pro prompt commit은
 `4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0`다.
@@ -117,7 +121,7 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
 - readiness v4 erratum, revision log, 양방향 handoff와 역사 동기화 문서가 수정됐다.
 - Judge 재현성 incident `DEV-20260815-003`을 추가했다. 최근 문서의 임시 aggregate와
   Phase D 수치는 최종 연속 재현값 `c0690b7b...8609`와 `20 passed`로 교정했다.
-- incident index는 아직 render하지 않았다.
+- incident index는 59개 entry 기준으로 다시 render·검증했다.
 
 ## 다음 세션의 정확한 순서
 
@@ -126,9 +130,9 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
 3. 기록된 v14 candidate, acceptance v6와 v6 Pro prompt를 입력으로 고정한다.
-4. canonical readiness v6 package를 새 identity로 조립하고 독립 verifier로 검사한다.
-5. 실제 생성 뒤에만 package record/ZIP/hash를 기록하고 ChatGPT Pro에 읽기 전용 심사한다.
-6. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
+4. 생성·독립 검증이 끝난 canonical readiness v6 ZIP과 외부 SHA-256을 ChatGPT Pro에
+   읽기 전용으로 전달한다.
+5. 심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
 메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.

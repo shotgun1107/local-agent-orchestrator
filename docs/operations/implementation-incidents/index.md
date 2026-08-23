@@ -3347,7 +3347,7 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 
 ### 채택한 해결
 
-2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했고 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier도 같은 결과를 재계산했다. Phase E v13 candidate, acceptance와 독립 readiness 재심사는 아직 없어 incident는 investigating과 Live NO-GO를 유지한다.
+2026-08-15 적대 감사에서 v11의 정확한 실패 분기와 no-op 우회를 재현했다. R07은 short-root Git 저장소 안의 260자 초과 tracked descendant를 실제로 add·lookup하고 필수 공개 회귀를 정확히 12 case 수집·실행한다. Pro v4가 찾은 잔여 우회에는 bounded constant folding, reachable control-flow 검사와 신뢰한 pytest import provenance를 적용해 정적 참, 도달 불가능 assertion, local 또는 shadowed no-op helper를 거부한다. 내부 R07 명시 상한 900초는 유지하되 외부 r07_contract와 check_timeout_seconds를 1020초로 올리고 model-turn task_timeout_seconds 900초와 분리했다. Windows Check process는 kill-on-close Job Object에 넣고 timeout 또는 root 조기 종료 시 전체 process tree가 0이 될 때까지 bounded 확인한 뒤 TEMP를 정리한다. B1 사전점검의 child Python과 Git 명령도 같은 bounded runner를 사용한다. ActiveProcesses가 일시적으로 1인 후속 회계 경합은 active PID 목록으로 구분한다. root PID만 남으면 bounded accounting grace 동안 0을 기다리고, root 외 PID가 있으면 genuine descendant로 즉시 fail·terminate한다. 현재 R07 적대 회귀 31개, timeout 회귀 15개, B1 90개, 외부 C:\ 짧은 TEMP hostile preflight 20회 연속과 Phase D fixture 20개가 통과했다. 새 Worker는 130파일이며 cache 파일은 0개다. R07 transient TEMP 경로를 raw stdout hash에 결합하던 별도 결정론 결함은 DEV-20260815-003으로 분리했고, portable projection과 exact two-line stdout contract로 교정한 뒤 연속 두 full build가 모두 Judge bundle 35 payload file과 payload aggregate c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609를 반환했다. bundle-manifest.json을 포함한 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했고 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0이며 별도 verifier도 같은 결과를 재계산했다. candidate v14, acceptance v6와 canonical readiness v6 package의 로컬 감사도 P0/P1 0을 확인했다. 외부 Pro 재심사 전까지 incident는 investigating과 Live NO_GO를 유지한다.
 
 ### 수정 파일
 
@@ -3420,18 +3420,19 @@ Phase E v11 B1의 R07 공개 pytest 4개는 실제로 모두 통과했지만 che
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0, 잔여 container/cache 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 exact acceptance v5 두 번 78.08s/74.95s 통과; 매번 public 8/8, Check 16/16, R07 12/12, lifecycle SEALED/SEALED/PLANNED/PLANNED, residue 0
 - readiness v5는 SS1 scope_ok=false 누락으로 Pro 전 로컬 NO_GO; closure source c5e1ae2df58554970ffd98d17946ac94393c3a5d acceptance v6 두 번은 exact 10파일, scope/evidence true, secret/residue/model 0으로 통과
+- canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 read-only integrity·semantic audit의 P0/P1은 0
 
 ### 남은 위험
 
 - Profile R SS1/B1 속도·비용·품질 비교는 아직 유효하지 않다
 - readiness v4는 per-file payload가 보존됐지만 seal canonicalization 계약과 R07 두 P1 때문에 독립 재심사에서 NO_GO이며 역사 Evidence로만 유지한다
-- acceptance v5와 readiness v5는 scope P1 때문에 역사 NO_GO이며 closure를 canonical readiness v6 package로 다시 결합하고 재심사하기 전에는 Live를 열 수 없다
+- canonical readiness v6 package의 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사 전에는 Live를 열 수 없다
 - Phase F 전체 crash safety 이연은 단일 PC·단일 Controller·비정상 종료 시 pair 전체 폐기 조건에 한정된 운영상 면제이며 closure가 아니다
 - 독립 재심사가 끝나기 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 관련 커밋: 80c8c9ee8f465d1e1dd65569a9fe7b3aeae0955a, 85af6e33e6aebdde8a8b5218054ca14e0be7e700, f17c43e816ba585bdb8324c4ecb41e27e3112372, 78b55529fe1cccd8e54028381a468f64edd94bd9, 00dd92aa469e69827f97b606e1cb8ac5e8fc1318, 5044283ac0cc7353a52f0b4e5d34129d59d6a24c, a23c24cdbd433250f6598e65429cd6c10a68606b, 68974b82d13cde9771a888d2cd3d31fc9d2fc312, 1ecff6c799072df8d1586a59e0e8e158721f76ce, dad68df0061522dff4ef74ceee598f358016b786, 915bdc903d577d186c0f2721fa2be225a310a7fd, 33463a30e642a9fe70fda20a9bca90d963b36f97, 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0, 86b1af04df9534f0f4bba29af40a5e115f8c0ed4
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-home-v11-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
@@ -3498,7 +3499,7 @@ R-P02, R-P04, R-P06, R-P07의 숨은 Judge가 Worker가 수정할 수 있는 공
 
 ### 채택한 해결
 
-R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 composite source를 CHALLENGE_READY, 기대 일치 9/9, model turn 0으로 재인증했다. 다만 새 Phase E v13 candidate와 readiness 심사가 끝나기 전까지 이 incident는 investigating을 유지한다.
+R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮기고 check_properties.py가 Worker 소유 pytest를 실행하지 않도록 바꿨다. builder는 정상 reference, pristine, 8개 target mutation에 더해 Worker test-only 변조 3개와 구현·테스트 동시변조 4개를 생성·실행해 결과를 evidence/adversarial-worker-test-oracle.json에 결합한다. Pro v4도 이 hidden-Judge 경계를 closed로 판정했다. 역사적 v4 package의 per-file exact set/hash와 seal self-hash는 일치하지만 declared ordinal payload aggregate는 불일치하며, 이는 별도 DEV-20260815-002에서 다룬다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 composite source를 CHALLENGE_READY, 기대 일치 9/9, model turn 0으로 재인증했다. candidate v14, acceptance v6와 canonical readiness v6 package의 로컬 감사도 P0/P1 0을 확인했다. 외부 Pro 재심사가 끝나기 전까지 이 incident는 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3534,16 +3535,17 @@ R-P02, R-P04, R-P06, R-P07을 Judge 전용 protected_behavior_checks.py로 옮�
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보 model turn 0과 acceptance v5 두 번이 public 8/8, Check 16/16, R07 12/12, residue 0으로 통과
 - readiness v5는 SS1 scope gap으로 로컬 NO_GO; closure acceptance v6 두 번은 raw SS1 Evidence와 SS1/B1 scope/evidence true, secret/residue/model 0을 보존
+- canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4와 ZIP SHA-256 13706617...이 생성됐고 로컬 integrity·semantic audit P0/P1 0
 
 ### 남은 위험
 
 - 기존 q15 qualification과 Phase E v11 candidate는 새 Judge source를 인증하지 않는다
-- hidden Judge closure는 유지되지만 acceptance v5/readiness v5 scope P1 교정 뒤 canonical readiness v6 package와 재심사가 남았다
+- hidden Judge closure와 canonical readiness v6 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 재심사가 남았다
 - 독립 readiness 승인 전 실제 SS1·B1·Cell 3은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 관련 커밋: 112c4738d9a6b9304192d60b4222a8b0ccff1353, d0e40bf1d26823c693922d13342c77edf6b836dd, 21f3743bbb4f822e27628ce018c52b92a597ae08, 754a64caf99b719ff2ec780b3e59d83b69e38b92, 9035cef739864b45d0b1bc9ab442bbc5294fa5f9, 3cb559355f0feb0403ef486dcce14a9cc8c25506, d015a899cdf7d13bc811a9d5ea4ff2071466f981, ee6caa79439b01b930bb64f33fe26af43b524594, d80e8e453557f7d7f7fd8f20fa43bae1c25c86a4, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0, 86b1af04df9534f0f4bba29af40a5e115f8c0ed4
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md
 - 출처: docs/operations/codex-revision-log.md
@@ -3598,7 +3600,7 @@ readiness seal aggregate를 기존 PACKAGE-MANIFEST.sha256 record 순서로 계�
 
 ### 채택한 해결
 
-repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개와 source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14 CHALLENGE_READY 9/9은 통과했지만 fresh candidate, readiness package와 독립 재심사가 아직 없으므로 investigating을 유지한다.
+repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash relative path를 정규화하고 NFC, duplicate·casefold collision, Unicode line separator를 fail-closed로 거부한다. canonical record는 UTF-8 byte ordinal path 순서와 exact LF로 직렬화하며 builder와 verifier가 같은 구현을 호출한다. 역사적 v4는 수정하지 않고 NO_GO Evidence로 보존한다. model-free readiness 회귀 13개와 source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14 CHALLENGE_READY 9/9을 통과했다. fresh candidate v14, acceptance v6와 canonical readiness v6 package도 만들어 로컬 read-only 감사 P0/P1 0을 확인했다. 외부 Pro 재심사는 아직 없으므로 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3623,16 +3625,17 @@ repository-owned readiness integrity 모듈과 CLI를 추가해 forward-slash re
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, model turn 0, 별도 verifier CHALLENGE_READY True 9 9 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번은 model turn 0, exact manifest 7/7과 residue 0으로 통과
 - readiness v5는 SS1 scope P1로 로컬 NO_GO; closure acceptance v6 exact 10파일/manifest 8/8과 양 variant integrity true를 확인
+- canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...과 로컬 read-only integrity·semantic audit P0/P1 0
 
 ### 남은 위험
 
 - 역사적 readiness v4는 package 승인이나 Live GO 근거로 사용할 수 없다
 - 교정된 builder로 fresh package를 만들고 독립 verifier와 ChatGPT Pro 재심사를 통과하기 전 actual model dispatch는 NO-GO다
-- readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package와 독립 재심사는 아직 없다
+- 교정된 canonical readiness v6 package는 존재하고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사는 아직 없다
 
 ### 추적 정보
 
-- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 관련 커밋: 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0, 86b1af04df9534f0f4bba29af40a5e115f8c0ed4
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-review-profile-r-live-readiness-v4.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v4-package-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v4.md
@@ -3678,7 +3681,7 @@ Judge builder가 R07의 의미상 결과가 아니라 raw stdout 전체를 hash�
 
 ### 채택한 해결
 
-public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 조건만 canonical portable projection으로 만들고 그 projection hash를 봉인한다. raw stdout hash 대신 첫 줄 canonical Evidence와 둘째 줄 R07_PUBLIC_CONTRACT_OK만 허용하는 exact two-line contract를 검증한다. Judge derivation 전후에는 __pycache__와 .pytest_cache를 fail-closed로 거부한다. 교정 후 full builder 연속 두 번의 payload aggregate는 모두 c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609였고 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했으며 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0을 냈다. 다만 candidate, acceptance와 독립 readiness 재심사가 아직 없으므로 status는 investigating을 유지한다.
+public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 조건만 canonical portable projection으로 만들고 그 projection hash를 봉인한다. raw stdout hash 대신 첫 줄 canonical Evidence와 둘째 줄 R07_PUBLIC_CONTRACT_OK만 허용하는 exact two-line contract를 검증한다. Judge derivation 전후에는 __pycache__와 .pytest_cache를 fail-closed로 거부한다. 교정 후 full builder 연속 두 번의 payload aggregate는 모두 c0690b7bbe1af9a9a13cf6a27d2fec24d9a5b00996caf90ff40379f2a1228609였고 root 36파일 exact diff와 cache는 0이다. clean source e2579a3963db85e7e7d2691aa8776ce8d5a96c9a의 전체 Runner도 466 passed, 4 skipped, 0 failed로 통과했으며 선택형 Docker·SDK·model 실행은 0회였다. source 6cc1063c457fe3153d45ac869af7d588f3208628의 q17 qualification v14는 CHALLENGE_READY, 기대 일치 9/9, model turn 0을 냈다. candidate v14, acceptance v6와 canonical readiness v6 package의 로컬 감사도 P0/P1 0을 확인했다. 외부 Pro 재심사는 아직 없으므로 status는 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -3704,16 +3707,17 @@ public R07 Evidence에서 schema, pytest counts, growth margin과 최소 경로 
 - source 6cc1063c457fe3153d45ac869af7d588f3208628 q17 qualification v14 CHALLENGE_READY, 기대 일치 9/9, reference 8/8, mutation target fail 8/8, model turn 0, 잔여 container/cache 0
 - Phase E v13 source 20053fc7ffb4794fddd16858bd1a56ece3314e93 후보와 acceptance v5 두 번이 exact 9파일, manifest 7/7, R07 12/12, residue/model turn 0으로 통과
 - readiness v5는 SS1 scope P1로 로컬 NO_GO; v14/v6 closure는 raw SS1 Evidence를 포함한 exact 10파일/manifest 8/8, integrity true와 model 0을 보존
+- canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...과 로컬 integrity·semantic audit P0/P1 0
 
 ### 남은 위험
 
 - 이 closure Evidence는 Judge source bundle의 결정론만 확인하며 실제 SS1/B1 품질이나 routing benefit을 증명하지 않는다
-- readiness v5는 역사 NO_GO이며 교정된 canonical readiness v6 package는 아직 생성되지 않았다
+- 교정된 canonical readiness v6 package는 생성되고 로컬 감사 P0/P1은 0이지만 외부 ChatGPT Pro 심사가 남았다
 - 독립 ChatGPT Pro 재심사와 사용자별 live 승인이 있기 전 실제 SS1/B1/Cell 3과 model turn은 NO-GO다
 
 ### 추적 정보
 
-- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 관련 커밋: c4d34c738c834e1ad254a87d994cea5b06c1b6c2, e2579a3963db85e7e7d2691aa8776ce8d5a96c9a, 6cc1063c457fe3153d45ac869af7d588f3208628, 20053fc7ffb4794fddd16858bd1a56ece3314e93, 112ec43a0ec9aa37a2e68b27cc654ffcaa1822a0, 32ece8710fbe9b4a179caee5ab63ffeedc0b2ca9, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0, 86b1af04df9534f0f4bba29af40a5e115f8c0ed4
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
@@ -3761,7 +3765,7 @@ Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 �
 
 ### 채택한 해결
 
-현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번은 scope/evidence/boundary를 통과했지만 canonical readiness v6 package와 독립 Pro 심사가 아직 없어 investigating과 Live NO_GO를 유지한다.
+현재 closure source는 Fake effect를 R02에서 R03으로 이동하고 per-task scope 회귀를 추가한다. acceptance는 SS1 adapter Evidence를 export해 exact 10 files와 manifest 8 records로 봉인하며 SS1/B1 모두 scope_ok=true, evidence_hashes_ok=true, secret finding 0을 필수 assertion한다. v14 candidate는 source c5e1ae2df58554970ffd98d17946ac94393c3a5d, tree 3f42f200145de525d2bfe9ca8e6bca5705c0cab9, experiment exp_20260823_bba38a2e_1, Plan bba38a2e78808af7a51fdea1d669e1c55f6bf3899264b72482a0a25483f1841e, seal ab0fc7dd2618da0adde7797d5d30690adbb614192a46d866543ec509a721d4b0, seal file ca84ee54b354b4d99cf3a4ff03a36078bf82d9257f3d296a3f8ab3b81add9531이며 model turn 0이다. acceptance v6 두 번과 canonical readiness v6 package의 로컬 read-only 이중 감사는 scope/evidence/boundary와 package identity에서 P0/P1 0을 확인했다. 외부 Pro 심사는 아직 없어 investigating과 Live NO_GO를 유지한다.
 
 ### 수정 파일
 
@@ -3788,16 +3792,17 @@ Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 �
 - 각 SS1/B1 scope_ok=true, evidence_hashes_ok=true, secret finding 0과 raw SS1 adapter Evidence 포함
 - 각 R07 12/12, boundary·TEMP/process/lock residue와 actual model turn 0
 - v14 candidate·v6 acceptance·v5 거부 결과 commit 75d94d3caa0784a3d69f082339256b619d2df889와 v6 Pro prompt commit 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0 기록
+- canonical readiness v6 package record 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, ZIP SHA-256 13706617...; 로컬 read-only integrity·semantic audit P0/P1 0
 
 ### 남은 위험
 
 - 역사적 readiness v5 package는 로컬 NO_GO Evidence로만 보존하며 Pro 승인이나 Live 근거로 사용할 수 없다
-- v14 candidate, acceptance v6와 새 Pro prompt는 기록됐으며 canonical readiness v6 package를 새 identity로 만들어야 한다
+- canonical readiness v6 package와 로컬 감사 P0/P1 0은 확인됐지만 외부 ChatGPT Pro 심사가 남았다
 - 독립 Pro 심사와 사용자 Cell별 승인 전 실제 SS1/B1/Cell 3, route와 Live는 NO_GO다
 
 ### 추적 정보
 
-- 관련 커밋: 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0
+- 관련 커밋: 6fd9f8df4a45e3c73df1f5a799663268a78f9bb2, c5e1ae2df58554970ffd98d17946ac94393c3a5d, 75d94d3caa0784a3d69f082339256b619d2df889, 4d5f5fb1e533a9c937092a6d957a9a924ab3e7a0, 86b1af04df9534f0f4bba29af40a5e115f8c0ed4
 - 출처: docs/operations/codex-revision-log.md
 - 출처: docs/operations/company-to-home-codex-handoff.md
 - 출처: docs/operations/home-codex-checkpoint-20260816-profile-r-p1-remediation.md
