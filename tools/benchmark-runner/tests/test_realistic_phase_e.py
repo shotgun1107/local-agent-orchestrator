@@ -272,3 +272,23 @@ def test_checked_in_hardened_r07_v12_candidate_verifies_against_its_source_commi
         "0268930ed6456250aa3256f27d8f47cf67425cf27872905911111e41b90fd54f"
     )
     assert seal.actual_model_turns == 0
+
+
+def test_checked_in_hardened_r07_v13_candidate_verifies_against_its_source_commit() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v13"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+
+    assert seal.source_commit == "20053fc7ffb4794fddd16858bd1a56ece3314e93"
+    assert seal.experiment_id == "exp_20260823_00f2916f_1"
+    assert seal.plan_fingerprint == (
+        "00f2916fdc41f4912e19648adb3d15a84e39118749544162ad83045b6ac1fc25"
+    )
+    assert seal.seal_sha256 == (
+        "1d9df197dad859feb37831e696552a0639b00fe3498f7c0871c95b06e0af26bb"
+    )
+    assert seal.actual_model_turns == 0
