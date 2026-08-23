@@ -5,9 +5,13 @@ import subprocess
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+import benchmark_runner.realistic_phase_e as phase_e
+from benchmark_runner.contract import ExecutionPlan
+from benchmark_runner.plan import recompute_plan_fingerprint
 from benchmark_runner.realistic_phase_e import (
     PHASE_E_STAGE_RELATIVE,
     PINNED_MODEL,
@@ -19,6 +23,7 @@ from benchmark_runner.realistic_phase_e import (
     create_phase_e_candidate,
     verify_phase_e_candidate,
 )
+from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.runner import _source_tree_sha256
 
 
@@ -49,6 +54,71 @@ def _preflight() -> PhaseEPreflightEvidence:
     )
 
 
+def _v2_stage_bytes() -> bytes:
+    return (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes()
+
+
+def _create_worktree_v2_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
+    """Exercise v2 from exact stage bytes, including a dirty pre-commit checkout."""
+
+    source_commit = _head()
+    stage_bytes = _v2_stage_bytes()
+    original_git_bytes = phase_e._git_bytes
+    original_git_text = phase_e._git_text
+
+    def git_bytes(repository: Path, commit: str, relative: str) -> bytes:
+        if relative == PHASE_E_STAGE_RELATIVE:
+            return stage_bytes
+        return original_git_bytes(repository, commit, relative)
+
+    def git_text(repository: Path, *args: str) -> str:
+        if args == ("status", "--porcelain=v1"):
+            return ""
+        return original_git_text(repository, *args)
+
+    monkeypatch.setattr(phase_e, "_git_bytes", git_bytes)
+    monkeypatch.setattr(phase_e, "_git_text", git_text)
+    candidate = tmp_path / "candidate-v2"
+    create_phase_e_candidate(
+        REPOSITORY,
+        candidate,
+        source_commit=source_commit,
+        preflight=_preflight(),
+        created_at=datetime(2026, 8, 23, 0, 0, tzinfo=timezone.utc),
+    )
+    return candidate
+
+
+def _reseal_candidate(candidate: Path) -> None:
+    records: list[dict[str, Any]] = []
+    for relative in phase_e.PAYLOAD_FILES:
+        payload = (candidate / relative).read_bytes()
+        records.append(
+            {
+                "path": relative,
+                "size": len(payload),
+                "sha256": sha256(payload).hexdigest(),
+            }
+        )
+    files_bytes = "".join(
+        f"{record['sha256']}  {record['path']}\n" for record in records
+    ).encode("utf-8")
+    (candidate / "files.sha256").write_bytes(files_bytes)
+    seal = json.loads((candidate / "candidate-seal.json").read_text(encoding="utf-8"))
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    seal["experiment_id"] = plan["experiment_id"]
+    seal["plan_fingerprint"] = plan["plan_fingerprint"]
+    seal["payload_files"] = records
+    seal["files_manifest_sha256"] = sha256(files_bytes).hexdigest()
+    seal["seal_sha256"] = canonical_sha256(
+        {key: value for key, value in seal.items() if key != "seal_sha256"}
+    )
+    (candidate / "candidate-seal.json").write_bytes(canonical_json_bytes(seal))
+
+
 def test_stage_manifest_has_exact_four_cell_contract() -> None:
     stage = PhaseEStageManifest.model_validate_json(
         (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes()
@@ -62,9 +132,188 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.total_initial_turns == 32
     assert stage.budget.total_turn_ceiling == 40
     assert stage.dispatch.automatic_continuation is False
+    assert stage.schema_version == 2
     assert stage.profiles[0].qualification_path == (
         "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/qualification.json"
     )
+    assert stage.profiles[0].docker_environment_path == (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "docker-environment.json"
+    )
+    assert stage.profiles[1].docker_environment_path is None
+
+
+def test_v2_stage_requires_only_profile_r_qualification_sibling() -> None:
+    raw = json.loads(_v2_stage_bytes())
+
+    missing = json.loads(_v2_stage_bytes())
+    missing["profiles"][0].pop("docker_environment_path")
+    with pytest.raises(ValueError, match="Profile R requires"):
+        PhaseEStageManifest.model_validate(missing)
+
+    wrong_sibling = json.loads(_v2_stage_bytes())
+    wrong_sibling["profiles"][0]["docker_environment_path"] = (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/other.json"
+    )
+    with pytest.raises(ValueError, match="Profile R requires"):
+        PhaseEStageManifest.model_validate(wrong_sibling)
+
+    profile_i_claim = json.loads(_v2_stage_bytes())
+    profile_i_claim["profiles"][1]["docker_environment_path"] = (
+        "benchmarks/artifacts/profile-i-docker-judge-qualification-v1/"
+        "docker-environment.json"
+    )
+    with pytest.raises(ValueError, match="Profile I cannot claim"):
+        PhaseEStageManifest.model_validate(profile_i_claim)
+
+    raw["schema_version"] = 1
+    with pytest.raises(ValueError, match="v1 profiles cannot claim"):
+        PhaseEStageManifest.model_validate(raw)
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "replacement"),
+    [
+        (None, "schema_version", 2),
+        ("qualification", "source_commit", "0" * 40),
+        ("qualification", "batch_id", "different-batch"),
+        ("qualification", "status", "NOT_READY"),
+        ("qualification", "actual_model_turns", 1),
+        ("image", "reference", "different-image"),
+    ],
+)
+def test_v2_binding_rejects_docker_environment_semantic_mismatch(
+    section: str | None,
+    field: str,
+    replacement: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stage = PhaseEStageManifest.model_validate_json(_v2_stage_bytes())
+    environment_path = stage.profiles[0].docker_environment_path
+    assert environment_path is not None
+    original_git_bytes = phase_e._git_bytes
+    environment = json.loads(
+        original_git_bytes(REPOSITORY, _head(), environment_path)
+    )
+    target = environment if section is None else environment[section]
+    target[field] = replacement
+    mismatched_environment = canonical_json_bytes(environment)
+
+    def git_bytes(repository: Path, commit: str, relative: str) -> bytes:
+        if relative == environment_path:
+            return mismatched_environment
+        return original_git_bytes(repository, commit, relative)
+
+    monkeypatch.setattr(phase_e, "_git_bytes", git_bytes)
+    with pytest.raises(PhaseECandidateError, match="environment and qualification differ"):
+        phase_e.build_source_bindings(REPOSITORY, _head(), stage)
+
+
+def test_v2_candidate_binds_exact_git_environment_in_binding_plan_and_seal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads((candidate / "source-bindings.json").read_text(encoding="utf-8"))
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r, profile_i = bindings["profiles"]
+    expected_path = (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "docker-environment.json"
+    )
+    expected_sha = sha256(
+        phase_e._git_bytes(REPOSITORY, _head(), expected_path)
+    ).hexdigest()
+
+    assert expected_sha == (
+        "70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5"
+    )
+    assert bindings["schema_version"] == 2
+    assert profile_r["docker_environment_path"] == expected_path
+    assert profile_r["docker_environment_sha256"] == expected_sha
+    assert "docker_environment_path" not in profile_i
+    assert "docker_environment_sha256" not in profile_i
+    assert plan["environment_fingerprint"]["docker_environment_path"] == expected_path
+    assert plan["environment_fingerprint"]["docker_environment_sha256"] == expected_sha
+    assert seal.schema_version == 2
+    assert seal.docker_environment_path == expected_path
+    assert seal.docker_environment_sha256 == expected_sha
+
+
+def test_v2_verifier_rejects_binding_tamper_even_when_candidate_is_resealed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
+    bindings_path = candidate / "source-bindings.json"
+    bindings = json.loads(bindings_path.read_text(encoding="utf-8"))
+    bindings["profiles"][0]["docker_environment_sha256"] = "0" * 64
+    bindings["bindings_sha256"] = canonical_sha256(
+        {key: value for key, value in bindings.items() if key != "bindings_sha256"}
+    )
+    bindings_path.write_bytes(canonical_json_bytes(bindings))
+    _reseal_candidate(candidate)
+
+    with pytest.raises(PhaseECandidateError, match="differs across binding"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
+
+
+def test_v2_verifier_rejects_partial_plan_identity_even_when_resealed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
+    plan_path = candidate / "execution-plan.json"
+    raw_plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    raw_plan["environment_fingerprint"].pop("docker_environment_path")
+    plan = ExecutionPlan.model_validate(raw_plan)
+    fingerprint = recompute_plan_fingerprint(plan)
+    raw_plan["plan_fingerprint"] = fingerprint
+    raw_plan["experiment_id"] = f"exp_20260823_{fingerprint[:8]}_1"
+    plan_path.write_bytes(canonical_json_bytes(raw_plan))
+    _reseal_candidate(candidate)
+
+    with pytest.raises(PhaseECandidateError, match="differs across binding"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
+
+
+def test_v2_verifier_rejects_seal_identity_tamper_with_valid_self_hash(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
+    seal_path = candidate / "candidate-seal.json"
+    seal = json.loads(seal_path.read_text(encoding="utf-8"))
+    seal["docker_environment_sha256"] = "0" * 64
+    seal["seal_sha256"] = canonical_sha256(
+        {key: value for key, value in seal.items() if key != "seal_sha256"}
+    )
+    seal_path.write_bytes(canonical_json_bytes(seal))
+
+    with pytest.raises(PhaseECandidateError, match="differs across binding"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
+
+
+def test_v2_verifier_rejects_missing_source_environment_blob(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
+    original_git_bytes = phase_e._git_bytes
+    environment_path = (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "docker-environment.json"
+    )
+
+    def missing_environment(repository: Path, commit: str, relative: str) -> bytes:
+        if relative == environment_path:
+            raise PhaseECandidateError("synthetic missing Docker environment blob")
+        return original_git_bytes(repository, commit, relative)
+
+    monkeypatch.setattr(phase_e, "_git_bytes", missing_environment)
+    with pytest.raises(PhaseECandidateError, match="missing Docker environment blob"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
 
 
 def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
@@ -151,6 +400,26 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
         stream.write(b"\n")
     with pytest.raises(PhaseECandidateError, match="payload bytes changed"):
         verify_phase_e_candidate(REPOSITORY, candidate)
+
+
+def test_checked_in_original_v1_candidate_remains_byte_compatible() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v1"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+
+    assert seal.schema_version == 1
+    assert seal.source_commit == "79f9100125e2d5f6cecb3fe00b93e461afe1cdfd"
+    assert seal.experiment_id == "exp_20260812_77e111e8_1"
+    assert seal.seal_sha256 == (
+        "1e93ef12f11f7f05902ba7f0e25708f72dc9ed2e65ccea74956938caa5e57fc7"
+    )
+    assert seal.docker_environment_path is None
+    assert seal.docker_environment_sha256 is None
+    assert seal.actual_model_turns == 0
 
 
 def test_checked_in_r07_candidate_verifies_against_its_source_commit() -> None:
@@ -304,8 +573,17 @@ def test_checked_in_hardened_r07_v14_candidate_verifies_against_its_source_commi
     )
     seal = verify_phase_e_candidate(REPOSITORY, candidate)
     bindings = json.loads((candidate / "source-bindings.json").read_text(encoding="utf-8"))
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
 
+    assert seal.schema_version == 1
     assert seal.source_commit == "c5e1ae2df58554970ffd98d17946ac94393c3a5d"
+    assert seal.docker_environment_path is None
+    assert seal.docker_environment_sha256 is None
+    assert bindings["schema_version"] == 1
+    assert all("docker_environment_path" not in item for item in bindings["profiles"])
+    assert all("docker_environment_sha256" not in item for item in bindings["profiles"])
+    assert "docker_environment_path" not in plan["environment_fingerprint"]
+    assert "docker_environment_sha256" not in plan["environment_fingerprint"]
     assert bindings["source_tree"] == "3f42f200145de525d2bfe9ca8e6bca5705c0cab9"
     assert bindings["bindings_sha256"] == (
         "f82c4acd367dd8babecec79c8d43c5989648277cbea8d962ea05f8230ccd632d"
