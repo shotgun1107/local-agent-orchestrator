@@ -2645,3 +2645,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 다음은 v1 historical candidate 호환성을 유지하는 v2 Phase E binding과 회귀를 구현한 뒤
   v15 zero-turn candidate, acceptance v7 두 회차, readiness v7와 Pro 재심사를 만드는
   model-free closure다. Judge/fixture/Docker identity가 불변이면 q17은 재실행하지 않는다.
+
+## Phase E v2 binding·v15 candidate·acceptance v7
+
+- source `c7fde69d9e873bd8a8a3db8e73619660c1844883`에서 Docker environment exact Git bytes와
+  qualification 의미를 교차 확인하고 path/SHA를 source binding, Plan과 candidate seal에
+  직접 결합했다. v1/v12~v14 호환성을 보존한 Phase E 회귀는 26 passed, v15 exact identity
+  회귀 추가 뒤 27 passed다.
+- v15 candidate는 schema 2, experiment `exp_20260823_c09b6abc_1`, Plan
+  `c09b6abc...ce90`, seal `2af49f56...df0d`, environment SHA `70c43e49...f1b5`, model 0이다.
+- 별도 short worktree의 exact 6 untracked candidate에서 acceptance v7 A1/A2가 각각
+  `1 passed in 94.14s`, `1 passed in 98.06s`로 통과했다. 각 root는 exact 10파일,
+  manifest 8/8, lifecycle `SEALED, SEALED, PLANNED, PLANNED`, public 8/8, R07 12/12,
+  scope/evidence true와 secret/residue/model 0을 보존한다.
+- main checkout의 tracked candidate로 실행한 앞선 시도는 하네스가 요구하는 source status와
+  달라 Evidence export에서 실패했으며 공식 결과로 사용하지 않는다.
+- 다음은 readiness v7 package와 Pro 재심사다. 실제 SS1/B1/Cell 3은 계속 `NO_GO`다.
