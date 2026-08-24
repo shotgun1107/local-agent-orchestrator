@@ -2705,3 +2705,16 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 남은 P0/P1은 `0/0`, 최종 판정은 `GO_ONE_FRESH_PAIR`다.
 - 다음은 SS1 Cell 1의 사용자 별도 승인이다. SS1 결과 보고 뒤 B1 Cell 2를 별도 승인받고,
   Cell 3 전에 멈춘다. actual live model turn은 아직 0이다.
+
+## Phase F v15 SS1 Cell 1 실제 실행
+
+- 사용자가 SS1 한 Cell을 승인해 `C:\lao-phase-f-live-c7fde69-v15-pair-2`에서 실행했다.
+  0-turn preflight는 ChatGPT 구독, SDK/model/permission profile을 확인했다.
+- 실제 SS1은 session/turn/Attempt `1/10/1`, 자기검토 2회, 상한 거부 7회, token
+  `14,234,575`를 사용했다. variant/Judge/total은 `2363.813s / 8.936s / 2379.641s`다.
+- Worker는 전체 Task를 처리했지만 Docker Judge가 P04 reserve isolation, P05 lifecycle
+  reuse, P06 export roundtrip을 실패로 판정했다. Measurement는
+  `failed / independent_judge_failed / check_success=false`다.
+- Cell 1은 실패 결과를 `SEALED`로 보존했고 별도 finalization verify가 통과했다. Docker
+  residue는 0, Cell 2~4는 `PLANNED`, automatic continuation은 false다.
+- 다음은 같은 state의 B1 Cell 2 사용자 별도 승인이다. Cell 3은 실행하지 않는다.

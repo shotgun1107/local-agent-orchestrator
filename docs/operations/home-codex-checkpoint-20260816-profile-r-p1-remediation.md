@@ -5,7 +5,7 @@
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `READINESS_V7_PRO_GO_ONE_FRESH_PAIR_USER_CELL_APPROVAL_PENDING`
+- 상태: `PHASE_F_V15_SS1_CELL1_SEALED_FAILED_B1_APPROVAL_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
@@ -128,11 +128,10 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
 1. branch, HEAD, `git status --short --untracked-files=all`을 확인하고 현재 변경을
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro revision 7 review, `DEV-20260823-002`를 읽는다.
-3. Pro revision 7 `GO_ONE_FRESH_PAIR` 기록을 확인한다.
-4. 사용자에게 SS1 Cell 1의 실제 model turn 승인을 별도로 받는다.
-5. SS1을 한 번 실행·봉인하고 멈춘 뒤 결과를 보고한다.
-6. 그 다음에만 B1 Cell 2 승인을 별도로 받고 한 번 실행·봉인한다.
-7. Cell 3 전에 반드시 멈춘다.
+3. Pro revision 7 `GO_ONE_FRESH_PAIR`와 SS1 v15 `SEALED_FAILED` 기록을 확인한다.
+4. 사용자에게 같은 state의 B1 Cell 2 실제 model turn 승인을 별도로 받는다.
+5. B1을 한 번 실행·봉인하고 멈춘 뒤 pair 결과를 보고한다.
+6. Cell 3 전에 반드시 멈춘다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
 메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.
@@ -171,5 +170,18 @@ ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완�
 - package, q17/qualification, schema v2 environment binding, v15 candidate, acceptance v7과
   이전 closure가 모두 통과했다.
 - 남은 P0/P1은 `0/0`, 최종 판정은 `GO_ONE_FRESH_PAIR`다.
-- 실제 시험은 아직 0회다. 다음 관문은 SS1 Cell 1에 대한 사용자 별도 승인이다.
+- 이 Pro 판정 시점의 실제 시험은 0회였다. 이후 SS1 결과는 아래 최신 절에 기록한다.
 - SS1 승인은 B1이나 Cell 3 승인이 아니며 automatic continuation은 금지한다.
+
+## Phase F v15 SS1 Cell 1 실제 실행
+
+- raw root: `C:\lao-phase-f-live-c7fde69-v15-pair-2`
+- Cell 1: `SEALED`, actual model turn `10`
+- Worker는 R01~R08을 처리했지만 Judge가 P04·P05·P06을 실패로 판정했다.
+- Measurement: `failed / independent_judge_failed / check_success=false`
+- session/turn/Attempt: `1/10/1`, token `14,234,575`
+- variant/Judge/total: `2363.813s / 8.936s / 2379.641s`
+- finalization verifier `PASS`, Docker residue `0`
+- Cell 2~4는 `PLANNED`, automatic continuation `false`
+
+다음 관문은 같은 state의 B1 Cell 2에 대한 사용자 별도 승인이다. Cell 3은 계속 금지한다.
