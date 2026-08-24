@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "kind": "phase_f_v15_home_encrypted_sync_archive",
+  "archive": "pf-v15-home-v1.7z",
+  "archive_sha256": "a48f1022d84bf2e92710c52566b72df917aeb78e5bc469aed2e7604b555befe7",
+  "archive_bytes": 2208084,
+  "encryption": "7z AES-256 with encrypted headers",
+  "key_in_repository": false,
+  "private_key_file_sha256": "e784fbbdf20312dffe222144efd24d00f662d550c016288efc549351659f8187",
+  "source_file_count": 1765,
+  "source_total_bytes": 11965527,
+  "archived_file_count": 1767,
+  "extraction_mismatch_count": 0,
+  "credential_scan_actual_findings": 0,
+  "synthetic_fixture_hits": 6
+}
