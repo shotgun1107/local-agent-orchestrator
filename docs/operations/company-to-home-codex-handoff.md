@@ -860,3 +860,15 @@ actual model turn은 0이며 실제 SS1/B1/Cell 3과 Live는 계속 `NO_GO`다.
 
 다음 model-free 관문은 readiness v7 package record/prompt 조립, 외부 ZIP 봉인·검증과
 ChatGPT Pro 재심사다. q17은 재실행하지 않는다. 실제 SS1/B1/Cell 3과 Live는 `NO_GO`다.
+
+## 40. 2026-08-24 readiness v7 package record 준비
+
+§39의 v15 candidate와 acceptance v7을 입력으로 revision 7 Pro prompt를 commit
+`592596e430fe2fb27dde6199c36b826ff3f08f66`에 기록했다. 다음 commit을 package record로
+고정하고 새 외부 package/ZIP을 조립·감사한다.
+
+v7 package는 current Git snapshot, q17 sealed 49파일, qualification v14 2파일, candidate
+v15 6파일, official acceptance v7 20파일과 Git identity 2파일을 결합한다. v6 package와
+잘못된 tracked-candidate 실패 root는 역사 Evidence로 보존하고 v7 payload에 성공 자료로
+섞지 않는다. package 감사 전에는 ZIP hash나 PASS를 주장하지 않는다. 실제 model turn은
+0이며 SS1/B1/Cell 3과 Live는 계속 `NO_GO`다.

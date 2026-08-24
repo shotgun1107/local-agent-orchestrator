@@ -2661,3 +2661,15 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - main checkout의 tracked candidate로 실행한 앞선 시도는 하네스가 요구하는 source status와
   달라 Evidence export에서 실패했으며 공식 결과로 사용하지 않는다.
 - 다음은 readiness v7 package와 Pro 재심사다. 실제 SS1/B1/Cell 3은 계속 `NO_GO`다.
+
+## readiness v7 package record 준비
+
+- revision 7 재심사 프롬프트를 commit
+  `592596e430fe2fb27dde6199c36b826ff3f08f66`에 기록했다.
+- prompt는 package canonical integrity, q17/qualification 재사용, v2 environment binding의
+  source binding·Plan·seal·Git bytes closure, v15 six-file candidate, acceptance v7 exact
+  10×2와 이전 closure 유지 여부를 분리해 판정하게 한다.
+- 다음 commit을 readiness v7 package record identity로 고정한 뒤 그 commit의 명시적 Git
+  archive와 q17 49, qualification 2, candidate v15 6, acceptance v7 20을 새 외부 root에
+  조립한다. 기존 v6 package와 실패 acceptance root는 수정하지 않는다.
+- package 조립·독립 감사 전까지 ZIP/hash/PASS를 미리 기록하지 않으며 실제 Live는 `NO_GO`다.

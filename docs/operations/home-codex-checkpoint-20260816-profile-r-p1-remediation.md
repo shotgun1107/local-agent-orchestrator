@@ -5,7 +5,7 @@
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `V15_ACCEPTANCE_V7_COMPLETE_READINESS_V7_PENDING`
+- 상태: `V15_ACCEPTANCE_V7_COMPLETE_READINESS_V7_PACKAGE_RECORD_READY`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
