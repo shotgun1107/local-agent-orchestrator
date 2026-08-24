@@ -2718,3 +2718,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - Cell 1은 실패 결과를 `SEALED`로 보존했고 별도 finalization verify가 통과했다. Docker
   residue는 0, Cell 2~4는 `PLANNED`, automatic continuation은 false다.
 - 다음은 같은 state의 B1 Cell 2 사용자 별도 승인이다. Cell 3은 실행하지 않는다.
+
+## Phase F v15 집→회사 전체 암호화 동기화
+
+- 집 PC에만 있던 두 state root, diagnostic repair, one-shot script와 readiness v7 ZIP을
+  1,765파일·11,965,527 bytes의 source set으로 inventory했다.
+- 실제 credential finding은 0이고 알려진 가짜 OpenAI-like fixture hit 6개만 확인했다.
+- source-index와 files.sha256을 포함한 AES-256 encrypted-header 7z를 만들고 별도 extraction
+  root와 file set·size·SHA-256 mismatch 0을 확인했다.
+- archive commit은 `8ebf2d32731fe5a62f546656654911dacbde569c`, archive SHA-256은
+  `a48f1022d84bf2e92710c52566b72df917aeb78e5bc469aed2e7604b555befe7`다. private key는
+  PUBLIC Git에 넣지 않았고 Git 밖 key file SHA만 기록했다.
+- `home-to-company-phase-f-v15-full-sync-handoff.md`와 회사 시작 프롬프트에 안전한 ff-only
+  동기화, clean-context 복원 agent, byte 재검증, no-overwrite와 diagnostic information
+  boundary를 고정했다.
+- 회사 첫 세션은 복원·inventory에서 멈춘다. B1 Cell 2와 이후 Cell은 사용자 별도 승인 전
+  실행하지 않는다.

@@ -329,3 +329,23 @@ model을 실행하지 않는다. 먼저 clean source와 전체 model-free 회귀
 새 qualification → 0-turn candidate → acceptance 두 번 → canonical readiness package →
 독립 재심사 순서를 따른다. 재심사 GO와 사용자 Cell별 승인 전 SS1/B1/Cell 3은 계속
 `NO-GO`이며 automatic continuation은 금지한다.
+
+## 13. 2026-08-24 Phase F v15 전체 암호화 인수인계
+
+이 절이 최신 집→회사 보고다.
+
+- SS1 Cell 1은 experiment `exp_20260823_c09b6abc_1`에서 10 model turn 후 실패 결과로
+  `SEALED`됐다. P04/P05/P06이 실패했고 finalization verify는 통과했으며 Cell 2~4는
+  `PLANNED`, automatic continuation은 false다.
+- 별도 Worker 복사본의 독립 forensic 수정은 public test 7개와 Linux Docker Judge
+  P01~P08 8/8을 통과했다. sealed raw와 Git source는 수정하지 않았고, 이 수정본은 hidden
+  Judge 결과를 본 자료이므로 B1 입력으로 사용하지 않는다.
+- 집 PC 외부 자료 1,765파일·11,965,527 bytes를 암호화 archive로 정본화했다. archive
+  commit은 `8ebf2d32731fe5a62f546656654911dacbde569c`, SHA-256은
+  `a48f1022d84bf2e92710c52566b72df917aeb78e5bc469aed2e7604b555befe7`다.
+- 복호화 key는 PUBLIC Git 밖에서만 전달한다. 상세 복원 계약은
+  `docs/operations/home-to-company-phase-f-v15-full-sync-handoff.md`, 회사 시작 프롬프트는
+  `docs/prompts/benchmark-runner/company-codex-resume-after-home-phase-f-v15-full-sync.md`가
+  정본이다.
+- 회사 첫 세션은 ff-only 동기화, archive 검증·복원·inventory까지만 한다. 다음 live 관문은
+  사용자 별도 승인 후 B1 Cell 2 정확히 1개이며 Cell 3은 계속 `NO-GO`다.
