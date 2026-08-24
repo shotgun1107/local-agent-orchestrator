@@ -5,7 +5,7 @@
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `READINESS_V7_PACKAGE_VERIFIED_LOCAL_AUDIT_PASS_EXTERNAL_PRO_REVIEW_PENDING`
+- 상태: `READINESS_V7_PRO_GO_ONE_FRESH_PAIR_USER_CELL_APPROVAL_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
@@ -127,22 +127,21 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
 
 1. branch, HEAD, `git status --short --untracked-files=all`을 확인하고 현재 변경을
    reset·clean·stash하지 않는다.
-2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
-   `DEV-20260815-002`를 읽는다.
-3. readiness v7 ZIP SHA-256
-   `e6a62d30cfed6a21db888840f985904883192493bf435c7b10ae23fbc31dd267`과 revision 7
-   prompt를 외부 ChatGPT Pro에 전달한다.
-4. Pro의 읽기 전용 판정을 저장소 정본으로 기록한다.
-5. `GO_ONE_FRESH_PAIR`와 사용자 Cell별 승인 전 Live를 열지 않는다.
+2. 이 문서와 Pro revision 7 review, `DEV-20260823-002`를 읽는다.
+3. Pro revision 7 `GO_ONE_FRESH_PAIR` 기록을 확인한다.
+4. 사용자에게 SS1 Cell 1의 실제 model turn 승인을 별도로 받는다.
+5. SS1을 한 번 실행·봉인하고 멈춘 뒤 결과를 보고한다.
+6. 그 다음에만 B1 Cell 2 승인을 별도로 받고 한 번 실행·봉인한다.
+7. Cell 3 전에 반드시 멈춘다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
 메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.
 
 ## 계속 금지
 
-- 실제 SS1/B1/Cell 3 model 실행
+- 사용자 별도 승인 없는 SS1/B1 model 실행과 모든 Cell 3 실행
 - SDK thread/start 또는 turn/start
-- readiness v6 이후 실제 Cell의 자동 시작
+- 실제 Cell의 automatic continuation
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기
 
@@ -164,4 +163,13 @@ ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완�
 - 실제 credential은 0이다. 두 pattern hit는 비밀값 마스킹 회귀시험의 동일 가짜 fixture다.
 - 첫 overscoped 조립은 봉인 전 거부했고, 긴 경로 `git hash-object` 70개 open 실패는 짧은
   fresh archive 대조 mismatch 0으로 보완했다.
-- 로컬 P0/P1은 0이지만 외부 Pro 판정은 아직 없다. Live는 계속 `NO_GO`다.
+- 로컬 P0/P1은 0이다.
+
+## readiness v7 ChatGPT Pro 최종 판정
+
+- 공홈 ChatGPT Pro는 6분 56초 동안 ZIP과 봉인 source/Evidence만 읽기 전용으로 심사했다.
+- package, q17/qualification, schema v2 environment binding, v15 candidate, acceptance v7과
+  이전 closure가 모두 통과했다.
+- 남은 P0/P1은 `0/0`, 최종 판정은 `GO_ONE_FRESH_PAIR`다.
+- 실제 시험은 아직 0회다. 다음 관문은 SS1 Cell 1에 대한 사용자 별도 승인이다.
+- SS1 승인은 B1이나 Cell 3 승인이 아니며 automatic continuation은 금지한다.

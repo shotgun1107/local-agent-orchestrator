@@ -899,3 +899,22 @@ v15 6파일, official acceptance v7 20파일과 Git identity 2파일을 결합�
 로컬 감사 P0/P1은 0이다. 다음 관문은 ZIP과 외부 SHA-256을 revision 7 prompt와 함께
 ChatGPT Pro에 전달하는 읽기 전용 재심사다. Pro의 `GO_ONE_FRESH_PAIR`와 사용자 별도 승인
 전 실제 SS1/B1/Cell 3과 Live는 `NO_GO`이며 actual model turn은 계속 0이다.
+
+## 42. 2026-08-24 readiness v7 ChatGPT Pro GO_ONE_FRESH_PAIR
+
+§41의 ZIP을 공홈 ChatGPT Pro에 직접 첨부하고 revision 7 prompt로 6분 56초 동안 읽기 전용
+재심사를 받았다. 심사자는 테스트·Docker·probe·SDK·Codex·thread·model turn·network를
+실행하지 않았다.
+
+- ZIP 431, manifest 430, payload 429와 aggregate/seal/외부 ZIP SHA를 모두 재계산했다.
+- q17 exact 47+2와 qualification v14 identity가 통과했고 기존 q17 재사용이 승인됐다.
+- revision 6 environment binding P1의 schema v2 closure 6항목이 모두 `closed`다.
+- v15 exact six-file candidate와 binding·Plan·seal의 동일 environment path/SHA가 통과했다.
+- acceptance v7 두 회차는 각 exact 10파일, manifest 8/8, scope/evidence true,
+  secret/residue/model 0을 보존한다.
+- 이전 closure는 유지됐고 남은 P0/P1은 `0/0`이다.
+- 최종 판정: `GO_ONE_FRESH_PAIR`
+
+다음 관문은 SS1 Cell 1의 사용자 별도 승인이다. 한 번 실행·봉인하고 보고 후 멈춰야 하며,
+그 다음 B1 Cell 2도 별도 승인을 받아야 한다. Cell 3, route와 automatic continuation은
+승인되지 않았다. 실제 live model turn은 아직 0이다.
