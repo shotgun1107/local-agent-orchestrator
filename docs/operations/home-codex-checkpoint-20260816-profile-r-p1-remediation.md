@@ -1,11 +1,11 @@
 # 집 Codex 체크포인트 — readiness v5 로컬 NO-GO와 readiness v6 재심사 입력
 
-- 최신 갱신: 2026-08-23 KST
+- 최신 갱신: 2026-08-24 KST
 - branch: `codex/phase-d-artifacts`
 - 시작 HEAD: `22069627f93883408b0a895ce8c348e9e5db314b`
 - current source: `c5e1ae2df58554970ffd98d17946ac94393c3a5d`
 - current tree: `3f42f200145de525d2bfe9ca8e6bca5705c0cab9`
-- 상태: `V15_ACCEPTANCE_V7_COMPLETE_READINESS_V7_PACKAGE_RECORD_READY`
+- 상태: `READINESS_V7_PACKAGE_VERIFIED_LOCAL_AUDIT_PASS_EXTERNAL_PRO_REVIEW_PENDING`
 - 실제 model·SDK thread/turn: 0회
 
 ## 멈춘 이유
@@ -129,11 +129,11 @@ v14 candidate·v6 acceptance·v5 거부 결과 commit은
    reset·clean·stash하지 않는다.
 2. 이 문서와 Pro v4 review, `DEV-20260814-002`, `DEV-20260815-001`,
    `DEV-20260815-002`를 읽는다.
-3. 기록된 v14 candidate, acceptance v6와 v6 Pro prompt를 입력으로 고정한다.
-4. v2 Phase E binding에 Docker environment path/SHA를 직접 봉인하고 verifier가 Git bytes로
-   재계산하게 한다.
-5. 새 v15 zero-turn candidate, acceptance v7 두 회차와 readiness v7 package를 만든다.
-6. Pro 재심사 GO와 사용자 Cell별 승인 전 Live를 열지 않는다.
+3. readiness v7 ZIP SHA-256
+   `e6a62d30cfed6a21db888840f985904883192493bf435c7b10ae23fbc31dd267`과 revision 7
+   prompt를 외부 ChatGPT Pro에 전달한다.
+4. Pro의 읽기 전용 판정을 저장소 정본으로 기록한다.
+5. `GO_ONE_FRESH_PAIR`와 사용자 Cell별 승인 전 Live를 열지 않는다.
 
 ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완성 뒤 외부 첨부
 메시지에서 제공한다. 내부 START와 seal은 package record commit·tree를 결합한다.
@@ -145,3 +145,23 @@ ZIP SHA-256은 ZIP 내부 `START-HERE.md`에 자기참조로 넣지 않고, 완�
 - readiness v6 이후 실제 Cell의 자동 시작
 - v4 ZIP, q16, qualification v13, candidate v12 또는 acceptance v4의 수정·재봉인·성공 재분류
 - reset·clean·stash로 현재 WIP를 숨기거나 폐기
+
+## readiness v7 package와 로컬 감사
+
+- package record/tree는 `58726e20ecf6302246c71559262897d68eb25154` /
+  `81cc505bc5e87ca75c9255860294a5759139982f`다.
+- package는 total/manifest/payload `431/430/429`, ZIP 1,853,414 bytes/431 entry이며
+  ZIP SHA-256은
+  `e6a62d30cfed6a21db888840f985904883192493bf435c7b10ae23fbc31dd267`다.
+- manifest SHA-256은
+  `233b66357fd1baa60d8a4481d01c63a86a64441fcc1c5a657a1ebf2719b9429e`, payload aggregate는
+  `f072358cb090ee482dd368df11c1d72b46f41a7a74c4b61d9a3cfbf9251adc94`다.
+- seal self/file SHA-256은
+  `6b9917f3ad3da5285b1d6bc793264fb17fc04c42b7405f456191f3d171af209f` /
+  `7e83405ecaec89e2035c68e0c358d53c9c6fd1e07c9d973a6055d2801ff5696c`다.
+- 원본·ZIP 해제본 canonical verifier, q17 verifier, v15 candidate verifier, acceptance
+  semantic audit와 short-root Git snapshot byte 대조가 모두 mismatch 0으로 통과했다.
+- 실제 credential은 0이다. 두 pattern hit는 비밀값 마스킹 회귀시험의 동일 가짜 fixture다.
+- 첫 overscoped 조립은 봉인 전 거부했고, 긴 경로 `git hash-object` 70개 open 실패는 짧은
+  fresh archive 대조 mismatch 0으로 보완했다.
+- 로컬 P0/P1은 0이지만 외부 Pro 판정은 아직 없다. Live는 계속 `NO_GO`다.

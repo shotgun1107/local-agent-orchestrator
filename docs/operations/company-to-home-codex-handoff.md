@@ -872,3 +872,30 @@ v15 6파일, official acceptance v7 20파일과 Git identity 2파일을 결합�
 잘못된 tracked-candidate 실패 root는 역사 Evidence로 보존하고 v7 payload에 성공 자료로
 섞지 않는다. package 감사 전에는 ZIP hash나 PASS를 주장하지 않는다. 실제 model turn은
 0이며 SS1/B1/Cell 3과 Live는 계속 `NO_GO`다.
+
+## 41. 2026-08-24 readiness v7 package 조립·로컬 감사 완료
+
+§40은 package 조립 전 역사 checkpoint다. 현재 최신 회사→집 관문은 이 절이다.
+
+- package record/tree는 `58726e20ecf6302246c71559262897d68eb25154` /
+  `81cc505bc5e87ca75c9255860294a5759139982f`다.
+- `profile-r-live-readiness-v7-58726e2.zip`은 1,853,414 bytes, 431 entry이고 SHA-256은
+  `e6a62d30cfed6a21db888840f985904883192493bf435c7b10ae23fbc31dd267`다.
+- total/manifest/payload는 `431/430/429`, manifest SHA-256은
+  `233b66357fd1baa60d8a4481d01c63a86a64441fcc1c5a657a1ebf2719b9429e`, aggregate는
+  `f072358cb090ee482dd368df11c1d72b46f41a7a74c4b61d9a3cfbf9251adc94`다.
+- seal self/file SHA-256은
+  `6b9917f3ad3da5285b1d6bc793264fb17fc04c42b7405f456191f3d171af209f` /
+  `7e83405ecaec89e2035c68e0c358d53c9c6fd1e07c9d973a6055d2801ff5696c`다.
+- package root와 별도 ZIP 해제본은 canonical verifier를 통과했고 exact file/content,
+  reparse/cache mismatch는 0이다. short-root fresh Git archive와 repository 348파일의 byte
+  mismatch도 0이다.
+- q17은 `CHALLENGE_READY` 9/9/model 0, v15은 exact Docker environment path/SHA 결합,
+  acceptance v7은 exact 10×2, manifest 8/8×2, scope/evidence true와
+  secret/residue/model 0을 보존한다.
+- 실제 credential은 0이다. 두 scan hit는 repository와 Worker snapshot의 같은 가짜
+  마스킹 회귀 fixture다.
+
+로컬 감사 P0/P1은 0이다. 다음 관문은 ZIP과 외부 SHA-256을 revision 7 prompt와 함께
+ChatGPT Pro에 전달하는 읽기 전용 재심사다. Pro의 `GO_ONE_FRESH_PAIR`와 사용자 별도 승인
+전 실제 SS1/B1/Cell 3과 Live는 `NO_GO`이며 actual model turn은 계속 0이다.

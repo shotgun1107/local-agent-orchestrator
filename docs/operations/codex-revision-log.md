@@ -2673,3 +2673,23 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   archive와 q17 49, qualification 2, candidate v15 6, acceptance v7 20을 새 외부 root에
   조립한다. 기존 v6 package와 실패 acceptance root는 수정하지 않는다.
 - package 조립·독립 감사 전까지 ZIP/hash/PASS를 미리 기록하지 않으며 실제 Live는 `NO_GO`다.
+
+## readiness v7 package 조립과 로컬 감사
+
+- package record `58726e20ecf6302246c71559262897d68eb25154`, tree
+  `81cc505bc5e87ca75c9255860294a5759139982f`에서 repository 348, q17 49,
+  qualification 2, candidate v15 6, acceptance v7 20, Git identity 2와 root control 4를
+  합친 canonical package를 조립했다.
+- ZIP은 `profile-r-live-readiness-v7-58726e2.zip`, 1,853,414 bytes, 431 entry이며 SHA-256은
+  `e6a62d30cfed6a21db888840f985904883192493bf435c7b10ae23fbc31dd267`다.
+  total/manifest/payload는 `431/430/429`, manifest SHA는 `233b6635...429e`, aggregate는
+  `f072358c...c94`, seal self/file SHA는 `6b9917f3...209f` / `7e83405e...5696c`다.
+- package root와 별도 ZIP 해제본 canonical verify, ZIP exact diff, q17 전용 verify, v15
+  candidate verify와 acceptance v7 semantic audit는 mismatch 0이다. repository snapshot도
+  short-root fresh archive 348파일과 byte mismatch 0을 확인했다.
+- 첫 broad-directory 조립은 repository 490파일로 과잉 포함되어 봉인 전 거부했다. Windows
+  긴 경로에서 `git hash-object`가 70개를 열지 못한 것은 short-root archive 대조로
+  보완했으며 content mismatch가 아니다.
+- 고신뢰 credential 실제 검출은 0이다. 2개 hit는 동일 비밀값 마스킹 회귀시험 fixture다.
+- 로컬 감사 P0/P1은 0이다. 외부 ChatGPT Pro revision 7 심사 전 실제 Live는 `NO_GO`이고
+  actual model turn은 0이다.
