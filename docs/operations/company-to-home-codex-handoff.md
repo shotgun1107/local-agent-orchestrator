@@ -918,3 +918,24 @@ ChatGPT Pro에 전달하는 읽기 전용 재심사다. Pro의 `GO_ONE_FRESH_PAI
 다음 관문은 SS1 Cell 1의 사용자 별도 승인이다. 한 번 실행·봉인하고 보고 후 멈춰야 하며,
 그 다음 B1 Cell 2도 별도 승인을 받아야 한다. Cell 3, route와 automatic continuation은
 승인되지 않았다. 실제 live model turn은 아직 0이다.
+
+## 43. 2026-08-24 Phase F v15 SS1 Cell 1 실제 실행
+
+사용자 별도 승인 뒤 fresh root `C:\lao-phase-f-live-c7fde69-v15-pair-2`에서 Profile R
+SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, SDK `0.144.4`,
+`gpt-5.6-sol`과 `runtime-boundary-worker`를 확인했다.
+
+- Cell 1: `SEALED`, session/turn/Attempt `1/10/1`
+- token: input `14,132,852`, output `101,723`, total `14,234,575`
+- variant/Judge/total: `2363.813s / 8.936s / 2379.641s`
+- Judge 실패: `R-P04-RESERVE-ISOLATION`, `R-P05-LIFECYCLE-REUSE`,
+  `R-P06-EXPORT-ROUNDTRIP`
+- Measurement: `failed / independent_judge_failed / check_success=false`
+- finalization verifier `PASS`, Docker container residue `0`
+- Cell 2~4: `PLANNED`, automatic continuation `false`
+
+두 사전 실행 환경 선택 실패는 model turn과 state 생성 전 또는 0-turn preflight에서
+중단됐다. pair-1 실패 root는 보존하고 pair-2만 정식 live Evidence로 사용한다.
+
+다음 관문은 같은 pair-2 state의 B1 Cell 2 사용자 별도 승인이다. SS1 실패를 B1 결과로
+추정하지 않으며 Cell 3은 승인되지 않았다.
