@@ -6,8 +6,8 @@
 ## 요약
 
 - 전체: 60건
-- 해결: 57건
-- 조사 중: 3건
+- 해결: 58건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -72,7 +72,7 @@
 | DEV-20260815-002 | resolved | phase-f-profile-r | tooling | Profile R readiness v4 seal이 선언한 ordinal path 순서와 다른 payload aggregate를 봉인함 |
 | DEV-20260815-003 | resolved | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
 | DEV-20260823-001 | resolved | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
-| DEV-20260823-002 | investigating | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
+| DEV-20260823-002 | resolved | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3819,11 +3819,11 @@ Fake runtime의 task effect가 manifest의 실제 소유 Task R03이 아니라 �
 
 ## DEV-20260823-002 — Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-e-profile-r`
 - 분류: `implementation`
 - 발견: 2026-08-23T13:50:39Z / ChatGPT Pro Profile R Live readiness revision 6 읽기 전용 재심사
-- 해결: 미해결
+- 해결: 2026-08-24T11:13:35Z
 
 ### 증상
 
@@ -3855,7 +3855,7 @@ Phase E Profile R binding 설계가 qualification.json과 q17 self-hash만 명�
 
 ### 채택한 해결
 
-v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder와 verifier는 committed Docker environment bytes를 hash하고 qualification source·batch·status·model turns·image와 교차 확인하며, 동일 path/SHA를 source binding, Plan과 seal에 직접 봉인한다. v15 zero-turn candidate와 acceptance v7 두 회차를 통과했고 readiness v7 package를 canonical 봉인해 로컬 무결성·의미 감사를 통과했다. 독립 Pro 재심사는 남았다.
+v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder와 verifier는 committed Docker environment bytes를 hash하고 qualification source·batch·status·model turns·image와 교차 확인하며, 동일 path/SHA를 source binding, Plan과 seal에 직접 봉인한다. v15 zero-turn candidate와 acceptance v7 두 회차, readiness v7 canonical package와 로컬 감사를 완료했고 ChatGPT Pro revision 7이 여섯 closure를 모두 closed, P0/P1 0/0, GO_ONE_FRESH_PAIR로 판정했다.
 
 ### 수정 파일
 
@@ -3880,16 +3880,17 @@ v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder�
 - acceptance v7 A1/A2 94.14s/98.06s, 각 exact 10 files, manifest 8/8, JUnit 1/0/0/0, scope/evidence true, secret/residue/model 0
 - readiness v7 package total/manifest/payload 431/430/429, 원본과 ZIP 해제본 canonical verify 및 exact diff mismatch 0, short-root fresh Git snapshot 348파일 byte mismatch 0, 실제 credential 0
 - v15 candidate source binding, Plan과 seal의 Docker environment path/SHA 일치 및 package·해제본 candidate verifier 통과
+- ChatGPT Pro revision 7 읽기 전용 재심사에서 schema v2 closure 6항목 모두 closed, P0/P1 0/0, 최종 GO_ONE_FRESH_PAIR
 
 ### 남은 위험
 
 - v14 candidate, acceptance v6와 readiness v6는 역사 NO_GO Evidence로만 보존해야 한다
-- v15 candidate, acceptance v7, readiness v7 package와 v7 Pro prompt는 완료됐지만 외부 Pro 재심사는 아직 없다
-- readiness v7 Pro GO 전 실제 SS1/B1/Cell 3은 NO_GO다
+- GO_ONE_FRESH_PAIR는 실제 live 성공이나 B1 우위를 증명하지 않는다
+- SS1 Cell 1과 B1 Cell 2는 사용자가 각각 별도로 승인해야 하고 Cell 3 전 중단이 필요하다
 
 ### 추적 정보
 
-- 관련 커밋: 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9, c4fb396fd8fa4766851077c230835a05a09a259a, c7fde69d9e873bd8a8a3db8e73619660c1844883, e42eaa1fead16c82927a6cefe2b55ec13e9161ee, 70a9ea2add181d0cafb4712073823b2a495d5665, 592596e430fe2fb27dde6199c36b826ff3f08f66, 58726e20ecf6302246c71559262897d68eb25154
+- 관련 커밋: 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9, c4fb396fd8fa4766851077c230835a05a09a259a, c7fde69d9e873bd8a8a3db8e73619660c1844883, e42eaa1fead16c82927a6cefe2b55ec13e9161ee, 70a9ea2add181d0cafb4712073823b2a495d5665, 592596e430fe2fb27dde6199c36b826ff3f08f66, 58726e20ecf6302246c71559262897d68eb25154, b22e2c309a1e2069b5d9d0f4a16b3dcdaecc2036
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v6.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v6-package-result.md
@@ -3898,3 +3899,4 @@ v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-exact-candidate-acceptance-v7-result.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v7.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v7-package-result.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v7.md

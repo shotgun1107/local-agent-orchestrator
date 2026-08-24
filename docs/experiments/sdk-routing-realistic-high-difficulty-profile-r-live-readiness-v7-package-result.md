@@ -13,7 +13,7 @@
 - readiness seal self-hash: `6b9917f3ad3da5285b1d6bc793264fb17fc04c42b7405f456191f3d171af209f`
 - readiness seal file SHA-256: `7e83405ecaec89e2035c68e0c358d53c9c6fd1e07c9d973a6055d2801ff5696c`
 - actual model turns: `0`
-- 현재 상태: `PACKAGE_VERIFIED / LOCAL_AUDIT_PASS / EXTERNAL_PRO_REVIEW_PENDING / LIVE_NO_GO`
+- 현재 상태: `PACKAGE_VERIFIED / LOCAL_AUDIT_PASS / EXTERNAL_PRO_GO_ONE_FRESH_PAIR / USER_CELL_APPROVAL_PENDING`
 
 ## 조립 범위
 
@@ -69,10 +69,23 @@ record commit에서 `C:\lao-v7ra-58726e2`로 새로 추출해 package snapshot�
 
 ## 현재 관문
 
-로컬 감사 범위에서 package·identity·scope P0/P1은 발견되지 않았다. 이것은 외부 독립
-심사를 대신하지 않는다. 다음 단계는 이 ZIP과 외부 ZIP SHA-256을 ChatGPT Pro에 전달해
-revision 7 prompt로 읽기 전용 재심사를 받는 것이다.
+로컬 감사 범위에서 package·identity·scope P0/P1은 발견되지 않았다. 아래 외부 독립
+재심사도 통과했으므로 현재 관문은 실제 SS1 Cell 1에 대한 사용자 별도 승인이다.
 
-Pro가 `GO_ONE_FRESH_PAIR`를 내기 전 실제 SS1/B1/Cell 3은 `NO_GO`다. GO가 나오더라도
-실제 model turn은 사용자의 별도 승인을 받아야 하며 package 감사가 자동 dispatch 권한을
-만들지 않는다.
+## 외부 ChatGPT Pro revision 7 재심사
+
+공홈 ChatGPT Pro는 첨부 ZIP을 별도 디렉터리에 해제하고 source와 봉인 Evidence만 읽어
+6분 56초 동안 재계산했다. 테스트·Docker·probe·SDK·Codex·thread·model turn·network는
+실행하지 않았다.
+
+- ZIP·manifest·readiness seal: `PASS`
+- q17 exact 47+2와 qualification identity: `PASS`, 재사용 가능
+- revision 6 P1 schema v2 closure 6항목: 모두 `closed`
+- v15 exact six-file candidate와 environment chain: `PASS`
+- acceptance v7 exact 10파일/manifest 8/8 두 회차: `PASS`
+- 이전 closure: 유지
+- P0/P1: `0/0`
+- 최종 판정: `GO_ONE_FRESH_PAIR`
+
+이 GO는 실제 model turn의 자동 실행 권한이 아니다. 사용자가 SS1 Cell 1과 B1 Cell 2를
+각각 별도로 승인한 뒤 각 Cell을 한 번씩 명시 dispatch하고 Cell 3 전에 멈추는 범위만 연다.
