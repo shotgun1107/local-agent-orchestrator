@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260825-001",
+  "title": "Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함",
+  "status": "open",
+  "stage": "phase-f-profile-r-b1",
+  "category": "test",
+  "discovered_at": "2026-08-25T08:00:54Z",
+  "resolved_at": null,
+  "discovered_by": "Phase F Profile R B1 company v16 live",
+  "symptom": "B1은 R01~R06을 통과했지만 R07 public pytest가 worker 저장소에 존재하지 않는 e915914c commit의 fixture tree를 조회해 check_unknown으로 중단되고 R08은 실행되지 않았다.",
+  "reproduction": [
+    "minimal Worker snapshot을 단일 baseline commit으로 materialize한 뒤 R01~R07을 순차 수행하고 python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py를 실행한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "b0-b1-frozen.yaml은 e915914c0494cd21969de5bc60f81ad74ec1b037을 참조하지만 worker Git object DB에 해당 commit이 없고 R07 bounded feedback의 6 failures 중 5건이 그 revision의 fixture path 조회에서 실패했다."
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmarks/manifests/b0-b1-frozen.yaml",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
+    "tools/benchmark-runner/tests/test_routing_s2.py"
+  ]
+}

@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 60건
+- 전체: 61건
 - 해결: 58건
 - 조사 중: 2건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -73,6 +73,7 @@
 | DEV-20260815-003 | resolved | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
 | DEV-20260823-001 | resolved | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
 | DEV-20260823-002 | resolved | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
+| DEV-20260825-001 | open | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3900,3 +3901,58 @@ v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder�
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v7.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v7-package-result.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v7.md
+
+## DEV-20260825-001 — Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함
+
+- 상태: `open`
+- 단계: `phase-f-profile-r-b1`
+- 분류: `test`
+- 발견: 2026-08-25T08:00:54Z / Phase F Profile R B1 company v16 live
+- 해결: 미해결
+
+### 증상
+
+B1은 R01~R06을 통과했지만 R07 public pytest가 worker 저장소에 존재하지 않는 e915914c commit의 fixture tree를 조회해 check_unknown으로 중단되고 R08은 실행되지 않았다.
+
+### 재현
+
+- minimal Worker snapshot을 단일 baseline commit으로 materialize한 뒤 R01~R07을 순차 수행하고 python -m pytest -q tools/benchmark-runner/tests/test_routing_s2.py를 실행한다.
+
+### 증거
+
+- `direct-observation`: b0-b1-frozen.yaml은 e915914c0494cd21969de5bc60f81ad74ec1b037을 참조하지만 worker Git object DB에 해당 commit이 없고 R07 bounded feedback의 6 failures 중 5건이 그 revision의 fixture path 조회에서 실패했다.
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmarks/manifests/b0-b1-frozen.yaml
+- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
+- 출처: tools/benchmark-runner/tests/test_routing_s2.py
