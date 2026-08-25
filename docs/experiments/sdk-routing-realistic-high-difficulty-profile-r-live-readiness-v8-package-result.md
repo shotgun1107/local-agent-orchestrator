@@ -1,4 +1,4 @@
-# Profile R Live readiness v8 package 결과 — 로컬 검증 통과·외부 재심사 대기
+# Profile R Live readiness v8 package 결과 — 로컬 검증 통과·사용자 실행 승인 대기
 
 - 작업일: 2026-08-25
 - package record commit: `536c20b12ccd7c196264b763fabfa2b7f31793d9`
@@ -13,7 +13,7 @@
 - readiness seal self-hash: `09a618fba15e9b55e16ba75d3335e16b5d2154c4b9bc975818fda402d1106922`
 - readiness seal file SHA-256: `70c22f47cb6b79816a5eaf295a25eafef0d6e376db5f86825fd57c303c341008`
 - actual model turns: `0`
-- 현재 상태: `PACKAGE_VERIFIED / EXTERNAL_REVIEW_PENDING / LIVE_NO_GO`
+- 현재 상태: `PACKAGE_VERIFIED / INTERNAL_PRELIVE_READY / USER_CELL_APPROVAL_PENDING`
 
 ## 조립 범위
 
@@ -43,6 +43,9 @@ snapshot에 복제된 공개 마스킹 회귀시험의 가짜 표본이다. 실�
 ## 현재 관문
 
 로컬 범위에서 q18·Phase E v16·acceptance v8·package 무결성은 통과했다.
-외부 ChatGPT Pro revision 8 재심사가 `GO_ONE_FRESH_PAIR`를 발행하기 전까지
-실제 SS1/B1은 실행하지 않는다. GO가 나와도 SS1과 B1은 각각 사용자의
-별도 승인을 받고 순차로 한 번씩만 dispatch한다.
+2026-08-25 사용자 결정으로 외부 AI 재심사는 기본 실행 관문에서 제외했다.
+외부 심사는 큰 기획 동결이나 내부에서 못 푸는 중대 버그 때만 선택적으로 쓴다.
+
+이 문서는 Environment Closure 통과 기록이며 실제 SS1은 다음 사용자 턴의 별도
+승인을 받은 뒤 한 번만 dispatch한다. SS1 봉인 후 B1도 다시 별도 승인을
+받으며 Cell 3은 자동으로 시작하지 않는다.

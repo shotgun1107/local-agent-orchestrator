@@ -2764,3 +2764,14 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   공개 비밀 마스킹 회귀시험의 가짜 marker 2파일만 분리 확인했다.
 - 다음 관문은 외부 Pro revision 8 `GO_ONE_FRESH_PAIR|NO_GO`다. 실제 SS1/B1은
   계속 NO-GO다.
+
+## 외부 AI 심사의 기본 관문 제외
+
+- 사용자 결정으로 외부 GPT/Claude 심사를 매 구현·실험 단계의 필수 관문으로
+  사용하지 않는다.
+- 외부 AI는 큰 기획·설계 동결, 내부에서 못 푸는 중대 버그, 반복 실패로
+  검증 방식을 재설계할 때만 사용자 승인 후 사용한다.
+- ChatGPT 브라우저는 열었지만 ZIP 업로드와 메시지 전송 전에 중단했다.
+  외부로 전송된 package·prompt·message는 0이다.
+- readiness v8 로컬 Environment Closure를 현재 실행 준비 근거로 채택한다.
+  다음 턴에서 사용자가 SS1을 별도 승인하기 전까지 model turn은 0이다.
