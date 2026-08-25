@@ -1003,3 +1003,18 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
 - lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`, automatic continuation은 false다.
 - 현 pair는 SS1/B1 우열 판정에 쓰지 않는다. Cell 3·4는 NO-GO이며,
   다음은 model-free incident 교정·회귀시험·새 candidate 결정이다.
+
+## 49. 2026-08-25 R01~R08 Pro 진단 ZIP
+
+- R07 단일 환경 patch로 끝낼 수 있는지, R01~R08 전체를 재설계해야 하는지
+  판정하기 위해 명세·Task·Check·Judge·source/test·회사 환경·SS1/B1 봉인
+  Evidence를 532파일 ZIP으로 결합했다.
+- 로컬 경로는
+  `benchmarks/.local-r6/profile-r-r01-r08-failure-diagnostic-v1-bde6670.zip`이다.
+- ZIP SHA-256은
+  `74b66ba1f1eb0bd787fe6415311b4f74a374bcfa44f7d24415ca9a47c68eca31`다.
+- ZIP은 Git ignore 자료이므로 다른 PC에는 push/pull로 전달되지 않는다.
+- Pro 프롬프트는
+  `docs/prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-r01-r08-failure-diagnostic-v1.md`다.
+- 현재 외부 전송은 0이며, 사용자가 ZIP을 수동 첨부한 뒤 프롬프트를
+  전송해야 한다. 회신 전 Cell 3·4와 추가 live는 NO-GO다.
