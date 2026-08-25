@@ -94,9 +94,11 @@ docs/
 - [집 Codex Profile R 환경 교정 재개 프롬프트](./prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md) — 최신 branch 인수 뒤 축소 환경 교정만 model-free로 진행하는 입력
 - [Profile R Live readiness Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-live-readiness-v1.md) — qualification v10·Phase E v9·exact acceptance 2회 뒤 한 fresh pair GO/NO-GO만 판정하는 입력
 - [Profile R Live readiness revision 8 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v8.md) — 중대 문제 발생 시만 쓰는 선택적 q18·v16·acceptance v8 재심 입력
+- [Profile R R01~R08 실패 진단·재설계 Pro 프롬프트](./prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-r01-r08-failure-diagnostic-v1.md) — R 전체 유효성·Check/Judge 일치·환경 경계 해결 요청
 - [Profile R Live readiness revision 8 package 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v8-package-result.md) — 452파일 canonical ZIP 로컬 검증 통과, SS1 별도 승인 대기
 - [Phase F Profile R SS1 회사 v16 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v16-result.md) — 환경·봉인 정상, R-P02·R-P05 품질 실패, B1 미실행
 - [Phase F Profile R B1 회사 v16 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-company-v16-result.md) — R01~R06 통과 후 R07 frozen Git object 결손으로 비교 무효
+- [Profile R R01~R08 failure diagnostic v1 package](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r08-failure-diagnostic-v1-package-result.md) — 명세·Task·Check·Judge·회사 환경·live Evidence 532파일 Pro 진단 ZIP
 
 ### `operations/`
 

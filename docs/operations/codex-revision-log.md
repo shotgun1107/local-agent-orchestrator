@@ -2806,3 +2806,18 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   수행하지 못했으므로 SS1과 우열·시간·token을 비교하지 않는다.
 - finalization verifier PASS, scope·Evidence true, secret·TEMP·container 잔여 0이다.
   lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`이고 Cell 3·4는 실행하지 않았다.
+
+## Profile R R01~R08 실패 진단 Pro package v1
+
+- 외부 AI를 기본 관문에서 제외했지만, R07 단일 patch가 아닌 R01~R08 전체
+  재설계가 필요한 중대 반복 실패로 판정해 사용자가 ChatGPT Pro 정적 심사를
+  명시 요청했다.
+- package record `bde6670`, tree `a4a3f27f...85a`, repository 426·Evidence 100·environment
+  1·Git 2·root 3의 exact 532파일을 조립했다.
+- canonical ZIP SHA-256은
+  `74b66ba1f1eb0bd787fe6415311b4f74a374bcfa44f7d24415ca9a47c68eca31`,
+  manifest 531 record SHA-256은
+  `543ecee25f3972e02fde4730777191a9c9a105b781a78ba04c953093e41e811f`다.
+- 별도 해제 root의 missing·unlisted·hash, ZIP duplicate·directory·unsafe path mismatch는 0이다.
+  실제 credential은 0, 공개 마스킹 회귀시험의 가짜 marker는 예상된 2파일이다.
+- package 조립에서 model·SDK thread·Docker workload는 0이다. Cell 3·4는 계속 NO-GO다.
