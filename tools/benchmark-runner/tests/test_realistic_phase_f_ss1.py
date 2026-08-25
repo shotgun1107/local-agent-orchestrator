@@ -164,7 +164,11 @@ def _write_acceptance_evidence(
     expected_generated_candidate = {
         f"?? {candidate_relative}/{name}" for name in ALL_CANDIDATE_FILES
     }
-    assert set(repository_status) == expected_generated_candidate
+    if not repository_status:
+        generated_candidate_files: list[str] = []
+    else:
+        assert set(repository_status) == expected_generated_candidate
+        generated_candidate_files = sorted(expected_generated_candidate)
     head = subprocess.run(
         [str(GIT_EXECUTABLE), "-C", str(REPOSITORY), "rev-parse", "HEAD"],
         capture_output=True,
@@ -212,7 +216,7 @@ def _write_acceptance_evidence(
         "checkout_head": head,
         "checkout_tree": tree,
         "checkout_source_changes": 0,
-        "generated_candidate_files": sorted(expected_generated_candidate),
+        "generated_candidate_files": generated_candidate_files,
         "candidate_root_identity": _path_identity(CANDIDATE_ROOT),
         "candidate_seal_sha256": sha256_file(CANDIDATE_ROOT / "candidate-seal.json"),
         "attestation": attestation,
