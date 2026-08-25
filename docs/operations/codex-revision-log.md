@@ -2821,3 +2821,17 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - 별도 해제 root의 missing·unlisted·hash, ZIP duplicate·directory·unsafe path mismatch는 0이다.
   실제 credential은 0, 공개 마스킹 회귀시험의 가짜 marker는 예상된 2파일이다.
 - package 조립에서 model·SDK thread·Docker workload는 0이다. Cell 3·4는 계속 NO-GO다.
+
+## 회사 종료 Profile R 진단 결과 인수
+
+- 작업일: 2026-08-25.
+- 문서 갱신 전 local/remote HEAD `d61dbeff...e9d7`, tree `b2f04e59...3632`,
+  clean status, stash·local-only commit 0을 확인했다.
+- `.local-r6`의 exact 532-file 진단 ZIP은 credential finding 0과 SHA-256
+  `74b66ba1f1eb0bd787fe6415311b4f74a374bcfa44f7d24415ca9a47c68eca31`을 유지한다.
+  사용자가 이미 Pro에 전달했으므로 Git에는 포함하지 않는다.
+- v16 raw/state와 Docker image는 Git 비대상으로 회사에 보존한다. raw의 보호된 Judge
+  subtree는 main Codex가 전수 inventory하지 못했으며, 이미 봉인된 무효 pair를 집에서
+  resume하거나 재구성하지 않는다.
+- 집의 다음 관문은 이미 제출된 ChatGPT Pro 진단 회신을 인수하는 것이다. 회신 전 새
+  구현·candidate·live·Cell 3/4는 시작하지 않는다.

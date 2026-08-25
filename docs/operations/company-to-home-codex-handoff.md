@@ -1018,3 +1018,21 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
   `docs/prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-r01-r08-failure-diagnostic-v1.md`다.
 - 현재 외부 전송은 0이며, 사용자가 ZIP을 수동 첨부한 뒤 프롬프트를
   전송해야 한다. 회신 전 Cell 3·4와 추가 live는 NO-GO다.
+
+## 50. 2026-08-25 회사 종료 Git 동기화
+
+- 회사 종료 전 branch는 `codex/phase-d-artifacts`, local/remote HEAD는
+  `d61dbeff6cd9e7f023e4af3c6840bd3b4d57e9d7`, tree는
+  `b2f04e5989832a7204ebd7f3442b98f5b8c63632`로 일치했고 working tree, stash와
+  local-only commit은 없었다.
+- 외부 Pro 심사에 필요한 2,194,365-byte 진단 ZIP은 credential finding 0과
+  SHA-256 `74b66ba1...ca31`을 재확인했다. 사용자가 이미 Pro에 전달했으므로
+  ZIP은 Git에 포함하지 않고 회사 `.local-r6`에 보존한다.
+- v16 raw/state `C:\lao-phase-f-live-f944f0e1-v16-company-pair-1`은 회사에 보존한다.
+  이미 봉인된 비교 무효 pair이며 보호된 Judge subtree 때문에 main Codex의 전수
+  inventory는 미검증이다. 집에서 재구성하거나 이어서 실행하지 않는다.
+- 회사 exact Docker image `ba83a183...330ab`는 존재하고 Profile R 잔여 container는
+  0이다. Docker image, `.venv`, 로그인과 cache는 Git으로 전달하지 않는다.
+- 다음 작업은 집에서 Git을 인수한 뒤 사용자가 Pro 회신을 전달하면 원문으로 보존하고
+  최소 수정 범위를 정하는 것이다. 회신 전 새 patch, candidate, live와 Cell 3·4는
+  `NO-GO`다.
