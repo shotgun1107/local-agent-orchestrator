@@ -134,10 +134,10 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 2
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
         "docker-environment.json"
     )
     assert stage.profiles[1].docker_environment_path is None
@@ -153,7 +153,7 @@ def test_v2_stage_requires_only_profile_r_qualification_sibling() -> None:
 
     wrong_sibling = json.loads(_v2_stage_bytes())
     wrong_sibling["profiles"][0]["docker_environment_path"] = (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/other.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/other.json"
     )
     with pytest.raises(ValueError, match="Profile R requires"):
         PhaseEStageManifest.model_validate(wrong_sibling)
@@ -219,7 +219,7 @@ def test_v2_candidate_binds_exact_git_environment_in_binding_plan_and_seal(
     plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
     profile_r, profile_i = bindings["profiles"]
     expected_path = (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
         "docker-environment.json"
     )
     expected_sha = sha256(
@@ -227,7 +227,7 @@ def test_v2_candidate_binds_exact_git_environment_in_binding_plan_and_seal(
     ).hexdigest()
 
     assert expected_sha == (
-        "70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5"
+        "e14c6dd61e0dc85b0a9e459af00b6451f1bdbe51935745a8e6ba6b3fb45692e3"
     )
     assert bindings["schema_version"] == 2
     assert profile_r["docker_environment_path"] == expected_path
@@ -302,7 +302,7 @@ def test_v2_verifier_rejects_missing_source_environment_blob(
     candidate = _create_worktree_v2_candidate(tmp_path, monkeypatch)
     original_git_bytes = phase_e._git_bytes
     environment_path = (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
         "docker-environment.json"
     )
 
@@ -354,6 +354,44 @@ def test_profile_r_requalification_is_exact_nine_cell_projection() -> None:
     }
     assert environment["image"]["reference"] == qualification["image_reference"]
     assert environment["image"]["id"].endswith(qualification["image_reference"].split("@", 1)[1])
+
+
+def test_company_profile_r_requalification_v15_is_exact_nine_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v15"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["source_commit"] == "47d92e80fab04381e751de0847f7ff51c9218325"
+    assert qualification["batch_id"] == "profile-r-docker-matrix-q18-company"
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert qualification["image_reference"].endswith(
+        "@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab"
+    )
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(range(1, 10))
+    assert all(cell["matched_expectation"] is True for cell in qualification["cells"])
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 9,
+        "cell_count": 9,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
 
 
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
@@ -616,10 +654,10 @@ def test_checked_in_environment_bound_v15_candidate_verifies_against_its_source_
     plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
     profile_r, profile_i = bindings["profiles"]
     expected_path = (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
         "docker-environment.json"
     )
-    expected_sha = "70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5"
+    expected_sha = "e14c6dd61e0dc85b0a9e459af00b6451f1bdbe51935745a8e6ba6b3fb45692e3"
 
     assert seal.schema_version == 2
     assert seal.source_commit == "c7fde69d9e873bd8a8a3db8e73619660c1844883"
