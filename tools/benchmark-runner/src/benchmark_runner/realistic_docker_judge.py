@@ -38,7 +38,7 @@ from benchmark_runner.runner import atomic_write, canonical_json_bytes, sha256_b
 
 DOCKER_JUDGE_IMAGE = (
     "local-agent-orchestrator/profile-r-judge@sha256:"
-    "5610c2a6756229170ff4475789f7c163e1d5fe26967ef284936124b2a1c6ad89"
+    "ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab"
 )
 DOCKER_JUDGE_DOCKERFILE_SHA256 = "e923029fe5f20c3e01f4d1da27d5cbfc40f0899658251455274c85b8b6e3b1c1"
 DOCKER_JUDGE_REQUIREMENTS_SHA256 = "0fe996a5674c46d85b217d8579c10d4b1d24a801de01b11d9814cf095b7dc07b"
