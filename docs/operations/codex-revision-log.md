@@ -2734,3 +2734,19 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   boundary를 고정했다.
 - 회사 첫 세션은 복원·inventory에서 멈춘다. B1 Cell 2와 이후 Cell은 사용자 별도 승인 전
   실행하지 않는다.
+
+## 회사 Docker image 재결합·q18·Phase E v16·acceptance v8
+
+- 집 v15 B1은 Worker R07 실패와 별개로 exact Judge image 부재 때문에
+  `JUDGE_RUNTIME_ERROR`가 됐다. state와 seal은 보존하고 같은 Cell을 재실행하지 않았다.
+- root `AGENTS.md`에 검증/실행 두 턴 분리, candidate 기반 exact 환경 대조,
+  미확인=NO-GO와 Git 외 runtime 동기화 규칙을 추가했다.
+- production Judge image를 회사 `ba83a183...330ab`로 결합했다. 관련 model-free 회귀는
+  55 passed, 2 opt-in skipped다.
+- q18 source `47d92e8`의 reference와 고장판 8개가 기대와 일치해 qualification v15는
+  `CHALLENGE_READY`, 9/9, model 0이다.
+- source binding `cb691e5`에서 Phase E v16 `exp_20260825_f944f0e1_1`을 model 0으로
+  봉인하고 별도 verifier를 통과했다.
+- official acceptance v8 두 회차는 JUnit 포함 exact 10파일, 105.95s/106.42s,
+  B1 Check 16/16, residue/model 0이다.
+- 다음은 readiness v8 package와 외부 Pro 재심사다. 실제 SS1/B1은 계속 NO-GO다.

@@ -939,3 +939,16 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
 
 다음 관문은 같은 pair-2 state의 B1 Cell 2 사용자 별도 승인이다. SS1 실패를 B1 결과로
 추정하지 않으며 Cell 3은 승인되지 않았다.
+
+## 44. 2026-08-25 회사 image 재결합과 Phase E v16 준비
+
+- 집 v15 B1 Cell 2는 Worker R07 실패와 별개로 candidate exact Docker image가 회사에
+  없어 Judge runtime error가 됐다. 기존 pair와 seal은 보존하고 우열 근거로 쓰지 않는다.
+- root `AGENTS.md`에 Environment Closure와 Live 실행을 다른 사용자 턴으로 분리하고,
+  candidate 기반 exact 환경 대조와 미확인=NO-GO를 강제했다.
+- 회사 image `ba83a183...330ab`를 새 production revision에 결합하고 q18 qualification
+  v15를 `CHALLENGE_READY`, 9/9, model 0으로 닫았다.
+- Phase E v16은 `exp_20260825_f944f0e1_1`, model 0으로 봉인됐다.
+- official acceptance v8 두 회차는 105.95s/106.42s, exact 10파일, B1 Check 16/16,
+  lifecycle `SEALED, SEALED, PLANNED, PLANNED`, residue/model 0이다.
+- 실제 SS1/B1은 아직 실행하지 않는다. 다음은 readiness v8 package와 외부 Pro 재심사다.
