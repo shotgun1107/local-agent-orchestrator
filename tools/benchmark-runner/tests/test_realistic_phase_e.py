@@ -687,3 +687,49 @@ def test_checked_in_environment_bound_v15_candidate_verifies_against_its_source_
         "8d638023b2daf1a030095dd7153007eac91faa07fb5d5246e80b9aad0cbd231d"
     )
     assert seal.actual_model_turns == 0
+
+
+def test_checked_in_company_environment_bound_v16_candidate_verifies() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v16"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads(
+        (candidate / "source-bindings.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    expected_environment = (
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
+        "docker-environment.json"
+    )
+
+    assert seal.schema_version == 2
+    assert seal.source_commit == "cb691e56c8cd439e494f5519ebae65ccda669ed2"
+    assert seal.experiment_id == "exp_20260825_f944f0e1_1"
+    assert seal.plan_fingerprint == (
+        "f944f0e16a6b14a209430a592efa67c5d1029edac1812c141eb663951135a9c0"
+    )
+    assert seal.seal_sha256 == (
+        "2449166fdba9937cf09411a92f47904e7908e1b6869ae8732fd0c1dec251d80d"
+    )
+    assert seal.files_manifest_sha256 == (
+        "a2e0ac54a6d2969daae0c67aeb5f1ed2557a72820f5cfa7239c58473fa848dec"
+    )
+    assert seal.docker_environment_path == expected_environment
+    assert seal.docker_environment_sha256 == (
+        "e14c6dd61e0dc85b0a9e459af00b6451f1bdbe51935745a8e6ba6b3fb45692e3"
+    )
+    assert seal.actual_model_turns == 0
+    assert bindings["source_tree"] == "6c578c3c5d55ad96f54323afae7b99093b5c3035"
+    assert bindings["bindings_sha256"] == (
+        "b78b2afeebf657e348ed17e07e91c351572769b58e2ad2155fff1f84ec1de02d"
+    )
+    assert plan["environment_fingerprint"]["docker_environment_path"] == (
+        expected_environment
+    )
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "88a478b3f35312d6cd826de2a3091366e2b5a94328f844c16da4993c12974d86"
+    )
