@@ -2750,3 +2750,17 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 - official acceptance v8 두 회차는 JUnit 포함 exact 10파일, 105.95s/106.42s,
   B1 Check 16/16, residue/model 0이다.
 - 다음은 readiness v8 package와 외부 Pro 재심사다. 실제 SS1/B1은 계속 NO-GO다.
+
+## readiness v8 package 조립·로컬 검증
+
+- package record `536c20b`, tree `bb3aaeef...a9da`의 explicit 369-file repository
+  snapshot과 q18 49, qualification v15 2, candidate v16 6, acceptance v8 20파일을
+  결합했다.
+- canonical ZIP은 exact 452파일, directory/duplicate/unsafe entry 0, SHA-256
+  `3e0071c22b411a9292f9e8a9147195ea6e8d1f0faa61c7cb5ebb4217e7414daa`다.
+- package root와 별도 해제 root에서 manifest 451, payload 450, aggregate
+  `ac736372...03c2`, seal `09a618fb...6922`를 같게 재계산했다.
+- 실제 credential, link/junction/cache, 암호화 원본, model/SDK/Docker 실행은 0이다.
+  공개 비밀 마스킹 회귀시험의 가짜 marker 2파일만 분리 확인했다.
+- 다음 관문은 외부 Pro revision 8 `GO_ONE_FRESH_PAIR|NO_GO`다. 실제 SS1/B1은
+  계속 NO-GO다.

@@ -952,3 +952,15 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
 - official acceptance v8 두 회차는 105.95s/106.42s, exact 10파일, B1 Check 16/16,
   lifecycle `SEALED, SEALED, PLANNED, PLANNED`, residue/model 0이다.
 - 실제 SS1/B1은 아직 실행하지 않는다. 다음은 readiness v8 package와 외부 Pro 재심사다.
+
+## 45. 2026-08-25 readiness v8 package 로컬 검증
+
+- package record는 `536c20b12ccd7c196264b763fabfa2b7f31793d9`, tree는
+  `bb3aaeef7b9c4d23b6739c44f0fc8f8d8fe7a9da`다.
+- 외부 수동 전달 ZIP은
+  `benchmarks/.local-r6/profile-r-live-readiness-v8-536c20b.zip`, 1,909,340 bytes,
+  SHA-256 `3e0071c22b411a9292f9e8a9147195ea6e8d1f0faa61c7cb5ebb4217e7414daa`다.
+- exact 452파일을 새 root에 풀어 canonical verifier를 다시 통과했다.
+- ZIP은 `.local-r6` ignore 자료이므로 Git pull로 다른 PC에 전달되지 않는다.
+- 외부 Pro revision 8 재심사 결과는 아직 없다. `GO_ONE_FRESH_PAIR`이 없으면
+  실제 SS1/B1을 시작하지 않는다.
