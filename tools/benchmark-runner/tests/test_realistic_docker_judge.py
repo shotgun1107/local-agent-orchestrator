@@ -129,6 +129,10 @@ def _environment() -> dict[str, str]:
 
 
 def test_manifest_freezes_no_network_read_only_mounts_and_digest(tmp_path: Path) -> None:
+    assert DOCKER_JUDGE_IMAGE == (
+        "local-agent-orchestrator/profile-r-judge@sha256:"
+        "ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab"
+    )
     manifest = create_docker_judge_manifest(
         _prepared(tmp_path),
         docker_executable=Path(sys.executable),
