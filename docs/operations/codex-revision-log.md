@@ -2775,3 +2775,17 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   외부로 전송된 package·prompt·message는 0이다.
 - readiness v8 로컬 Environment Closure를 현재 실행 준비 근거로 채택한다.
   다음 턴에서 사용자가 SS1을 별도 승인하기 전까지 model turn은 0이다.
+
+## Phase F Profile R 회사 v16 SS1 Cell 1 실제 실행
+
+- 실행 직전 Git·candidate·API-key 부재·Docker daemon·exact image·fresh root를
+  다시 확인했고 0-turn preflight는 ChatGPT·SDK 0.144.4·model·profile을 통과했다.
+- fresh root `C:\lao-phase-f-live-f944f0e1-v16-company-pair-1`에서 SS1 하나만
+  명시 dispatch했다. session/turn/Attempt는 1/10/1, total token은 18,367,588,
+  total wall은 3,228.000s다.
+- Worker adapter는 completed였지만 Docker Judge가 R-P02·R-P05를 실패시켜
+  Measurement는 `failed / independent_judge_failed`다.
+- scope·Evidence hash는 true, secret finding과 잔여 container는 0, finalization verifier는
+  PASS다. 환경 오류가 아닌 SS1 산출물 품질 실패로 분류했다.
+- lifecycle은 `SEALED, PLANNED, PLANNED, PLANNED`, automatic continuation은 false다.
+  B1·Cell 3·4는 실행하지 않았다.

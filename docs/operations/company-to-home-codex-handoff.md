@@ -975,3 +975,16 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
   현재 실행의 필수 선행 조건은 아니다.
 - 외부 전송은 0이다. 다음 관문은 사용자의 SS1 Cell 1 별도 승인이며,
   B1은 SS1이 봉인된 뒤 다시 별도 승인을 받는다.
+
+## 47. 2026-08-25 Profile R 회사 v16 SS1 Cell 1 봉인
+
+- fresh root `C:\lao-phase-f-live-f944f0e1-v16-company-pair-1`의 Cell 1 SS1을
+  10 model turns로 실행했고 `SEALED_FAILED`로 닫았다.
+- exact company image에서 Judge가 실행됐고 R-P02·R-P05를 실패시켰다.
+  Worker adapter는 completed, Measurement는 independent_judge_failed다.
+- session/turn/Attempt `1/10/1`, token `18,249,169 / 118,419 / 18,367,588`,
+  variant/Judge/total `3216.266s / 3.796s / 3228.000s`다.
+- scope·Evidence hash true, secret finding 0, finalization verifier PASS, 잔여 container 0이다.
+- Cell 2 B1과 Cell 3·4는 PLANNED이고 automatic continuation은 false다.
+- 다음 관문은 같은 state의 B1 Cell 2 별도 승인이다. Git만으로는
+  이 state/raw를 다른 PC에 재현할 수 없으므로 PC 이전 전에 별도 동기화가 필요하다.
