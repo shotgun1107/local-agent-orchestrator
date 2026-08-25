@@ -988,3 +988,18 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
 - Cell 2 B1과 Cell 3·4는 PLANNED이고 automatic continuation은 false다.
 - 다음 관문은 같은 state의 B1 Cell 2 별도 승인이다. Git만으로는
   이 state/raw를 다른 PC에 재현할 수 없으므로 PC 이전 전에 별도 동기화가 필요하다.
+
+## 48. 2026-08-25 Profile R 회사 v16 B1 Cell 2 봉인·비교 무효
+
+- 같은 pair-1 state의 B1 Cell 2를 7 session·7 turn·7 Attempt로 실행했고
+  `SEALED_INFRASTRUCTURE_ERROR`로 닫았다.
+- R01~R06은 각각 첫 Attempt에 통과했다. R07은 `check_unknown`으로 실패했고
+  R08은 PENDING이다.
+- R07 public pytest 실패 6개 중 5개는 worker에 포함되지 않은 frozen commit
+  `e915914c...` tree를 요구한 시험환경 결손이다. incident는 `DEV-20260825-001`이다.
+- token `12,713,529 / 102,814 / 12,816,343`, variant/Judge/total
+  `2835.063s / 2.780s / 2845.282s`다.
+- finalization verifier PASS, scope·Evidence true, secret·TEMP·container 잔여 0이다.
+- lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`, automatic continuation은 false다.
+- 현 pair는 SS1/B1 우열 판정에 쓰지 않는다. Cell 3·4는 NO-GO이며,
+  다음은 model-free incident 교정·회귀시험·새 candidate 결정이다.

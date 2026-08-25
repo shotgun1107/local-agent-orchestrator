@@ -2789,3 +2789,20 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   PASS다. 환경 오류가 아닌 SS1 산출물 품질 실패로 분류했다.
 - lifecycle은 `SEALED, PLANNED, PLANNED, PLANNED`, automatic continuation은 false다.
   B1·Cell 3·4는 실행하지 않았다.
+
+## Phase F Profile R 회사 v16 B1 Cell 2 실제 실행
+
+- SS1 결과를 본 사용자가 새 턴에 B1 하나를 별도 승인했다.
+  persisted state·candidate·next ordinal·exact image·fresh B1 root를 다시 확인하고
+  B1 전용 0-turn preflight를 통과했다.
+- B1은 R01~R06을 각각 첫 Attempt에 통과했지만 R07 public pytest가
+  6 failed/6 passed로 `check_unknown`이 되어 R08 전에 멈춰다.
+- 실패 6개 중 5개는 frozen manifest가 참조한 `e915914c...` Git object가
+  단일 baseline commit Worker 저장소에 없어 fixture tree를 읽지 못한 것이다.
+  모델 산출물과 무관하게 통과 불가능한 경계므로 `DEV-20260825-001`을 열었다.
+- Measurement는 `infrastructure_error / check_unknown`이며 session/turn/Attempt 7/7/7,
+  total token 12,816,343, total wall 2,845.282s다.
+- 부분 workspace에 대한 Judge는 R-P02·R-P05를 실패시켰지만, B1이 R08을
+  수행하지 못했으므로 SS1과 우열·시간·token을 비교하지 않는다.
+- finalization verifier PASS, scope·Evidence true, secret·TEMP·container 잔여 0이다.
+  lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`이고 Cell 3·4는 실행하지 않았다.
