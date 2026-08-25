@@ -654,10 +654,10 @@ def test_checked_in_environment_bound_v15_candidate_verifies_against_its_source_
     plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
     profile_r, profile_i = bindings["profiles"]
     expected_path = (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v14/"
         "docker-environment.json"
     )
-    expected_sha = "e14c6dd61e0dc85b0a9e459af00b6451f1bdbe51935745a8e6ba6b3fb45692e3"
+    expected_sha = "70c43e4993cb2ccb520d150b94fe11f154b36e7232ee9be6b3e531f89e0ef1b5"
 
     assert seal.schema_version == 2
     assert seal.source_commit == "c7fde69d9e873bd8a8a3db8e73619660c1844883"
