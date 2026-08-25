@@ -95,6 +95,7 @@ docs/
 - [Profile R Live readiness Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-live-readiness-v1.md) — qualification v10·Phase E v9·exact acceptance 2회 뒤 한 fresh pair GO/NO-GO만 판정하는 입력
 - [Profile R Live readiness revision 8 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v8.md) — 중대 문제 발생 시만 쓰는 선택적 q18·v16·acceptance v8 재심 입력
 - [Profile R Live readiness revision 8 package 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v8-package-result.md) — 452파일 canonical ZIP 로컬 검증 통과, SS1 별도 승인 대기
+- [Phase F Profile R SS1 회사 v16 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v16-result.md) — 환경·봉인 정상, R-P02·R-P05 품질 실패, B1 미실행
 
 ### `operations/`
 
@@ -121,6 +122,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 집 v15/회사 B1 pair는 exact Judge image 누락으로 비교 무효다. 회사 image를 결합한 q18 qualification v15 9/9, Phase E v16 0-turn 후보와 official acceptance v8 두 회차, readiness v8 452파일 ZIP 로컬 검증이 통과했다. 외부 AI 심사는 기본 관문에서 제외했다. route는 `ROUTING_INCONCLUSIVE`이고 Cell 3은 계속 `NO-GO`며, 다음 관문은 사용자의 SS1 별도 실행 승인이다
+- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 집 v15/회사 B1 pair는 exact Judge image 누락으로 비교 무효다. 회사 image를 결합한 q18 qualification v15 9/9, Phase E v16 0-turn 후보와 official acceptance v8 두 회차, readiness v8 452파일 ZIP 로컬 검증이 통과했다. 외부 AI 심사는 기본 관문에서 제외했다. 회사 v16 SS1은 정상 환경에서 봉인됐지만 R-P02·R-P05를 실패했다. route는 `ROUTING_INCONCLUSIVE`이고 Cell 3은 계속 `NO-GO`며, 다음 관문은 사용자의 Profile R B1 Cell 2 별도 실행 승인이다
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
