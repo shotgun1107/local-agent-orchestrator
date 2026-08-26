@@ -491,6 +491,31 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     )
     assert [cell.variant_id for cell in plan.cells] == ["ss1", "b1", "b1", "ss1"]
     assert len(bindings.profiles) == 2
+    assert bindings.schema_version == 3
+    profile_r = bindings.profiles[0]
+    assert profile_r.qualification_sha256 == (
+        "2afc443afe5f0604ce9b7b1bd4765826d97d7bbbb54a706b699583fcc9fcc648"
+    )
+    assert profile_r.task_pack_qualification_sha256 == (
+        "08a4fa39de94e47ef82b277b2cb0fe8ab4de6ddde58e1512737b383d13208ad7"
+    )
+    assert profile_r.task_pack_qualification_seal_sha256 == (
+        "ad803c61aecf533eccba6d6690dc9945bbf2212724df81e66cf5272e894738dc"
+    )
+    assert profile_r.task_budget_sha256 == (
+        "26d3919f9ab6143df8d281cf363daf0a0a69e4e4e5fa0a8c93a2d08d6636ed79"
+    )
+    assert profile_r.task_budget_seal_sha256 == (
+        "756c984117324a4f875231d565b92979e1e8d9e8fc6457a80c0d3288dcfdfbd6"
+    )
+    assert plan.decision_policy["planned_initial_model_turns"] == 42
+    assert plan.decision_policy["planned_model_turn_ceiling"] == 50
+    assert plan.environment_fingerprint[
+        "profile_r_task_pack_qualification_seal_sha256"
+    ] == profile_r.task_pack_qualification_seal_sha256
+    assert plan.environment_fingerprint[
+        "profile_r_task_budget_seal_sha256"
+    ] == profile_r.task_budget_seal_sha256
     candidate = tmp_path / "candidate"
     seal = create_phase_e_candidate(
         REPOSITORY,
@@ -499,6 +524,9 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
         preflight=_preflight(),
         created_at=created_at,
     )
+    assert seal.schema_version == 3
+    assert seal.planned_initial_model_turns == 42
+    assert seal.planned_model_turn_ceiling == 50
     assert seal.actual_model_turns == 0
     assert verify_phase_e_candidate(REPOSITORY, candidate) == seal
     with (candidate / "stage-manifest.json").open("ab") as stream:

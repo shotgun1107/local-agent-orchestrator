@@ -553,6 +553,12 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _profile_r_artifact_self_sha256(value: object) -> str:
+    """Reproduce the LF-terminated canonical JSON used by Profile R seals."""
+
+    return _sha256(canonical_json_bytes(value) + b"\n")
+
+
 def _git_source_tree_sha256(
     repository: Path,
     commit: str,
@@ -671,7 +677,7 @@ def _profile_binding(
             or not isinstance(task_pack.get("public_negative_matrix_sha256"), str)
             or not isinstance(task_pack.get("seal_sha256"), str)
             or task_pack.get("seal_sha256")
-            != canonical_sha256(task_pack_without_seal)
+            != _profile_r_artifact_self_sha256(task_pack_without_seal)
         ):
             raise PhaseECandidateError(
                 f"{profile.snapshot_id} Task Pack qualification is not ready"
@@ -704,7 +710,7 @@ def _profile_binding(
             or task_budget.get("ss1_b1_identical") is not True
             or not isinstance(task_budget.get("seal_sha256"), str)
             or task_budget.get("seal_sha256")
-            != canonical_sha256(task_budget_without_seal)
+            != _profile_r_artifact_self_sha256(task_budget_without_seal)
         ):
             raise PhaseECandidateError(
                 f"{profile.snapshot_id} Task budget is not sealed"
