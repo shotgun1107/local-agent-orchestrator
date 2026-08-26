@@ -828,3 +828,57 @@ def test_checked_in_company_environment_bound_v16_candidate_verifies() -> None:
     assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
         "88a478b3f35312d6cd826de2a3091366e2b5a94328f844c16da4993c12974d86"
     )
+
+
+def test_checked_in_profile_r_redesign_v17_candidate_verifies() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v17"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads(
+        (candidate / "source-bindings.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r = bindings["profiles"][0]
+
+    assert seal.schema_version == 3
+    assert seal.source_commit == "e09652b69730cf30b4e9b363c44bd79c40afdb12"
+    assert seal.experiment_id == "exp_20260826_3d512c44_1"
+    assert seal.plan_fingerprint == (
+        "3d512c44d88892b7abc0cc13390d33bd5e291fb2c69e01391dda32b3cc2fd017"
+    )
+    assert seal.seal_sha256 == (
+        "5a460cfc47d5a52988d0a10527a4b7cf3bba88e02cf83ea9204da73e9ad922f7"
+    )
+    assert seal.files_manifest_sha256 == (
+        "9b0fc0cd4497b64dac7cbf08260481c0c74277812a8d4fb4e4014c9083679f95"
+    )
+    assert seal.planned_initial_model_turns == 42
+    assert seal.planned_model_turn_ceiling == 50
+    assert seal.actual_model_turns == 0
+    assert bindings["source_tree"] == "2335871b436bed7f6113270498983a35adcc52a0"
+    assert bindings["bindings_sha256"] == (
+        "4517a004944e25904a8719c13500e4bd2bbd6def0c7a81894c91d44aaa213f7e"
+    )
+    assert profile_r["task_count"] == 13
+    assert profile_r["qualification_sha256"] == (
+        "2afc443afe5f0604ce9b7b1bd4765826d97d7bbbb54a706b699583fcc9fcc648"
+    )
+    assert profile_r["task_pack_qualification_seal_sha256"] == (
+        "ad803c61aecf533eccba6d6690dc9945bbf2212724df81e66cf5272e894738dc"
+    )
+    assert profile_r["task_budget_seal_sha256"] == (
+        "756c984117324a4f875231d565b92979e1e8d9e8fc6457a80c0d3288dcfdfbd6"
+    )
+    assert plan["environment_fingerprint"][
+        "profile_r_task_pack_qualification_seal_sha256"
+    ] == profile_r["task_pack_qualification_seal_sha256"]
+    assert plan["environment_fingerprint"][
+        "profile_r_task_budget_seal_sha256"
+    ] == profile_r["task_budget_seal_sha256"]
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "ed1ed4af631dda0f12cc62ec8452e6d1dd03f7a9ac6330a7041b0b59b38557b1"
+    )
