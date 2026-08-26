@@ -1,0 +1,10 @@
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
+index 48aa52ae1a97fba350020d512e294c4206bfc066..5e14597f319b2e66175ef47ade4d8d43314fa031 100644
+--- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
+@@ -1,4 +1,4 @@
+-## 확인된 사실
++## 잘못된 사실
+ - [claim-a1] Deployment of release 42 began at 09:00Z.
+ - [claim-b1] Deployment of release 42 completed at 09:02Z.
+ - [claim-b3] Rollback of release 42 began at 09:20Z.

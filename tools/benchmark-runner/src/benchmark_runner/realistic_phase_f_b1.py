@@ -113,6 +113,8 @@ def _b1_adapter_outcome(
     }
     if "check_environment" in failure_kinds:
         return "infrastructure_error", "check_environment"
+    if "check_mixed" in failure_kinds:
+        return "infrastructure_error", "check_mixed"
     if "check_unknown" in failure_kinds:
         return "infrastructure_error", "check_unknown"
     outcome = {
@@ -539,7 +541,10 @@ class ProfileRPhaseFB1Backend:
                 else dict(self.source_environment)
             ),
             runtime_kind="injected_codex_v2",
-            max_turns_override=10,
+            # Thirteen base Task turns plus the sealed two-turn
+            # retry/resume reserve.  A new Phase E candidate must bind the
+            # matching Profile R budget artifact before this path is live.
+            max_turns_override=15,
             runtime_port=runtime,
             runtime_profile_override=RuntimeProfile(
                 runtime="codex",
@@ -562,15 +567,41 @@ class ProfileRPhaseFB1Backend:
             item["artifact_id"]: item for item in snapshot["artifacts"]
         }
         environment_diagnostics: dict[tuple[str, str], dict[str, JsonValue]] = {}
+        structured_check_results: dict[
+            tuple[str, str], dict[str, JsonValue]
+        ] = {}
         for artifact in snapshot["artifacts"]:
             relative_path = str(artifact.get("relative_path", ""))
+            attempt_id = artifact.get("attempt_id")
+            parts = PurePosixPath(relative_path).parts
+            if (
+                artifact.get("kind") == "check_result"
+                and relative_path.endswith("/result.json")
+            ):
+                if not isinstance(attempt_id, str) or len(parts) < 2:
+                    raise PhaseFB1BackendError(
+                        "B1 structured Check result identity is invalid"
+                    )
+                check_name = parts[-2]
+                value = json.loads(
+                    (b1_state_root / relative_path).read_text(encoding="utf-8")
+                )
+                if not isinstance(value, dict):
+                    raise PhaseFB1BackendError(
+                        "B1 structured Check result payload is invalid"
+                    )
+                key = (attempt_id, check_name)
+                if key in structured_check_results:
+                    raise PhaseFB1BackendError(
+                        "B1 structured Check result is duplicated"
+                    )
+                structured_check_results[key] = value
+                continue
             if (
                 artifact.get("kind") != "check_result"
                 or not relative_path.endswith("/environment-diagnostic.json")
             ):
                 continue
-            attempt_id = artifact.get("attempt_id")
-            parts = PurePosixPath(relative_path).parts
             if not isinstance(attempt_id, str) or len(parts) < 2:
                 raise PhaseFB1BackendError(
                     "B1 Check environment diagnostic identity is invalid"
@@ -607,6 +638,10 @@ class ProfileRPhaseFB1Backend:
         }
         check_records: list[dict[str, JsonValue]] = []
         for item in snapshot["checks"]:
+            check_key = (str(item["attempt_id"]), str(item["check_name"]))
+            structured = structured_check_results.get(check_key)
+            if structured is None:
+                raise PhaseFB1BackendError("B1 structured Check result is missing")
             check_records.append(
                 {
                     "task_id": item["task_id"],
@@ -618,8 +653,15 @@ class ProfileRPhaseFB1Backend:
                     "stdout": public_stream(item["stdout_artifact_id"]),
                     "stderr": public_stream(item["stderr_artifact_id"]),
                     "environment_diagnostic": environment_diagnostics.get(
-                        (str(item["attempt_id"]), str(item["check_name"]))
+                        check_key
                     ),
+                    "failure_classification": structured.get(
+                        "failure_classification"
+                    ),
+                    "failure_classification_source": structured.get(
+                        "failure_classification_source"
+                    ),
+                    "diagnostic_result": structured.get("diagnostic_result"),
                 }
             )
         report_path = cell_root / "b1-state" / "runs" / run_id / "report" / "summary.json"
@@ -630,6 +672,22 @@ class ProfileRPhaseFB1Backend:
             actual_model_turns = 0
         state = str(snapshot["run"]["state"])
         outcome, failure_kind = _b1_adapter_outcome(state, report)
+        report_failure_kinds = {
+            str(attempt.get("failure_kind"))
+            for task in report.get("tasks", [])
+            if isinstance(task, dict)
+            for attempt in task.get("attempts", [])
+            if isinstance(attempt, dict)
+            and attempt.get("failure_kind") is not None
+        }
+        product_failure_present = bool(
+            report_failure_kinds.intersection({"check_failed", "check_mixed"})
+        )
+        environment_failure_present = bool(
+            report_failure_kinds.intersection(
+                {"check_environment", "check_mixed", "check_unknown"}
+            )
+        )
         token_usage = (
             metrics["token_usage"]
             if metrics.get("usage_status") == "measured"
@@ -653,7 +711,14 @@ class ProfileRPhaseFB1Backend:
                 for attempt in task["attempts"]
             ),
             "b1_environment_diagnostic_count": len(environment_diagnostics),
-            "b1_invalid_environment": failure_kind == "check_environment",
+            "b1_invalid_environment": failure_kind in {
+                "check_environment",
+                "check_mixed",
+                "check_unknown",
+            },
+            "comparison_valid": not environment_failure_present,
+            "product_failure_present": product_failure_present,
+            "environment_failure_present": environment_failure_present,
         }
         payload: dict[str, JsonValue] = {
             "schema_version": 1,
@@ -709,6 +774,10 @@ class ProfileRPhaseFB1Backend:
                 "boundary_record_count": len(records),
                 "judge_executed": False,
                 "automatic_continuation": False,
-                "invalid_environment": failure_kind == "check_environment",
+                "invalid_environment": failure_kind in {
+                    "check_environment",
+                    "check_mixed",
+                    "check_unknown",
+                },
             },
         )

@@ -81,6 +81,7 @@ class RunTask(StrictModel):
     write_scope: list[str]
     capability_profile: str = Field(min_length=1)
     workspace_mode: str = Field(min_length=1)
+    own_check: str | None = Field(default=None, min_length=1)
     check_names: list[str]
     approval: str = Field(min_length=1)
 
@@ -99,6 +100,47 @@ class BenchmarkRun(StrictModel):
     constraints: list[str]
     assumptions: list[JsonValue]
     tasks: list[RunTask] = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def derive_cumulative_checks(cls, value: Any) -> Any:
+        if not isinstance(value, dict) or not isinstance(value.get("tasks"), list):
+            return value
+        tasks = value["tasks"]
+        if not tasks or not all(isinstance(task, dict) for task in tasks):
+            return value
+        own_checks = [task.get("own_check") for task in tasks]
+        if not any(own_checks):
+            return value
+        if not all(isinstance(item, str) and item for item in own_checks):
+            raise ValueError("cumulative own_check declarations must be all-or-none")
+        projected = [
+            {
+                **task,
+                "check_names": [*own_checks[: index + 1], "diff_check"],
+            }
+            for index, task in enumerate(tasks)
+        ]
+        return {**value, "tasks": projected}
+
+    @model_validator(mode="after")
+    def cumulative_checks_are_derived(self) -> "BenchmarkRun":
+        own_checks = [task.own_check for task in self.tasks]
+        if any(value is not None for value in own_checks) and any(
+            value is None for value in own_checks
+        ):
+            raise ValueError("cumulative own_check declarations must be all-or-none")
+        for index, task in enumerate(self.tasks if all(own_checks) else []):
+            expected = [
+                *(str(item.own_check) for item in self.tasks[: index + 1]),
+                "diff_check",
+            ]
+            if task.check_names != expected:
+                raise ValueError(
+                    f"Task {task.key} cumulative checks differ: "
+                    f"expected {expected}, got {task.check_names}"
+                )
+        return self
 
 
 def load_benchmark_run(path: Path) -> BenchmarkRun:

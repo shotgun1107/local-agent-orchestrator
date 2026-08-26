@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,14 @@ def test_b1_environment_failure_is_not_labeled_as_product_failure() -> None:
         "FAILED",
         {"tasks": [{"attempts": [{"failure_kind": "check_failed"}]}]},
     ) == ("failed", "b1_failed")
+    assert _b1_adapter_outcome(
+        "FAILED",
+        {"tasks": [{"attempts": [{"failure_kind": "check_mixed"}]}]},
+    ) == ("infrastructure_error", "check_mixed")
+    assert _b1_adapter_outcome(
+        "FAILED",
+        {"tasks": [{"attempts": [{"failure_kind": "check_unknown"}]}]},
+    ) == ("infrastructure_error", "check_unknown")
 
 
 def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
@@ -92,11 +101,7 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
         return runtime
 
     artifact_root = tmp_path / "backend"
-    check_temp_root = (
-        Path(tmp_path.anchor)
-        / "lao-pfb"
-        / tmp_path.name[-12:]
-    )
+    check_temp_root = Path(tempfile.gettempdir()) / f"pfb{tmp_path.name[-4:]}"
     if check_temp_root.exists():
         shutil.rmtree(check_temp_root)
     worker = ProfileRPhaseFB1Backend(
@@ -133,7 +138,7 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
     assert result.public_summary["automatic_continuation"] is False
     assert result.public_summary["final_cell_sealed"] is True
     assert len(runtimes) == 1
-    assert 1 <= runtimes[0].turn_count <= 10
+    assert 1 <= runtimes[0].turn_count <= 15
     cell_root = artifact_root / request.cell_id
     evidence_path = cell_root / PHASE_F_B1_EVIDENCE_FILENAME
     assert evidence_path.is_file()
@@ -146,10 +151,16 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
     assert len(evidence["git_provenance"]["git_executable_sha256"]) == 64
     check_records = evidence["adapter_raw_payload"]["check_records"]
     assert len(check_records) >= 1
+    assert all(
+        "failure_classification" in item
+        and "failure_classification_source" in item
+        and "diagnostic_result" in item
+        for item in check_records
+    )
     observed_task_keys = {item["task_external_key"] for item in check_records}
     assert "R01" in observed_task_keys
     assert observed_task_keys <= {
-        f"R{ordinal:02d}" for ordinal in range(1, 9)
+        f"R{ordinal:02d}" for ordinal in range(1, 14)
     }
     assert not (artifact_root / plan.cells[2].cell_id).exists()
     shutil.rmtree(check_temp_root)

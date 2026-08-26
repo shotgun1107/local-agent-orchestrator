@@ -1,0 +1,59 @@
+{
+  "base_commit": "31aa76b5085da171c985ad4f8aa2efe580e8adb8",
+  "profile": "R",
+  "schema_version": 1,
+  "tasks": [
+    {
+      "commit": "db0777f5a01cc47be4193acdda43e1b7b491d144",
+      "task_id": "R01"
+    },
+    {
+      "commit": "a5c3737152314a50d18a110117ab1a41c1405dd1",
+      "task_id": "R02"
+    },
+    {
+      "commit": "894c4c0e88ea435ecbd99326a9f339b86ffb7f6e",
+      "task_id": "R03"
+    },
+    {
+      "commit": "93ac68f95fcf10dc3e1222b8f968d6246eb56d39",
+      "task_id": "R04"
+    },
+    {
+      "commit": "ab5ca2f53783f91d74bcb8398c4b2838d5a286a1",
+      "task_id": "R05"
+    },
+    {
+      "commit": "cb0d4ae230d7dbc3a7adeca8d9f36e0e7d1f466f",
+      "task_id": "R06"
+    },
+    {
+      "commit": "485a27f529b4f7bc063a2626f72c8f0936d8d038",
+      "task_id": "R07"
+    },
+    {
+      "commit": "cc537f3b9e04c8c7a3d9267b959207ea901586bd",
+      "task_id": "R08"
+    },
+    {
+      "commit": "d3d3247c7cafda02826c2aa433c599de086d912c",
+      "task_id": "R09"
+    },
+    {
+      "commit": "c96d72d0bc5fcd9ea1817ed7f6dc86016e8a7600",
+      "task_id": "R10"
+    },
+    {
+      "commit": "efa7e0d0c0cf9c8f7a095acf9383630a823b46a1",
+      "task_id": "R11"
+    },
+    {
+      "commit": "fbbcef0317efee8c2332aa19b054559ca6c23781",
+      "task_id": "R12"
+    },
+    {
+      "commit": "8d83e9e13fbe81b52a5b4cdc3452fed7d0ae77ba",
+      "task_id": "R13"
+    }
+  ]
+}

@@ -325,17 +325,18 @@ def test_profile_r_judge_builder_rejects_extra_worker_cache_before_derivation(
     assert prior_evidence.read_bytes() == b"prior evidence\n"
 
 
-def test_profile_r_judge_builder_uses_declared_r07_outer_timeout() -> None:
+def test_profile_r_judge_builder_uses_declared_regression_outer_timeouts() -> None:
     builder = _load_judge_bundle_builder()
     checks = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
     )["checks"]
 
-    assert checks["r07_contract"]["timeout_seconds"] == 1020
-    assert (
-        builder.public_check_timeout_seconds(WORKER_ROOT, "r07_contract")
-        == checks["r07_contract"]["timeout_seconds"]
-    )
+    for check_id in ("r11_contract", "r12_contract"):
+        assert checks[check_id]["timeout_seconds"] == 1020
+        assert (
+            builder.public_check_timeout_seconds(WORKER_ROOT, check_id)
+            == checks[check_id]["timeout_seconds"]
+        )
 
 
 def test_profile_r_judge_builder_loads_checker_without_bytecode_cache(
@@ -356,7 +357,7 @@ def test_profile_r_judge_builder_loads_checker_without_bytecode_cache(
     assert not (tmp_path / "__pycache__").exists()
 
 
-def test_profile_r_public_r07_projection_ignores_transient_absolute_paths() -> None:
+def test_profile_r_public_regression_projection_ignores_transient_absolute_paths() -> None:
     builder = _load_judge_bundle_builder()
     base = {
         "pytest": {
@@ -378,8 +379,8 @@ def test_profile_r_public_r07_projection_ignores_transient_absolute_paths() -> N
         "deepest_path": "D:/different/random-root/random/path",
     }
 
-    first = builder.public_r07_evidence_projection(base)
-    second = builder.public_r07_evidence_projection(alternate)
+    first = builder.public_regression_evidence_projection(base)
+    second = builder.public_regression_evidence_projection(alternate)
     assert first == second
     assert builder.sha256(builder.canonical_json(first)) == builder.sha256(
         builder.canonical_json(second)
@@ -429,21 +430,12 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
     run = yaml.safe_load((WORKER_ROOT / "benchmark-run.yaml").read_text(encoding="utf-8"))
     tasks = run["tasks"]
     task_ids = [task["key"] for task in tasks]
-    assert task_ids == [f"R{number:02d}" for number in range(1, 9)]
+    assert task_ids == [f"R{number:02d}" for number in range(1, 14)]
     assert {task["key"]: task["depends_on"] for task in tasks} == {
-        "R01": [],
-        "R02": ["R01"],
-        "R03": ["R01"],
-        "R04": ["R02", "R03"],
-        "R05": ["R02", "R04"],
-        "R06": ["R04", "R05"],
-        "R07": ["R01", "R03", "R06"],
-        "R08": ["R02", "R07"],
+        task_id: ([] if index == 0 else [task_ids[index - 1]])
+        for index, task_id in enumerate(task_ids)
     }
-    assert max(_dependency_depth(tasks, task_id) for task_id in task_ids) == 7
-    assert {task_id for task_id, task in zip(task_ids, tasks, strict=True) if len(task["depends_on"]) > 1} == {
-        "R04", "R05", "R06", "R07", "R08"
-    }
+    assert max(_dependency_depth(tasks, task_id) for task_id in task_ids) == 13
     protected = {
         "benchmark-run.yaml",
         "README.md",
@@ -454,32 +446,45 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
     for task in tasks:
         assert task["workspace_mode"] == "shared_serial_write"
         assert task["approval"] == "none"
-        assert task["check_names"] == [f"{task['key'].lower()}_contract", "diff_check"]
+        assert task["own_check"] == f"{task['key'].lower()}_contract"
+        assert "check_names" not in task
         assert protected.isdisjoint(set(task["write_scope"]))
 
-    r07 = next(task for task in tasks if task["key"] == "R07")
-    assert "FrozenManifest and FrozenFixtureSpec" in r07["goal"]
-    assert "strict models only" in r07["goal"]
-    assert "do not forward S2 stage or profile dictionaries" in r07["goal"]
-    assert "Preserve Windows long-path support" in r07["goal"]
-    assert "GOLDEN_ROOT/_golden_turns" in r07["goal"]
-    assert "completed result envelope without file effects is invalid" in r07["goal"]
+    r11 = next(task for task in tasks if task["key"] == "R11")
+    r12 = next(task for task in tasks if task["key"] == "R12")
+    assert "four-Cell E2E regression" in r11["goal"]
+    assert "zero model turns" in " ".join(
+        item["text"] for item in r11["completion_criteria"]
+    )
+    assert "deterministic isolated Git repository" in r12["goal"]
+    assert "never read historical Git objects" in r12["goal"]
 
     checks = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
     )["checks"]
     assert list(checks) == [
-        *(f"r{number:02d}_contract" for number in range(1, 9)),
+        *(f"r{number:02d}_contract" for number in range(1, 14)),
         "diff_check",
     ]
-    for number in range(1, 9):
+    for number in range(1, 14):
         check = checks[f"r{number:02d}_contract"]
         assert check["argv"] == [
             "python",
             "benchmark_checks/check_profile_r.py",
             f"R{number:02d}",
         ]
-        assert check["timeout_seconds"] == (1020 if number == 7 else 120)
+        assert check["timeout_seconds"] == {
+            3: 180,
+            4: 180,
+            6: 240,
+            7: 180,
+            8: 360,
+            9: 360,
+            10: 600,
+            11: 1020,
+            12: 1020,
+            13: 240,
+        }.get(number, 120)
     policies = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/policies.yaml").read_text(encoding="utf-8")
     )["policies"]
@@ -487,7 +492,7 @@ def test_profile_r_public_task_pack_has_exact_graph_and_protected_checks() -> No
     assert policies["b1_safe"]["check_timeout_seconds"] == 1020
 
 
-def test_profile_r_r07_outer_timeout_has_fixed_overhead_margin() -> None:
+def test_profile_r_regression_outer_timeouts_have_fixed_overhead_margin() -> None:
     checker = _load_profile_r_public_checker()
     checks = yaml.safe_load(
         (WORKER_ROOT / ".orchestrator/checks.yaml").read_text(encoding="utf-8")
@@ -503,12 +508,13 @@ def test_profile_r_r07_outer_timeout_has_fixed_overhead_margin() -> None:
         * checker.R07_GIT_COMMAND_TIMEOUT_SECONDS
     )
     assert internal_child_budget == checker.R07_INTERNAL_CHILD_BUDGET_SECONDS == 900
-    assert checks["r07_contract"]["timeout_seconds"] == internal_child_budget + 120
-    assert policy["check_timeout_seconds"] == checks["r07_contract"]["timeout_seconds"]
+    for check_id in ("r11_contract", "r12_contract"):
+        assert checks[check_id]["timeout_seconds"] == internal_child_budget + 120
+        assert policy["check_timeout_seconds"] == checks[check_id]["timeout_seconds"]
     # task_timeout_seconds is the Worker model-turn deadline, not an outer
     # command-Check deadline.  Only check_timeout_seconds bounds r07_contract.
     assert policy["task_timeout_seconds"] == 900
-    assert policy["task_timeout_seconds"] != policy["check_timeout_seconds"]
+    assert policy["task_timeout_seconds"] != checks["r11_contract"]["timeout_seconds"]
 
 
 def test_profile_r_public_check_is_model_free_and_compiles() -> None:
@@ -643,7 +649,7 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
 
 def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> None:
     check_path = WORKER_ROOT / "benchmark_checks/check_profile_r.py"
-    for number in range(1, 9):
+    for number in range(1, 14):
         task_id = f"R{number:02d}"
         result = subprocess.run(
             [sys.executable, str(check_path), task_id],
@@ -654,7 +660,7 @@ def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> No
             timeout=120,
         )
         assert result.returncode == 1
-        assert result.stdout.splitlines() == [
+        assert result.stdout.splitlines()[:2] == [
             f"{task_id}_PUBLIC_CONTRACT_FAILED",
             "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
         ]
@@ -674,8 +680,8 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert eligibility["judge_runtime_boundary_verified"] is False
     assert eligibility["challenge_ready"] is False
     records = manifest["files"]
-    assert eligibility["public_r07_reference_verified"] is True
-    assert manifest["file_count_excluding_manifest"] == len(records) == 35
+    assert eligibility["public_r11_r12_reference_verified"] is True
+    assert manifest["file_count_excluding_manifest"] == len(records) == 47
     for record in records:
         payload = (JUDGE_SOURCE_ROOT / record["path"]).read_bytes()
         assert len(payload) == record["size"]
@@ -691,41 +697,47 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert {item["status"] for item in reference["properties"]} == {"pass"}
     assert pristine["aggregate_status"] == "fail"
 
-    public_r07 = json.loads(
-        (JUDGE_SOURCE_ROOT / "evidence/public-r07-reference.json").read_text(
-            encoding="utf-8"
+    for task_id, expected_tests in (("r11", 7), ("r12", 5)):
+        public = json.loads(
+            (JUDGE_SOURCE_ROOT / f"evidence/public-{task_id}-reference.json").read_text(
+                encoding="utf-8"
+            )
         )
-    )
-    assert public_r07["passed"] is True
-    assert public_r07["return_code"] == 0
-    assert public_r07["contract_ok_marker"] is True
-    projection = public_r07["evidence_projection"]
-    assert projection["pytest"] == {
-        "tests": 12,
-        "failures": 0,
-        "errors": 0,
-        "skipped": 0,
-        "warnings": 0,
-    }
-    assert projection["growth_margin"] >= 32
-    assert projection["growth_probe_minimum_path_length"] == 261
-    assert projection["growth_probe_minimum_satisfied"] is True
-    assert projection["probe_repository_shorter_than_growth_path"] is True
-    assert public_r07["evidence_projection_sha256"] == hashlib.sha256(
-        (json.dumps(projection, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
-    ).hexdigest()
+        assert public["passed"] is True
+        assert public["return_code"] == 0
+        assert public["contract_ok_marker"] is True
+        projection = public["evidence_projection"]
+        assert projection["pytest"] == {
+            "tests": expected_tests,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "warnings": 0,
+        }
+        assert projection["growth_margin"] >= 32
+        assert projection["growth_probe_minimum_path_length"] == 261
+        assert projection["growth_probe_minimum_satisfied"] is True
+        assert projection["probe_repository_shorter_than_growth_path"] is True
+        assert public["evidence_projection_sha256"] == hashlib.sha256(
+            (json.dumps(projection, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+        ).hexdigest()
 
 
 def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> None:
     target_by_name = {
-        "r-p01-legacy-bytes": "R-P01-LEGACY-BYTES",
-        "r-p02-stage-discriminator": "R-P02-STAGE-DISCRIMINATOR",
-        "r-p03-plan-binding": "R-P03-PLAN-BINDING",
-        "r-p04-reserve-isolation": "R-P04-RESERVE-ISOLATION",
-        "r-p05-lifecycle-reuse": "R-P05-LIFECYCLE-REUSE",
-        "r-p06-export-roundtrip": "R-P06-EXPORT-ROUNDTRIP",
-        "r-p07-cross-checkout": "R-P07-CROSS-CHECKOUT-REPRO",
-        "r-p08-operator-contract": "R-P08-OPERATOR-CONTRACT",
+        "r-p01-source-boundary": "R-P01-SOURCE-BOUNDARY",
+        "r-p02-discriminator": "R-P02-DISCRIMINATOR",
+        "r-p03-config-fixture": "R-P03-CONFIG-FIXTURE",
+        "r-p04-incident-fixture": "R-P04-INCIDENT-FIXTURE",
+        "r-p05-manifest-binding": "R-P05-MANIFEST-BINDING",
+        "r-p06-plan-binding": "R-P06-PLAN-BINDING",
+        "r-p07-routing-policy": "R-P07-ROUTING-POLICY",
+        "r-p08-lifecycle-reuse": "R-P08-LIFECYCLE-REUSE",
+        "r-p09-status-posthoc": "R-P09-STATUS-POSTHOC",
+        "r-p10-export-verify": "R-P10-EXPORT-VERIFY",
+        "r-p11-s2-e2e": "R-P11-S2-E2E",
+        "r-p12-s1-portability": "R-P12-S1-PORTABILITY",
+        "r-p13-operator-semantics": "R-P13-OPERATOR-SEMANTICS",
     }
     evidence_root = JUDGE_SOURCE_ROOT / "evidence" / "mutations"
     patch_root = JUDGE_SOURCE_ROOT / "negative-mutations"
@@ -735,12 +747,22 @@ def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> 
         result = json.loads((evidence_root / f"{name}.json").read_text(encoding="utf-8"))
         statuses = {item["property_id"]: item["status"] for item in result["properties"]}
         assert statuses[target] == "fail"
-        assert all(
-            status in {"pass", "blocked_by_prerequisite"}
-            for property_id, status in statuses.items()
-            if property_id != target
-        )
+        assert "checker_error" not in statuses.values()
+        assert result.get("public_contract") is None
         assert (patch_root / f"{name}.patch").stat().st_size > 0
+
+    public_matrix = json.loads(
+        (JUDGE_SOURCE_ROOT / "evidence/public-negative-matrix.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert [item["mutation_id"] for item in public_matrix["cases"]] == list(
+        target_by_name
+    )
+    assert all(
+        item["public_contract"]["contract_rejected"] is True
+        for item in public_matrix["cases"]
+    )
 
 
 def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak() -> None:
@@ -760,8 +782,8 @@ def test_profile_r_judge_checker_is_model_free_and_worker_has_no_solution_leak()
         "CODEX_API_KEY",
     )
     assert all(value not in checker + protected for value in forbidden_runtime)
-    assert "tools/benchmark-runner/tests/test_routing_s2.py" not in checker + protected
-    assert "tools/benchmark-runner/tests/test_routing_suite.py" not in checker + protected
+    assert "blocked_by_prerequisite" not in checker
+    assert "checker_error" in checker
     leakage = json.loads(
         (JUDGE_SOURCE_ROOT / "solution-leakage-catalog.json").read_text(
             encoding="utf-8"
@@ -785,15 +807,16 @@ def test_profile_r_protected_judge_rejects_worker_test_oracle_co_mutation() -> N
     assert len(cases) == 7
     for mode in ("noop", "skip", "assert_false"):
         value = cases[f"worker-tests-{mode}"]
-        assert value["aggregate_status"] == "pass"
-        assert set(value["statuses"].values()) == {"pass"}
+        assert value["aggregate_status"] == "fail"
+        assert value["statuses"]["R-P11-S2-E2E"] == "fail"
+        assert value["statuses"]["R-P12-S1-PORTABILITY"] == "fail"
         assert value["matched_expectation"] is True
 
     targets = {
-        "r-p02-stage-discriminator": "R-P02-STAGE-DISCRIMINATOR",
-        "r-p04-reserve-isolation": "R-P04-RESERVE-ISOLATION",
-        "r-p06-export-roundtrip": "R-P06-EXPORT-ROUNDTRIP",
-        "r-p07-cross-checkout": "R-P07-CROSS-CHECKOUT-REPRO",
+        "r-p02-discriminator": "R-P02-DISCRIMINATOR",
+        "r-p07-routing-policy": "R-P07-ROUTING-POLICY",
+        "r-p10-export-verify": "R-P10-EXPORT-VERIFY",
+        "r-p12-s1-portability": "R-P12-S1-PORTABILITY",
     }
     for mutation, target in targets.items():
         value = cases[f"{mutation}-plus-noop"]
@@ -802,6 +825,6 @@ def test_profile_r_protected_judge_rejects_worker_test_oracle_co_mutation() -> N
         assert value["statuses"][target] == "fail"
         assert value["matched_expectation"] is True
 
-    p04 = cases["r-p04-reserve-isolation-plus-noop"]
-    assert p04["statuses"]["R-P04-RESERVE-ISOLATION"] == "fail"
-    assert p04["statuses"]["R-P06-EXPORT-ROUNDTRIP"] == "pass"
+    p07 = cases["r-p07-routing-policy-plus-noop"]
+    assert p07["statuses"]["R-P07-ROUTING-POLICY"] == "fail"
+    assert p07["statuses"]["R-P10-EXPORT-VERIFY"] == "pass"

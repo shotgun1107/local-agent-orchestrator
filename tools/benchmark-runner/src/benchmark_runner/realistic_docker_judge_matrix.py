@@ -1,7 +1,7 @@
 """Sealed Profile R reference and negative-mutation Docker Judge matrix.
 
-The matrix materializes nine fresh workspaces from one exact Git commit:
-one reference solution and eight pre-registered negative mutations.  It never
+The current matrix materializes fourteen fresh workspaces from one exact Git
+commit: one reference solution and thirteen pre-registered negative mutations.  It never
 calls Codex or a model.  Expected property outcomes and patch bytes are read
 only from the protected Judge source extracted from that same commit.
 """
@@ -35,7 +35,7 @@ from benchmark_runner.runner import atomic_write, canonical_json_bytes, sha256_b
 
 
 REFERENCE_VARIANT = "reference"
-MUTATION_TARGETS: tuple[tuple[str, str], ...] = (
+LEGACY_MUTATION_TARGETS: tuple[tuple[str, str], ...] = (
     ("r-p01-legacy-bytes", "R-P01-LEGACY-BYTES"),
     ("r-p02-stage-discriminator", "R-P02-STAGE-DISCRIMINATOR"),
     ("r-p03-plan-binding", "R-P03-PLAN-BINDING"),
@@ -45,7 +45,27 @@ MUTATION_TARGETS: tuple[tuple[str, str], ...] = (
     ("r-p07-cross-checkout", "R-P07-CROSS-CHECKOUT-REPRO"),
     ("r-p08-operator-contract", "R-P08-OPERATOR-CONTRACT"),
 )
+MUTATION_TARGETS: tuple[tuple[str, str], ...] = (
+    ("r-p01-source-boundary", "R-P01-SOURCE-BOUNDARY"),
+    ("r-p02-discriminator", "R-P02-DISCRIMINATOR"),
+    ("r-p03-config-fixture", "R-P03-CONFIG-FIXTURE"),
+    ("r-p04-incident-fixture", "R-P04-INCIDENT-FIXTURE"),
+    ("r-p05-manifest-binding", "R-P05-MANIFEST-BINDING"),
+    ("r-p06-plan-binding", "R-P06-PLAN-BINDING"),
+    ("r-p07-routing-policy", "R-P07-ROUTING-POLICY"),
+    ("r-p08-lifecycle-reuse", "R-P08-LIFECYCLE-REUSE"),
+    ("r-p09-status-posthoc", "R-P09-STATUS-POSTHOC"),
+    ("r-p10-export-verify", "R-P10-EXPORT-VERIFY"),
+    ("r-p11-s2-e2e", "R-P11-S2-E2E"),
+    ("r-p12-s1-portability", "R-P12-S1-PORTABILITY"),
+    ("r-p13-operator-semantics", "R-P13-OPERATOR-SEMANTICS"),
+)
+LEGACY_ORDERED_VARIANTS = (
+    REFERENCE_VARIANT,
+    *(item[0] for item in LEGACY_MUTATION_TARGETS),
+)
 ORDERED_VARIANTS = (REFERENCE_VARIANT, *(item[0] for item in MUTATION_TARGETS))
+ORDERED_PROPERTY_IDS = tuple(item[1] for item in MUTATION_TARGETS)
 EVIDENCE_FILES = (
     "docker-judge-manifest.json",
     "docker-judge-process.json",
@@ -65,7 +85,7 @@ class PropertyExpectation(StrictModel):
 
 
 class MatrixVariantPlan(StrictModel):
-    ordinal: int = Field(ge=1, le=9)
+    ordinal: int = Field(ge=1, le=14)
     variant_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
     kind: Literal["reference", "negative_mutation"]
     target_property_id: str | None
@@ -78,7 +98,7 @@ class MatrixVariantPlan(StrictModel):
     expected_catalog_sha256: Sha256
     expected_prerequisite_dag_sha256: Sha256
     expected_checker_sha256: Sha256
-    expected_properties: list[PropertyExpectation] = Field(min_length=8, max_length=8)
+    expected_properties: list[PropertyExpectation] = Field(min_length=8, max_length=13)
     run_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,119}$")
 
     @model_validator(mode="after")
@@ -98,17 +118,11 @@ class MatrixVariantPlan(StrictModel):
                 raise ValueError("negative mutation target is not expected to fail")
             if self.expected_aggregate_status != "fail":
                 raise ValueError("negative mutation must expect an aggregate failure")
-            if any(
-                status not in {"pass", "blocked_by_prerequisite"}
-                for property_id, status in statuses.items()
-                if property_id != self.target_property_id
-            ):
-                raise ValueError("negative mutation expectation has an unrelated failure")
         return self
 
 
 class DockerJudgeMatrixManifest(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     batch_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,119}$")
     created_at: datetime
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
@@ -117,15 +131,20 @@ class DockerJudgeMatrixManifest(StrictModel):
     image_requirements_sha256: Literal[DOCKER_JUDGE_REQUIREMENTS_SHA256] = DOCKER_JUDGE_REQUIREMENTS_SHA256
     docker_executable_sha256: Sha256
     model_turns: Literal[0] = 0
-    variants: list[MatrixVariantPlan] = Field(min_length=9, max_length=9)
+    variants: list[MatrixVariantPlan] = Field(min_length=9, max_length=14)
     manifest_sha256: Sha256
 
     @model_validator(mode="after")
     def manifest_is_canonical(self) -> "DockerJudgeMatrixManifest":
         validate_timestamp(self.created_at)
-        if [item.ordinal for item in self.variants] != list(range(1, 10)):
-            raise ValueError("matrix ordinals are not exact 1..9")
-        if tuple(item.variant_id for item in self.variants) != ORDERED_VARIANTS:
+        expected_variants = (
+            LEGACY_ORDERED_VARIANTS if self.schema_version == 1 else ORDERED_VARIANTS
+        )
+        if [item.ordinal for item in self.variants] != list(
+            range(1, len(expected_variants) + 1)
+        ):
+            raise ValueError("matrix ordinals differ from the schema version")
+        if tuple(item.variant_id for item in self.variants) != expected_variants:
             raise ValueError("matrix variant order differs from the frozen order")
         payload = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if self.manifest_sha256 != sha256_bytes(canonical_json_bytes(payload)):
@@ -134,7 +153,7 @@ class DockerJudgeMatrixManifest(StrictModel):
 
 
 class MatrixCellResult(StrictModel):
-    ordinal: int = Field(ge=1, le=9)
+    ordinal: int = Field(ge=1, le=14)
     variant_id: str
     run_id: str
     docker_manifest_sha256: Sha256
@@ -158,21 +177,24 @@ MatrixStatus = Literal["CHALLENGE_READY", "CHALLENGE_NOT_READY", "CHALLENGE_INVA
 
 
 class DockerJudgeMatrixResult(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     batch_id: str
     completed_at: datetime
     status: MatrixStatus
     challenge_ready: bool
     model_turns: Literal[0] = 0
     manifest_sha256: Sha256
-    cells: list[MatrixCellResult] = Field(min_length=9, max_length=9)
+    cells: list[MatrixCellResult] = Field(min_length=9, max_length=14)
     result_sha256: Sha256
 
     @model_validator(mode="after")
     def result_is_canonical(self) -> "DockerJudgeMatrixResult":
         validate_timestamp(self.completed_at)
-        if [item.ordinal for item in self.cells] != list(range(1, 10)):
-            raise ValueError("matrix result ordinals are not exact 1..9")
+        expected_count = 9 if self.schema_version == 1 else 14
+        if [item.ordinal for item in self.cells] != list(
+            range(1, expected_count + 1)
+        ):
+            raise ValueError("matrix result ordinals differ from the schema version")
         expected_ready = all(item.matched_expectation for item in self.cells)
         if self.challenge_ready != expected_ready:
             raise ValueError("matrix challenge-ready flag differs from its cells")
@@ -193,7 +215,7 @@ class MatrixFileRecord(StrictModel):
 
 
 class DockerJudgeMatrixSeal(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     batch_id: str
     file_count: int = Field(ge=1)
     files_sha256: Sha256
@@ -291,10 +313,14 @@ def _expectations(payload: Mapping[str, Any]) -> list[PropertyExpectation]:
     ]
 
 
-def _variant_source(variant_id: str) -> tuple[Literal["reference", "negative_mutation"], str | None, list[str], str]:
+def _variant_source(
+    variant_id: str,
+    *,
+    mutation_targets: Sequence[tuple[str, str]] = MUTATION_TARGETS,
+) -> tuple[Literal["reference", "negative_mutation"], str | None, list[str], str]:
     if variant_id == REFERENCE_VARIANT:
         return "reference", None, ["reference.patch"], "evidence/reference.json"
-    targets = dict(MUTATION_TARGETS)
+    targets = dict(mutation_targets)
     if variant_id not in targets:
         raise DockerJudgeMatrixError("unknown Profile R matrix variant")
     return (
@@ -315,6 +341,8 @@ def _prepare_variant(
     variant_id: str,
     patch_backend: PatchBackend,
     environment: Mapping[str, str],
+    mutation_targets: Sequence[tuple[str, str]] = MUTATION_TARGETS,
+    expected_property_count: int = 13,
 ) -> PreparedVariant:
     token = f"{run_token}-{ordinal:02d}-{variant_id}"
     roots = prepare_realistic_judge_roots(
@@ -323,7 +351,10 @@ def _prepare_variant(
         source_commit=source_commit,
         run_token=token,
     )
-    kind, target, patch_paths, evidence_path = _variant_source(variant_id)
+    kind, target, patch_paths, evidence_path = _variant_source(
+        variant_id,
+        mutation_targets=mutation_targets,
+    )
     patch_hashes: list[str] = []
     for relative in patch_paths:
         pure = _safe_relative(relative)
@@ -338,8 +369,18 @@ def _prepare_variant(
     evidence_file = roots.J.joinpath(*_safe_relative(evidence_path).parts)
     expected = _load_json(evidence_file)
     properties = _expectations(expected)
-    if len(properties) != 8:
-        raise DockerJudgeMatrixError("expected evidence property count is not eight")
+    if len(properties) != expected_property_count:
+        raise DockerJudgeMatrixError("expected evidence property count differs")
+    if expected_property_count == 13 and any(
+        item.status == "blocked_by_prerequisite" for item in properties
+    ):
+        raise DockerJudgeMatrixError(
+            "independent Profile R evidence cannot contain prerequisite blocking"
+        )
+    if expected_property_count == 13 and tuple(
+        item.property_id for item in properties
+    ) != ORDERED_PROPERTY_IDS:
+        raise DockerJudgeMatrixError("independent Profile R property order differs")
     plan = MatrixVariantPlan(
         ordinal=ordinal,
         variant_id=variant_id,
@@ -368,6 +409,7 @@ def _manifest(
     variants: Sequence[PreparedVariant],
 ) -> DockerJudgeMatrixManifest:
     values = {
+        "schema_version": 2,
         "batch_id": batch_id,
         "created_at": utc_now(),
         "source_commit": source_commit,
@@ -446,6 +488,7 @@ def _matrix_status(cells: Sequence[MatrixCellResult]) -> MatrixStatus:
 def _result(manifest: DockerJudgeMatrixManifest, cells: list[MatrixCellResult]) -> DockerJudgeMatrixResult:
     status = _matrix_status(cells)
     values = {
+        "schema_version": manifest.schema_version,
         "batch_id": manifest.batch_id,
         "completed_at": utc_now(),
         "status": status,
@@ -485,6 +528,7 @@ def _write_seal(
     )
     atomic_write(root / "files.sha256", files_bytes)
     values = {
+        "schema_version": manifest.schema_version,
         "batch_id": manifest.batch_id,
         "file_count": len(records),
         "files_sha256": sha256_bytes(files_bytes),
@@ -515,7 +559,7 @@ def execute_profile_r_docker_matrix(
     source_environment: Mapping[str, str] | None = None,
     patch_backend: PatchBackend | None = None,
 ) -> DockerJudgeMatrixExecution:
-    """Prepare, execute, classify, and seal the exact nine-cell matrix."""
+    """Prepare, execute, classify, and seal the exact fourteen-cell matrix."""
 
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,47}", run_token):
         raise DockerJudgeMatrixError("matrix run token is not canonical")
@@ -599,6 +643,7 @@ def verify_profile_r_docker_matrix(root: Path) -> DockerJudgeMatrixResult:
     if (root / "files.sha256").read_bytes() != files_bytes:
         raise DockerJudgeMatrixError("matrix files manifest differs from payload bytes")
     expected_values = {
+        "schema_version": manifest.schema_version,
         "batch_id": manifest.batch_id,
         "file_count": len(records),
         "files_sha256": sha256_bytes(files_bytes),
@@ -624,7 +669,7 @@ def qualification_projection(execution: DockerJudgeMatrixExecution) -> dict[str,
     """Return a path-free versioned summary of one verified matrix."""
 
     return {
-        "schema_version": 1,
+        "schema_version": execution.manifest.schema_version,
         "profile": "R",
         "snapshot_id": "realistic-compat-migration-001",
         "source_commit": execution.manifest.source_commit,

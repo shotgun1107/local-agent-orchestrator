@@ -19,17 +19,51 @@
       "detail": "b0-b1-frozen.yaml은 e915914c0494cd21969de5bc60f81ad74ec1b037을 참조하지만 worker Git object DB에 해당 commit이 없고 R07 bounded feedback의 6 failures 중 5건이 그 revision의 fixture path 조회에서 실패했다."
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [],
+  "root_cause": "v16의 R01~R08 Task ownership과 public Check·hidden Judge property ownership이 일치하지 않았고, R07 public regression은 Worker-readable bytes로 재구성하지 않은 historical commit e915914c를 직접 요구했다. 그 결과 모델 산출물 오류와 시험환경 결손을 독립 진단할 수 없었다.",
+  "considered_options": [
+    "R07에 e915914c object만 공급하거나 해당 조회만 제거하는 최소 patch",
+    "R01~R08 전체를 그대로 두고 timeout·feedback만 조정",
+    "Task/public Check/hidden Judge를 1:1로 맞춘 R01~R13 Task Pack 재설계"
+  ],
+  "resolution": "ChatGPT Pro의 문제 보고와 해법 원문을 보존하고 R01~R13 exact linear Task Pack, cumulative public Checks, 13 independent Judge properties, structured failure diagnostics, self-contained R12 Git contract, Worker information boundary, reference-chain 및 q1 qualification 도구, Phase E schema v3 binding을 model-free로 구현했다. base→R01→…→R13 reference Git bundle과 Task Pack q1·동일 budget은 봉인했다. 기존 v16 state/raw/Measurement/seal은 수정하지 않는다. incident는 Docker q19와 새 candidate chain이 봉인될 때까지 open으로 유지한다.",
+  "affected_files": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
+    "stages/b1-sequential/src/orchestrator/contract.py",
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_profile_r_redesign.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py",
+    "stages/b1-sequential/tests/unit/test_verify.py"
+  ],
+  "verification": [
+    "R01~R13 reference workspace에서 hidden Judge 13/13 pass 및 workspace_mutated=false",
+    "13개 known-bad mutation은 담당 hidden property를 fail하며 prerequisite blocking 없이 모든 property가 실행됨",
+    "Worker snapshot의 reviewer/reference 정보 경계와 transient cache 거부가 model-free test로 확인됨",
+    "14-commit reference Git bundle의 parent·A/M-only·UTF-8 LF·scope·중간 tree seal을 재검증함",
+    "Task Pack q1은 R01~R13 positive transition과 누적 public Checks, 13개 public negative mutation을 통과해 TASK_PACK_READY로 봉인됨",
+    "동일 SS1/B1 budget은 Task당 최대 2, Cell base 13, Cell 최대 15, retry/resume 총 2로 봉인됨"
+  ],
+  "remaining_risks": [
+    "새 Judge의 Docker runtime boundary q19 qualification은 아직 실행되지 않음",
+    "새 Phase E candidate·acceptance 2회·readiness·Environment Closure는 아직 생성 또는 실행되지 않음"
+  ],
   "related_commits": [],
   "source_references": [
-    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmarks/manifests/b0-b1-frozen.yaml",
-    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py",
-    "tools/benchmark-runner/tests/test_routing_s2.py"
+    "docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-problem-report.md",
+    "docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-solution.md",
+    "docs/reviews/benchmark-runner/profile-r-r01-r13-redesign-decision.json",
+    "benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/reference-repository-manifest.json",
+    "benchmarks/artifacts/profile-r-task-pack-q1/artifact-manifest.json",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
+    "tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py"
   ]
 }

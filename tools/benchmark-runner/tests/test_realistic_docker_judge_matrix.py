@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from benchmark_runner.realistic_docker_judge import DockerJudgeManifest, DockerJudgeResult
 from benchmark_runner.realistic_docker_judge_matrix import (
@@ -90,6 +89,7 @@ def _docker_objects(
 
 
 def test_registered_reference_and_mutation_expectations_are_strict() -> None:
+    assert len(MUTATION_TARGETS) == 13
     reference, _ = _plan("reference")
     assert {item.status for item in reference.expected_properties} == {"pass"}
     for variant_id, target in MUTATION_TARGETS:
@@ -97,15 +97,12 @@ def test_registered_reference_and_mutation_expectations_are_strict() -> None:
         statuses = {item.property_id: item.status for item in plan.expected_properties}
         assert plan.target_property_id == target
         assert statuses[target] == "fail"
-        assert all(
-            status in {"pass", "blocked_by_prerequisite"}
-            for property_id, status in statuses.items()
-            if property_id != target
-        )
+        assert "blocked_by_prerequisite" not in statuses.values()
+        assert set(statuses.values()) <= {"pass", "fail"}
 
 
-def test_variant_plan_rejects_unrelated_negative_failure() -> None:
-    plan, _ = _plan("r-p05-lifecycle-reuse")
+def test_variant_plan_records_independent_cofailures() -> None:
+    plan, _ = _plan("r-p05-manifest-binding")
     properties = [item.model_copy() for item in plan.expected_properties]
     unrelated_index = next(
         index
@@ -113,11 +110,14 @@ def test_variant_plan_rejects_unrelated_negative_failure() -> None:
         if item.property_id != plan.target_property_id
     )
     properties[unrelated_index] = properties[unrelated_index].model_copy(update={"status": "fail"})
-    with pytest.raises(ValidationError):
-        MatrixVariantPlan(**plan.model_dump(exclude={"expected_properties"}), expected_properties=properties)
+    changed = MatrixVariantPlan(
+        **plan.model_dump(exclude={"expected_properties"}),
+        expected_properties=properties,
+    )
+    assert sum(item.status == "fail" for item in changed.expected_properties) >= 2
 
 
-@pytest.mark.parametrize("variant_id", ["reference", "r-p01-legacy-bytes"])
+@pytest.mark.parametrize("variant_id", ["reference", "r-p01-source-boundary"])
 def test_comparator_accepts_exact_registered_result(variant_id: str) -> None:
     plan, payload = _plan(variant_id)
     manifest, result = _docker_objects(plan, payload)

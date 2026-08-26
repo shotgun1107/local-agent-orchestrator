@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
+index ee1a85c063d388224e9ba36d3d00617730be972c..ac95ce16bdfc893e5efefbafb699f4281d5e1954 100644
+--- a/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
++++ b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
+@@ -18,7 +18,7 @@ from typing import Any
+ CONFIG_FIXTURE_ID = "three-stage-config-migration"
+ INCIDENT_FIXTURE_ID = "three-stage-incident-analysis"
+ PROPERTY_IDS = {
+-    CONFIG_FIXTURE_ID: ("CFG-P1", "CFG-P2", "CFG-P3", "CFG-P4", "CFG-P5"),
++    CONFIG_FIXTURE_ID: ("CFG-BROKEN", "CFG-P2", "CFG-P3", "CFG-P4", "CFG-P5"),
+     INCIDENT_FIXTURE_ID: ("INC-P1", "INC-P2", "INC-P3", "INC-P4", "INC-P5"),
+ }
+ _REPORT_HEADINGS = ("확인된 사실", "상충", "미확인", "권고")

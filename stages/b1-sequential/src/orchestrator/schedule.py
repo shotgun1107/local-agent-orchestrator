@@ -1012,6 +1012,7 @@ class Orchestrator:
                     stage = {
                         CheckFailureClassification.PRODUCT_ASSERTION: "checks",
                         CheckFailureClassification.ENVIRONMENT: "check_environment",
+                        CheckFailureClassification.MIXED_PRODUCT_AND_ENVIRONMENT: "check_mixed",
                         CheckFailureClassification.UNKNOWN: "check_unknown",
                     }.get(classification, "check_unknown")
                     raise VerificationError(
@@ -1056,6 +1057,7 @@ class Orchestrator:
                 "freshness": FailureKind.STALE_INPUT,
                 "checks": FailureKind.CHECK_FAILED,
                 "check_environment": FailureKind.CHECK_ENVIRONMENT,
+                "check_mixed": FailureKind.CHECK_MIXED,
                 "check_unknown": FailureKind.CHECK_UNKNOWN,
                 "project_pack": FailureKind.ARTIFACT_CORRUPT,
                 "declared_artifacts": FailureKind.ARTIFACT_CORRUPT,

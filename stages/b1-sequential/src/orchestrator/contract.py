@@ -102,7 +102,70 @@ class CheckState(StrEnum):
 class CheckFailureClassification(StrEnum):
     PRODUCT_ASSERTION = "PRODUCT_ASSERTION"
     ENVIRONMENT = "ENVIRONMENT"
+    MIXED_PRODUCT_AND_ENVIRONMENT = "MIXED_PRODUCT_AND_ENVIRONMENT"
     UNKNOWN = "UNKNOWN"
+
+
+class CheckDiagnosticNode(StrictModel):
+    node_id: str = Field(min_length=1)
+    classification: CheckFailureClassification | None
+    passed: bool
+    reason_code: str = Field(pattern=r"^[A-Z][A-Z0-9_]{0,95}$")
+
+    @model_validator(mode="after")
+    def failure_requires_classification(self) -> "CheckDiagnosticNode":
+        if self.passed != (self.classification is None):
+            raise ValueError(
+                "passed diagnostic nodes must omit classification and failed nodes must set it"
+            )
+        if self.classification == CheckFailureClassification.MIXED_PRODUCT_AND_ENVIRONMENT:
+            raise ValueError("mixed classification is aggregate-only")
+        return self
+
+
+class CheckDiagnosticResult(StrictModel):
+    schema_version: Literal[1]
+    task_id: str = Field(min_length=1)
+    classification: CheckFailureClassification | None
+    comparison_valid: bool
+    product_failure_present: bool
+    environment_failure_present: bool
+    nodes: list[CheckDiagnosticNode]
+
+    @model_validator(mode="after")
+    def aggregate_matches_nodes(self) -> "CheckDiagnosticResult":
+        failed = {
+            node.classification for node in self.nodes if not node.passed
+        }
+        if not failed:
+            expected = None
+        elif failed == {CheckFailureClassification.PRODUCT_ASSERTION}:
+            expected = CheckFailureClassification.PRODUCT_ASSERTION
+        elif failed == {CheckFailureClassification.ENVIRONMENT}:
+            expected = CheckFailureClassification.ENVIRONMENT
+        elif {
+            CheckFailureClassification.PRODUCT_ASSERTION,
+            CheckFailureClassification.ENVIRONMENT,
+        } <= failed:
+            expected = CheckFailureClassification.MIXED_PRODUCT_AND_ENVIRONMENT
+        else:
+            expected = CheckFailureClassification.UNKNOWN
+        if self.classification != expected:
+            raise ValueError("diagnostic aggregate classification differs from nodes")
+        if self.product_failure_present != (
+            CheckFailureClassification.PRODUCT_ASSERTION in failed
+        ):
+            raise ValueError("diagnostic product failure flag differs")
+        if self.environment_failure_present != (
+            CheckFailureClassification.ENVIRONMENT in failed
+        ):
+            raise ValueError("diagnostic environment failure flag differs")
+        if self.comparison_valid != (
+            expected
+            in {None, CheckFailureClassification.PRODUCT_ASSERTION}
+        ):
+            raise ValueError("diagnostic comparison validity differs")
+        return self
 
 
 class WorkspaceMode(StrEnum):
@@ -146,6 +209,7 @@ class FailureKind(StrEnum):
     MALFORMED_RESULT = "malformed_result"
     CHECK_FAILED = "check_failed"
     CHECK_ENVIRONMENT = "check_environment"
+    CHECK_MIXED = "check_mixed"
     CHECK_UNKNOWN = "check_unknown"
     STALE_INPUT = "stale_input"
     SCOPE_VIOLATION = "scope_violation"
@@ -254,6 +318,7 @@ class TaskSpec(StrictModel):
     write_scope: list[str] = Field(default_factory=list)
     capability_profile: str = Field(min_length=1)
     workspace_mode: WorkspaceMode
+    own_check: str | None = Field(default=None, min_length=1)
     check_names: list[str] = Field(min_length=1)
     approval: Literal["none"]
 
@@ -292,6 +357,28 @@ class RunSpec(StrictModel):
     assumptions: list[str] = Field(default_factory=list)
     tasks: list[TaskSpec] = Field(min_length=1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def derive_cumulative_checks(cls, value: Any) -> Any:
+        if not isinstance(value, dict) or not isinstance(value.get("tasks"), list):
+            return value
+        tasks = value["tasks"]
+        if not tasks or not all(isinstance(task, dict) for task in tasks):
+            return value
+        own_checks = [task.get("own_check") for task in tasks]
+        if not any(own_checks):
+            return value
+        if not all(isinstance(item, str) and item for item in own_checks):
+            raise ValueError("cumulative own_check declarations must be all-or-none")
+        projected = [
+            {
+                **task,
+                "check_names": [*own_checks[: index + 1], "diff_check"],
+            }
+            for index, task in enumerate(tasks)
+        ]
+        return {**value, "tasks": projected}
+
     @model_validator(mode="after")
     def _graph_invariants(self) -> "RunSpec":
         keys = [task.key for task in self.tasks]
@@ -324,6 +411,21 @@ class RunSpec(StrictModel):
         for criterion in self.completion_criteria:
             if not set(criterion.satisfied_by_tasks).issubset(known):
                 raise ValueError(f"Run criterion {criterion.id} references an unknown Task")
+        own_checks = [task.own_check for task in self.tasks]
+        if any(value is not None for value in own_checks) and any(
+            value is None for value in own_checks
+        ):
+            raise ValueError("cumulative own_check declarations must be all-or-none")
+        for index, task in enumerate(self.tasks if all(own_checks) else []):
+            expected_checks = [
+                *(str(item.own_check) for item in self.tasks[: index + 1]),
+                "diff_check",
+            ]
+            if task.check_names != expected_checks:
+                raise ValueError(
+                    f"Task {task.key} cumulative checks differ: "
+                    f"expected {expected_checks}, got {task.check_names}"
+                )
         return self
 
 
@@ -621,8 +723,10 @@ class CheckResult(StrictModel):
     started_at: str
     ended_at: str
     failure_classification: CheckFailureClassification | None = None
+    diagnostic_result: CheckDiagnosticResult | None = None
     failure_classification_source: Literal[
         "passed",
+        "structured_check_protocol",
         "check_protocol",
         "controller_runtime",
         "unclassified",

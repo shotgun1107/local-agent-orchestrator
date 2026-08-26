@@ -1,0 +1,13 @@
+diff --git a/tools/benchmark-runner/tests/test_routing_s2.py b/tools/benchmark-runner/tests/test_routing_s2.py
+index 44b5864fbad15ad06ee326e30d12d1f0d5bfda96..5d4da768124929a4b918580a121cbcc9ed0324cb 100644
+--- a/tools/benchmark-runner/tests/test_routing_s2.py
++++ b/tools/benchmark-runner/tests/test_routing_s2.py
+@@ -587,7 +587,7 @@ def test_s2_fake_four_cell_plan_judge_property_seal_export(
+                     "scenario": "complete",
+                     "turns": [
+                         {
+-                            "effects": [{"type": "write_file", "path": path, "content": content} for path, content in effects],
++                            "effects": [{"type": "missing_effect", "path": path, "content": content} for path, content in effects],
+                             "result": _completed_result([path for path, _ in effects]),
+                         }
+                         for effects in turns

@@ -46,11 +46,17 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def git(repository: Path, *arguments: str, input_bytes: bytes | None = None) -> bytes:
+def git(
+    repository: Path,
+    *arguments: str,
+    input_bytes: bytes | None = None,
+    environment: dict[str, str] | None = None,
+) -> bytes:
     return subprocess.run(
         ["git", *arguments],
         cwd=repository,
         input=input_bytes,
+        env=environment,
         check=True,
         capture_output=True,
     ).stdout
@@ -87,6 +93,25 @@ def write_bytes(root: Path, relative: str, payload: bytes) -> None:
 
 def adapt_public_s2_test(payload: bytes) -> bytes:
     text = payload.decode("utf-8")
+    result_anchor = '''    assert len(results) == 4
+    assert all(result.check_success for result in results)'''
+    result_replacement = '''    assert len(results) == 4
+    expected_cells = {
+        "cell_s2_a_1_c2": "c2",
+        "cell_s2_a_1_b1": "b1",
+        "cell_s2_b_1_b1": "b1",
+        "cell_s2_b_1_c2": "c2",
+    }
+    assert {result.cell_id: result.variant_id for result in results} == expected_cells
+    for result in results:
+        assert result.cell_state == "SEALED"
+        assert result.check_success is True
+        assert result.measurement_path
+        assert len(result.sealed_measurement_sha256) == 64
+        assert result.actual_model_turns == 0'''
+    if text.count(result_anchor) != 1:
+        raise RuntimeError("historical S2 per-Cell result contract changed")
+    text = text.replace(result_anchor, result_replacement, 1)
     old_root = '''GOLDEN_ROOT = (
     REPOSITORY_ROOT / "benchmarks" / "posthoc-checks" / "sdk-routing-v1" / "s2" / "golden"
 )'''
@@ -267,6 +292,15 @@ def _fixture_git(repository: Path, *arguments: str) -> str:
             str(repository),
             *arguments,
         ],
+        env={
+            **os.environ,
+            "GIT_AUTHOR_NAME": "profile-r-fixture",
+            "GIT_AUTHOR_EMAIL": "profile-r@test.invalid",
+            "GIT_COMMITTER_NAME": "profile-r-fixture",
+            "GIT_COMMITTER_EMAIL": "profile-r@test.invalid",
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+        },
         check=True,
         capture_output=True,
         text=True,
@@ -313,10 +347,10 @@ def _create_self_contained_s1_repository(tmp_path: Path) -> Path:
     source.mkdir(parents=True, exist_ok=True)
     _fixture_git(source, "init", "-q", "-b", "main")
     _fixture_git(source, "config", "core.autocrlf", "false")
-    _fixture_git(source, "config", "user.name", "routing-s1-test")
-    _fixture_git(source, "config", "user.email", "routing-s1@test.invalid")
+    _fixture_git(source, "config", "core.filemode", "false")
+    _fixture_git(source, "config", "core.longpaths", "true")
     _fixture_git(source, "add", "-A")
-    _fixture_git(source, "commit", "-q", "-m", "self-contained S1 fixtures")
+    _fixture_git(source, "commit", "-q", "-m", "Profile R self-contained S1 fixture")
     for relative in (
         "benchmarks/manifests/b0-b1-frozen.yaml",
         "benchmarks/manifests/b0-b1-sequential-followup.yaml",
@@ -431,24 +465,34 @@ def migration_work_payloads(workspace: Path) -> tuple[dict[str, object], dict[st
     entries.sort(key=lambda item: str(item["path"]).encode("utf-8"))
     inventory = {"schema_version": 1, "entries": entries}
     evidence = {
-        "legacy-stage-bytes": ["benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml"],
-        "stage-discriminator": ["benchmarks/suites/sdk-routing-v1/stage.schema.json"],
-        "plan-source-binding": ["tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
-        "reserve-isolation": ["tools/benchmark-runner/src/benchmark_runner/s2_policy.py"],
-        "lifecycle-reuse": ["tools/benchmark-runner/src/benchmark_runner/routing_live.py"],
-        "export-roundtrip": ["tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
-        "cross-checkout-repro": ["benchmarks/suites/sdk-routing-v1/stage.schema.json"],
-        "operator-contract": ["profile-r/work/operator-contract.json"],
+        "r01-source-boundary": ["profile-r/requirements/change-surface.json"],
+        "r02-stage-discriminator": ["benchmarks/suites/sdk-routing-v1/stage.schema.json"],
+        "r03-config-fixture": ["benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"],
+        "r04-incident-fixture": ["benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"],
+        "r05-manifest-binding": ["benchmarks/manifests/sdk-routing-s2-intermediate.yaml"],
+        "r06-plan-binding": ["tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
+        "r07-routing-policy": ["tools/benchmark-runner/src/benchmark_runner/s2_policy.py"],
+        "r08-lifecycle-reuse": ["tools/benchmark-runner/src/benchmark_runner/routing_live.py"],
+        "r09-status-posthoc": ["tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"],
+        "r10-export-verify": ["tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
+        "r11-s2-e2e": ["tools/benchmark-runner/tests/test_routing_s2.py"],
+        "r12-s1-portability": ["tools/benchmark-runner/tests/test_routing_suite.py"],
+        "r13-operator-contract": ["profile-r/work/operator-contract.json"],
     }
     statuses = {
-        "legacy-stage-bytes": "preserve",
-        "stage-discriminator": "extend",
-        "plan-source-binding": "extend",
-        "reserve-isolation": "extend",
-        "lifecycle-reuse": "preserve",
-        "export-roundtrip": "extend",
-        "cross-checkout-repro": "preserve",
-        "operator-contract": "extend",
+        "r01-source-boundary": "preserve",
+        "r02-stage-discriminator": "extend",
+        "r03-config-fixture": "add",
+        "r04-incident-fixture": "add",
+        "r05-manifest-binding": "add",
+        "r06-plan-binding": "extend",
+        "r07-routing-policy": "add",
+        "r08-lifecycle-reuse": "preserve",
+        "r09-status-posthoc": "extend",
+        "r10-export-verify": "extend",
+        "r11-s2-e2e": "add",
+        "r12-s1-portability": "preserve",
+        "r13-operator-contract": "add",
     }
     ledger = {
         "schema_version": 1,
@@ -458,6 +502,56 @@ def migration_work_payloads(workspace: Path) -> tuple[dict[str, object], dict[st
         ],
     }
     return ledger, inventory
+
+
+def bind_s2_manifest_to_projected_fixtures(solution: Path) -> None:
+    manifest_path = solution / "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "GIT_AUTHOR_NAME": "profile-r-reference",
+            "GIT_AUTHOR_EMAIL": "profile-r@test.invalid",
+            "GIT_COMMITTER_NAME": "profile-r-reference",
+            "GIT_COMMITTER_EMAIL": "profile-r@test.invalid",
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+        }
+    )
+    with tempfile.TemporaryDirectory(prefix="profile-r-r05-reference-") as raw:
+        source = Path(raw) / "source"
+        for fixture in manifest["fixtures"]:
+            relative = Path(str(fixture["path"]))
+            destination = source / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(solution / relative, destination)
+        git(source, "init", "-q", "-b", "main", environment=environment)
+        git(source, "config", "core.autocrlf", "false", environment=environment)
+        git(source, "config", "core.filemode", "false", environment=environment)
+        git(source, "config", "core.longpaths", "true", environment=environment)
+        git(source, "add", "-A", environment=environment)
+        git(
+            source,
+            "commit",
+            "-q",
+            "-m",
+            "Profile R projected S2 fixtures",
+            environment=environment,
+        )
+        commit = git(source, "rev-parse", "HEAD", environment=environment).decode("ascii").strip()
+        for fixture in manifest["fixtures"]:
+            fixture["commit"] = commit
+            fixture["git_tree"] = git(
+                source,
+                "rev-parse",
+                f"HEAD:{fixture['path']}",
+                environment=environment,
+            ).decode("ascii").strip()
+    manifest_path.write_text(
+        yaml.safe_dump(manifest, sort_keys=False),
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def append_operator_readme(workspace: Path, contract: dict[str, object]) -> None:
@@ -471,14 +565,33 @@ def append_operator_readme(workspace: Path, contract: dict[str, object]) -> None
     path.write_text(text, encoding="utf-8", newline="\n")
 
 
+def _reference_scope_allows(relative: str, scopes: tuple[str, ...]) -> bool:
+    return any(
+        relative.startswith(scope[:-3].rstrip("/") + "/")
+        if scope.endswith("/**")
+        else relative == scope
+        for scope in scopes
+    )
+
+
 def project_reference(repository: Path, pristine: Path, solution: Path, mapping: dict[str, Any], composition: dict[str, Any]) -> None:
     copy_tree(pristine, solution)
+    surface = load_json(
+        pristine / "profile-r/requirements/change-surface.json"
+    )
+    scopes = tuple(
+        str(scope)
+        for task in surface["tasks"]
+        for scope in task["write_paths"]
+    )
     for record in composition["records"]:
         category = record["category"]
         relative = str(record["path"])
         if category in {"historical_result_or_evidence", "golden_or_export_mirror"}:
             continue
         if relative.startswith("benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/"):
+            continue
+        if not _reference_scope_allows(relative, scopes):
             continue
         payload = apply_mapping(git_blob(repository, REFERENCE_COMMIT, relative), mapping)
         if relative == "tools/benchmark-runner/tests/test_routing_s2.py":
@@ -493,7 +606,11 @@ def project_reference(repository: Path, pristine: Path, solution: Path, mapping:
         targets = record["canonical_source_paths"]
         if len(targets) != 1:
             raise RuntimeError("golden mirror must have exactly one Worker target")
-        write_bytes(solution, str(targets[0]), source)
+        target = str(targets[0])
+        if not _reference_scope_allows(target, scopes):
+            raise RuntimeError("golden mirror target escaped Profile R Task scopes")
+        write_bytes(solution, target, source)
+    bind_s2_manifest_to_projected_fixtures(solution)
     ledger, inventory = migration_work_payloads(solution)
     write_bytes(solution, "profile-r/work/migration-ledger.json", canonical_json(ledger))
     write_bytes(solution, "profile-r/work/source-inventory.json", canonical_json(inventory))
@@ -548,12 +665,41 @@ def mutate_legacy_bytes(root: Path) -> None:
     path.write_bytes(path.read_bytes() + b"\n")
 
 
+def mutate_source_boundary(root: Path) -> None:
+    path = root / "profile-r/requirements/change-surface.json"
+    value = load_json(path)
+    value["tasks"][0]["write_paths"].append("outside/undeclared.txt")
+    path.write_bytes(pretty_json(value))
+
+
 def mutate_stage_discriminator(root: Path) -> None:
     replace_once(
         root / "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
         b'    stage_id: Literal["s2-intermediate"]',
         b'    stage_id: Literal["s1-baseline"]',
     )
+
+
+def mutate_config_fixture(root: Path) -> None:
+    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json"
+    path.write_bytes(b'{"version":999}\n')
+
+
+def mutate_incident_fixture(root: Path) -> None:
+    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
+    replace_once(path, "## 확인된 사실".encode("utf-8"), "## 잘못된 사실".encode("utf-8"))
+
+
+def mutate_manifest_binding(root: Path) -> None:
+    path = root / "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    payload = path.read_bytes()
+    marker = b"git_tree: "
+    index = payload.find(marker)
+    if index < 0:
+        raise RuntimeError("manifest tree mutation anchor is absent")
+    position = index + len(marker)
+    replacement = b"0" if payload[position:position + 1] != b"0" else b"1"
+    path.write_bytes(payload[:position] + replacement + payload[position + 1:])
 
 
 def mutate_plan_order(root: Path) -> None:
@@ -579,6 +725,34 @@ def mutate_export(root: Path) -> None:
     before = b'''def verify_routing_s2_nonlive_export(export_root: Path) -> dict[str, Any]:\n    return _verify_routing_nonlive_export(\n        export_root,\n        expected_stage_id="s2-intermediate",\n    )'''
     after = before.replace(b'expected_stage_id="s2-intermediate"', b'expected_stage_id="s1-baseline"')
     replace_once(path, before, after)
+
+
+def mutate_status_posthoc(root: Path) -> None:
+    path = root / "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+    payload = path.read_bytes()
+    if b'"CFG-P1"' not in payload:
+        raise RuntimeError("status/posthoc mutation anchor is absent")
+    path.write_bytes(payload.replace(b'"CFG-P1"', b'"CFG-BROKEN"', 1))
+
+
+def mutate_s2_e2e(root: Path) -> None:
+    path = root / "tools/benchmark-runner/tests/test_routing_s2.py"
+    payload = path.read_bytes()
+    if b'"type": "write_file"' not in payload:
+        raise RuntimeError("S2 write-effect mutation anchor is absent")
+    path.write_bytes(payload.replace(b'"type": "write_file"', b'"type": "missing_effect"'))
+
+
+def mutate_s1_portability(root: Path) -> None:
+    path = root / "tools/benchmark-runner/tests/test_routing_suite.py"
+    payload = path.read_bytes()
+    marker = b"_create_self_contained_s1_repository"
+    if marker not in payload:
+        raise RuntimeError("S1 self-contained helper mutation anchor is absent")
+    path.write_bytes(
+        payload.replace(marker, b"_historical_s1_repository")
+        + b'\n# e915914c0494cd21969de5bc60f81ad74ec1b037\n'
+    )
 
 
 def mutate_checkout(root: Path) -> None:
@@ -640,14 +814,19 @@ def replace_worker_test_oracles(root: Path, mode: str) -> None:
 
 
 MUTATIONS: tuple[tuple[str, str, Callable[[Path], None]], ...] = (
-    ("r-p01-legacy-bytes", "R-P01-LEGACY-BYTES", mutate_legacy_bytes),
-    ("r-p02-stage-discriminator", "R-P02-STAGE-DISCRIMINATOR", mutate_stage_discriminator),
-    ("r-p03-plan-binding", "R-P03-PLAN-BINDING", mutate_plan_order),
-    ("r-p04-reserve-isolation", "R-P04-RESERVE-ISOLATION", mutate_reserve),
-    ("r-p05-lifecycle-reuse", "R-P05-LIFECYCLE-REUSE", mutate_lifecycle),
-    ("r-p06-export-roundtrip", "R-P06-EXPORT-ROUNDTRIP", mutate_export),
-    ("r-p07-cross-checkout", "R-P07-CROSS-CHECKOUT-REPRO", mutate_checkout),
-    ("r-p08-operator-contract", "R-P08-OPERATOR-CONTRACT", mutate_operator),
+    ("r-p01-source-boundary", "R-P01-SOURCE-BOUNDARY", mutate_source_boundary),
+    ("r-p02-discriminator", "R-P02-DISCRIMINATOR", mutate_stage_discriminator),
+    ("r-p03-config-fixture", "R-P03-CONFIG-FIXTURE", mutate_config_fixture),
+    ("r-p04-incident-fixture", "R-P04-INCIDENT-FIXTURE", mutate_incident_fixture),
+    ("r-p05-manifest-binding", "R-P05-MANIFEST-BINDING", mutate_manifest_binding),
+    ("r-p06-plan-binding", "R-P06-PLAN-BINDING", mutate_plan_order),
+    ("r-p07-routing-policy", "R-P07-ROUTING-POLICY", mutate_reserve),
+    ("r-p08-lifecycle-reuse", "R-P08-LIFECYCLE-REUSE", mutate_lifecycle),
+    ("r-p09-status-posthoc", "R-P09-STATUS-POSTHOC", mutate_status_posthoc),
+    ("r-p10-export-verify", "R-P10-EXPORT-VERIFY", mutate_export),
+    ("r-p11-s2-e2e", "R-P11-S2-E2E", mutate_s2_e2e),
+    ("r-p12-s1-portability", "R-P12-S1-PORTABILITY", mutate_s1_portability),
+    ("r-p13-operator-semantics", "R-P13-OPERATOR-SEMANTICS", mutate_operator),
 )
 
 
@@ -682,8 +861,8 @@ def public_check_timeout_seconds(solution: Path, check_id: str) -> int:
     return timeout_seconds
 
 
-def public_r07_evidence_projection(evidence: dict[str, Any]) -> dict[str, object]:
-    """Bind portable R07 facts without transient absolute TEMP path strings."""
+def public_regression_evidence_projection(evidence: dict[str, Any]) -> dict[str, object]:
+    """Bind portable regression facts without transient absolute TEMP paths."""
 
     def exact_int(name: str) -> int:
         value = evidence.get(name)
@@ -710,11 +889,18 @@ def public_r07_evidence_projection(evidence: dict[str, Any]) -> dict[str, object
     }
 
 
-def validate_public_r07_reference(solution: Path) -> dict[str, object]:
-    """Run the exact protected public R07 entrypoint against projected W."""
+def validate_public_regression_reference(
+    solution: Path,
+    *,
+    task_id: str,
+    expected_tests: int,
+) -> dict[str, object]:
+    """Run one exact protected public regression entrypoint against projected W."""
 
-    outer_timeout_seconds = public_check_timeout_seconds(solution, "r07_contract")
-    with tempfile.TemporaryDirectory(prefix="profile-r-public-r07-") as raw:
+    outer_timeout_seconds = public_check_timeout_seconds(
+        solution, f"{task_id.lower()}_contract"
+    )
+    with tempfile.TemporaryDirectory(prefix=f"profile-r-public-{task_id.lower()}-") as raw:
         temp_root = Path(raw).resolve()
         environment = os.environ.copy()
         environment.update(
@@ -731,7 +917,7 @@ def validate_public_r07_reference(solution: Path) -> dict[str, object]:
             [
                 sys.executable,
                 str(solution / "benchmark_checks" / "check_profile_r.py"),
-                "R07",
+                task_id,
             ],
             cwd=solution,
             env=environment,
@@ -755,34 +941,94 @@ def validate_public_r07_reference(solution: Path) -> dict[str, object]:
             candidate = None
         if isinstance(candidate, dict):
             evidence = candidate
-    projection = public_r07_evidence_projection(evidence)
+    projection = public_regression_evidence_projection(evidence)
     pytest_counts = projection["pytest"]
     stdout_contract_ok = (
-        len(stdout_lines) == 2
-        and stdout_lines[0].startswith(evidence_prefix)
-        and stdout_lines[1] == "R07_PUBLIC_CONTRACT_OK"
+        len(stdout_lines) == 3
+        and stdout_lines[0].startswith("CHECK_DIAGNOSTIC_RESULT:")
+        and stdout_lines[1].startswith(evidence_prefix)
+        and stdout_lines[2] == f"{task_id}_PUBLIC_CONTRACT_OK"
     )
     passed = (
         completed.returncode == 0
         and completed.stderr == b""
         and stdout_contract_ok
         and pytest_counts
-        == {"tests": 12, "failures": 0, "errors": 0, "skipped": 0, "warnings": 0}
+        == {"tests": expected_tests, "failures": 0, "errors": 0, "skipped": 0, "warnings": 0}
         and int(projection["growth_margin"]) >= 32
         and projection["growth_probe_minimum_satisfied"] is True
         and projection["probe_repository_shorter_than_growth_path"] is True
     )
     return {
         "schema_version": 1,
-        "entrypoint": "benchmark_checks/check_profile_r.py R07",
+        "entrypoint": f"benchmark_checks/check_profile_r.py {task_id}",
         "outer_timeout_seconds": outer_timeout_seconds,
         "return_code": completed.returncode,
-        "stdout_contract": "one canonical Evidence line followed by R07_PUBLIC_CONTRACT_OK",
+        "stdout_contract": "one diagnostic line, one environment Evidence line, and one Task OK line",
         "evidence_projection": projection,
         "evidence_projection_sha256": sha256(canonical_json(projection)),
         "stderr_sha256": sha256(completed.stderr),
         "contract_ok_marker": stdout_contract_ok,
         "passed": passed,
+    }
+
+
+def validate_public_mutation(
+    solution: Path,
+    *,
+    task_id: str,
+) -> dict[str, object]:
+    """Require the owning public contract to reject one known-bad solution."""
+
+    timeout_seconds = public_check_timeout_seconds(
+        solution, f"{task_id.lower()}_contract"
+    )
+    with tempfile.TemporaryDirectory(
+        prefix=f"profile-r-public-negative-{task_id.lower()}-"
+    ) as raw:
+        temp_root = Path(raw).resolve()
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "TEMP": str(temp_root),
+                "TMP": str(temp_root),
+                "TMPDIR": str(temp_root),
+                "PYTHONUTF8": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            }
+        )
+        environment.pop("PYTHONPATH", None)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(solution / "benchmark_checks" / "check_profile_r.py"),
+                task_id,
+            ],
+            cwd=solution,
+            env=environment,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    stdout_lines = completed.stdout.decode(
+        "utf-8", errors="replace"
+    ).splitlines()
+    expected = [
+        f"{task_id}_PUBLIC_CONTRACT_FAILED",
+        "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
+    ]
+    rejected = completed.returncode == 1 and stdout_lines[:2] == expected
+    return {
+        "task_id": task_id,
+        "return_code": completed.returncode,
+        "classification": (
+            "PRODUCT_ASSERTION"
+            if "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION" in stdout_lines
+            else None
+        ),
+        "contract_rejected": rejected,
+        "stdout_sha256": sha256(completed.stdout),
+        "stderr_sha256": sha256(completed.stderr),
     }
 
 
@@ -892,14 +1138,19 @@ def build(repository: Path) -> dict[str, object]:
         "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
     )
     properties = [
-        {"property_id": "R-P01-LEGACY-BYTES", "severity": "critical", "prerequisite_ids": []},
-        {"property_id": "R-P02-STAGE-DISCRIMINATOR", "severity": "critical", "prerequisite_ids": []},
-        {"property_id": "R-P03-PLAN-BINDING", "severity": "critical", "prerequisite_ids": ["R-P02-STAGE-DISCRIMINATOR"]},
-        {"property_id": "R-P04-RESERVE-ISOLATION", "severity": "major", "prerequisite_ids": ["R-P03-PLAN-BINDING"]},
-        {"property_id": "R-P05-LIFECYCLE-REUSE", "severity": "major", "prerequisite_ids": []},
-        {"property_id": "R-P06-EXPORT-ROUNDTRIP", "severity": "critical", "prerequisite_ids": ["R-P02-STAGE-DISCRIMINATOR", "R-P03-PLAN-BINDING"]},
-        {"property_id": "R-P07-CROSS-CHECKOUT-REPRO", "severity": "major", "prerequisite_ids": ["R-P06-EXPORT-ROUNDTRIP"]},
-        {"property_id": "R-P08-OPERATOR-CONTRACT", "severity": "major", "prerequisite_ids": ["R-P03-PLAN-BINDING", "R-P06-EXPORT-ROUNDTRIP"]},
+        {"property_id": "R-P01-SOURCE-BOUNDARY", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P02-DISCRIMINATOR", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P03-CONFIG-FIXTURE", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P04-INCIDENT-FIXTURE", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P05-MANIFEST-BINDING", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P06-PLAN-BINDING", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P07-ROUTING-POLICY", "severity": "major", "prerequisite_ids": []},
+        {"property_id": "R-P08-LIFECYCLE-REUSE", "severity": "major", "prerequisite_ids": []},
+        {"property_id": "R-P09-STATUS-POSTHOC", "severity": "major", "prerequisite_ids": []},
+        {"property_id": "R-P10-EXPORT-VERIFY", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P11-S2-E2E", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P12-S1-PORTABILITY", "severity": "critical", "prerequisite_ids": []},
+        {"property_id": "R-P13-OPERATOR-SEMANTICS", "severity": "major", "prerequisite_ids": []},
     ]
     catalog = {
         "schema_version": 1,
@@ -930,14 +1181,19 @@ def build(repository: Path) -> dict[str, object]:
         ],
     }
     task_paths = {
-        "R-P01-LEGACY-BYTES": ["profile-r/requirements/migration-contract.md", "tools/benchmark-runner/schemas/v1/measurement.schema.json"],
-        "R-P02-STAGE-DISCRIMINATOR": ["profile-r/requirements/migration-contract.md", "benchmarks/suites/sdk-routing-v1/stage.schema.json"],
-        "R-P03-PLAN-BINDING": ["profile-r/requirements/migration-contract.md", "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml"],
-        "R-P04-RESERVE-ISOLATION": ["profile-r/requirements/migration-contract.md", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
-        "R-P05-LIFECYCLE-REUSE": ["profile-r/requirements/migration-contract.md", "tools/benchmark-runner/src/benchmark_runner/routing_live.py"],
-        "R-P06-EXPORT-ROUNDTRIP": ["profile-r/requirements/migration-contract.md", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
-        "R-P07-CROSS-CHECKOUT-REPRO": ["profile-r/requirements/migration-contract.md", "tools/benchmark-runner/tests/test_routing_suite.py"],
-        "R-P08-OPERATOR-CONTRACT": ["profile-r/requirements/operator-contract-schema.json", "tools/benchmark-runner/README.md"],
+        "R-P01-SOURCE-BOUNDARY": ["profile-r/requirements/migration-contract.md", "profile-r/requirements/change-surface.json"],
+        "R-P02-DISCRIMINATOR": ["profile-r/requirements/migration-contract.md", "benchmarks/suites/sdk-routing-v1/stage.schema.json"],
+        "R-P03-CONFIG-FIXTURE": ["benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"],
+        "R-P04-INCIDENT-FIXTURE": ["benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"],
+        "R-P05-MANIFEST-BINDING": ["benchmarks/manifests/sdk-routing-s2-intermediate.yaml"],
+        "R-P06-PLAN-BINDING": ["benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
+        "R-P07-ROUTING-POLICY": ["tools/benchmark-runner/src/benchmark_runner/s2_policy.py"],
+        "R-P08-LIFECYCLE-REUSE": ["tools/benchmark-runner/src/benchmark_runner/routing_live.py", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
+        "R-P09-STATUS-POSTHOC": ["tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"],
+        "R-P10-EXPORT-VERIFY": ["tools/benchmark-runner/src/benchmark_runner/routing_live.py", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"],
+        "R-P11-S2-E2E": ["tools/benchmark-runner/tests/test_routing_s2.py"],
+        "R-P12-S1-PORTABILITY": ["tools/benchmark-runner/tests/test_routing_suite.py"],
+        "R-P13-OPERATOR-SEMANTICS": ["profile-r/requirements/operator-contract-schema.json", "tools/benchmark-runner/README.md"],
     }
     for record in information["properties"]:
         record["worker_readable_paths"] = task_paths[record["property_id"]]
@@ -967,11 +1223,25 @@ def build(repository: Path) -> dict[str, object]:
         temporary = Path(raw)
         solution = temporary / "solution"
         project_reference(repository, pristine, solution, mapping, composition)
-        public_r07_result = validate_public_r07_reference(solution)
+        public_r11_result = validate_public_regression_reference(
+            solution,
+            task_id="R11",
+            expected_tests=7,
+        )
+        public_r12_result = validate_public_regression_reference(
+            solution,
+            task_id="R12",
+            expected_tests=5,
+        )
         write_bytes(
             judge_root,
-            "evidence/public-r07-reference.json",
-            pretty_json(public_r07_result),
+            "evidence/public-r11-reference.json",
+            pretty_json(public_r11_result),
+        )
+        write_bytes(
+            judge_root,
+            "evidence/public-r12-reference.json",
+            pretty_json(public_r12_result),
         )
         reference_patch = patch_bytes(pristine, solution)
         write_bytes(judge_root, "reference.patch", reference_patch)
@@ -988,7 +1258,10 @@ def build(repository: Path) -> dict[str, object]:
         write_bytes(judge_root, "evidence/reference.json", pretty_json(reference_result))
 
         mutation_summaries = []
-        for mutation_id, target_property, mutate in MUTATIONS:
+        for mutation_index, (mutation_id, target_property, mutate) in enumerate(
+            MUTATIONS,
+            1,
+        ):
             mutated = temporary / f"mutation-{mutation_id}"
             copy_tree(solution, mutated)
             mutate(mutated)
@@ -999,10 +1272,38 @@ def build(repository: Path) -> dict[str, object]:
             git(mutation_eval, "apply", "-", input_bytes=reference_patch)
             git(mutation_eval, "apply", "-", input_bytes=mutation_patch)
             result = checker.evaluate_workspace(mutation_eval, experiment_id="phase-d-profile-r", cell_id=mutation_id)
+            public_result = validate_public_mutation(
+                mutated,
+                task_id=f"R{mutation_index:02d}",
+            )
             write_bytes(judge_root, f"negative-mutations/{mutation_id}.patch", mutation_patch)
             write_bytes(judge_root, f"evidence/mutations/{mutation_id}.json", pretty_json(result))
             statuses = {item["property_id"]: item["status"] for item in result["properties"]}
-            mutation_summaries.append({"mutation_id": mutation_id, "target_property_id": target_property, "statuses": statuses})
+            mutation_summaries.append(
+                {
+                    "mutation_id": mutation_id,
+                    "target_property_id": target_property,
+                    "statuses": statuses,
+                    "public_contract": public_result,
+                    "cofailed_property_ids": sorted(
+                        property_id
+                        for property_id, status in statuses.items()
+                        if property_id != target_property and status == "fail"
+                    ),
+                }
+            )
+
+        write_bytes(
+            judge_root,
+            "evidence/public-negative-matrix.json",
+            pretty_json(
+                {
+                    "schema_version": 1,
+                    "profile": "R",
+                    "cases": mutation_summaries,
+                }
+            ),
+        )
 
         adversarial_summaries = []
         for mode in ("noop", "skip", "assert_false"):
@@ -1018,7 +1319,11 @@ def build(repository: Path) -> dict[str, object]:
                 item["property_id"]: item["status"]
                 for item in result["properties"]
             }
-            matched = result["aggregate_status"] == "pass" and set(statuses.values()) == {"pass"}
+            matched = (
+                result["aggregate_status"] == "fail"
+                and statuses.get("R-P11-S2-E2E") == "fail"
+                and statuses.get("R-P12-S1-PORTABILITY") == "fail"
+            )
             adversarial_summaries.append(
                 {
                     "case_id": f"worker-tests-{mode}",
@@ -1032,10 +1337,10 @@ def build(repository: Path) -> dict[str, object]:
             )
 
         co_mutations = (
-            ("r-p02-stage-discriminator", "R-P02-STAGE-DISCRIMINATOR", mutate_stage_discriminator),
-            ("r-p04-reserve-isolation", "R-P04-RESERVE-ISOLATION", mutate_reserve),
-            ("r-p06-export-roundtrip", "R-P06-EXPORT-ROUNDTRIP", mutate_export),
-            ("r-p07-cross-checkout", "R-P07-CROSS-CHECKOUT-REPRO", mutate_checkout),
+            ("r-p02-discriminator", "R-P02-DISCRIMINATOR", mutate_stage_discriminator),
+            ("r-p07-routing-policy", "R-P07-ROUTING-POLICY", mutate_reserve),
+            ("r-p10-export-verify", "R-P10-EXPORT-VERIFY", mutate_export),
+            ("r-p12-s1-portability", "R-P12-S1-PORTABILITY", mutate_s1_portability),
         )
         for mutation_id, target_property, mutate in co_mutations:
             adversarial = temporary / f"adversarial-{mutation_id}-plus-noop"
@@ -1085,17 +1390,20 @@ def build(repository: Path) -> dict[str, object]:
         pristine_failed = pristine_result["aggregate_status"] == "fail"
         mutation_ok = all(
             item["statuses"].get(item["target_property_id"]) == "fail"
+            and item["public_contract"]["contract_rejected"] is True
             and all(
-                status in {"pass", "blocked_by_prerequisite"}
-                for property_id, status in item["statuses"].items()
-                if property_id != item["target_property_id"]
+                status in {"pass", "fail"}
+                for status in item["statuses"].values()
             )
             for item in mutation_summaries
         )
         adversarial_ok = all(
             item["matched_expectation"] for item in adversarial_summaries
         )
-        public_r07_ok = public_r07_result["passed"] is True
+        public_regressions_ok = (
+            public_r11_result["passed"] is True
+            and public_r12_result["passed"] is True
+        )
         forbidden = load_json(judge_root / "solution-leakage-catalog.json")
         worker_files = [path for path in pristine.rglob("*") if path.is_file()]
         leakage_hits = []
@@ -1111,7 +1419,7 @@ def build(repository: Path) -> dict[str, object]:
             f"- Pristine aggregate: {pristine_result['aggregate_status']}\n"
             f"- Negative mutation contracts: {'pass' if mutation_ok else 'fail'}\n"
             f"- Adversarial Worker test-oracle contracts: {'pass' if adversarial_ok else 'fail'}\n"
-            f"- Exact public R07 projected-reference run: {'pass' if public_r07_ok else 'fail'}\n"
+            f"- Exact public R11/R12 projected-reference runs: {'pass' if public_regressions_ok else 'fail'}\n"
             f"- Forbidden Worker literal hits: {len(leakage_hits)}\n"
             "- The public S2 regression consumes current fixture outputs and never reads the hidden golden tree.\n"
             "- This source bundle does not claim the protected Judge runtime filesystem/no-network boundary.\n"
@@ -1122,7 +1430,7 @@ def build(repository: Path) -> dict[str, object]:
             and pristine_failed
             and mutation_ok
             and adversarial_ok
-            and public_r07_ok
+            and public_regressions_ok
             and not leakage_hits
         )
         eligibility = load_json(judge_root / "challenge-eligibility.json")
@@ -1135,7 +1443,7 @@ def build(repository: Path) -> dict[str, object]:
             "pristine_aggregate_status": pristine_result["aggregate_status"],
             "negative_mutation_count": len(mutation_summaries),
             "adversarial_worker_test_oracle_count": len(adversarial_summaries),
-            "public_r07_reference_verified": public_r07_ok,
+            "public_r11_r12_reference_verified": public_regressions_ok,
         })
         write_bytes(judge_root, "challenge-eligibility.json", pretty_json(eligibility))
 

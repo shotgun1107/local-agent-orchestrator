@@ -9,54 +9,67 @@
   "properties": [
     {
       "prerequisite_ids": [],
-      "property_id": "R-P01-LEGACY-BYTES",
+      "property_id": "R-P01-SOURCE-BOUNDARY",
       "severity": "critical"
     },
     {
       "prerequisite_ids": [],
-      "property_id": "R-P02-STAGE-DISCRIMINATOR",
+      "property_id": "R-P02-DISCRIMINATOR",
       "severity": "critical"
     },
     {
-      "prerequisite_ids": [
-        "R-P02-STAGE-DISCRIMINATOR"
-      ],
-      "property_id": "R-P03-PLAN-BINDING",
+      "prerequisite_ids": [],
+      "property_id": "R-P03-CONFIG-FIXTURE",
       "severity": "critical"
     },
     {
-      "prerequisite_ids": [
-        "R-P03-PLAN-BINDING"
-      ],
-      "property_id": "R-P04-RESERVE-ISOLATION",
+      "prerequisite_ids": [],
+      "property_id": "R-P04-INCIDENT-FIXTURE",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P05-MANIFEST-BINDING",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P06-PLAN-BINDING",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P07-ROUTING-POLICY",
       "severity": "major"
     },
     {
       "prerequisite_ids": [],
-      "property_id": "R-P05-LIFECYCLE-REUSE",
+      "property_id": "R-P08-LIFECYCLE-REUSE",
       "severity": "major"
     },
     {
-      "prerequisite_ids": [
-        "R-P02-STAGE-DISCRIMINATOR",
-        "R-P03-PLAN-BINDING"
-      ],
-      "property_id": "R-P06-EXPORT-ROUNDTRIP",
+      "prerequisite_ids": [],
+      "property_id": "R-P09-STATUS-POSTHOC",
+      "severity": "major"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P10-EXPORT-VERIFY",
       "severity": "critical"
     },
     {
-      "prerequisite_ids": [
-        "R-P06-EXPORT-ROUNDTRIP"
-      ],
-      "property_id": "R-P07-CROSS-CHECKOUT-REPRO",
-      "severity": "major"
+      "prerequisite_ids": [],
+      "property_id": "R-P11-S2-E2E",
+      "severity": "critical"
     },
     {
-      "prerequisite_ids": [
-        "R-P03-PLAN-BINDING",
-        "R-P06-EXPORT-ROUNDTRIP"
-      ],
-      "property_id": "R-P08-OPERATOR-CONTRACT",
+      "prerequisite_ids": [],
+      "property_id": "R-P12-S1-PORTABILITY",
+      "severity": "critical"
+    },
+    {
+      "prerequisite_ids": [],
+      "property_id": "R-P13-OPERATOR-SEMANTICS",
       "severity": "major"
     }
   ],

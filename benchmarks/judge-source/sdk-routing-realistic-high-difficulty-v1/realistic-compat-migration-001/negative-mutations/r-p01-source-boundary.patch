@@ -1,0 +1,120 @@
+diff --git a/profile-r/requirements/change-surface.json b/profile-r/requirements/change-surface.json
+index bc3c241985d40a32011bae586b1efc17136b902d..4fe2e79480fed24600f1041dc721c72a382a84bc 100644
+--- a/profile-r/requirements/change-surface.json
++++ b/profile-r/requirements/change-surface.json
+@@ -1,18 +1,102 @@
+ {
+   "schema_version": 2,
+   "tasks": [
+-    {"task_id":"R01","write_paths":["profile-r/work/migration-ledger.json","profile-r/work/source-inventory.json"]},
+-    {"task_id":"R02","write_paths":["benchmarks/suites/sdk-routing-v1/stage.schema.json","benchmarks/suites/sdk-routing-v1/suite.schema.json","benchmarks/suites/sdk-routing-v1/suite.yaml","benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml","tools/benchmark-runner/src/benchmark_runner/routing_suite.py"]},
+-    {"task_id":"R03","write_paths":["benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/**"]},
+-    {"task_id":"R04","write_paths":["benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/**"]},
+-    {"task_id":"R05","write_paths":["benchmarks/manifests/sdk-routing-s2-intermediate.yaml"]},
+-    {"task_id":"R06","write_paths":["tools/benchmark-runner/src/benchmark_runner/routing_suite.py","tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py","tools/benchmark-runner/scripts/run_sdk_routing_s1.py"]},
+-    {"task_id":"R07","write_paths":["tools/benchmark-runner/src/benchmark_runner/s2_policy.py"]},
+-    {"task_id":"R08","write_paths":["tools/benchmark-runner/src/benchmark_runner/adapter.py","tools/benchmark-runner/src/benchmark_runner/routing_live.py","tools/benchmark-runner/src/benchmark_runner/routing_suite.py","tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"]},
+-    {"task_id":"R09","write_paths":["tools/benchmark-runner/src/benchmark_runner/routing_live.py","tools/benchmark-runner/src/benchmark_runner/routing_suite.py","tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py","tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"]},
+-    {"task_id":"R10","write_paths":["benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/**","tools/benchmark-runner/src/benchmark_runner/routing_live.py","tools/benchmark-runner/src/benchmark_runner/routing_suite.py","tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"]},
+-    {"task_id":"R11","write_paths":["tools/benchmark-runner/tests/test_judge.py","tools/benchmark-runner/tests/test_routing_s2.py"]},
+-    {"task_id":"R12","write_paths":["tools/benchmark-runner/tests/test_routing_suite.py"]},
+-    {"task_id":"R13","write_paths":["profile-r/work/operator-contract.json","tools/benchmark-runner/README.md"]}
++    {
++      "task_id": "R01",
++      "write_paths": [
++        "profile-r/work/migration-ledger.json",
++        "profile-r/work/source-inventory.json",
++        "outside/undeclared.txt"
++      ]
++    },
++    {
++      "task_id": "R02",
++      "write_paths": [
++        "benchmarks/suites/sdk-routing-v1/stage.schema.json",
++        "benchmarks/suites/sdk-routing-v1/suite.schema.json",
++        "benchmarks/suites/sdk-routing-v1/suite.yaml",
++        "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
++        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
++      ]
++    },
++    {
++      "task_id": "R03",
++      "write_paths": [
++        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/**"
++      ]
++    },
++    {
++      "task_id": "R04",
++      "write_paths": [
++        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/**"
++      ]
++    },
++    {
++      "task_id": "R05",
++      "write_paths": [
++        "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
++      ]
++    },
++    {
++      "task_id": "R06",
++      "write_paths": [
++        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
++        "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
++        "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
++      ]
++    },
++    {
++      "task_id": "R07",
++      "write_paths": [
++        "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
++      ]
++    },
++    {
++      "task_id": "R08",
++      "write_paths": [
++        "tools/benchmark-runner/src/benchmark_runner/adapter.py",
++        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
++        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
++        "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
++      ]
++    },
++    {
++      "task_id": "R09",
++      "write_paths": [
++        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
++        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
++        "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
++        "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
++      ]
++    },
++    {
++      "task_id": "R10",
++      "write_paths": [
++        "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/**",
++        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
++        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
++        "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
++      ]
++    },
++    {
++      "task_id": "R11",
++      "write_paths": [
++        "tools/benchmark-runner/tests/test_judge.py",
++        "tools/benchmark-runner/tests/test_routing_s2.py"
++      ]
++    },
++    {
++      "task_id": "R12",
++      "write_paths": [
++        "tools/benchmark-runner/tests/test_routing_suite.py"
++      ]
++    },
++    {
++      "task_id": "R13",
++      "write_paths": [
++        "profile-r/work/operator-contract.json",
++        "tools/benchmark-runner/README.md"
++      ]
++    }
+   ]
+ }

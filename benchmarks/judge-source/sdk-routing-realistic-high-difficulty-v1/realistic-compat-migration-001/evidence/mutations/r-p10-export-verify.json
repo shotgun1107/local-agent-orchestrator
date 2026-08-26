@@ -1,0 +1,305 @@
+{
+  "aggregate_status": "fail",
+  "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
+  "cell_id": "r-p10-export-verify",
+  "checker_run_status": "completed",
+  "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+  "envelope_sha256": "4dc9bbc2ed324cfd9db64e51bcf1c95be10f5b1c097ed38192d3d9dc1c38871e",
+  "experiment_id": "phase-d-profile-r",
+  "fixture_id": "realistic-compat-migration-001",
+  "ordered_property_ids": [
+    "R-P01-SOURCE-BOUNDARY",
+    "R-P02-DISCRIMINATOR",
+    "R-P03-CONFIG-FIXTURE",
+    "R-P04-INCIDENT-FIXTURE",
+    "R-P05-MANIFEST-BINDING",
+    "R-P06-PLAN-BINDING",
+    "R-P07-ROUTING-POLICY",
+    "R-P08-LIFECYCLE-REUSE",
+    "R-P09-STATUS-POSTHOC",
+    "R-P10-EXPORT-VERIFY",
+    "R-P11-S2-E2E",
+    "R-P12-S1-PORTABILITY",
+    "R-P13-OPERATOR-SEMANTICS"
+  ],
+  "prerequisite_dag_sha256": "03f9f68c4733e34b6022b2c550c6b592688cbdb76e495512020120b280a9987f",
+  "process": {
+    "exit_code": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_size": 0,
+    "stderr_truncated": false,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_size": 0,
+    "stdout_truncated": false,
+    "timed_out": false
+  },
+  "properties": [
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The legacy bytes and projected R01-R13 source boundary are exact.",
+      "evidence_refs": [
+        {
+          "path": "benchmark-run.yaml",
+          "sha256": "e285b66288a97989cbee293bcd95fdfe6d92ee06a41e0ce4f6ff45e6f43de0ee"
+        },
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
+          "sha256": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2"
+        },
+        {
+          "path": "profile-r/requirements/change-surface.json",
+          "sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7"
+        },
+        {
+          "path": "tools/benchmark-runner/schemas/v1/execution-plan.schema.json",
+          "sha256": "830da4ec042fdf16dde369d8ddeedf8ef5fc5f7158ebe47c66952e57b99805d2"
+        },
+        {
+          "path": "tools/benchmark-runner/schemas/v1/intervention-event.schema.json",
+          "sha256": "220b8867ee209a345b08895e8b25b5b94e399e6bc683c3a365879898bc0bb9c8"
+        },
+        {
+          "path": "tools/benchmark-runner/schemas/v1/measurement.schema.json",
+          "sha256": "0a797f16be2ef51832afebe93045c1c59f025b04e1205341ad63bfd3398b4e95"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P01-SOURCE-BOUNDARY",
+      "reason_code": "SOURCE_BOUNDARY_EXACT",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stage.schema.json",
+          "sha256": "b353a2c7a42c3cde81dd6d13b1b9f31a3c8da7b877c69d0191e76897d9851e22"
+        },
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
+          "sha256": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2"
+        },
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+          "sha256": "de10e7c4741e620e8019e51619b22c4898ec2e96ea1247f83031f0863920d089"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "45922f9e9e5f9caaa2b934fe828339e0b6b57502f2a22e3ad626966d996b7892"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P02-DISCRIMINATOR",
+      "reason_code": "STAGE_DISCRIMINATOR_EXACT",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The configuration fixture parses, serializes, and executes its CLI contract behaviorally.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml",
+          "sha256": "a7541c1d92f1373c2f0b3de69c1c0ea9c4e0a6a530a91a5c8cfdf83e824a9dcc"
+        },
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py",
+          "sha256": "5b14524b29a15aa4e3f9b7357e55eb8ceded64b7959498c837e87d09be44da81"
+        },
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py",
+          "sha256": "729c8fa3a2d5be1ceed8891df393e7c32c61077979b2687e237ee082cc701dc9"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P03-CONFIG-FIXTURE",
+      "reason_code": "CONFIG_FIXTURE_SEMANTICS_VALID",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The incident fixture preserves evidence, uncertainty, timeline, claim, action, and report relationships.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json",
+          "sha256": "8804eaedf76d205114415faf898b9ae8e33788593abf6b233b09923ef43ba590"
+        },
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md",
+          "sha256": "fe89c9c8ba0a77bc7f0e9ee33f864f98d3f5dd7826f3b7d61771ee22af8cf209"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P04-INCIDENT-FIXTURE",
+      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_VALID",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The S2 fixture manifest binds both exact fixture identities and budgets.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
+          "sha256": "18c5492947c45aa00515285433112f29034fb3c126e0abbc570b6885bc91c140"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P05-MANIFEST-BINDING",
+      "reason_code": "MANIFEST_IDENTITIES_BOUND",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+          "sha256": "de10e7c4741e620e8019e51619b22c4898ec2e96ea1247f83031f0863920d089"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "45922f9e9e5f9caaa2b934fe828339e0b6b57502f2a22e3ad626966d996b7892"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P06-PLAN-BINDING",
+      "reason_code": "PLAN_IDENTITY_BOUND",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
+          "sha256": "d1d9dff915662c3c90d61a907d09c557c6e7781f425f13e162646853799de719"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P07-ROUTING-POLICY",
+      "reason_code": "RESERVE_ISOLATED",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+          "sha256": "e2ac39aa4f1974d8c3a276ac3f9f0162fea28cb3d2a3d17809d614dbebb74557"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "45922f9e9e5f9caaa2b934fe828339e0b6b57502f2a22e3ad626966d996b7892"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P08-LIFECYCLE-REUSE",
+      "reason_code": "LIFECYCLE_REUSED",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "S2 status and deterministic post-hoc evaluation remain on the shared implementation path.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "45922f9e9e5f9caaa2b934fe828339e0b6b57502f2a22e3ad626966d996b7892"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
+          "sha256": "9b47bb4eb7c6f63d73b0a58ecb01d849f729659ba0a52cf9a9f898a1cba67734"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P09-STATUS-POSTHOC",
+      "reason_code": "STATUS_POSTHOC_ALIGNED",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
+          "sha256": "de10e7c4741e620e8019e51619b22c4898ec2e96ea1247f83031f0863920d089"
+        },
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/suite.yaml",
+          "sha256": "4e5fe2cd6a3ac805a4479a8d17725331d9ce01820d5842814070417a8d7c6a1d"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "45922f9e9e5f9caaa2b934fe828339e0b6b57502f2a22e3ad626966d996b7892"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P10-EXPORT-VERIFY",
+      "reason_code": "EXPORT_ROUNDTRIP_FAILED",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The exact four S2 Cells require explicit effects, successful Checks, Measurements, and seals.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/tests/test_routing_s2.py",
+          "sha256": "8ba9142812bd647c6263ee8d7b64a454a88e0432e5b3718cf5485f0b6ca01274"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P11-S2-E2E",
+      "reason_code": "S2_E2E_FAILED",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "Legacy S1 regressions rebuild deterministic local Git identities without historical objects.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/tests/test_routing_suite.py",
+          "sha256": "d71e2f2efc8d9361ad5e7953160128ef87bfe77a9e8147ad6fde095b7186da64"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P12-S1-PORTABILITY",
+      "reason_code": "S1_SELF_CONTAINED",
+      "severity": "critical",
+      "status": "pass"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The structured command, state, failure, and stop relations match the public operator surface.",
+      "evidence_refs": [
+        {
+          "path": "profile-r/work/operator-contract.json",
+          "sha256": "529c4b9f91566bc5f4a48900d7182bf0b0341709616562e5a308606cf59258f3"
+        },
+        {
+          "path": "tools/benchmark-runner/README.md",
+          "sha256": "0a666a0df5dc0e3f19377d44a3b619fb8757e4303705090104a0bcec19b631ec"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P13-OPERATOR-SEMANTICS",
+      "reason_code": "OPERATOR_CONTRACT_ALIGNED",
+      "severity": "major",
+      "status": "pass"
+    }
+  ],
+  "schema_version": 1,
+  "workspace_after_sha256": "e79ff4e30bf9d869c0ea82dcbd0eca8ba8ae1deda4e7e79b196ea521d1dcaf2c",
+  "workspace_before_sha256": "e79ff4e30bf9d869c0ea82dcbd0eca8ba8ae1deda4e7e79b196ea521d1dcaf2c",
+  "workspace_mutated": false
+}

@@ -1,23 +1,28 @@
 {
   "aggregate_status": "fail",
-  "catalog_sha256": "7d2dd8a2de5c10dbe20c474b506bb61b51fd20bae4702c453414c11a976507aa",
+  "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
   "cell_id": "pristine",
   "checker_run_status": "completed",
-  "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-  "envelope_sha256": "4dbb45b566079c451f58d4f89dfef2a626854b87c99fdd7b759347f2bf174e4d",
+  "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+  "envelope_sha256": "e12343b4f86ed181ebea2fe03c1a660b2efb10b90f82b7b75b52bd28b39d2d0c",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
-    "R-P01-LEGACY-BYTES",
-    "R-P02-STAGE-DISCRIMINATOR",
-    "R-P03-PLAN-BINDING",
-    "R-P04-RESERVE-ISOLATION",
-    "R-P05-LIFECYCLE-REUSE",
-    "R-P06-EXPORT-ROUNDTRIP",
-    "R-P07-CROSS-CHECKOUT-REPRO",
-    "R-P08-OPERATOR-CONTRACT"
+    "R-P01-SOURCE-BOUNDARY",
+    "R-P02-DISCRIMINATOR",
+    "R-P03-CONFIG-FIXTURE",
+    "R-P04-INCIDENT-FIXTURE",
+    "R-P05-MANIFEST-BINDING",
+    "R-P06-PLAN-BINDING",
+    "R-P07-ROUTING-POLICY",
+    "R-P08-LIFECYCLE-REUSE",
+    "R-P09-STATUS-POSTHOC",
+    "R-P10-EXPORT-VERIFY",
+    "R-P11-S2-E2E",
+    "R-P12-S1-PORTABILITY",
+    "R-P13-OPERATOR-SEMANTICS"
   ],
-  "prerequisite_dag_sha256": "5168ee01b3025f2a99b18e4baf5d24ee8c249965f073e6ff42aebb5c55a89241",
+  "prerequisite_dag_sha256": "03f9f68c4733e34b6022b2c550c6b592688cbdb76e495512020120b280a9987f",
   "process": {
     "exit_code": 0,
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -30,12 +35,20 @@
   },
   "properties": [
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "The frozen legacy Plan, Measurement, and export Schema bytes are preserved.",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The legacy bytes and projected R01-R13 source boundary are exact.",
       "evidence_refs": [
+        {
+          "path": "benchmark-run.yaml",
+          "sha256": "e285b66288a97989cbee293bcd95fdfe6d92ee06a41e0ce4f6ff45e6f43de0ee"
+        },
         {
           "path": "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
           "sha256": "b13e5fe3a44a523196c3ca10209eeb91ad305b55c9f102cda42e975a6bd414c2"
+        },
+        {
+          "path": "profile-r/requirements/change-surface.json",
+          "sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7"
         },
         {
           "path": "tools/benchmark-runner/schemas/v1/execution-plan.schema.json",
@@ -51,13 +64,13 @@
         }
       ],
       "prerequisite_ids": [],
-      "property_id": "R-P01-LEGACY-BYTES",
-      "reason_code": "LEGACY_BYTES_PRESERVED",
+      "property_id": "R-P01-SOURCE-BOUNDARY",
+      "reason_code": "SOURCE_BOUNDARY_EXACT",
       "severity": "critical",
       "status": "pass"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -74,37 +87,68 @@
         }
       ],
       "prerequisite_ids": [],
-      "property_id": "R-P02-STAGE-DISCRIMINATOR",
+      "property_id": "R-P02-DISCRIMINATOR",
       "reason_code": "STAGE_DISCRIMINATOR_FAILED",
       "severity": "critical",
       "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "A prerequisite property did not pass.",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The configuration fixture parses, serializes, and executes its CLI contract behaviorally.",
       "evidence_refs": [],
-      "prerequisite_ids": [
-        "R-P02-STAGE-DISCRIMINATOR"
-      ],
-      "property_id": "R-P03-PLAN-BINDING",
-      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "prerequisite_ids": [],
+      "property_id": "R-P03-CONFIG-FIXTURE",
+      "reason_code": "CONFIG_FIXTURE_SEMANTICS_FAILED",
       "severity": "critical",
-      "status": "blocked_by_prerequisite"
+      "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "A prerequisite property did not pass.",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The incident fixture preserves evidence, uncertainty, timeline, claim, action, and report relationships.",
       "evidence_refs": [],
-      "prerequisite_ids": [
-        "R-P03-PLAN-BINDING"
-      ],
-      "property_id": "R-P04-RESERVE-ISOLATION",
-      "reason_code": "PREREQUISITE_NOT_PASSED",
-      "severity": "major",
-      "status": "blocked_by_prerequisite"
+      "prerequisite_ids": [],
+      "property_id": "R-P04-INCIDENT-FIXTURE",
+      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_FAILED",
+      "severity": "critical",
+      "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The S2 fixture manifest binds both exact fixture identities and budgets.",
+      "evidence_refs": [],
+      "prerequisite_ids": [],
+      "property_id": "R-P05-MANIFEST-BINDING",
+      "reason_code": "MANIFEST_IDENTITIES_DRIFTED",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "855eb3c07722528e898601933a8f978f64d72dbc72362d52cd27961b77e11a53"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P06-PLAN-BINDING",
+      "reason_code": "PLAN_IDENTITY_OR_ORDER_DRIFTED",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
+      "evidence_refs": [],
+      "prerequisite_ids": [],
+      "property_id": "R-P07-ROUTING-POLICY",
+      "reason_code": "RESERVE_REUSED_OR_MISCOUNTED",
+      "severity": "major",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -117,52 +161,92 @@
         }
       ],
       "prerequisite_ids": [],
-      "property_id": "R-P05-LIFECYCLE-REUSE",
+      "property_id": "R-P08-LIFECYCLE-REUSE",
       "reason_code": "DUPLICATE_OR_MISSING_LIFECYCLE",
       "severity": "major",
       "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "A prerequisite property did not pass.",
-      "evidence_refs": [],
-      "prerequisite_ids": [
-        "R-P02-STAGE-DISCRIMINATOR",
-        "R-P03-PLAN-BINDING"
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "S2 status and deterministic post-hoc evaluation remain on the shared implementation path.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "855eb3c07722528e898601933a8f978f64d72dbc72362d52cd27961b77e11a53"
+        }
       ],
-      "property_id": "R-P06-EXPORT-ROUNDTRIP",
-      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "prerequisite_ids": [],
+      "property_id": "R-P09-STATUS-POSTHOC",
+      "reason_code": "STATUS_POSTHOC_FAILED",
+      "severity": "major",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
+      "evidence_refs": [
+        {
+          "path": "benchmarks/suites/sdk-routing-v1/suite.yaml",
+          "sha256": "4e93b95867a9cf94d029852fb6ce64f9bd9c692e391ff5a535e084f3d709091f"
+        },
+        {
+          "path": "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+          "sha256": "855eb3c07722528e898601933a8f978f64d72dbc72362d52cd27961b77e11a53"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P10-EXPORT-VERIFY",
+      "reason_code": "EXPORT_ROUNDTRIP_FAILED",
       "severity": "critical",
-      "status": "blocked_by_prerequisite"
+      "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "A prerequisite property did not pass.",
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The exact four S2 Cells require explicit effects, successful Checks, Measurements, and seals.",
       "evidence_refs": [],
-      "prerequisite_ids": [
-        "R-P06-EXPORT-ROUNDTRIP"
-      ],
-      "property_id": "R-P07-CROSS-CHECKOUT-REPRO",
-      "reason_code": "PREREQUISITE_NOT_PASSED",
-      "severity": "major",
-      "status": "blocked_by_prerequisite"
+      "prerequisite_ids": [],
+      "property_id": "R-P11-S2-E2E",
+      "reason_code": "S2_E2E_FAILED",
+      "severity": "critical",
+      "status": "fail"
     },
     {
-      "checker_sha256": "b7f02fe23966eba70144ebcd2a5e0443bb6fde0c69d8fad006cd9c317dd2f457",
-      "description": "A prerequisite property did not pass.",
-      "evidence_refs": [],
-      "prerequisite_ids": [
-        "R-P03-PLAN-BINDING",
-        "R-P06-EXPORT-ROUNDTRIP"
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "Legacy S1 regressions rebuild deterministic local Git identities without historical objects.",
+      "evidence_refs": [
+        {
+          "path": "tools/benchmark-runner/tests/test_routing_suite.py",
+          "sha256": "b83c3b1e46ad31865e54bd7e209ce9b77ec990c434e19cca6d7d35ef30a5abfd"
+        }
       ],
-      "property_id": "R-P08-OPERATOR-CONTRACT",
-      "reason_code": "PREREQUISITE_NOT_PASSED",
+      "prerequisite_ids": [],
+      "property_id": "R-P12-S1-PORTABILITY",
+      "reason_code": "S1_PORTABILITY_FAILED",
+      "severity": "critical",
+      "status": "fail"
+    },
+    {
+      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "description": "The structured command, state, failure, and stop relations match the public operator surface.",
+      "evidence_refs": [
+        {
+          "path": "profile-r/work/operator-contract.json",
+          "sha256": "c045b9d636195e7e38ffda4d0b390f17d4f891cb831b078ee6dee72ec6874f87"
+        },
+        {
+          "path": "tools/benchmark-runner/README.md",
+          "sha256": "15b4e470cde7a2e3568ca79e40373522ebea54630f858dc66e904da064d4dadb"
+        }
+      ],
+      "prerequisite_ids": [],
+      "property_id": "R-P13-OPERATOR-SEMANTICS",
+      "reason_code": "OPERATOR_CONTRACT_DRIFT",
       "severity": "major",
-      "status": "blocked_by_prerequisite"
+      "status": "fail"
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "937306434d3c90af20e1707f1ee3fda8ebca54e45772334e9e86594e301a2179",
-  "workspace_before_sha256": "937306434d3c90af20e1707f1ee3fda8ebca54e45772334e9e86594e301a2179",
+  "workspace_after_sha256": "7448af474645b4aa6cb2092c228a025cb1c46912eb45d8240e365113f9a0b949",
+  "workspace_before_sha256": "7448af474645b4aa6cb2092c228a025cb1c46912eb45d8240e365113f9a0b949",
   "workspace_mutated": false
 }

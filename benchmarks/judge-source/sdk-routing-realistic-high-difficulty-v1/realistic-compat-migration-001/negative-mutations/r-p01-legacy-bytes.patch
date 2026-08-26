@@ -1,9 +1,0 @@
-diff --git a/tools/benchmark-runner/schemas/v1/measurement.schema.json b/tools/benchmark-runner/schemas/v1/measurement.schema.json
-index 0591af12963ac982663393ae6f1f4daa41d25d57..0722bea6e62ab4df5d5216a7e11a405ee8f44eef 100644
---- a/tools/benchmark-runner/schemas/v1/measurement.schema.json
-+++ b/tools/benchmark-runner/schemas/v1/measurement.schema.json
-@@ -495,3 +495,4 @@
-   "title": "Measurement",
-   "type": "object"
- }
-+

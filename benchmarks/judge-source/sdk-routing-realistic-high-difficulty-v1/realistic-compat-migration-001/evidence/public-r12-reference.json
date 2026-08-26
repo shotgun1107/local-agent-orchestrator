@@ -1,6 +1,6 @@
 {
   "contract_ok_marker": true,
-  "entrypoint": "benchmark_checks/check_profile_r.py R07",
+  "entrypoint": "benchmark_checks/check_profile_r.py R12",
   "evidence_projection": {
     "growth_margin": 32,
     "growth_probe_minimum_path_length": 261,
@@ -10,16 +10,16 @@
       "errors": 0,
       "failures": 0,
       "skipped": 0,
-      "tests": 12,
+      "tests": 5,
       "warnings": 0
     },
     "schema_version": 1
   },
-  "evidence_projection_sha256": "53669cc9cc0a63aa438a52782812d9b4d23f7a97df9e89cc98a25efad111c35b",
+  "evidence_projection_sha256": "8256a207631b074ad9b0c0ac532515e2c312a98fe8b3965661a6de5f1b21ce57",
   "outer_timeout_seconds": 1020,
   "passed": true,
   "return_code": 0,
   "schema_version": 1,
   "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "stdout_contract": "one canonical Evidence line followed by R07_PUBLIC_CONTRACT_OK"
+  "stdout_contract": "one diagnostic line, one environment Evidence line, and one Task OK line"
 }

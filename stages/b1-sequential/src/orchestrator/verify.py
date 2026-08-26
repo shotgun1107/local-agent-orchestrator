@@ -23,6 +23,7 @@ from pydantic import ValidationError
 
 from .contract import (
     CheckFailureClassification,
+    CheckDiagnosticResult,
     CheckResult,
     CheckState,
     CommandCheck,
@@ -43,6 +44,8 @@ PUBLIC_CHECK_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 PUBLIC_CHECK_FEEDBACK_MAX_BYTES = 16_384
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+CHECK_DIAGNOSTIC_RESULT_PREFIX = "CHECK_DIAGNOSTIC_RESULT:"
+CHECK_DIAGNOSTIC_RESULT_MAX_BYTES = 256_000
 CHECK_ENVIRONMENT_DIAGNOSTIC_MAX_BYTES = 4_096
 CHECK_ENVIRONMENT_DIAGNOSTIC_KEYS = frozenset(
     {
@@ -1428,11 +1431,17 @@ def _check_failure_classification(
     state: CheckState,
     stdout: str,
     stderr: str,
+    diagnostic_result: CheckDiagnosticResult | None,
 ) -> tuple[CheckFailureClassification | None, str]:
     if state is CheckState.PASSED:
         return None, "passed"
     if state is CheckState.ERROR:
         return CheckFailureClassification.ENVIRONMENT, "controller_runtime"
+    if (
+        diagnostic_result is not None
+        and diagnostic_result.classification is not None
+    ):
+        return diagnostic_result.classification, "structured_check_protocol"
     markers = {
         line[len(CHECK_FAILURE_CLASS_PREFIX):].strip()
         for stream in (stdout, stderr)
@@ -1443,6 +1452,37 @@ def _check_failure_classification(
     if len(markers) == 1 and next(iter(markers)) in allowed:
         return CheckFailureClassification(next(iter(markers))), "check_protocol"
     return CheckFailureClassification.UNKNOWN, "unclassified"
+
+
+def _extract_check_diagnostic_result(
+    stdout: str,
+    stderr: str,
+) -> CheckDiagnosticResult | None:
+    markers = [
+        line[len(CHECK_DIAGNOSTIC_RESULT_PREFIX):]
+        for stream in (stdout, stderr)
+        for line in stream.splitlines()
+        if line.startswith(CHECK_DIAGNOSTIC_RESULT_PREFIX)
+    ]
+    if len(markers) != 1:
+        return None
+    encoded = markers[0].encode("utf-8")
+    if len(encoded) > CHECK_DIAGNOSTIC_RESULT_MAX_BYTES:
+        return None
+    try:
+        value = json.loads(markers[0])
+        result = CheckDiagnosticResult.model_validate(value)
+    except (json.JSONDecodeError, ValidationError):
+        return None
+    canonical = json.dumps(
+        result.model_dump(mode="json"),
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    if canonical != markers[0]:
+        return None
+    return result
 
 
 def run_command_check(
@@ -1490,10 +1530,15 @@ def run_command_check(
                 temp_allocation_id=allocation.allocation_id,
             )
         state = CheckState.PASSED if completed.returncode in check.expected_exit_codes else CheckState.FAILED
+        diagnostic_result = _extract_check_diagnostic_result(
+            completed.stdout,
+            completed.stderr,
+        )
         failure_classification, classification_source = _check_failure_classification(
             state=state,
             stdout=completed.stdout,
             stderr=completed.stderr,
+            diagnostic_result=diagnostic_result,
         )
         return CheckResult(
             check_name=check_name,
@@ -1505,6 +1550,7 @@ def run_command_check(
             started_at=started,
             ended_at=utc_now(),
             failure_classification=failure_classification,
+            diagnostic_result=diagnostic_result,
             failure_classification_source=classification_source,
             temp_root=str(allocation.root),
             temp_allocation_id=allocation.allocation_id,
