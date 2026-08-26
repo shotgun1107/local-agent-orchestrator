@@ -2879,3 +2879,26 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 q19를 model-free 실행하는 것이다. q19 `CHALLENGE_READY` 전에는 Phase E v3 stage,
 새 candidate, acceptance 1·2와 readiness를 봉인하지 않는다. Live는 그 뒤 별도
 Environment Closure와 별도 사용자 승인 전까지 `NO_GO`다.
+
+## Profile R R01~R13 Docker Judge q19 model-free qualification
+
+- 작업일: 2026-08-26. exact source는 push된 `71713a1cb5713088df877e0b2485b1b8006ca930`,
+  image는 `local-agent-orchestrator/profile-r-judge@sha256:ba83a183...330ab`, batch는
+  `profile-r-docker-matrix-q19-company-r01-r13`이다.
+- global Python 진입은 `pydantic` 부재로 import 전에 종료됐고 Docker container와
+  Evidence는 생성되지 않았다. 빈 root를 확인한 뒤 repository 고정 Python 3.12.10 /
+  Pydantic 2.13.4 환경으로 동일 exact-source 실행을 완료했다.
+- reference는 R-P01~R-P13 `13/13 pass`, 전용 negative mutation 13개는 각 target
+  property를 fail했고 전체 `14/14 matched`다. 각 셀은 13개 property를 모두 실행했으며
+  `blocked_by_prerequisite=0`, model turn은 0이다.
+- raw는 `C:\q19\profile-r-docker-matrix-q19-company-r01-r13`, 공개 projection은
+  `benchmarks/artifacts/profile-r-docker-judge-qualification-v16/qualification.json`이다.
+  manifest self SHA는 `b489517c...bb43`, result self SHA는 `9e9de6c9...5595`, seal은
+  `56be4557...7559`, projection file SHA는 `2afc443a...c648`, 같은 실행환경을 묶은
+  `docker-environment.json` file SHA는 `4be0fd42...3c21`이다.
+- 독립 verifier PASS, raw seal file_count 72, q19 잔여 container 0이다. 최종 상태는
+  `CHALLENGE_READY`지만 이는 Judge q19만 연다. Phase E v3 candidate, acceptance 2회,
+  readiness, Environment Closure와 Live는 아직 실행하지 않았다.
+
+다음 관문은 q19 projection exact file SHA와 q1/budget seal을 직접 결합한 새 Phase E v3
+candidate를 model-free 생성하는 것이다. Live 실행 승인은 여전히 열리지 않았다.
