@@ -2902,3 +2902,29 @@ Environment Closure와 별도 사용자 승인 전까지 `NO_GO`다.
 
 다음 관문은 q19 projection exact file SHA와 q1/budget seal을 직접 결합한 새 Phase E v3
 candidate를 model-free 생성하는 것이다. Live 실행 승인은 여전히 열리지 않았다.
+
+## Profile R R01~R13 Phase E schema v3 candidate v17
+
+- 작업일: 2026-08-26. stage를 schema v3로 바꾸고 Profile R task_count 13, q19 v16,
+  Task Pack q1, budget q1과 Profile R 13/15·Profile I 8/10 budget을 직접 연결했다.
+- 역사 v2 회귀는 v16 source `cb691e56...9ed2`에 고정해 새 13-Task HEAD와 섞이지 않게
+  했다. 새 v3 exact-HEAD 시험에서 q1 self-seal의 LF-terminated canonical JSON과 Phase E
+  validator 불일치를 발견해 validator를 artifact 생성 규칙에 맞췄다.
+- stage source commit은 `f8c2249f...34fa`, seal validator까지 포함한 candidate source는
+  `e09652b69730cf30b4e9b363c44bd79c40afdb12`, tree는
+  `2335871b436bed7f6113270498983a35adcc52a0`이다. 전체 Phase E 회귀시험은 30/30 pass다.
+- candidate v17은 `exp_20260826_3d512c44_1`, Plan
+  `3d512c44d88892b7abc0cc13390d33bd5e291fb2c69e01391dda32b3cc2fd017`, bindings
+  `4517a004944e25904a8719c13500e4bd2bbd6def0c7a81894c91d44aaa213f7e`다.
+- q19 file SHA `2afc443a...c648`, q19 seal `56be4557...7559`, q1 file SHA
+  `08a4fa39...8ad7`, q1 seal `ad803c61...38dc`, budget file SHA `26d3919f...ed79`,
+  budget seal `756c9841...fbd6`, Docker environment SHA `4be0fd42...3c21`을 source
+  binding과 Plan에 직접 결합했다.
+- candidate seal은 `5a460cfc47d5a52988d0a10527a4b7cf3bba88e02cf83ea9204da73e9ad922f7`,
+  files manifest는 `9b0fc0cd...9f95`, seal file SHA는 `ed1ed4af...57b1`이다.
+- SDK 0-turn preflight는 ChatGPT account, SDK 0.144.4, `gpt-5.6-sol` 노출을 확인했다.
+  API-key 환경 이름, thread/start, turn/start와 actual model turn은 0이다. 별도 verifier와
+  checked-in candidate test를 통과했다.
+
+다음 관문은 이 candidate v17을 대상으로 한 독립 acceptance run 1과 run 2다. readiness,
+Environment Closure와 Live는 acceptance 2회가 봉인될 때까지 `NO-GO`다.
