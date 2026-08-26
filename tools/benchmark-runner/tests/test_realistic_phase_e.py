@@ -28,6 +28,7 @@ from benchmark_runner.runner import _source_tree_sha256
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]
+V2_SOURCE_COMMIT = "cb691e56c8cd439e494f5519ebae65ccda669ed2"
 
 
 def _head() -> str:
@@ -55,31 +56,31 @@ def _preflight() -> PhaseEPreflightEvidence:
 
 
 def _v2_stage_bytes() -> bytes:
-    return (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes()
+    return (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v16"
+        / "stage-manifest.json"
+    ).read_bytes()
 
 
 def _create_worktree_v2_candidate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Path:
-    """Exercise v2 from exact stage bytes, including a dirty pre-commit checkout."""
+    """Exercise v2 from the exact historical v16 source commit."""
 
-    source_commit = _head()
-    stage_bytes = _v2_stage_bytes()
-    original_git_bytes = phase_e._git_bytes
+    source_commit = V2_SOURCE_COMMIT
     original_git_text = phase_e._git_text
-
-    def git_bytes(repository: Path, commit: str, relative: str) -> bytes:
-        if relative == PHASE_E_STAGE_RELATIVE:
-            return stage_bytes
-        return original_git_bytes(repository, commit, relative)
 
     def git_text(repository: Path, *args: str) -> str:
         if args == ("status", "--porcelain=v1"):
             return ""
+        if args == ("rev-parse", "HEAD"):
+            return source_commit
         return original_git_text(repository, *args)
 
-    monkeypatch.setattr(phase_e, "_git_bytes", git_bytes)
     monkeypatch.setattr(phase_e, "_git_text", git_text)
     candidate = tmp_path / "candidate-v2"
     create_phase_e_candidate(
@@ -129,18 +130,28 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
         (3, "b1"),
         (4, "ss1"),
     ]
-    assert stage.budget.total_initial_turns == 32
-    assert stage.budget.total_turn_ceiling == 40
+    assert stage.budget.total_initial_turns == 42
+    assert stage.budget.total_turn_ceiling == 50
     assert stage.dispatch.automatic_continuation is False
-    assert stage.schema_version == 2
+    assert stage.schema_version == 3
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v15/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/"
         "docker-environment.json"
     )
+    assert stage.profiles[0].task_pack_qualification_path == (
+        "benchmarks/artifacts/profile-r-task-pack-q1/qualification.json"
+    )
+    assert stage.profiles[0].task_budget_path == (
+        "benchmarks/artifacts/profile-r-task-pack-q1/task-budget.json"
+    )
+    assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
+    assert stage.profiles[1].task_count == 8
+    assert stage.budget.profile_budgets is not None
+    assert [item.task_count for item in stage.budget.profile_budgets] == [13, 8]
 
 
 def test_v2_stage_requires_only_profile_r_qualification_sibling() -> None:
@@ -193,7 +204,7 @@ def test_v2_binding_rejects_docker_environment_semantic_mismatch(
     assert environment_path is not None
     original_git_bytes = phase_e._git_bytes
     environment = json.loads(
-        original_git_bytes(REPOSITORY, _head(), environment_path)
+        original_git_bytes(REPOSITORY, V2_SOURCE_COMMIT, environment_path)
     )
     target = environment if section is None else environment[section]
     target[field] = replacement
@@ -206,7 +217,7 @@ def test_v2_binding_rejects_docker_environment_semantic_mismatch(
 
     monkeypatch.setattr(phase_e, "_git_bytes", git_bytes)
     with pytest.raises(PhaseECandidateError, match="environment and qualification differ"):
-        phase_e.build_source_bindings(REPOSITORY, _head(), stage)
+        phase_e.build_source_bindings(REPOSITORY, V2_SOURCE_COMMIT, stage)
 
 
 def test_v2_candidate_binds_exact_git_environment_in_binding_plan_and_seal(
@@ -223,7 +234,7 @@ def test_v2_candidate_binds_exact_git_environment_in_binding_plan_and_seal(
         "docker-environment.json"
     )
     expected_sha = sha256(
-        phase_e._git_bytes(REPOSITORY, _head(), expected_path)
+        phase_e._git_bytes(REPOSITORY, V2_SOURCE_COMMIT, expected_path)
     ).hexdigest()
 
     assert expected_sha == (
@@ -385,6 +396,62 @@ def test_company_profile_r_requalification_v15_is_exact_nine_cell_projection() -
         "status": "CHALLENGE_READY",
         "matched_expectations": 9,
         "cell_count": 9,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
+
+
+def test_profile_r_redesign_q19_v16_is_exact_fourteen_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v16"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["schema_version"] == 2
+    assert qualification["source_commit"] == (
+        "71713a1cb5713088df877e0b2485b1b8006ca930"
+    )
+    assert qualification["batch_id"] == (
+        "profile-r-docker-matrix-q19-company-r01-r13"
+    )
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(
+        range(1, 15)
+    )
+    assert qualification["cells"][0]["variant_id"] == "reference"
+    assert qualification["cells"][0]["aggregate_status"] == "pass"
+    assert all(
+        cell["matched_expectation"] is True for cell in qualification["cells"]
+    )
+    assert all(
+        cell["aggregate_status"] == "fail"
+        for cell in qualification["cells"][1:]
+    )
+    assert all(len(cell["properties"]) == 13 for cell in qualification["cells"])
+    assert all(
+        property_result["status"] != "blocked_by_prerequisite"
+        for cell in qualification["cells"]
+        for property_result in cell["properties"]
+    )
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 14,
+        "cell_count": 14,
         "actual_model_turns": 0,
         "residual_profile_r_containers": 0,
     }
