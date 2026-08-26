@@ -2970,3 +2970,36 @@ topology를 사용하는 acceptance run 2이며 readiness와 Live는 계속 `NO-
 두 acceptance가 모두 통과해 현재 판정은 `EXACT_CANDIDATE_ACCEPTANCE_PASS`다. 다음 관문은
 candidate v17, q19, q1/budget과 acceptance 1·2를 직접 결합하는 readiness package다.
 Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R R01~R13 Live readiness v9 package
+
+- 작업일: 2026-08-26. package record commit/tree는
+  `b4aae142ceea0ed46dd1c15ea6b22ed0beeab449` /
+  `8289d5a1be97a3eb40a1248958f8644e1aa1039e`다.
+- 조립 r1은 Git의 한글 quoted path를 거부해 file 0에서, r2는 Windows의 long
+  `commit:path` stat 제한으로 file 72에서, r3는 공개 회귀시험의 가짜 secret marker
+  5개를 실제 finding과 구분하지 못해 file 531에서 각각 seal 전 중단됐다. 세 partial
+  root 모두 readiness seal·package manifest·ZIP은 없다.
+- r4는 Git path를 UTF-8 원문으로 고정하고 blob OID를 `cat-file`로 읽었다. 공개 테스트
+  suffix 세 종류의 5개 복제 marker만 known-fake로 분류하고 실제 credential finding 0을
+  유지했다.
+- 최종 package는 repository 417, q19 sealed 74, qualification v16 2, Task Pack q1 3,
+  reference R01~R13 4, candidate v17 6, acceptance 20, Git identity 2와 root control 5의
+  exact 533파일이다.
+- package manifest record 532, payload 531, manifest file SHA
+  `0e8809eb910e5efd2b9f2a6235206873acada0b87019020a3f898d65b8e4ecb4`, payload aggregate
+  `e4e18dc3bb0032e9ebfd1d3d3627988c0870bb4ca249ee65d82a73908eae08ad`다.
+- readiness seal self-hash는 `569ac57514bafb25f927ed0e4d46af75d31869d89870eeea82cb159a2c94b015`,
+  seal file SHA는 `67b376aea7e5b3dd50ffe3f08d069b3c379855aaa9fa9de4ba2c1e5284fc8095`다.
+- deterministic ZIP은 3,046,118 bytes, 533 entries, SHA
+  `d9befe0a6ab37f49238dd6ee509b6e20b304fa218a2cd58cfaf30657bd0a5691`다.
+  duplicate·directory·unsafe entry와 CRC failure는 0이고 새 해제 root의 파일 hash와
+  원본 package가 exact 일치했다.
+- repository verifier를 원본과 해제본에 별도 실행해 같은 manifest count, payload
+  aggregate와 seal을 재계산했다. model/SDK thread/turn/Docker workload는 0이다.
+- seal 상태는 `INTERNAL_PRELIVE_READY`, `live_authorized=false`다. 외부 AI 재심사는 현재
+  동결 명세의 필수 관문이 아니며 readiness를 이유로 같은 턴에서 Live를 실행하지 않는다.
+
+`DEV-20260825-001`은 R01~R13 재설계부터 readiness까지 검증돼 resolved로 닫았다. 다음
+관문은 AGENTS.md 형식의 별도 Environment Closure 턴이다. GO가 나와도 그 턴에서는
+실행하지 않고 사용자에게 제어권을 돌려준다.
