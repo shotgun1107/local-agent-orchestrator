@@ -1,0 +1,383 @@
+{
+  "cases": [
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p01-source-boundary",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "aa0379a651135d67064f7b6f212436a4c6c442c80c7b63a3b24f1f6e15f9e34c",
+        "task_id": "R01"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "fail",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P01-SOURCE-BOUNDARY"
+    },
+    {
+      "cofailed_property_ids": [
+        "R-P10-EXPORT-VERIFY",
+        "R-P11-S2-E2E",
+        "R-P12-S1-PORTABILITY"
+      ],
+      "mutation_id": "r-p02-discriminator",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "41b94102df5f0138bb2e25e06da8d3fcf8f099a74aa7e243d8cadba86f5b0b11",
+        "task_id": "R02"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "fail",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "fail",
+        "R-P11-S2-E2E": "fail",
+        "R-P12-S1-PORTABILITY": "fail",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P02-DISCRIMINATOR"
+    },
+    {
+      "cofailed_property_ids": [
+        "R-P05-MANIFEST-BINDING"
+      ],
+      "mutation_id": "r-p03-config-fixture",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "948243a23748dd1b8af8808b5eca2059c86f1824ce2c4ad2e6a2c784f3582f90",
+        "task_id": "R03"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "fail",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "fail",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P03-CONFIG-FIXTURE"
+    },
+    {
+      "cofailed_property_ids": [
+        "R-P05-MANIFEST-BINDING"
+      ],
+      "mutation_id": "r-p04-incident-fixture",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "f675df083fa9deab1ff01421de7236f47ea41bbe505cb5b21e2bd627db2d2ec4",
+        "task_id": "R04"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "fail",
+        "R-P05-MANIFEST-BINDING": "fail",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P04-INCIDENT-FIXTURE"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p05-manifest-binding",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "df8eebc23e8ce45c7c5383888d7b48d5ed08f12194e658264d346d7d0b5ce24d",
+        "task_id": "R05"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "fail",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P05-MANIFEST-BINDING"
+    },
+    {
+      "cofailed_property_ids": [
+        "R-P10-EXPORT-VERIFY",
+        "R-P11-S2-E2E"
+      ],
+      "mutation_id": "r-p06-plan-binding",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "f2c7f3f7c5959f894d72efd883297ddaa56f18f315656f19b0607557e0f9e2bf",
+        "task_id": "R06"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "fail",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "fail",
+        "R-P11-S2-E2E": "fail",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P06-PLAN-BINDING"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p07-routing-policy",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "8a7ce0e9648194c5c43bac4e4545d6f0565f641a058f915a5588d785db0d54b1",
+        "task_id": "R07"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "fail",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P07-ROUTING-POLICY"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p08-lifecycle-reuse",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "e70fe8fcfde1f2612282d30797468df94a01a892a44d27c7eec993dc70295ffc",
+        "task_id": "R08"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "fail",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P08-LIFECYCLE-REUSE"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p09-status-posthoc",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "5c6f1f14c650436fa18858964571df3a52b6f5ef6376468bc8a8f096dc765fa0",
+        "task_id": "R09"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "fail",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P09-STATUS-POSTHOC"
+    },
+    {
+      "cofailed_property_ids": [
+        "R-P11-S2-E2E"
+      ],
+      "mutation_id": "r-p10-export-verify",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "5e98ea7237edcb1552e3a5cb7634c742e5d9aa5e9ae65240ed3b2172f14f6978",
+        "task_id": "R10"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "fail",
+        "R-P11-S2-E2E": "fail",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P10-EXPORT-VERIFY"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p11-s2-e2e",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "ffc283e47829f83bb69b605a6117ccb56553dd0b9718dddd8469ef24d736a5bc",
+        "stdout_sha256": "2b0dedde24bc237c0feb4975456ea23185df05823df7c0ee9f47e3dbc2d1c014",
+        "task_id": "R11"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "fail",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P11-S2-E2E"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p12-s1-portability",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "e4d19ae86006011a11b7f932aeb0624ac596610eb69f3c9e6e0f38d90ddbd610",
+        "task_id": "R12"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "fail",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P12-S1-PORTABILITY"
+    },
+    {
+      "cofailed_property_ids": [],
+      "mutation_id": "r-p13-operator-semantics",
+      "public_contract": {
+        "classification": "PRODUCT_ASSERTION",
+        "contract_rejected": true,
+        "return_code": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "34ddded863c360ea8b3d36d85413a78400e9bffa97d467e59911d77023b398de",
+        "task_id": "R13"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "fail"
+      },
+      "target_property_id": "R-P13-OPERATOR-SEMANTICS"
+    }
+  ],
+  "profile": "R",
+  "schema_version": 1
+}

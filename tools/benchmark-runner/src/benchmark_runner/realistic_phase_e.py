@@ -40,6 +40,7 @@ from benchmark_runner.realistic_routing import (
     CommonBudgetContract,
     PassiveBoundaryObservation,
     PassiveBoundaryRecord,
+    ProfileBudgetContract,
     PropertyEvaluationEnvelope,
     REALISTIC_STAGE_ID,
     REALISTIC_SUITE_ID,
@@ -124,9 +125,15 @@ class PhaseEProfileSpec(StrictModel):
     judge_path: str = Field(min_length=1)
     qualification_path: str = Field(min_length=1)
     docker_environment_path: str | None = None
-    task_count: Literal[8]
+    task_pack_qualification_path: str | None = None
+    task_budget_path: str | None = None
+    task_count: int = Field(ge=1)
 
-    @field_validator("docker_environment_path")
+    @field_validator(
+        "docker_environment_path",
+        "task_pack_qualification_path",
+        "task_budget_path",
+    )
     @classmethod
     def environment_path_is_safe(cls, value: str | None) -> str | None:
         return validate_relative_path(value) if value is not None else None
@@ -141,17 +148,60 @@ class PhaseECellSpec(StrictModel):
     variant_id: Literal["ss1", "b1"]
 
 
+class PhaseEProfileTurnBudget(StrictModel):
+    profile_id: Literal[
+        "repository-wide-compatibility-migration",
+        "evidence-bound-incident-repair",
+    ]
+    task_count: int = Field(gt=0)
+    base_turns_per_variant: int = Field(gt=0)
+    total_turn_ceiling_per_variant: int = Field(gt=0)
+
+
 class PhaseEBudget(StrictModel):
     task_initial_turns: Literal[1]
     task_extra_turn_ceiling: Literal[1]
     variant_extra_turn_ceiling: Literal[2]
-    base_turns_per_variant: Literal[8]
-    total_turn_ceiling_per_variant: Literal[10]
-    total_initial_turns: Literal[32]
-    total_turn_ceiling: Literal[40]
+    base_turns_per_variant: int = Field(gt=0)
+    total_turn_ceiling_per_variant: int = Field(gt=0)
+    total_initial_turns: int = Field(gt=0)
+    total_turn_ceiling: int = Field(gt=0)
     model_active_seconds_ceiling_per_variant: int = Field(gt=0)
     wall_clock_seconds_ceiling_per_variant: int = Field(gt=0)
     unused_reserve_transfer: Literal["forbidden"]
+    profile_budgets: list[PhaseEProfileTurnBudget] | None = None
+
+    @model_validator(mode="after")
+    def exact_turn_arithmetic(self) -> "PhaseEBudget":
+        if self.profile_budgets is None:
+            if (
+                self.base_turns_per_variant != 8
+                or self.total_turn_ceiling_per_variant != 10
+                or self.total_initial_turns != 32
+                or self.total_turn_ceiling != 40
+            ):
+                raise ValueError("legacy Phase E budget differs")
+            return self
+        if [item.profile_id for item in self.profile_budgets] != [
+            "repository-wide-compatibility-migration",
+            "evidence-bound-incident-repair",
+        ]:
+            raise ValueError("Phase E profile budget order differs")
+        if [item.task_count for item in self.profile_budgets] != [13, 8]:
+            raise ValueError("Phase E profile Task counts differ")
+        for item in self.profile_budgets:
+            if item.base_turns_per_variant != item.task_count:
+                raise ValueError("Phase E profile base turns differ")
+            if item.total_turn_ceiling_per_variant != item.task_count + 2:
+                raise ValueError("Phase E profile turn ceiling differs")
+        if (
+            self.base_turns_per_variant != 13
+            or self.total_turn_ceiling_per_variant != 15
+            or self.total_initial_turns != 42
+            or self.total_turn_ceiling != 50
+        ):
+            raise ValueError("Phase E v3 aggregate budget differs")
+        return self
 
 
 class PhaseEDispatchPolicy(StrictModel):
@@ -169,7 +219,7 @@ class PhaseEClaimPolicy(StrictModel):
 
 
 class PhaseEStageManifest(StrictModel):
-    schema_version: Literal[1, 2]
+    schema_version: Literal[1, 2, 3]
     status: Literal["frozen_before_model_use"]
     suite_id: Literal["sdk-routing-realistic-high-difficulty-v1"]
     stage_id: Literal["realistic-high-difficulty-initial"]
@@ -203,6 +253,12 @@ class PhaseEStageManifest(StrictModel):
         if self.schema_version == 1:
             if any(item.docker_environment_path is not None for item in self.profiles):
                 raise ValueError("Phase E v1 profiles cannot claim Docker environment identity")
+            if any(
+                item.task_pack_qualification_path is not None
+                or item.task_budget_path is not None
+                for item in self.profiles
+            ):
+                raise ValueError("Phase E v1 profiles cannot claim redesign artifacts")
         else:
             expected_environment = str(
                 PurePosixPath(profile_r.qualification_path).with_name(
@@ -215,7 +271,33 @@ class PhaseEStageManifest(StrictModel):
                     "docker-environment.json"
                 )
             if profile_i.docker_environment_path is not None:
-                raise ValueError("Phase E v2 Profile I cannot claim Docker environment identity")
+                raise ValueError("Phase E Profile I cannot claim Docker environment identity")
+        if self.schema_version in {1, 2}:
+            if [item.task_count for item in self.profiles] != [8, 8]:
+                raise ValueError("legacy Phase E profile Task counts differ")
+            if self.budget.profile_budgets is not None:
+                raise ValueError("legacy Phase E cannot claim profile budgets")
+            if any(
+                item.task_pack_qualification_path is not None
+                or item.task_budget_path is not None
+                for item in self.profiles
+            ):
+                raise ValueError("legacy Phase E cannot claim redesign artifacts")
+        else:
+            if [item.task_count for item in self.profiles] != [13, 8]:
+                raise ValueError("Phase E v3 profile Task counts differ")
+            if self.budget.profile_budgets is None:
+                raise ValueError("Phase E v3 requires profile budgets")
+            if (
+                profile_r.task_pack_qualification_path is None
+                or profile_r.task_budget_path is None
+            ):
+                raise ValueError("Phase E v3 Profile R redesign artifacts are missing")
+            if (
+                profile_i.task_pack_qualification_path is not None
+                or profile_i.task_budget_path is not None
+            ):
+                raise ValueError("Phase E v3 Profile I cannot claim Profile R artifacts")
         expected = [
             (1, "repository-wide-compatibility-migration", "ss1"),
             (2, "repository-wide-compatibility-migration", "b1"),
@@ -263,12 +345,22 @@ class PhaseEProfileBinding(StrictModel):
     qualification_manifest_sha256: Sha256
     qualification_result_sha256: Sha256
     qualification_seal_sha256: Sha256
+    task_pack_qualification_path: str | None = None
+    task_pack_qualification_sha256: Sha256 | None = None
+    task_pack_qualification_seal_sha256: Sha256 | None = None
+    task_budget_path: str | None = None
+    task_budget_sha256: Sha256 | None = None
+    task_budget_seal_sha256: Sha256 | None = None
     docker_environment_path: str | None = None
     docker_environment_sha256: Sha256 | None = None
-    task_count: Literal[8]
+    task_count: int = Field(ge=1)
     challenge_ready: Literal[True]
 
-    @field_validator("docker_environment_path")
+    @field_validator(
+        "docker_environment_path",
+        "task_pack_qualification_path",
+        "task_budget_path",
+    )
     @classmethod
     def environment_path_is_safe(cls, value: str | None) -> str | None:
         return validate_relative_path(value) if value is not None else None
@@ -279,11 +371,29 @@ class PhaseEProfileBinding(StrictModel):
             self.docker_environment_sha256 is None
         ):
             raise ValueError("Phase E Docker environment identity must be path/SHA complete")
+        task_pack_values = (
+            self.task_pack_qualification_path,
+            self.task_pack_qualification_sha256,
+            self.task_pack_qualification_seal_sha256,
+        )
+        if any(value is not None for value in task_pack_values) and not all(
+            value is not None for value in task_pack_values
+        ):
+            raise ValueError("Phase E Task Pack identity must be path/SHA/seal complete")
+        task_budget_values = (
+            self.task_budget_path,
+            self.task_budget_sha256,
+            self.task_budget_seal_sha256,
+        )
+        if any(value is not None for value in task_budget_values) and not all(
+            value is not None for value in task_budget_values
+        ):
+            raise ValueError("Phase E task budget identity must be path/SHA/seal complete")
         return self
 
 
 class PhaseESourceBindings(StrictModel):
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[1, 2, 3] = 1
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_tree: str = Field(pattern=r"^[0-9a-f]{40}$")
     stage_manifest_path: Literal[PHASE_E_STAGE_RELATIVE]
@@ -322,6 +432,30 @@ class PhaseESourceBindings(StrictModel):
                 or profile_i.docker_environment_sha256 is not None
             ):
                 raise ValueError("Phase E v2 Profile I cannot claim Docker environment identity")
+        if self.schema_version in {1, 2}:
+            if any(
+                item.task_pack_qualification_path is not None
+                or item.task_budget_path is not None
+                for item in self.profiles
+            ):
+                raise ValueError("legacy Phase E bindings cannot claim redesign artifacts")
+        else:
+            if (
+                profile_r.task_count != 13
+                or profile_r.task_pack_qualification_path is None
+                or profile_r.task_pack_qualification_sha256 is None
+                or profile_r.task_pack_qualification_seal_sha256 is None
+                or profile_r.task_budget_path is None
+                or profile_r.task_budget_sha256 is None
+                or profile_r.task_budget_seal_sha256 is None
+            ):
+                raise ValueError("Phase E v3 Profile R redesign identity differs")
+            if (
+                profile_i.task_count != 8
+                or profile_i.task_pack_qualification_path is not None
+                or profile_i.task_budget_path is not None
+            ):
+                raise ValueError("Phase E v3 Profile I redesign identity differs")
         payload = self.model_dump(
             mode="json",
             exclude={"bindings_sha256"},
@@ -339,14 +473,14 @@ class PhaseECandidateFile(StrictModel):
 
 
 class PhaseECandidateSeal(StrictModel):
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[1, 2, 3] = 1
     kind: Literal[PHASE_E_CANDIDATE_KIND] = PHASE_E_CANDIDATE_KIND
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     experiment_id: str
     plan_fingerprint: Sha256
     planned_cells: Literal[4]
-    planned_initial_model_turns: Literal[32]
-    planned_model_turn_ceiling: Literal[40]
+    planned_initial_model_turns: int = Field(gt=0)
+    planned_model_turn_ceiling: int = Field(gt=0)
     actual_model_turns: Literal[0]
     docker_environment_path: str | None = None
     docker_environment_sha256: Sha256 | None = None
@@ -372,8 +506,14 @@ class PhaseECandidateSeal(StrictModel):
         has_sha = self.docker_environment_sha256 is not None
         if self.schema_version == 1 and (has_path or has_sha):
             raise ValueError("Phase E v1 seal cannot claim Docker environment identity")
-        if self.schema_version == 2 and not (has_path and has_sha):
-            raise ValueError("Phase E v2 seal requires Docker environment path/SHA")
+        if self.schema_version in {2, 3} and not (has_path and has_sha):
+            raise ValueError("Phase E v2+ seal requires Docker environment path/SHA")
+        expected_turns = (42, 50) if self.schema_version == 3 else (32, 40)
+        if (
+            self.planned_initial_model_turns,
+            self.planned_model_turn_ceiling,
+        ) != expected_turns:
+            raise ValueError("Phase E candidate turn totals differ")
         payload = self.model_dump(
             mode="json",
             exclude={"seal_sha256"},
@@ -507,6 +647,70 @@ def _profile_binding(
         or qualification.get("snapshot_id") != profile.snapshot_id
     ):
         raise PhaseECandidateError(f"{profile.snapshot_id} qualification is not ready")
+    task_pack_qualification_sha256 = None
+    task_pack_qualification_seal_sha256 = None
+    task_budget_sha256 = None
+    task_budget_seal_sha256 = None
+    if profile.task_pack_qualification_path is not None:
+        task_pack_bytes = _git_bytes(
+            repository,
+            commit,
+            profile.task_pack_qualification_path,
+        )
+        task_pack = _json(task_pack_bytes, profile.task_pack_qualification_path)
+        expected_task_ids = [f"R{ordinal:02d}" for ordinal in range(1, 14)]
+        task_pack_without_seal = {
+            key: value for key, value in task_pack.items() if key != "seal_sha256"
+        }
+        if (
+            task_pack.get("status") != "TASK_PACK_READY"
+            or task_pack.get("model_turns") != 0
+            or task_pack.get("snapshot_id") != profile.snapshot_id
+            or task_pack.get("task_ids") != expected_task_ids
+            or not isinstance(task_pack.get("reference_chain_seal_sha256"), str)
+            or not isinstance(task_pack.get("public_negative_matrix_sha256"), str)
+            or not isinstance(task_pack.get("seal_sha256"), str)
+            or task_pack.get("seal_sha256")
+            != canonical_sha256(task_pack_without_seal)
+        ):
+            raise PhaseECandidateError(
+                f"{profile.snapshot_id} Task Pack qualification is not ready"
+            )
+        task_pack_qualification_sha256 = _sha256(task_pack_bytes)
+        task_pack_qualification_seal_sha256 = str(task_pack["seal_sha256"])
+    if profile.task_budget_path is not None:
+        task_budget_bytes = _git_bytes(
+            repository,
+            commit,
+            profile.task_budget_path,
+        )
+        task_budget = _json(task_budget_bytes, profile.task_budget_path)
+        expected_task_ids = [f"R{ordinal:02d}" for ordinal in range(1, 14)]
+        per_task = task_budget.get("per_task_maximum_turns")
+        task_budget_without_seal = {
+            key: value for key, value in task_budget.items() if key != "seal_sha256"
+        }
+        if (
+            task_budget.get("status") != "PROFILE_R_TASK_BUDGET_SEALED"
+            or task_budget.get("model_turns") != 0
+            or task_budget.get("snapshot_id") != profile.snapshot_id
+            or task_budget.get("task_ids") != expected_task_ids
+            or not isinstance(per_task, dict)
+            or list(per_task) != expected_task_ids
+            or any(value != 2 for value in per_task.values())
+            or task_budget.get("base_turns_per_cell") != 13
+            or task_budget.get("maximum_actual_model_turns_per_cell") != 15
+            or task_budget.get("retry_resume_maximum_turns") != 2
+            or task_budget.get("ss1_b1_identical") is not True
+            or not isinstance(task_budget.get("seal_sha256"), str)
+            or task_budget.get("seal_sha256")
+            != canonical_sha256(task_budget_without_seal)
+        ):
+            raise PhaseECandidateError(
+                f"{profile.snapshot_id} Task budget is not sealed"
+            )
+        task_budget_sha256 = _sha256(task_budget_bytes)
+        task_budget_seal_sha256 = str(task_budget["seal_sha256"])
     docker_environment_sha256 = None
     if profile.docker_environment_path is not None:
         docker_environment_bytes = _git_bytes(
@@ -562,6 +766,14 @@ def _profile_binding(
         qualification_manifest_sha256=str(qualification["manifest_sha256"]),
         qualification_result_sha256=str(qualification["result_sha256"]),
         qualification_seal_sha256=str(qualification["seal_sha256"]),
+        task_pack_qualification_path=profile.task_pack_qualification_path,
+        task_pack_qualification_sha256=task_pack_qualification_sha256,
+        task_pack_qualification_seal_sha256=(
+            task_pack_qualification_seal_sha256
+        ),
+        task_budget_path=profile.task_budget_path,
+        task_budget_sha256=task_budget_sha256,
+        task_budget_seal_sha256=task_budget_seal_sha256,
         docker_environment_path=profile.docker_environment_path,
         docker_environment_sha256=docker_environment_sha256,
         task_count=profile.task_count,
@@ -627,6 +839,33 @@ def _docker_environment_identity(
         "docker_environment_path": profile_r.docker_environment_path,
         "docker_environment_sha256": profile_r.docker_environment_sha256,
     }
+
+
+def _profile_r_redesign_identity(
+    bindings: PhaseESourceBindings,
+) -> dict[str, str]:
+    if bindings.schema_version != 3:
+        return {}
+    profile_r = bindings.profiles[0]
+    values = {
+        "profile_r_task_pack_qualification_path": (
+            profile_r.task_pack_qualification_path
+        ),
+        "profile_r_task_pack_qualification_sha256": (
+            profile_r.task_pack_qualification_sha256
+        ),
+        "profile_r_task_pack_qualification_seal_sha256": (
+            profile_r.task_pack_qualification_seal_sha256
+        ),
+        "profile_r_task_budget_path": profile_r.task_budget_path,
+        "profile_r_task_budget_sha256": profile_r.task_budget_sha256,
+        "profile_r_task_budget_seal_sha256": (
+            profile_r.task_budget_seal_sha256
+        ),
+    }
+    if any(value is None for value in values.values()):
+        raise PhaseECandidateError("Phase E v3 Profile R redesign identity is incomplete")
+    return {key: str(value) for key, value in values.items()}
 
 
 def probe_phase_e_preflight(
@@ -696,7 +935,9 @@ def _supplement(
     qualifications = {
         item.profile_id: item.qualification_sha256 for item in bindings.profiles
     }
+    redesigned = bindings.schema_version == 3
     return RealisticRoutingPlanSupplement(
+        schema_version=2 if redesigned else 1,
         suite_id=REALISTIC_SUITE_ID,
         stage_id=REALISTIC_STAGE_ID,
         comparison_spec_sha256=bindings.comparison_spec_sha256,
@@ -726,13 +967,31 @@ def _supplement(
             variant_extra_turn_ceiling=2,
         ),
         common_budget=CommonBudgetContract(
-            task_count=8,
-            base_turns_per_variant=8,
-            total_turn_ceiling_per_variant=10,
+            task_count=13 if redesigned else 8,
+            base_turns_per_variant=13 if redesigned else 8,
+            total_turn_ceiling_per_variant=15 if redesigned else 10,
             model_active_seconds_ceiling_per_variant=7200,
             wall_clock_seconds_ceiling_per_variant=9000,
             wall_clock_scope="from_adapter_run_entry_through_adapter_terminal",
             unused_reserve_transfer="forbidden",
+        ),
+        profile_budgets=(
+            [
+                ProfileBudgetContract(
+                    profile_id="repository-wide-compatibility-migration",
+                    task_count=13,
+                    base_turns_per_variant=13,
+                    total_turn_ceiling_per_variant=15,
+                ),
+                ProfileBudgetContract(
+                    profile_id="evidence-bound-incident-repair",
+                    task_count=8,
+                    base_turns_per_variant=8,
+                    total_turn_ceiling_per_variant=10,
+                ),
+            ]
+            if redesigned
+            else None
         ),
         observer_schema_sha256=canonical_sha256(
             PassiveBoundaryObservation.model_json_schema()
@@ -833,6 +1092,7 @@ def build_phase_e_plan(
         "permission_profile_id": stage.runtime_contract.permission_profile_id,
         "legacy_sandbox_arguments": "false",
         **_docker_environment_identity(bindings),
+        **_profile_r_redesign_identity(bindings),
     }
     base = build_sdk_controlled_plan(
         source_manifest_path=PHASE_E_STAGE_RELATIVE,
@@ -879,7 +1139,7 @@ def build_phase_e_plan(
                 *base.plan_supplemented,
                 PlanSupplement(
                     field=REALISTIC_SUPPLEMENT_FIELD,
-                    value=supplement.model_dump(mode="json"),
+                    value=supplement.model_dump(mode="json", exclude_none=True),
                     source=PHASE_E_STAGE_RELATIVE,
                 ),
             ],
@@ -957,8 +1217,12 @@ def create_phase_e_candidate(
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
         "planned_cells": 4,
-        "planned_initial_model_turns": 32,
-        "planned_model_turn_ceiling": 40,
+        "planned_initial_model_turns": int(
+            plan.decision_policy["planned_initial_model_turns"]
+        ),
+        "planned_model_turn_ceiling": int(
+            plan.decision_policy["planned_model_turn_ceiling"]
+        ),
         "actual_model_turns": 0,
         **_docker_environment_identity(bindings),
         "payload_files": [item.model_dump(mode="json") for item in records],

@@ -53,6 +53,26 @@ def test_unknown_fields_and_unproven_criteria_are_rejected() -> None:
         RunSpec.model_validate(raw)
 
 
+def test_own_checks_derive_exact_cumulative_check_prefixes() -> None:
+    raw = make_spec(tasks=2).model_dump(mode="json")
+    for index, task in enumerate(raw["tasks"], 1):
+        own_check = f"t{index}_contract"
+        task["own_check"] = own_check
+        task.pop("check_names")
+        task["completion_criteria"][0]["check_names"] = [own_check]
+    spec = RunSpec.model_validate(raw)
+    assert spec.tasks[0].check_names == ["t1_contract", "diff_check"]
+    assert spec.tasks[1].check_names == [
+        "t1_contract",
+        "t2_contract",
+        "diff_check",
+    ]
+
+    raw["tasks"][1].pop("own_check")
+    with pytest.raises(ValidationError, match="all-or-none"):
+        RunSpec.model_validate(raw)
+
+
 def test_result_envelope_is_strict() -> None:
     valid = {
         "schema_version": 1,

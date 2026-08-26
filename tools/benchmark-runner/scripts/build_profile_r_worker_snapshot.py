@@ -113,6 +113,10 @@ def _overlay_entries(repository: Path) -> list[dict[str, str | None]]:
             continue
         relative = source.relative_to(overlay_root).as_posix()
         _safe_relative_path(relative)
+        if {".git", ".pytest_cache", "__pycache__"}.intersection(
+            PurePosixPath(relative).parts
+        ) or relative.endswith((".pyc", ".pyo")):
+            raise RuntimeError(f"transient cache path in public overlay: {relative}")
         folded = relative.casefold()
         if folded in casefolded:
             raise RuntimeError(f"public overlay case-fold collision: {relative}")

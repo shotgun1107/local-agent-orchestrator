@@ -1036,3 +1036,33 @@ SS1 Cell 1을 한 번 실행·봉인했다. 0-turn preflight는 ChatGPT 구독, 
 - 다음 작업은 집에서 Git을 인수한 뒤 사용자가 Pro 회신을 전달하면 원문으로 보존하고
   최소 수정 범위를 정하는 것이다. 회신 전 새 patch, candidate, live와 Cell 3·4는
   `NO-GO`다.
+
+## 51. 2026-08-26 Profile R R01~R13 재설계 구현 checkpoint
+
+§50 이후 사용자가 ChatGPT Pro의 문제 보고와 해법 두 원문, 그리고 최종 R01~R13 구현
+계획을 전달했다. 원문은 `docs/reviews/benchmark-runner/`에 보존했고 Worker에는 노출하지
+않는다.
+
+- 기준 branch/HEAD: `codex/phase-d-artifacts` /
+  `6e55c2d8b1b8844db111ba40fb10b04e6e8f52ed`; 현재 변경은 미commit 상태다.
+- Task Pack: R01→R13 exact linear, 13 `own_check`, loader-generated cumulative Checks,
+  deterministic change-surface projection.
+- Judge source: 13 independent properties, 13 hidden/public negative mutations, structured
+  failure nodes. 47-file aggregate는
+  `f5c80a8d30110f835043f96c91a648a36c4acec4f369724dcd81ff5539f0e47b`이고
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다.
+- reference repo: exact 14 commits, final tree `379b85c8...8061`, chain seal
+  `9e0f725b...63d9`; Git bundle은
+  `benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/`에
+  있다.
+- Task Pack q1: `TASK_PACK_READY`, seal `ad803c61...38dc`; budget seal
+  `756c9841...fbd6`, Task당 2/Cell base 13/Cell max 15/retry·resume 2다.
+- Phase E v3 binding code는 구현했지만 현재 stage와 candidate는 역사 v2/v16 그대로다.
+- Docker q19, 새 candidate, acceptance, readiness, Environment Closure, Live는 실행하지 않았다.
+  model/SDK/Docker/state turn은 0이다.
+- v16 pair는 비교 무효 역사 Evidence이며 수정·resume·재봉인하지 않는다.
+
+다음 관문은 변경 검토와 source commit 고정이다. 그 다음 exact commit으로 14-cell Docker
+q19 model-free qualification을 별도 수행한다. q19 전에는 새 Phase E candidate를 만들지
+않고, q19 이후에도 candidate→acceptance 1·2→readiness→별도 Environment Closure→별도
+사용자 승인 순서를 지킨다.

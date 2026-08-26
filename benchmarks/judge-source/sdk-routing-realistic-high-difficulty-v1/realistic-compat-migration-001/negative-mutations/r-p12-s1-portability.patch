@@ -1,0 +1,28 @@
+diff --git a/tools/benchmark-runner/tests/test_routing_suite.py b/tools/benchmark-runner/tests/test_routing_suite.py
+index fb171ed1c805883cf71f78998331cc663e546325..6627d0325aada50ad1254144c1c16ecf48427ad8 100644
+--- a/tools/benchmark-runner/tests/test_routing_suite.py
++++ b/tools/benchmark-runner/tests/test_routing_suite.py
+@@ -148,7 +148,7 @@ def _write_self_contained_manifest(source: Path, relative: str) -> None:
+     )
+ 
+ 
+-def _create_self_contained_s1_repository(tmp_path: Path) -> Path:
++def _historical_s1_repository(tmp_path: Path) -> Path:
+     _ = tmp_path
+     source = Path(tempfile.mkdtemp(prefix="s1-", dir=os.environ["TEMP"]))
+     for fixture_id in (
+@@ -184,7 +184,7 @@ def self_contained_s1_source(
+     tmp_path: Path,
+     monkeypatch: pytest.MonkeyPatch,
+ ) -> Path:
+-    source = _create_self_contained_s1_repository(tmp_path)
++    source = _historical_s1_repository(tmp_path)
+     suite_root = source / "benchmarks" / "suites" / "sdk-routing-v1"
+     monkeypatch.setitem(globals(), "REPOSITORY_ROOT", source)
+     monkeypatch.setitem(globals(), "SUITE_ROOT", suite_root)
+@@ -667,3 +667,5 @@ def test_all_eight_model_free_cells_seal_export_and_detect_tampering(
+     first_measurement.write_bytes(first_measurement.read_bytes() + b" ")
+     with pytest.raises(RoutingSuiteError, match="Measurement seal differs"):
+         verify_routing_s1_nonlive_export(export_root)
++
++# e915914c0494cd21969de5bc60f81ad74ec1b037

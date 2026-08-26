@@ -1,0 +1,7 @@
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
+index a44fa401155719ac758d1efe410c8f075ffd06cd..9a100a10191930d6c859f3e784e0cff96cbe80d8 100644
+--- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
+@@ -1 +1 @@
+-{"endpoint":"https://service.invalid","max_retries":3,"timeout_seconds":30,"version":2}
++{"version":999}

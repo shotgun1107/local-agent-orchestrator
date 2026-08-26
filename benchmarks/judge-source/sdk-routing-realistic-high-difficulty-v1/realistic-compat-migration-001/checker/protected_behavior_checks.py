@@ -24,10 +24,12 @@ from typing import Callable, get_args
 from pydantic import ValidationError
 
 
-R_P02 = "R-P02-STAGE-DISCRIMINATOR"
-R_P04 = "R-P04-RESERVE-ISOLATION"
-R_P06 = "R-P06-EXPORT-ROUNDTRIP"
-R_P07 = "R-P07-CROSS-CHECKOUT-REPRO"
+R_P02 = "R-P02-DISCRIMINATOR"
+R_P06 = "R-P06-PLAN-BINDING"
+R_P07 = "R-P07-ROUTING-POLICY"
+R_P10 = "R-P10-EXPORT-VERIFY"
+R_P11 = "R-P11-S2-E2E"
+R_P12 = "R-P12-S1-PORTABILITY"
 
 
 def _require(condition: bool, message: str) -> None:
@@ -53,6 +55,12 @@ def _git(repository: Path, *arguments: str) -> str:
         {
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_AUTHOR_NAME": "profile-r-fixture",
+            "GIT_AUTHOR_EMAIL": "profile-r@test.invalid",
+            "GIT_COMMITTER_NAME": "profile-r-fixture",
+            "GIT_COMMITTER_EMAIL": "profile-r@test.invalid",
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
         }
     )
     result = subprocess.run(
@@ -250,6 +258,101 @@ def _write_s2_source(workspace: Path, root: Path) -> tuple[Path, Path, Path]:
     return source, suite_path, stage_path
 
 
+def _plan_binding(workspace: Path) -> None:
+    from benchmark_runner.contract import ArtifactIdentity
+    from benchmark_runner.routing_suite import build_routing_s2_plan
+
+    with tempfile.TemporaryDirectory(prefix="profile-r-rp06-") as raw:
+        source, suite_path, stage_path = _write_s2_source(
+            workspace,
+            Path(raw),
+        )
+        plan = build_routing_s2_plan(
+            repository_root=source,
+            suite_path=suite_path,
+            stage_path=stage_path,
+            runner=ArtifactIdentity(
+                artifact_id="runner",
+                version="judge",
+                sha256="1" * 64,
+            ),
+            variants=[
+                ArtifactIdentity(
+                    artifact_id="c2", version="judge", sha256="2" * 64
+                ),
+                ArtifactIdentity(
+                    artifact_id="b1", version="judge", sha256="3" * 64
+                ),
+            ],
+            environment_fingerprint={
+                "runtime": "judge",
+                "actual_model_turns": "0",
+            },
+            created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        )
+        _require(
+            [cell.cell_id for cell in plan.cells]
+            == [
+                "cell_s2_a_1_c2",
+                "cell_s2_a_1_b1",
+                "cell_s2_b_1_b1",
+                "cell_s2_b_1_c2",
+            ],
+            "S2 Plan order differs",
+        )
+        _require(
+            plan.decision_policy["stage_id"] == "s2-intermediate",
+            "S2 Plan stage binding differs",
+        )
+        _require(
+            plan.decision_policy["base_live_model_turns"] == 12
+            and plan.decision_policy["max_actual_live_model_turns"] == 15,
+            "S2 Plan budget binding differs",
+        )
+
+
+def _s1_portability(workspace: Path) -> None:
+    import yaml
+
+    from benchmark_runner.routing_suite import compute_fixture_complexity
+    from benchmark_runner.workspace import FrozenFixtureSpec
+
+    test_source = (
+        workspace / "tools/benchmark-runner/tests/test_routing_suite.py"
+    ).read_text(encoding="utf-8")
+    _require("e915914c0494cd21969de5bc60f81ad74ec1b037" not in test_source, "historical Git object remains")
+    _require("_create_self_contained_s1_repository" in test_source, "self-contained S1 helper is absent")
+    with tempfile.TemporaryDirectory(prefix="profile-r-rp12-") as raw:
+        source = Path(raw) / "source"
+        fixture_path = Path("benchmarks/fixtures/code-change")
+        destination = source / fixture_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(workspace / fixture_path, destination)
+        _git(source, "init", "-q", "-b", "main")
+        _git(source, "config", "core.autocrlf", "false")
+        _git(source, "config", "core.filemode", "false")
+        _git(source, "config", "core.longpaths", "true")
+        _git(source, "add", "-A")
+        _git(source, "commit", "-q", "-m", "Profile R self-contained S1 fixture")
+        commit = _git(source, "rev-parse", "HEAD")
+        fixture = FrozenFixtureSpec(
+            id="code-change",
+            path=fixture_path.as_posix(),
+            commit=commit,
+            git_tree=_git(source, "rev-parse", f"HEAD:{fixture_path.as_posix()}"),
+            success_check="integration_smoke",
+        )
+        complexity = compute_fixture_complexity(
+            source,
+            fixture,
+            expected_write_files={"minimum": 1, "maximum": 1},
+            verification_kind="public_to_worker",
+            failure_profile="omission_risk",
+            solution_ambiguity="low",
+        )
+        _require(complexity.task_count > 0, "self-contained S1 fixture is empty")
+
+
 def _completed_result() -> dict[str, object]:
     return {
         "schema_version": 1,
@@ -390,9 +493,11 @@ def _cross_checkout(workspace: Path) -> None:
 
 CHECKS: dict[str, Callable[[Path], None]] = {
     R_P02: _stage_discriminator,
-    R_P04: _reserve_isolation,
-    R_P06: _export_roundtrip,
-    R_P07: _cross_checkout,
+    R_P06: _plan_binding,
+    R_P07: _reserve_isolation,
+    R_P10: _export_roundtrip,
+    R_P11: _export_roundtrip,
+    R_P12: _s1_portability,
 }
 
 

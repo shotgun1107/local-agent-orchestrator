@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "decision": "REDESIGN_PROFILE_R",
+  "task_ids": ["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12", "R13"],
+  "judge_property_count": 13,
+  "judge_properties_independent": true,
+  "reviewer_evidence_worker_visible": false,
+  "reference_repository": {
+    "manifest_path": "benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/reference-repository-manifest.json",
+    "manifest_seal_sha256": "9a87142f75e65786e4a84a2634748688ca7bfa79f9c7410ab77d07966a77c567",
+    "chain_seal_sha256": "9e0f725bcbb589437b2d07fa75c9a29d6da9da1a181812ad67c588b262d663d9"
+  },
+  "task_pack_q1": {
+    "manifest_path": "benchmarks/artifacts/profile-r-task-pack-q1/artifact-manifest.json",
+    "manifest_seal_sha256": "3f17afaa3ccb4bb470f15dd061a93fa3cf0dafb4a7d7d8558a79f70e5708767e",
+    "qualification_seal_sha256": "ad803c61aecf533eccba6d6690dc9945bbf2212724df81e66cf5272e894738dc",
+    "budget_seal_sha256": "756c984117324a4f875231d565b92979e1e8d9e8fc6457a80c0d3288dcfdfbd6"
+  },
+  "pro_responses": [
+    {
+      "kind": "problem_report",
+      "source_attachment_sha256": "cc40b2466806c41402052b96d4d0e4558be3751324370ae191fe302a34f0b0a7",
+      "repository_path": "docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-problem-report.md"
+    },
+    {
+      "kind": "solution",
+      "source_attachment_sha256": "a9250c09d6096eac8aca9f548bf53d57bd8e728bc5a909b9ec641f0054230503",
+      "repository_path": "docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-solution.md"
+    }
+  ],
+  "existing_v16": {
+    "status": "INVALID_FOR_ROUTING_COMPARISON",
+    "preservation_reason": "diagnostic-live-pair",
+    "rerunnable": false,
+    "mutable": false,
+    "superseded": false
+  }
+}

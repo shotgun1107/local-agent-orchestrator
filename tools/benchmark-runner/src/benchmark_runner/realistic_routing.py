@@ -579,8 +579,18 @@ class CommonBudgetContract(StrictModel):
     unused_reserve_transfer: Literal["forbidden"]
 
 
+class ProfileBudgetContract(StrictModel):
+    profile_id: Literal[
+        "repository-wide-compatibility-migration",
+        "evidence-bound-incident-repair",
+    ]
+    task_count: int = Field(gt=0)
+    base_turns_per_variant: int = Field(gt=0)
+    total_turn_ceiling_per_variant: int = Field(gt=0)
+
+
 class RealisticRoutingPlanSupplement(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     suite_id: Literal["sdk-routing-realistic-high-difficulty-v1"]
     stage_id: Literal["realistic-high-difficulty-initial"]
     comparison_spec_sha256: Sha256
@@ -590,6 +600,7 @@ class RealisticRoutingPlanSupplement(StrictModel):
     ss1: Ss1PlanContract
     b1: B1PlanContract
     common_budget: CommonBudgetContract
+    profile_budgets: list[ProfileBudgetContract] | None = None
     observer_schema_sha256: Sha256
     observer_implementation_sha256: Sha256
     runtime_boundary_manifest_sha256: Sha256
@@ -610,12 +621,39 @@ class RealisticRoutingPlanSupplement(StrictModel):
             raise ValueError("Variant Task reserve budgets differ")
         if self.ss1.variant_extra_turn_ceiling != self.b1.variant_extra_turn_ceiling:
             raise ValueError("Variant reserve budgets differ")
-        if self.common_budget.base_turns_per_variant != self.common_budget.task_count:
-            raise ValueError("base turns must equal Task count")
-        if self.common_budget.total_turn_ceiling_per_variant != (
-            self.common_budget.task_count + self.ss1.variant_extra_turn_ceiling
+        if self.schema_version == 1:
+            if self.profile_budgets is not None:
+                raise ValueError("v1 supplement cannot carry profile budgets")
+            if self.common_budget.base_turns_per_variant != self.common_budget.task_count:
+                raise ValueError("base turns must equal Task count")
+            if self.common_budget.total_turn_ceiling_per_variant != (
+                self.common_budget.task_count + self.ss1.variant_extra_turn_ceiling
+            ):
+                raise ValueError("total turn ceiling must equal Task count plus reserve")
+            return self
+        if self.profile_budgets is None or [
+            item.profile_id for item in self.profile_budgets
+        ] != [
+            "repository-wide-compatibility-migration",
+            "evidence-bound-incident-repair",
+        ]:
+            raise ValueError("v2 supplement requires exact profile budget order")
+        for item in self.profile_budgets:
+            if item.base_turns_per_variant != item.task_count:
+                raise ValueError("profile base turns must equal Task count")
+            if item.total_turn_ceiling_per_variant != (
+                item.task_count + self.ss1.variant_extra_turn_ceiling
+            ):
+                raise ValueError("profile turn ceiling must equal Task count plus reserve")
+        if (
+            self.common_budget.task_count
+            != max(item.task_count for item in self.profile_budgets)
+            or self.common_budget.base_turns_per_variant
+            != max(item.base_turns_per_variant for item in self.profile_budgets)
+            or self.common_budget.total_turn_ceiling_per_variant
+            != max(item.total_turn_ceiling_per_variant for item in self.profile_budgets)
         ):
-            raise ValueError("total turn ceiling must equal Task count plus reserve")
+            raise ValueError("common budget must bind the profile maximums")
         return self
 
 

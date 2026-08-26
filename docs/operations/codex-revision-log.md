@@ -2835,3 +2835,47 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
   resume하거나 재구성하지 않는다.
 - 집의 다음 관문은 이미 제출된 ChatGPT Pro 진단 회신을 인수하는 것이다. 회신 전 새
   구현·candidate·live·Cell 3/4는 시작하지 않는다.
+
+## Profile R R01~R13 재설계 model-free 구현
+
+- 작업일: 2026-08-26. 기준 branch/HEAD는 `codex/phase-d-artifacts` /
+  `6e55c2d8b1b8844db111ba40fb10b04e6e8f52ed`이며 이번 작업은 아직 commit하지 않았다.
+- 사용자가 전달한 ChatGPT Pro 문제 보고와 해법 원문을 `docs/reviews/benchmark-runner/`에
+  보존하고 decision을 `REDESIGN_PROFILE_R`로 고정했다. 이 reviewer/reference 자료는
+  Worker manifest에서 제외한다.
+- public Task Pack은 exact linear R01→R13, Task별 `own_check` 하나, loader가 생성하는
+  cumulative Check prefix와 `diff_check`, `benchmark-run.yaml`에서 생성한
+  `change-surface.json` projection으로 바꿨다.
+- hidden Judge는 R-P01~R-P13을 prerequisite blocking 없이 모두 독립 실행한다. checker
+  예외는 해당 property의 `checker_error`만 만들고 나머지는 계속 실행한다.
+- public/Controller failure Evidence는 구조화된 node 결과를 사용하며
+  `PRODUCT_ASSERTION`, `ENVIRONMENT`, `MIXED_PRODUCT_AND_ENVIRONMENT`, `UNKNOWN`을
+  보존한다. product-only만 `failed`, 나머지는 `infrastructure_error`다.
+- Worker snapshot은 130파일, manifest SHA-256
+  `7841a8ebe1d8ce241ae5b0ca785548d4d77aaaf8945147570cc5e3b95cf98c9e`, tree aggregate
+  `980bb52fc5e297968ba9f2cfc3ec06877b1312d56469706899920b15677d7e05`다.
+- dedicated reference Git bundle은 base+R01~R13 exact 14 commit, final tree
+  `379b85c8f93d83b3a6b72919f547c4ed2c518061`, chain seal
+  `9e0f725bcbb589437b2d07fa75c9a29d6da9da1a181812ad67c588b262d663d9`다.
+  각 commit은 single parent, A/M-only, UTF-8 LF, declared write scope와 intermediate tree를
+  통과했다.
+- Judge source bundle은 47파일, aggregate
+  `f5c80a8d30110f835043f96c91a648a36c4acec4f369724dcd81ff5539f0e47b`, status
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다. reference 13/13 pass, 13개 hidden mutation target
+  fail, 13개 public mutation 거부가 확인됐다. Docker runtime boundary는 실행하지 않아
+  `challenge_ready=false`다.
+- Worker Task Pack q1은 13 positive intermediate transition, 누적 public Checks, 13 negative
+  mutation과 information boundary를 통과해 `TASK_PACK_READY`, seal
+  `ad803c61aecf533eccba6d6690dc9945bbf2212724df81e66cf5272e894738dc`로 봉인됐다.
+  동일 SS1/B1 budget은 Task당 최대 2, Cell base 13, Cell 최대 15, retry/resume 총 2이며
+  seal은 `756c984117324a4f875231d565b92979e1e8d9e8fc6457a80c0d3288dcfdfbd6`다.
+- Phase E schema v3는 Profile R task_count 13과 q19/q1/budget path·file SHA·self-seal을
+  직접 요구하도록 구현했다. 현재 stage는 역사 v2 그대로이며 새 candidate는 만들지 않았다.
+- 기존 v16은 `INVALID_FOR_ROUTING_COMPARISON`, `diagnostic-live-pair`, `rerunnable=false`,
+  `mutable=false`, `superseded=false`로 보존한다. 기존 state/raw/Measurement/seal은 변경 0이다.
+- model, SDK, Docker, 실제 Worker, Phase F state, 외부 AI 호출은 모두 0이다.
+
+다음 관문은 현재 source를 검토·commit한 뒤 그 exact source commit으로 새 14-cell Docker
+q19를 model-free 실행하는 것이다. q19 `CHALLENGE_READY` 전에는 Phase E v3 stage,
+새 candidate, acceptance 1·2와 readiness를 봉인하지 않는다. Live는 그 뒤 별도
+Environment Closure와 별도 사용자 승인 전까지 `NO_GO`다.

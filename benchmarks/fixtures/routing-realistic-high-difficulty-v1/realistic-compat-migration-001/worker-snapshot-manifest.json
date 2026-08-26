@@ -1,5 +1,5 @@
 {
-  "anonymization_mapping_sha256": "098a555430d01622985b962ee463d33fd4a8897d8bfbaa68b64967d5a990f04d",
+  "anonymization_mapping_sha256": "eea6653eb62d72890bf041d675e4b64fb8648aa59b7f3059ecee1f018c198e1a",
   "base_file_count": 115,
   "challenge_ready": false,
   "file_count": 130,
@@ -35,10 +35,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/checks.yaml",
-      "source_sha256": "94c00523cf5b47949436dc2b87427c50d8258af256e3631660c9a0f975282d04",
-      "source_size": 1590,
-      "worker_sha256": "94c00523cf5b47949436dc2b87427c50d8258af256e3631660c9a0f975282d04",
-      "worker_size": 1590
+      "source_sha256": "87a29e680b9e0fb602e159097eb5eef2b9c47dd81ff6217bfafef0358efdcdfa",
+      "source_size": 2152,
+      "worker_sha256": "87a29e680b9e0fb602e159097eb5eef2b9c47dd81ff6217bfafef0358efdcdfa",
+      "worker_size": 2152
     },
     {
       "mapping_ids": [],
@@ -47,9 +47,9 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/.orchestrator/policies.yaml",
-      "source_sha256": "5edcf251cff943660170101c45ecbd0b89e1375d6d1f139eab446d8b7e28006b",
+      "source_sha256": "71826521ef02b1879142a4e74ddc49a728f17d3650b00536312e1e182a901b77",
       "source_size": 459,
-      "worker_sha256": "5edcf251cff943660170101c45ecbd0b89e1375d6d1f139eab446d8b7e28006b",
+      "worker_sha256": "71826521ef02b1879142a4e74ddc49a728f17d3650b00536312e1e182a901b77",
       "worker_size": 459
     },
     {
@@ -83,10 +83,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
-      "source_sha256": "e97a414a737559d0fd5347b519d13dc950cddf5e2e85a8d45c4c291839aa1fac",
-      "source_size": 11364,
-      "worker_sha256": "e97a414a737559d0fd5347b519d13dc950cddf5e2e85a8d45c4c291839aa1fac",
-      "worker_size": 11364
+      "source_sha256": "e285b66288a97989cbee293bcd95fdfe6d92ee06a41e0ce4f6ff45e6f43de0ee",
+      "source_size": 13312,
+      "worker_sha256": "e285b66288a97989cbee293bcd95fdfe6d92ee06a41e0ce4f6ff45e6f43de0ee",
+      "worker_size": 13312
     },
     {
       "mapping_ids": [],
@@ -107,10 +107,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
-      "source_sha256": "fc91dd8351591b4de7c1f9a3f785df876a9b078274ca891510262f703322a33b",
-      "source_size": 74281,
-      "worker_sha256": "fc91dd8351591b4de7c1f9a3f785df876a9b078274ca891510262f703322a33b",
-      "worker_size": 74281
+      "source_sha256": "63187ea549af395dd2ffeaa91063e401d71096f0a5f44ab70abdfc82e02ceb37",
+      "source_size": 89967,
+      "worker_sha256": "63187ea549af395dd2ffeaa91063e401d71096f0a5f44ab70abdfc82e02ceb37",
+      "worker_size": 89967
     },
     {
       "mapping_ids": [],
@@ -621,10 +621,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/profile-r/requirements/change-surface.json",
-      "source_sha256": "8fd53ef6895207773691a4ed4ff9702a221b03922dc8f58bccddf57c265e15c5",
-      "source_size": 2927,
-      "worker_sha256": "8fd53ef6895207773691a4ed4ff9702a221b03922dc8f58bccddf57c265e15c5",
-      "worker_size": 2927
+      "source_sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7",
+      "source_size": 2309,
+      "worker_sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7",
+      "worker_size": 2309
     },
     {
       "mapping_ids": [],
@@ -1631,9 +1631,9 @@
   "source_allowlist_sha256": "a81913bd80cd6d1ed914b7fdf09f2f74ec46cccda0488e0875d003cc6ccc0d45",
   "source_authority": "git_object_database",
   "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
-  "source_total_bytes": 1233011,
+  "source_total_bytes": 1250589,
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
-  "worker_total_bytes": 1232996,
-  "worker_tree_aggregate_sha256": "d2e754de73230865e72c312ce72e60023ff8cb3f5eb0a8d7165222c4d7608da8"
+  "worker_total_bytes": 1250574,
+  "worker_tree_aggregate_sha256": "980bb52fc5e297968ba9f2cfc3ec06877b1312d56469706899920b15677d7e05"
 }

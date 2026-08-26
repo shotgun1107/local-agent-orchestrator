@@ -1,0 +1,25 @@
+{
+  "contract_ok_marker": true,
+  "entrypoint": "benchmark_checks/check_profile_r.py R11",
+  "evidence_projection": {
+    "growth_margin": 32,
+    "growth_probe_minimum_path_length": 261,
+    "growth_probe_minimum_satisfied": true,
+    "probe_repository_shorter_than_growth_path": true,
+    "pytest": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 7,
+      "warnings": 0
+    },
+    "schema_version": 1
+  },
+  "evidence_projection_sha256": "7444e301c5b23c597a5336966192e49faea64fdbdc30e51c10fab5e2d811ab21",
+  "outer_timeout_seconds": 1020,
+  "passed": true,
+  "return_code": 0,
+  "schema_version": 1,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_contract": "one diagnostic line, one environment Evidence line, and one Task OK line"
+}

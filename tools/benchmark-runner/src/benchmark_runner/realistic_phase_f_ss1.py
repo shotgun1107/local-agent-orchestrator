@@ -76,7 +76,7 @@ PROFILE_R_SOLUTION_CATALOG_RELATIVE = (
 PROFILE_R_RESULT_SCHEMA_RELATIVE = (
     "stages/b1-sequential/schemas/v1/result-envelope.schema.json"
 )
-PROFILE_R_EXPECTED_TASK_IDS = tuple(f"R{number:02d}" for number in range(1, 9))
+PROFILE_R_EXPECTED_TASK_IDS = tuple(f"R{number:02d}" for number in range(1, 14))
 PROFILE_R_PROTECTED_SCOPES = (
     ".orchestrator/**",
     "benchmark_checks/**",
@@ -353,7 +353,7 @@ def _transitive_dependencies(run: BenchmarkRun, task: RunTask) -> set[str]:
 
 
 def build_profile_r_ss1_tasks(workspace: Path) -> tuple[Ss1TaskRequest, ...]:
-    """Compile the public 8-Task pack without Controller Check fields."""
+    """Compile the public 13-Task pack without Controller Check fields."""
 
     run = load_benchmark_run(workspace / "benchmark-run.yaml")
     if tuple(task.key for task in run.tasks) != PROFILE_R_EXPECTED_TASK_IDS:

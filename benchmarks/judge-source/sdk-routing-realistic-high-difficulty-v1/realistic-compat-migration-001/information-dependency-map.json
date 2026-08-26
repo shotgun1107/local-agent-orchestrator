@@ -2,22 +2,22 @@
   "properties": [
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P01-LEGACY-BYTES",
+      "property_id": "R-P01-SOURCE-BOUNDARY",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "4062da1d719a34ff1ddfef09fc171d8ccaea1949e6de48f4adcbd69a4934e06f",
+      "source_evidence_sha256": "a1abb5d1899567d439d4de23321073a2d6db3f1ad1d768aa7781a184c2bfa44b",
       "task_ids": [
         "R01"
       ],
       "worker_readable_paths": [
         "profile-r/requirements/migration-contract.md",
-        "tools/benchmark-runner/schemas/v1/measurement.schema.json"
+        "profile-r/requirements/change-surface.json"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P02-STAGE-DISCRIMINATOR",
+      "property_id": "R-P02-DISCRIMINATOR",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "eddfd10e91ce1692d4c910a9dfcc336e96fdf1345b639d4122aae86f48d662ba",
+      "source_evidence_sha256": "9b372bcdddcb09292c76ac4dc042fce8bfabdc7ad27f48905a607f762e521a67",
       "task_ids": [
         "R02"
       ],
@@ -28,76 +28,134 @@
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P03-PLAN-BINDING",
+      "property_id": "R-P03-CONFIG-FIXTURE",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "1dca2f412ce2a6da0c018040a68e886a1b5bb2b6fd261381682058f2846ea634",
+      "source_evidence_sha256": "931b49590048b46ebc1d0f7b05598976c993465751b3162a38cd77cde6781606",
       "task_ids": [
         "R03"
       ],
       "worker_readable_paths": [
-        "profile-r/requirements/migration-contract.md",
-        "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml"
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P04-RESERVE-ISOLATION",
+      "property_id": "R-P04-INCIDENT-FIXTURE",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "68ab15250167cc79e379a8f90438028418a7c33e05a5901805ef8588c8238ed3",
+      "source_evidence_sha256": "2f6a2907cbbc703be9c355864ca481b0ae850a82bf6aaa9a78af2d3bbc7df136",
       "task_ids": [
         "R04"
       ],
       "worker_readable_paths": [
-        "profile-r/requirements/migration-contract.md",
-        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+        "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P05-LIFECYCLE-REUSE",
+      "property_id": "R-P05-MANIFEST-BINDING",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "0ced04df4df6d0368f90903afdc4cc412aa7264e122877095ac7ee8d5ba6b8ae",
+      "source_evidence_sha256": "9c276a630a1eb1e3dacc77b2cbb560e640bb4ffe91a8519f148c1fb397b65baf",
       "task_ids": [
         "R05"
       ],
       "worker_readable_paths": [
-        "profile-r/requirements/migration-contract.md",
-        "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+        "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P06-EXPORT-ROUNDTRIP",
+      "property_id": "R-P06-PLAN-BINDING",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "10cb884561bdb24cac63a40785164c1580aba9cb4b4434768a445e8a921c7351",
+      "source_evidence_sha256": "8651aa010f5c31d0281b9fbe52d966ed0d4efc19ae876e0574a3001ecee90064",
       "task_ids": [
         "R06"
       ],
       "worker_readable_paths": [
-        "profile-r/requirements/migration-contract.md",
+        "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
         "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P07-CROSS-CHECKOUT-REPRO",
+      "property_id": "R-P07-ROUTING-POLICY",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "07013221600bf3ddd14a1fca5bb3b8e410bf74c9763948bff40847939eb4eb16",
+      "source_evidence_sha256": "c5389b306c4af2f5ac980aa574a3a153ac5cf49907ac8082a43ba9efea8b1488",
       "task_ids": [
         "R07"
       ],
       "worker_readable_paths": [
-        "profile-r/requirements/migration-contract.md",
+        "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
+      ]
+    },
+    {
+      "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
+      "property_id": "R-P08-LIFECYCLE-REUSE",
+      "required_fact_description": "The public migration contract and declared source surface needed for this property.",
+      "source_evidence_sha256": "eb208d5406c72dc27f62e989e88ce85f0e6bfb1719ed4cff8f1b957044248f5d",
+      "task_ids": [
+        "R08"
+      ],
+      "worker_readable_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ]
+    },
+    {
+      "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
+      "property_id": "R-P09-STATUS-POSTHOC",
+      "required_fact_description": "The public migration contract and declared source surface needed for this property.",
+      "source_evidence_sha256": "67c2d58df2163d250ef2d9dbf594aaabc92ebe0bd19349db984ce645c46ed7a5",
+      "task_ids": [
+        "R09"
+      ],
+      "worker_readable_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+      ]
+    },
+    {
+      "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
+      "property_id": "R-P10-EXPORT-VERIFY",
+      "required_fact_description": "The public migration contract and declared source surface needed for this property.",
+      "source_evidence_sha256": "94637203af9028542809a1d9df8634d2ff5e6f984c28d05ad2d8e479248a663a",
+      "task_ids": [
+        "R10"
+      ],
+      "worker_readable_paths": [
+        "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
+        "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+      ]
+    },
+    {
+      "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
+      "property_id": "R-P11-S2-E2E",
+      "required_fact_description": "The public migration contract and declared source surface needed for this property.",
+      "source_evidence_sha256": "94b9845c9801261cc30c6976129317f55235598544c527e89ced185d9c23fbcc",
+      "task_ids": [
+        "R11"
+      ],
+      "worker_readable_paths": [
+        "tools/benchmark-runner/tests/test_routing_s2.py"
+      ]
+    },
+    {
+      "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
+      "property_id": "R-P12-S1-PORTABILITY",
+      "required_fact_description": "The public migration contract and declared source surface needed for this property.",
+      "source_evidence_sha256": "eb12fca72a6fbdeb5814ead7e3e063bf6c9770d0e2f41a78095a01bafe8b6ccc",
+      "task_ids": [
+        "R12"
+      ],
+      "worker_readable_paths": [
         "tools/benchmark-runner/tests/test_routing_suite.py"
       ]
     },
     {
       "goal_alignment": "Directly checks one frozen Profile R migration invariant.",
-      "property_id": "R-P08-OPERATOR-CONTRACT",
+      "property_id": "R-P13-OPERATOR-SEMANTICS",
       "required_fact_description": "The public migration contract and declared source surface needed for this property.",
-      "source_evidence_sha256": "73032e5b7e5e90cc4f5213f74537301af8c8dc32fdd025ae3f3fd13eb824bddc",
+      "source_evidence_sha256": "edb557faf0f8782cbddc3e19903c02ebca74d6ff3bb68ee391c5dae11dabec35",
       "task_ids": [
-        "R08"
+        "R13"
       ],
       "worker_readable_paths": [
         "profile-r/requirements/operator-contract-schema.json",

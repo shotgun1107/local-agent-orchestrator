@@ -1,57 +1,16 @@
 schema_version: 1
 checks:
-  r01_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R01"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r02_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R02"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r03_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R03"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r04_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R04"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r05_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R05"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r06_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R06"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  r07_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R07"]
-    cwd: "."
-    # 900s declared nested-child maxima + 120s fixed parse/process/cleanup margin.
-    timeout_seconds: 1020
-    expected_exit_codes: [0]
-  r08_contract:
-    kind: command
-    argv: ["python", "benchmark_checks/check_profile_r.py", "R08"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
-  diff_check:
-    kind: command
-    argv: ["git", "diff", "--check"]
-    cwd: "."
-    timeout_seconds: 120
-    expected_exit_codes: [0]
+  r01_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R01"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  r02_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R02"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  r03_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R03"], cwd: ".", timeout_seconds: 180, expected_exit_codes: [0]}
+  r04_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R04"], cwd: ".", timeout_seconds: 180, expected_exit_codes: [0]}
+  r05_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R05"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}
+  r06_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R06"], cwd: ".", timeout_seconds: 240, expected_exit_codes: [0]}
+  r07_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R07"], cwd: ".", timeout_seconds: 180, expected_exit_codes: [0]}
+  r08_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R08"], cwd: ".", timeout_seconds: 360, expected_exit_codes: [0]}
+  r09_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R09"], cwd: ".", timeout_seconds: 360, expected_exit_codes: [0]}
+  r10_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R10"], cwd: ".", timeout_seconds: 600, expected_exit_codes: [0]}
+  r11_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R11"], cwd: ".", timeout_seconds: 1020, expected_exit_codes: [0]}
+  r12_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R12"], cwd: ".", timeout_seconds: 1020, expected_exit_codes: [0]}
+  r13_contract: {kind: command, argv: ["python", "benchmark_checks/check_profile_r.py", "R13"], cwd: ".", timeout_seconds: 240, expected_exit_codes: [0]}
+  diff_check: {kind: command, argv: ["git", "diff", "--check"], cwd: ".", timeout_seconds: 120, expected_exit_codes: [0]}

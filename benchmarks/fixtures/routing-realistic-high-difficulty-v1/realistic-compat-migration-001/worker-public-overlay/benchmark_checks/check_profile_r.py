@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import hashlib
 import importlib
 import inspect
@@ -12,9 +13,15 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, get_args
 
 import yaml
+from jsonschema import Draft202012Validator
+
+
+# Public Checks can be run against the canonical read-only task-pack bytes
+# during qualification.  Imports must never create unsealed cache artifacts.
+sys.dont_write_bytecode = True
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +33,7 @@ WORKER_FEEDBACK_MAX_BYTES = 12_288
 CHECK_FAILURE_CLASS_PREFIX = "CHECK_FAILURE_CLASS:"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+CHECK_DIAGNOSTIC_RESULT_PREFIX = "CHECK_DIAGNOSTIC_RESULT:"
 R07_COLLECTION_TIMEOUT_SECONDS = 120
 R07_EXECUTION_TIMEOUT_SECONDS = 600
 R07_GIT_COMMAND_TIMEOUT_SECONDS = 30
@@ -77,11 +85,13 @@ class PublicContractError(RuntimeError):
         public_feedback: list[str] | None = None,
         failure_classification: str = "PRODUCT_ASSERTION",
         environment_diagnostic: dict[str, Any] | None = None,
+        diagnostic_result: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
         self.public_feedback = public_feedback
         self.failure_classification = failure_classification
         self.environment_diagnostic = environment_diagnostic
+        self.diagnostic_result = diagnostic_result
 
 
 def _decode_utf8_prefix(data: bytes, limit: int) -> str:
@@ -240,8 +250,20 @@ def _require_paths(paths: list[str]) -> None:
 def _task_surface() -> list[dict[str, Any]]:
     value = _load_json(REQUIREMENTS / "change-surface.json")
     _exact_keys(value, {"schema_version", "tasks"}, "change surface")
-    if value["schema_version"] != 1 or not isinstance(value["tasks"], list):
+    if value["schema_version"] != 2 or not isinstance(value["tasks"], list):
         raise PublicContractError("change surface version or tasks are invalid")
+    run = _load_yaml(ROOT / "benchmark-run.yaml")
+    expected = [
+        {
+            "task_id": task["key"],
+            "write_paths": task.get("write_scope", []),
+        }
+        for task in run.get("tasks", [])
+    ]
+    if value["tasks"] != expected:
+        raise PublicContractError(
+            "change surface is not the exact benchmark-run projection"
+        )
     return value["tasks"]
 
 
@@ -249,7 +271,7 @@ def check_r01() -> None:
     tasks = _task_surface()
     expected_paths: list[tuple[str, str]] = []
     for task in tasks:
-        _exact_keys(task, {"task_id", "purpose", "write_paths"}, "change surface task")
+        _exact_keys(task, {"task_id", "write_paths"}, "change surface task")
         for raw_path in task["write_paths"]:
             expected_paths.append((_relative(raw_path), task["task_id"]))
     expected_paths.sort(key=lambda item: item[0].encode("utf-8"))
@@ -279,14 +301,19 @@ def check_r01() -> None:
     _exact_keys(ledger, {"schema_version", "invariants"}, "migration ledger")
     invariants = ledger["invariants"]
     expected = {
-        "legacy-stage-bytes": "preserve",
-        "stage-discriminator": "extend",
-        "plan-source-binding": "extend",
-        "reserve-isolation": "extend",
-        "lifecycle-reuse": "preserve",
-        "export-roundtrip": "extend",
-        "cross-checkout-repro": "preserve",
-        "operator-contract": "extend",
+        "r01-source-boundary": "preserve",
+        "r02-stage-discriminator": "extend",
+        "r03-config-fixture": "add",
+        "r04-incident-fixture": "add",
+        "r05-manifest-binding": "add",
+        "r06-plan-binding": "extend",
+        "r07-routing-policy": "add",
+        "r08-lifecycle-reuse": "preserve",
+        "r09-status-posthoc": "extend",
+        "r10-export-verify": "extend",
+        "r11-s2-e2e": "add",
+        "r12-s1-portability": "preserve",
+        "r13-operator-contract": "add",
     }
     if ledger["schema_version"] != 1 or not isinstance(invariants, list):
         raise PublicContractError("migration ledger is not version 1")
@@ -316,10 +343,7 @@ def _import_runner_module(name: str):
     except (ImportError, SyntaxError) as exc:
         raise PublicContractError(f"public module import failed: {name}") from exc
     except Exception as exc:
-        raise PublicContractError(
-            f"public module import failed without a typed cause: {name}",
-            failure_classification="UNKNOWN",
-        ) from exc
+        raise PublicContractError(f"public module import failed: {name}") from exc
 
 
 def check_r02() -> None:
@@ -358,6 +382,42 @@ def check_r02() -> None:
             pass
         else:
             raise PublicContractError("stage model accepted cross-branch bytes")
+    if get_args(
+        module.RoutingS1StageManifest.model_fields["stage_id"].annotation
+    ) != ("s1-baseline",):
+        raise PublicContractError("S1 stage_id is not the exact Literal")
+    if get_args(
+        module.RoutingS2StageManifest.model_fields["stage_id"].annotation
+    ) != ("s2-intermediate",):
+        raise PublicContractError("S2 stage_id is not the exact Literal")
+    discriminator = module.RoutingStageManifest.model_json_schema().get(
+        "discriminator", {}
+    )
+    if discriminator.get("propertyName") != "stage_id" or not {
+        "s1-baseline",
+        "s2-intermediate",
+    } <= set(discriminator.get("mapping", {})):
+        raise PublicContractError("stage-neutral facade lacks the exact discriminator")
+    normalized_s2 = copy.deepcopy(s2_value)
+    expected_cell_ids = (
+        "cell_s2_a_1_c2",
+        "cell_s2_a_1_b1",
+        "cell_s2_b_1_b1",
+        "cell_s2_b_1_c2",
+    )
+    cells = normalized_s2.get("cells")
+    if not isinstance(cells, list) or len(cells) != len(expected_cell_ids):
+        raise PublicContractError("S2 cell surface is invalid")
+    for cell, cell_id in zip(cells, expected_cell_ids, strict=True):
+        cell["cell_id"] = cell_id
+    if not isinstance(
+        module.RoutingStageManifest.model_validate(s1_value),
+        module.RoutingS1StageManifest,
+    ) or not isinstance(
+        module.RoutingStageManifest.model_validate(normalized_s2),
+        module.RoutingS2StageManifest,
+    ):
+        raise PublicContractError("stage-neutral facade selected the wrong branch")
 
 
 CONFIG_ROOT = "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration"
@@ -388,6 +448,40 @@ def _fixture_contract(root: str, expected_tasks: list[str], expected_outputs: in
             raise PublicContractError(f"fixture Task is missing diff_check: {root}")
 
 
+def _run_fixture_developer_checks(root: str) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "benchmark_checks",
+        ],
+        cwd=ROOT / root,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+        check=False,
+        env={
+            **os.environ,
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTEST_ADDOPTS": "",
+        },
+    )
+    if result.returncode != 0:
+        raise PublicContractError(
+            f"fixture semantic developer checks failed: {root}",
+            public_feedback=_bounded_public_feedback(
+                [result.stdout, result.stderr]
+            ),
+        )
+
+
 def check_r03() -> None:
     config_files = [
         "spec/config-contract.md", "inputs/current.json", "inputs/legacy.json",
@@ -397,6 +491,12 @@ def check_r03() -> None:
         "migration/__init__.py", "migration/legacy.py", "runtime/__init__.py",
         "runtime/parser.py", "runtime/serializer.py", "cli/__init__.py", "cli/config_cli.py",
     ]
+    _require_paths([f"{CONFIG_ROOT}/{path}" for path in config_files])
+    _fixture_contract(CONFIG_ROOT, ["T1", "T2", "T3"], 6)
+    _run_fixture_developer_checks(CONFIG_ROOT)
+
+
+def check_r04() -> None:
     incident_files = [
         "spec/report-contract.md", "catalog/topics.json", "sources/source-a.md",
         "sources/source-b.md", "sources/source-c.md", "benchmark_checks/__init__.py",
@@ -405,20 +505,104 @@ def check_r03() -> None:
         "analysis/uncertainties.json", "timeline/events.json", "timeline/hypotheses.json",
         "report/claims.json", "report/action-plan.json", "report/final-report.md",
     ]
-    _require_paths([f"{CONFIG_ROOT}/{path}" for path in config_files])
     _require_paths([f"{INCIDENT_ROOT}/{path}" for path in incident_files])
-    _fixture_contract(CONFIG_ROOT, ["T1", "T2", "T3"], 6)
     _fixture_contract(INCIDENT_ROOT, ["T1", "T2", "T3"], 7)
-    manifest = _load_yaml(ROOT / "benchmarks/manifests/sdk-routing-s2-intermediate.yaml")
-    if [item.get("id") for item in manifest.get("fixtures", [])] != [
+    _run_fixture_developer_checks(INCIDENT_ROOT)
+
+
+def _git_object_oid(kind: str, payload: bytes) -> str:
+    header = f"{kind} {len(payload)}\0".encode("ascii")
+    return hashlib.sha1(header + payload, usedforsecurity=False).hexdigest()
+
+
+def _git_tree_oid(root: Path) -> str:
+    records: list[tuple[bytes, bytes]] = []
+    for path in root.iterdir():
+        name = path.name.encode("utf-8")
+        if path.is_dir():
+            oid = _git_tree_oid(path)
+            sort_key = name + b"/"
+            mode = b"40000"
+        elif path.is_file():
+            oid = _git_object_oid("blob", path.read_bytes())
+            sort_key = name
+            mode = b"100644"
+        else:
+            raise PublicContractError("fixture identity rejects non-file entries")
+        records.append((sort_key, mode + b" " + name + b"\0" + bytes.fromhex(oid)))
+    return _git_object_oid(
+        "tree",
+        b"".join(record for _key, record in sorted(records)),
+    )
+
+
+def _virtual_fixture_root_tree(fixtures: list[dict[str, Any]]) -> str:
+    trie: dict[str, Any] = {}
+    for fixture in fixtures:
+        current = trie
+        for part in PurePosixPath(str(fixture["path"])).parts:
+            current = current.setdefault(part, {})
+        current[None] = ROOT / str(fixture["path"])
+
+    def build(node: dict[str | None, Any]) -> str:
+        records: list[tuple[bytes, bytes]] = []
+        for name, child in node.items():
+            if name is None:
+                continue
+            encoded = name.encode("utf-8")
+            if None in child:
+                oid = _git_tree_oid(child[None])
+            else:
+                oid = build(child)
+            records.append(
+                (encoded + b"/", b"40000 " + encoded + b"\0" + bytes.fromhex(oid))
+            )
+        return _git_object_oid(
+            "tree",
+            b"".join(record for _key, record in sorted(records)),
+        )
+
+    return build(trie)
+
+
+def check_r05() -> None:
+    relative = "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    _require_paths([relative])
+    manifest = _load_yaml(ROOT / relative)
+    fixtures = manifest.get("fixtures", [])
+    if [item.get("id") for item in fixtures] != [
         "three-stage-config-migration", "three-stage-incident-analysis"
     ]:
         raise PublicContractError("S2 fixture manifest order is wrong")
+    for fixture in fixtures:
+        if not isinstance(fixture.get("commit"), str) or len(fixture["commit"]) != 40:
+            raise PublicContractError("S2 fixture commit identity is invalid")
+        if not isinstance(fixture.get("git_tree"), str) or len(fixture["git_tree"]) != 40:
+            raise PublicContractError("S2 fixture tree identity is invalid")
+        _relative(fixture.get("path"))
+        if _git_tree_oid(ROOT / fixture["path"]) != fixture["git_tree"]:
+            raise PublicContractError("S2 fixture tree identity differs from visible bytes")
+    root_tree = _virtual_fixture_root_tree(fixtures)
+    identity = (
+        "profile-r-reference <profile-r"
+        + chr(64)
+        + "test.invalid> 1767225600 +0000"
+    )
+    commit_payload = (
+        f"tree {root_tree}\n"
+        f"author {identity}\n"
+        f"committer {identity}\n"
+        "\n"
+        "Profile R projected S2 fixtures\n"
+    ).encode("utf-8")
+    expected_commit = _git_object_oid("commit", commit_payload)
+    if any(fixture["commit"] != expected_commit for fixture in fixtures):
+        raise PublicContractError("S2 fixture commit identity differs from visible bytes")
     if manifest.get("budgets", {}).get("max_actual_live_model_turns") != 15:
         raise PublicContractError("S2 fixture manifest budget is wrong")
 
 
-def check_r04() -> None:
+def check_r06() -> None:
     module = _import_runner_module("routing_suite")
     for name in ("build_routing_s2_plan", "compute_fixture_complexity"):
         value = getattr(module, name, None)
@@ -457,7 +641,7 @@ class _Measurement:
         self.variant_metrics = _Metrics(retry, resume)
 
 
-def check_r05() -> None:
+def check_r07() -> None:
     policy = _import_runner_module("s2_policy")
     for name in ("remaining_b1_retry_resume_reserve", "s2_b1_turn_cap", "derive_s2_routing_policy"):
         if not callable(getattr(policy, name, None)):
@@ -467,18 +651,59 @@ def check_r05() -> None:
     history = [_Measurement(1, 0), _Measurement(0, 1)]
     if policy.remaining_b1_retry_resume_reserve(history) != 1 or policy.s2_b1_turn_cap(history) != 4:
         raise PublicContractError("S2 reserve reused or lost turns")
-    _import_runner_module("routing_live")
+
+
+def check_r08() -> None:
+    suite_path = ROOT / "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    live_path = ROOT / "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
+    suite_tree = ast.parse(suite_path.read_text(encoding="utf-8"))
+    live_tree = ast.parse(live_path.read_text(encoding="utf-8"))
+    suite_functions = {
+        node.name: node
+        for node in suite_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    live_functions = {
+        node.name: node
+        for node in live_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    initialize = suite_functions.get("initialize_routing_s2_experiment")
+    run_next = suite_functions.get("run_next_routing_s2_nonlive_cell")
+    if initialize is None or run_next is None:
+        raise PublicContractError("shared S2 lifecycle wrappers are missing")
+    initialize_names = {
+        node.id for node in ast.walk(initialize) if isinstance(node, ast.Name)
+    }
+    run_next_names = {
+        node.id for node in ast.walk(run_next) if isinstance(node, ast.Name)
+    }
+    run_next_constants = {
+        node.value
+        for node in ast.walk(run_next)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    if "initialize_sdk_experiment" not in initialize_names:
+        raise PublicContractError("S2 initialization bypasses the shared lifecycle")
+    if (
+        "_run_next_routing_nonlive_cell" not in run_next_names
+        or "s2-intermediate" not in run_next_constants
+    ):
+        raise PublicContractError("S2 run-next bypasses the shared lifecycle")
+    required_legacy = {
+        "create_routing_s1_live_candidate",
+        "routing_s1_live_status",
+        "run_next_routing_s1_live_cell",
+    }
+    if not required_legacy <= set(live_functions):
+        raise PublicContractError("legacy shared lifecycle surface was removed")
     if (ROOT / "tools/benchmark-runner/src/benchmark_runner/routing_s2_live.py").exists():
         raise PublicContractError("S2 lifecycle must reuse the shared Controller")
 
 
-def check_r06() -> None:
+def check_r09() -> None:
     routing = _import_runner_module("routing_suite")
-    for name in (
-        "routing_s2_nonlive_status",
-        "export_routing_s2_nonlive",
-        "verify_routing_s2_nonlive_export",
-    ):
+    for name in ("routing_s2_nonlive_status",):
         if not callable(getattr(routing, name, None)):
             raise PublicContractError(f"shared S2 status/export API is missing: {name}")
     posthoc = _import_runner_module("s2_posthoc")
@@ -491,6 +716,45 @@ def check_r06() -> None:
     # The property checker programs are Judge-only inputs and are deliberately
     # absent from the Worker snapshot.  The public Check validates the exported
     # API and frozen catalog; the independent Judge executes those programs.
+
+
+def check_r10() -> None:
+    routing = _import_runner_module("routing_suite")
+    for name in (
+        "export_routing_s2_nonlive",
+        "verify_routing_s2_nonlive_export",
+    ):
+        if not callable(getattr(routing, name, None)):
+            raise PublicContractError(f"shared S2 export API is missing: {name}")
+    posthoc = _import_runner_module("s2_posthoc")
+    if not callable(getattr(posthoc, "evaluate_posthoc", None)):
+        raise PublicContractError("S2 posthoc evaluator is missing")
+    tree = ast.parse(
+        (
+            ROOT / "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+        ).read_text(encoding="utf-8")
+    )
+    functions = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    verify_export = functions.get("verify_routing_s2_nonlive_export")
+    if verify_export is None:
+        raise PublicContractError("S2 export verifier wrapper is missing")
+    names = {
+        node.id for node in ast.walk(verify_export) if isinstance(node, ast.Name)
+    }
+    constants = {
+        node.value
+        for node in ast.walk(verify_export)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    if (
+        "_verify_routing_nonlive_export" not in names
+        or "s2-intermediate" not in constants
+    ):
+        raise PublicContractError("S2 export verifier accepts the wrong stage identity")
 
 
 def _test_module_tree(path: Path) -> ast.Module:
@@ -1406,13 +1670,102 @@ def _collect_and_run_r07_pytest(
     return result, collected
 
 
-def _require_r07_pytest_success(result: subprocess.CompletedProcess[str]) -> None:
+def _regression_diagnostic_result(
+    junit_path: Path,
+    *,
+    task_id: str,
+) -> dict[str, Any]:
+    try:
+        root = ET.parse(junit_path).getroot()
+    except (OSError, ET.ParseError):
+        return {
+            "schema_version": 1,
+            "task_id": task_id,
+            "classification": "UNKNOWN",
+            "comparison_valid": False,
+            "product_failure_present": False,
+            "environment_failure_present": False,
+            "nodes": [
+                {
+                    "node_id": f"{task_id}::diagnostic",
+                    "classification": "UNKNOWN",
+                    "passed": False,
+                    "reason_code": "JUNIT_UNAVAILABLE",
+                }
+            ],
+        }
+    nodes: list[dict[str, Any]] = []
+    for case in root.iter("testcase"):
+        name = str(case.attrib.get("name", "unknown"))
+        class_name = str(case.attrib.get("classname", "unknown"))
+        failure = next(
+            (
+                child
+                for child in case
+                if child.tag.rsplit("}", 1)[-1] in {"failure", "error"}
+            ),
+            None,
+        )
+        nodes.append(
+            {
+                "node_id": f"{task_id}::{class_name}::{name}",
+                "classification": (
+                    "PRODUCT_ASSERTION" if failure is not None else None
+                ),
+                "passed": failure is None,
+                "reason_code": (
+                    "PYTEST_NODE_FAILED" if failure is not None else "PASSED"
+                ),
+            }
+        )
+    if not nodes:
+        return {
+            "schema_version": 1,
+            "task_id": task_id,
+            "classification": "UNKNOWN",
+            "comparison_valid": False,
+            "product_failure_present": False,
+            "environment_failure_present": False,
+            "nodes": [
+                {
+                    "node_id": f"{task_id}::diagnostic",
+                    "classification": "UNKNOWN",
+                    "passed": False,
+                    "reason_code": "JUNIT_EMPTY",
+                }
+            ],
+        }
+    product_failure = any(
+        not node["passed"]
+        and node["classification"] == "PRODUCT_ASSERTION"
+        for node in nodes
+    )
+    return {
+        "schema_version": 1,
+        "task_id": task_id,
+        "classification": "PRODUCT_ASSERTION" if product_failure else None,
+        "comparison_valid": True,
+        "product_failure_present": product_failure,
+        "environment_failure_present": False,
+        "nodes": nodes,
+    }
+
+
+def _require_r07_pytest_success(
+    result: subprocess.CompletedProcess[str],
+    *,
+    junit_path: Path,
+    task_id: str,
+) -> dict[str, Any]:
+    diagnostic = _regression_diagnostic_result(junit_path, task_id=task_id)
     if result.returncode != 0:
         raise PublicContractError(
-            "the public S2 routing regressions failed",
+            f"the public {task_id} routing regressions failed",
             public_feedback=_public_pytest_failure_feedback(result),
-            failure_classification="UNKNOWN",
+            failure_classification=str(diagnostic["classification"] or "UNKNOWN"),
+            diagnostic_result=diagnostic,
         )
+    return diagnostic
 
 
 def _r07_environment_evidence(temp_root: Path, junit_path: Path) -> dict[str, Any]:
@@ -1642,11 +1995,67 @@ def _validate_r07_evidence(evidence: dict[str, Any], expected_test_count: int) -
         )
 
 
-def check_r07() -> None:
+def _run_regression_contract(
+    *,
+    task_id: str,
+    expected_sources: dict[str, Path],
+    expected_case_counts: dict[str, int],
+) -> None:
+    try:
+        temp_root = Path(os.environ["TEMP"]).resolve(strict=True)
+    except (KeyError, OSError) as exc:
+        raise PublicContractError(
+            f"{task_id} external Check TEMP is unavailable",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    if any(
+        Path(os.environ.get(name, "")).resolve() != temp_root
+        for name in ("TMP", "TMPDIR")
+    ):
+        raise PublicContractError(
+            f"{task_id} Check TEMP variables differ",
+            failure_classification="ENVIRONMENT",
+        )
+    junit_path = temp_root / f"{task_id.lower()}-public-pytest.xml"
+    result, collected = _collect_and_run_r07_pytest(
+        expected_sources=expected_sources,
+        expected_case_counts=expected_case_counts,
+        temp_root=temp_root,
+        junit_path=junit_path,
+    )
+    diagnostic = _require_r07_pytest_success(
+        result,
+        junit_path=junit_path,
+        task_id=task_id,
+    )
+    evidence = _r07_environment_evidence(temp_root, junit_path)
+    _validate_r07_evidence(evidence, len(collected))
+    print(
+        CHECK_DIAGNOSTIC_RESULT_PREFIX
+        + json.dumps(
+            diagnostic,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+    print(
+        CHECK_ENVIRONMENT_EVIDENCE_PREFIX
+        + json.dumps(
+            evidence,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+
+
+def check_r11() -> None:
     s2_path = ROOT / "tools/benchmark-runner/tests/test_routing_s2.py"
-    suite_path = ROOT / "tools/benchmark-runner/tests/test_routing_suite.py"
     judge_path = ROOT / "tools/benchmark-runner/tests/test_judge.py"
-    _require_paths([str(path.relative_to(ROOT).as_posix()) for path in (s2_path, suite_path, judge_path)])
+    _require_paths(
+        [str(path.relative_to(ROOT).as_posix()) for path in (s2_path, judge_path)]
+    )
     names = _test_functions(s2_path)
     required = {
         "test_s2_stage_discriminator_rejects_cross_branch_bytes",
@@ -1662,6 +2071,26 @@ def check_r07() -> None:
     present_posthoc = posthoc_regression_names & names
     if not required <= names or len(present_posthoc) != 1:
         raise PublicContractError("the S2 public regression groups are incomplete")
+    selected_s2 = required | present_posthoc
+    _require_substantive_test_functions(s2_path, selected_s2)
+    expected_sources = {name: s2_path for name in selected_s2}
+    expected_case_counts = {name: 1 for name in expected_sources}
+    expected_case_counts[next(iter(present_posthoc))] = 2
+    _run_regression_contract(
+        task_id="R11",
+        expected_sources=expected_sources,
+        expected_case_counts=expected_case_counts,
+    )
+
+
+def check_r12() -> None:
+    suite_path = ROOT / "tools/benchmark-runner/tests/test_routing_suite.py"
+    _require_paths([str(suite_path.relative_to(ROOT).as_posix())])
+    source = suite_path.read_text(encoding="utf-8")
+    if "e915914c0494cd21969de5bc60f81ad74ec1b037" in source:
+        raise PublicContractError("R12 reads a forbidden historical Git object")
+    if "_create_self_contained_s1_repository" not in source:
+        raise PublicContractError("R12 self-contained Git fixture helper is missing")
     legacy_names = _test_functions(suite_path)
     required_legacy = {
         "test_complexity_profiles_are_recomputed_from_frozen_fixture_trees",
@@ -1672,48 +2101,29 @@ def check_r07() -> None:
     }
     if not required_legacy <= legacy_names:
         raise PublicContractError("the legacy S1 regression source surface is incomplete")
-    selected_s2 = required | present_posthoc
-    _require_substantive_test_functions(s2_path, selected_s2)
     _require_substantive_test_functions(suite_path, required_legacy)
-    expected_sources = {
-        **{name: s2_path for name in selected_s2},
-        **{name: suite_path for name in required_legacy},
-    }
+    expected_sources = {name: suite_path for name in required_legacy}
     expected_case_counts = {name: 1 for name in expected_sources}
-    expected_case_counts[next(iter(present_posthoc))] = 2
-    try:
-        temp_root = Path(os.environ["TEMP"]).resolve(strict=True)
-    except (KeyError, OSError) as exc:
-        raise PublicContractError(
-            "R07 external Check TEMP is unavailable",
-            failure_classification="ENVIRONMENT",
-        ) from exc
-    if any(Path(os.environ.get(name, "")).resolve() != temp_root for name in ("TMP", "TMPDIR")):
-        raise PublicContractError(
-            "R07 Check TEMP variables differ",
-            failure_classification="ENVIRONMENT",
-        )
-    junit_path = temp_root / "r07-public-pytest.xml"
-    result, collected = _collect_and_run_r07_pytest(
+    _run_regression_contract(
+        task_id="R12",
         expected_sources=expected_sources,
         expected_case_counts=expected_case_counts,
-        temp_root=temp_root,
-        junit_path=junit_path,
-    )
-    _require_r07_pytest_success(result)
-    evidence = _r07_environment_evidence(temp_root, junit_path)
-    _validate_r07_evidence(evidence, len(collected))
-    print(
-        CHECK_ENVIRONMENT_EVIDENCE_PREFIX
-        + json.dumps(evidence, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
     )
 
 
-def check_r08() -> None:
+def check_r13() -> None:
     contract = _load_json(WORK / "operator-contract.json")
     _exact_keys(contract, {"schema_version", "commands"}, "operator contract")
     if contract["schema_version"] != 1 or not isinstance(contract["commands"], list):
         raise PublicContractError("operator contract is not version 1")
+    schema = _load_json(REQUIREMENTS / "operator-contract-schema.json")
+    Draft202012Validator.check_schema(schema)
+    try:
+        Draft202012Validator(schema).validate(contract)
+    except Exception as exc:
+        raise PublicContractError(
+            "operator contract fails its public Schema"
+        ) from exc
     required_fields = {
         "command_id", "argv", "precondition", "success_exit_codes", "failure_map",
         "allowed_source_states", "allowed_terminal_states", "stop_before_next_dispatch",
@@ -1740,6 +2150,26 @@ def check_r08() -> None:
     for command_id in expected:
         if f"`{command_id}`" not in readme:
             raise PublicContractError("operator README omits a structured command ID")
+    expected_symbols = {
+        "create": "routing_suite:initialize_routing_s2_experiment",
+        "status": "routing_suite:routing_s2_nonlive_status",
+        "run-next": "routing_suite:run_next_routing_s2_nonlive_cell",
+        "export": "routing_suite:export_routing_s2_nonlive",
+        "verify": "routing_suite:verify_routing_s2_nonlive_export",
+    }
+    expected_stop = {
+        "create": True,
+        "status": False,
+        "run-next": True,
+        "export": True,
+        "verify": True,
+    }
+    for command in contract["commands"]:
+        command_id = command["command_id"]
+        if command["implementation_symbol"] != expected_symbols[command_id]:
+            raise PublicContractError("operator implementation relation differs")
+        if command["stop_before_next_dispatch"] is not expected_stop[command_id]:
+            raise PublicContractError("operator stop relation differs")
 
 
 CHECKS = {
@@ -1751,6 +2181,11 @@ CHECKS = {
     "R06": check_r06,
     "R07": check_r07,
     "R08": check_r08,
+    "R09": check_r09,
+    "R10": check_r10,
+    "R11": check_r11,
+    "R12": check_r12,
+    "R13": check_r13,
 }
 
 
@@ -1768,6 +2203,16 @@ def main(argv: list[str]) -> int:
             diagnostic = exc.environment_diagnostic or _default_environment_diagnostic(
                 task_id,
                 "PUBLIC_CONTRACT_ENVIRONMENT_FAILED",
+            )
+        if exc.diagnostic_result is not None:
+            print(
+                CHECK_DIAGNOSTIC_RESULT_PREFIX
+                + json.dumps(
+                    exc.diagnostic_result,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
             )
             print(
                 CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX

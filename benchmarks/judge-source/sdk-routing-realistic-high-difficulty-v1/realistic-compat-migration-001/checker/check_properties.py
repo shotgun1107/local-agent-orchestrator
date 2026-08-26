@@ -11,8 +11,11 @@ import ast
 import hashlib
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -117,60 +120,43 @@ def _evaluate_checks(
     ordered_ids = [str(item["property_id"]) for item in definitions]
     if ordered_ids != sorted(set(ordered_ids)) or set(CHECKERS) != set(ordered_ids):
         raise ValueError("property catalog order or checker set differs")
-    by_id = {str(item["property_id"]): item for item in definitions}
-    results: dict[str, dict[str, object]] = {}
-
-    def evaluate(property_id: str) -> dict[str, object]:
-        if property_id in results:
-            return results[property_id]
-        definition = by_id[property_id]
+    ordered_results: list[dict[str, object]] = []
+    for property_id, definition in zip(ordered_ids, definitions, strict=True):
         prerequisites = [str(value) for value in definition["prerequisite_ids"]]
-        if prerequisites != sorted(set(prerequisites)) or any(
-            value not in by_id for value in prerequisites
-        ):
-            raise ValueError("property prerequisite set is invalid")
-        prerequisite_results = [evaluate(value) for value in prerequisites]
-        if any(value["status"] != "pass" for value in prerequisite_results):
-            result = {
-                "property_id": property_id,
-                "status": "blocked_by_prerequisite",
-                "severity": definition["severity"],
-                "reason_code": "PREREQUISITE_NOT_PASSED",
-                "description": "A prerequisite property did not pass.",
+        if prerequisites:
+            raise ValueError(
+                "Profile R redesign requires independently executed properties"
+            )
+        try:
+            outcome = CHECKERS[property_id](workspace, catalog)
+        except Exception as exc:
+            outcome = {
+                "status": "checker_error",
+                "reason_code": "CHECKER_EXCEPTION",
+                "description": (
+                    "The property checker raised "
+                    f"{type(exc).__name__}."
+                ),
                 "evidence_refs": [],
-                "prerequisite_ids": prerequisites,
-                "checker_sha256": checker_sha256,
             }
-        else:
-            try:
-                outcome = CHECKERS[property_id](workspace, catalog)
-            except Exception:
-                outcome = {
-                    "status": "checker_error",
-                    "reason_code": "CHECKER_EXCEPTION",
-                    "description": "The property checker raised an exception.",
-                    "evidence_refs": [],
-                }
-            result = {
+        ordered_results.append(
+            {
                 "property_id": property_id,
                 "status": outcome["status"],
                 "severity": definition["severity"],
                 "reason_code": outcome["reason_code"],
                 "description": outcome["description"],
                 "evidence_refs": outcome["evidence_refs"],
-                "prerequisite_ids": prerequisites,
+                "prerequisite_ids": [],
                 "checker_sha256": checker_sha256,
             }
-        results[property_id] = result
-        return result
-
-    ordered_results = [evaluate(property_id) for property_id in ordered_ids]
+        )
     statuses = {str(item["status"]) for item in ordered_results}
     aggregate_status = (
         "checker_error"
         if "checker_error" in statuses
         else "fail"
-        if statuses.intersection({"fail", "blocked_by_prerequisite"})
+        if "fail" in statuses
         else "pass"
     )
     process = {
@@ -281,10 +267,45 @@ def _legacy_bytes(root: Path, catalog: dict[str, Any]) -> dict[str, object]:
     )
 
 
+def _source_boundary(root: Path, catalog: dict[str, Any]) -> dict[str, object]:
+    legacy = _legacy_bytes(root, catalog)
+    passed = legacy["status"] == "pass"
+    try:
+        import yaml
+
+        run = yaml.safe_load((root / "benchmark-run.yaml").read_text(encoding="utf-8"))
+        surface = _load_json(root / "profile-r/requirements/change-surface.json")
+        expected = {
+            "schema_version": 2,
+            "tasks": [
+                {
+                    "task_id": task["key"],
+                    "write_paths": task["write_scope"],
+                }
+                for task in run["tasks"]
+            ],
+        }
+        passed = passed and surface == expected
+    except (KeyError, OSError, TypeError, ValueError):
+        passed = False
+    return _outcome(
+        root,
+        passed,
+        pass_code="SOURCE_BOUNDARY_EXACT",
+        fail_code="SOURCE_BOUNDARY_DRIFTED",
+        description="The legacy bytes and projected R01-R13 source boundary are exact.",
+        evidence=(
+            "benchmark-run.yaml",
+            "profile-r/requirements/change-surface.json",
+            *tuple(catalog["legacy_byte_contract"]),
+        ),
+    )
+
+
 def _stage_discriminator(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
     return _outcome(
         root,
-        _run_protected_check(root, "R-P02-STAGE-DISCRIMINATOR"),
+        _run_protected_check(root, "R-P02-DISCRIMINATOR"),
         pass_code="STAGE_DISCRIMINATOR_EXACT",
         fail_code="STAGE_DISCRIMINATOR_FAILED",
         description="S1 and S2 stage bytes are accepted only by their exact Schema branch.",
@@ -295,6 +316,162 @@ def _stage_discriminator(root: Path, _catalog: dict[str, Any]) -> dict[str, obje
             "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
         ),
     )
+
+
+def _run_hidden_python(root: Path, cwd: Path, source: str) -> bool:
+    environment = {
+        name: os.environ[name]
+        for name in ("SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP")
+        if name in os.environ
+    }
+    environment.update(
+        {
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUTF8": "1",
+            "PROFILE_R_WORKSPACE": str(root.resolve()),
+        }
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-B", "-c", source],
+        cwd=cwd,
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=180,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _config_fixture(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    fixture = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration"
+    source = r'''
+import contextlib, io, json, sys
+from pathlib import Path
+sys.path.insert(0, ".")
+from cli.config_cli import main
+from runtime.parser import parse
+from runtime.serializer import serialize
+current = json.loads(Path("inputs/current.json").read_text(encoding="utf-8"))
+assert parse(serialize(parse(current))) == current
+stdout, stderr = io.StringIO(), io.StringIO()
+with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+    code = main(["inputs/current.json"])
+assert code == 0 and stdout.getvalue() == serialize(current) + "\n"
+assert stderr.getvalue() == ""
+'''
+    passed = fixture.is_dir() and _run_hidden_python(root, fixture, source)
+    return _outcome(
+        root,
+        passed,
+        pass_code="CONFIG_FIXTURE_SEMANTICS_VALID",
+        fail_code="CONFIG_FIXTURE_SEMANTICS_FAILED",
+        description="The configuration fixture parses, serializes, and executes its CLI contract behaviorally.",
+        evidence=(
+            "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml",
+            "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py",
+            "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py",
+        ),
+    )
+
+
+def _incident_fixture(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    base = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis"
+    passed = False
+    try:
+        evidence = _load_json(base / "analysis/evidence-ledger.json")["evidence"]
+        uncertainties = _load_json(base / "analysis/uncertainties.json")["uncertainties"]
+        events = _load_json(base / "timeline/events.json")["events"]
+        hypotheses = _load_json(base / "timeline/hypotheses.json")["hypotheses"]
+        claims = _load_json(base / "report/claims.json")["claims"]
+        actions = _load_json(base / "report/action-plan.json")["actions"]
+        evidence_ids = {item["evidence_id"] for item in evidence}
+        uncertainty_ids = {item["uncertainty_id"] for item in uncertainties}
+        all_refs_valid = all(
+            set(item.get("evidence_ids", [])) <= evidence_ids
+            and set(item.get("uncertainty_ids", [])) <= uncertainty_ids
+            for item in [*events, *hypotheses]
+        ) and all(item["evidence_id"] in evidence_ids for item in claims)
+        report = (base / "report/final-report.md").read_text(encoding="utf-8")
+        headings = [line[3:] for line in report.splitlines() if line.startswith("## ")]
+        passed = (
+            bool(evidence and uncertainties and events and hypotheses and claims and actions)
+            and all_refs_valid
+            and headings == ["확인된 사실", "상충", "미확인", "권고"]
+        )
+    except (KeyError, OSError, TypeError, ValueError):
+        passed = False
+    return _outcome(
+        root,
+        passed,
+        pass_code="INCIDENT_FIXTURE_SEMANTICS_VALID",
+        fail_code="INCIDENT_FIXTURE_SEMANTICS_FAILED",
+        description="The incident fixture preserves evidence, uncertainty, timeline, claim, action, and report relationships.",
+        evidence=(
+            "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json",
+            "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md",
+        ),
+    )
+
+
+def _manifest_binding(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    path = root / "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+    passed = False
+    try:
+        import yaml
+
+        value = yaml.safe_load(path.read_text(encoding="utf-8"))
+        fixtures = value["fixtures"]
+        passed = (
+            [item["id"] for item in fixtures]
+            == ["three-stage-config-migration", "three-stage-incident-analysis"]
+            and all(re.fullmatch(r"[0-9a-f]{40}", item["commit"]) for item in fixtures)
+            and all(re.fullmatch(r"[0-9a-f]{40}", item["git_tree"]) for item in fixtures)
+            and value["budgets"]["max_actual_live_model_turns"] == 15
+        )
+        if passed:
+            passed = all(
+                _git_tree_oid(root / str(item["path"])) == item["git_tree"]
+                for item in fixtures
+            )
+    except (KeyError, OSError, TypeError, ValueError):
+        passed = False
+    return _outcome(
+        root,
+        passed,
+        pass_code="MANIFEST_IDENTITIES_BOUND",
+        fail_code="MANIFEST_IDENTITIES_DRIFTED",
+        description="The S2 fixture manifest binds both exact fixture identities and budgets.",
+        evidence=("benchmarks/manifests/sdk-routing-s2-intermediate.yaml",),
+    )
+
+
+def _git_object_oid(kind: str, payload: bytes) -> str:
+    header = f"{kind} {len(payload)}\0".encode("ascii")
+    return hashlib.sha1(header + payload, usedforsecurity=False).hexdigest()
+
+
+def _git_tree_oid(root: Path) -> str:
+    records: list[tuple[bytes, bytes]] = []
+    for path in root.iterdir():
+        name = path.name.encode("utf-8")
+        if path.is_dir():
+            oid = _git_tree_oid(path)
+            sort_key = name + b"/"
+            mode = b"40000"
+        elif path.is_file():
+            oid = _git_object_oid("blob", path.read_bytes())
+            sort_key = name
+            mode = b"100644"
+        else:
+            raise ValueError("fixture tree contains a non-file entry")
+        records.append((sort_key, mode + b" " + name + b"\0" + bytes.fromhex(oid)))
+    payload = b"".join(record for _key, record in sorted(records))
+    return _git_object_oid("tree", payload)
 
 
 def _plan_binding(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
@@ -339,7 +516,7 @@ def _plan_binding(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
 def _reserve_isolation(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
     return _outcome(
         root,
-        _run_protected_check(root, "R-P04-RESERVE-ISOLATION"),
+        _run_protected_check(root, "R-P07-ROUTING-POLICY"),
         pass_code="RESERVE_ISOLATED",
         fail_code="RESERVE_REUSED_OR_MISCOUNTED",
         description="B1 retry and resume turns consume only the independent three-turn reserve.",
@@ -371,10 +548,7 @@ def _lifecycle_reuse(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
         live_functions = _top_level_functions(live)
         passed = not any((root / path).exists() for path in duplicate_paths) and {
             "initialize_routing_s2_experiment",
-            "routing_s2_nonlive_status",
             "run_next_routing_s2_nonlive_cell",
-            "export_routing_s2_nonlive",
-            "verify_routing_s2_nonlive_export",
         } <= suite_functions and {
             "create_routing_s1_live_candidate",
             "routing_s1_live_status",
@@ -395,12 +569,53 @@ def _lifecycle_reuse(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
     )
 
 
+def _status_posthoc(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    suite = root / "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    posthoc = root / "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
+    passed = False
+    try:
+        suite_functions = _top_level_functions(suite)
+        posthoc_functions = _top_level_functions(posthoc)
+        passed = (
+            "routing_s2_nonlive_status" in suite_functions
+            and "evaluate_posthoc" in posthoc_functions
+            and _run_hidden_python(
+                root,
+                root,
+                r'''
+import os, sys
+from pathlib import Path
+workspace = Path(os.environ["PROFILE_R_WORKSPACE"])
+sys.path.insert(0, str(workspace / "tools/benchmark-runner/src"))
+from benchmark_runner.s2_posthoc import PROPERTY_IDS
+assert dict(PROPERTY_IDS) == {
+    "three-stage-config-migration": ("CFG-P1", "CFG-P2", "CFG-P3", "CFG-P4", "CFG-P5"),
+    "three-stage-incident-analysis": ("INC-P1", "INC-P2", "INC-P3", "INC-P4", "INC-P5"),
+}
+''',
+            )
+        )
+    except (OSError, SyntaxError):
+        passed = False
+    return _outcome(
+        root,
+        passed,
+        pass_code="STATUS_POSTHOC_ALIGNED",
+        fail_code="STATUS_POSTHOC_FAILED",
+        description="S2 status and deterministic post-hoc evaluation remain on the shared implementation path.",
+        evidence=(
+            "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+            "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
+        ),
+    )
+
+
 def _export_roundtrip(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
     return _outcome(
         root,
         _run_protected_check(
             root,
-            "R-P06-EXPORT-ROUNDTRIP",
+            "R-P10-EXPORT-VERIFY",
             timeout_seconds=360.0,
         ),
         pass_code="EXPORT_ROUNDTRIP_BOUND",
@@ -464,15 +679,68 @@ def _operator_contract(root: Path, _catalog: dict[str, Any]) -> dict[str, object
     )
 
 
+def _s2_e2e(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    test_path = root / "tools/benchmark-runner/tests/test_routing_s2.py"
+    passed = False
+    try:
+        source = test_path.read_text(encoding="utf-8")
+        passed = all(
+            value in source
+            for value in (
+                "cell_s2_a_1_c2",
+                "cell_s2_a_1_b1",
+                "cell_s2_b_1_b1",
+                "cell_s2_b_1_c2",
+                '"type": "write_file"',
+                "cell_state",
+                "check_success",
+            )
+        ) and _run_protected_check(
+            root,
+            "R-P11-S2-E2E",
+            timeout_seconds=360.0,
+        )
+    except OSError:
+        passed = False
+    return _outcome(
+        root,
+        passed,
+        pass_code="S2_E2E_EXACT",
+        fail_code="S2_E2E_FAILED",
+        description="The exact four S2 Cells require explicit effects, successful Checks, Measurements, and seals.",
+        evidence=("tools/benchmark-runner/tests/test_routing_s2.py",),
+    )
+
+
+def _s1_portability(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
+    return _outcome(
+        root,
+        _run_protected_check(
+            root,
+            "R-P12-S1-PORTABILITY",
+            timeout_seconds=360.0,
+        ),
+        pass_code="S1_SELF_CONTAINED",
+        fail_code="S1_PORTABILITY_FAILED",
+        description="Legacy S1 regressions rebuild deterministic local Git identities without historical objects.",
+        evidence=("tools/benchmark-runner/tests/test_routing_suite.py",),
+    )
+
+
 CHECKERS = {
-    "R-P01-LEGACY-BYTES": _legacy_bytes,
-    "R-P02-STAGE-DISCRIMINATOR": _stage_discriminator,
-    "R-P03-PLAN-BINDING": _plan_binding,
-    "R-P04-RESERVE-ISOLATION": _reserve_isolation,
-    "R-P05-LIFECYCLE-REUSE": _lifecycle_reuse,
-    "R-P06-EXPORT-ROUNDTRIP": _export_roundtrip,
-    "R-P07-CROSS-CHECKOUT-REPRO": _cross_checkout,
-    "R-P08-OPERATOR-CONTRACT": _operator_contract,
+    "R-P01-SOURCE-BOUNDARY": _source_boundary,
+    "R-P02-DISCRIMINATOR": _stage_discriminator,
+    "R-P03-CONFIG-FIXTURE": _config_fixture,
+    "R-P04-INCIDENT-FIXTURE": _incident_fixture,
+    "R-P05-MANIFEST-BINDING": _manifest_binding,
+    "R-P06-PLAN-BINDING": _plan_binding,
+    "R-P07-ROUTING-POLICY": _reserve_isolation,
+    "R-P08-LIFECYCLE-REUSE": _lifecycle_reuse,
+    "R-P09-STATUS-POSTHOC": _status_posthoc,
+    "R-P10-EXPORT-VERIFY": _export_roundtrip,
+    "R-P11-S2-E2E": _s2_e2e,
+    "R-P12-S1-PORTABILITY": _s1_portability,
+    "R-P13-OPERATOR-SEMANTICS": _operator_contract,
 }
 
 

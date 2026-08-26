@@ -1,11 +1,11 @@
 schema_version: 1
 request:
   source: benchmark
-  text: "Extend the public single-stage routing system with the stage-neutral S2 compatibility migration contract."
+  text: "Extend the frozen S1 routing system with a stage-neutral S2 compatibility migration through thirteen ownership-aligned Tasks."
 completion_criteria:
   - id: RC1
-    text: "All eight public migration Task contracts pass without changing protected challenge files."
-    satisfied_by_tasks: [R01, R02, R03, R04, R05, R06, R07, R08]
+    text: "All thirteen public migration Task contracts pass without changing protected challenge files."
+    satisfied_by_tasks: [R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R11, R12, R13]
 constraints:
   - "Modify only paths declared by the active Task write_scope."
   - "Do not modify benchmark_checks/**, .orchestrator/**, profile-r/requirements/**, README.md, or benchmark-run.yaml."
@@ -15,197 +15,158 @@ constraints:
 assumptions: []
 tasks:
   - key: R01
-    goal: "Structure the public migration invariants and every declared change surface into the migration ledger and source inventory."
+    goal: "Inventory the exact source boundary and migration invariants for the thirteen-Task S1-to-S2 change."
     completion_criteria:
-      - {id: R01C1, text: "The migration ledger and source inventory satisfy the public structure contract.", check_names: [r01_contract]}
+      - {id: R01C1, text: "The migration ledger and source inventory exactly project the declared Task scopes.", check_names: [r01_contract]}
     depends_on: []
-    inputs:
-      - {path: "profile-r/requirements/migration-contract.md"}
-      - {path: "profile-r/requirements/change-surface.json"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "profile-r/work/migration-ledger.json"
-      - "profile-r/work/source-inventory.json"
-      - "benchmark_checks/check_profile_r.py"
-    write_scope:
-      - "profile-r/work/migration-ledger.json"
-      - "profile-r/work/source-inventory.json"
+    inputs: [{path: "profile-r/requirements/migration-contract.md"}, {path: "profile-r/requirements/change-surface.json"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmark-run.yaml"]
+    write_scope: ["profile-r/work/migration-ledger.json", "profile-r/work/source-inventory.json"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r01_contract, diff_check]
+    own_check: r01_contract
     approval: none
   - key: R02
-    goal: "Implement the additive S1/S2 suite and stage Schemas with an exact stage discriminator and stage-neutral manifest parser."
+    goal: "Implement exact S1/S2 discriminated Schemas and the stage-neutral public parser facade."
     completion_criteria:
-      - {id: R02C1, text: "Both stage branches load and reject cross-branch bytes.", check_names: [r02_contract]}
+      - {id: R02C1, text: "The generated discriminator, facade validation, and cross-branch rejection are exact.", check_names: [r02_contract]}
     depends_on: [R01]
-    inputs:
-      - {path: "profile-r/work/migration-ledger.json"}
-      - {path: "profile-r/work/source-inventory.json"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "profile-r/work/migration-ledger.json"
-      - "profile-r/work/source-inventory.json"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/suites/sdk-routing-v1/**"
-      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
-    write_scope:
-      - "benchmarks/suites/sdk-routing-v1/stage.schema.json"
-      - "benchmarks/suites/sdk-routing-v1/suite.schema.json"
-      - "benchmarks/suites/sdk-routing-v1/suite.yaml"
-      - "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"
-      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
+    inputs: [{path: "profile-r/work/migration-ledger.json"}, {path: "profile-r/work/source-inventory.json"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"]
+    write_scope: ["benchmarks/suites/sdk-routing-v1/stage.schema.json", "benchmarks/suites/sdk-routing-v1/suite.schema.json", "benchmarks/suites/sdk-routing-v1/suite.yaml", "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r02_contract, diff_check]
+    own_check: r02_contract
     approval: none
   - key: R03
-    goal: "Create the two public three-Task fixtures, their protected requirements, developer checks, and frozen fixture manifest."
+    goal: "Create only the public three-Task configuration-migration fixture and its semantic developer checks."
     completion_criteria:
-      - {id: R03C1, text: "Both fixture graphs and public check surfaces satisfy the public structure contract.", check_names: [r03_contract]}
-    depends_on: [R01]
-    inputs:
-      - {path: "profile-r/work/migration-ledger.json"}
-      - {path: "profile-r/work/source-inventory.json"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "profile-r/work/migration-ledger.json"
-      - "profile-r/work/source-inventory.json"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/fixtures/routing-v1/**"
-      - "benchmarks/manifests/**"
-    write_scope:
-      - "benchmarks/fixtures/routing-v1/intermediate/**"
-      - "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"
+      - {id: R03C1, text: "The configuration fixture graph, requirements, implementation, and outputs satisfy their semantic contract.", check_names: [r03_contract]}
+    depends_on: [R02]
+    inputs: [{path: "profile-r/work/source-inventory.json"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/**"]
+    write_scope: ["benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/**"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r03_contract, diff_check]
+    own_check: r03_contract
     approval: none
   - key: R04
-    goal: "Connect the exact stage discriminator, frozen source identity, cell order, and common turn budget through the stage-neutral Plan path."
+    goal: "Create only the public three-Task incident-analysis fixture and its semantic developer checks."
     completion_criteria:
-      - {id: R04C1, text: "The S2 Plan API exposes the exact public order and budget without duplicating the S1 builder.", check_names: [r04_contract]}
-    depends_on: [R02, R03]
-    inputs:
-      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
-      - {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/suites/sdk-routing-v1/**"
-      - "benchmarks/manifests/**"
-      - "benchmarks/fixtures/routing-v1/intermediate/**"
-      - "tools/benchmark-runner/src/benchmark_runner/**"
-      - "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
-      - "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
-    write_scope:
-      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
-      - "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py"
-      - "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"
+      - {id: R04C1, text: "The incident fixture graph, evidence dependencies, implementation, and outputs satisfy their semantic contract.", check_names: [r04_contract]}
+    depends_on: [R03]
+    inputs: [{path: "profile-r/work/source-inventory.json"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/**"]
+    write_scope: ["benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/**"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r04_contract, diff_check]
+    own_check: r04_contract
     approval: none
   - key: R05
-    goal: "Reuse the existing create, status, and run-next lifecycle while adding the structured S2 reserve, routing policy, and the post-hoc module required by the shared lifecycle import boundary."
+    goal: "Freeze the exact configuration and incident fixture commit/tree identities in the S2 fixture manifest."
     completion_criteria:
-      - {id: R05C1, text: "The public reserve and lifecycle policy invariants pass.", check_names: [r05_contract]}
-    depends_on: [R02, R04]
-    inputs:
-      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
-      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/suites/sdk-routing-v1/**"
-      - "tools/benchmark-runner/src/benchmark_runner/**"
-    write_scope:
-      - "tools/benchmark-runner/src/benchmark_runner/adapter.py"
-      - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
-      - "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
-      - "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
-      - "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"
+      - {id: R05C1, text: "The manifest binds both fixture trees, source identities, order, and budgets exactly.", check_names: [r05_contract]}
+    depends_on: [R04]
+    inputs: [{path: "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml"}, {path: "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/intermediate/**", "benchmarks/manifests/**"]
+    write_scope: ["benchmarks/manifests/sdk-routing-s2-intermediate.yaml"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r05_contract, diff_check]
+    own_check: r05_contract
     approval: none
   - key: R06
-    goal: "Extend status, deterministic post-hoc properties, export, and verification while preserving legacy artifact bytes and meanings."
+    goal: "Bind exact stage, frozen source identity, four-Cell order, variants, and turn budgets through the shared Plan path."
     completion_criteria:
-      - {id: R06C1, text: "The S2 status/export/verifier API and property contract are present on the shared path.", check_names: [r06_contract]}
-    depends_on: [R04, R05]
-    inputs:
-      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}
-      - {path: "tools/benchmark-runner/src/benchmark_runner/routing_live.py"}
-      - {path: "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/suites/sdk-routing-v1/**"
-      - "benchmarks/fixtures/routing-v1/intermediate/**"
-      - "tools/benchmark-runner/src/benchmark_runner/**"
-    write_scope:
-      - "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/**"
-      - "tools/benchmark-runner/src/benchmark_runner/routing_live.py"
-      - "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"
-      - "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"
-      - "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"
+      - {id: R06C1, text: "A behavioral Plan probe proves the exact public source, order, variants, and budgets.", check_names: [r06_contract]}
+    depends_on: [R05]
+    inputs: [{path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}, {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "benchmarks/manifests/**", "benchmarks/fixtures/routing-v1/intermediate/**", "tools/benchmark-runner/src/benchmark_runner/**", "tools/benchmark-runner/scripts/**"]
+    write_scope: ["tools/benchmark-runner/src/benchmark_runner/routing_suite.py", "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py", "tools/benchmark-runner/scripts/run_sdk_routing_s1.py"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r06_contract, diff_check]
+    own_check: r06_contract
     approval: none
   - key: R07
-    goal: "Add the S2 model-free regressions and update the legacy suite/Judge regressions without weakening the S1 branch. Build FrozenManifest and FrozenFixtureSpec test inputs from fields declared by those strict models only; do not forward S2 stage or profile dictionaries into them. Preserve Windows long-path support on the isolated Git repository and shared frozen-object reads. Preserve the existing GOLDEN_ROOT/_golden_turns behavior: every C2 FakeTurnScript and B1 fake turn must apply explicit write_file effects containing the exact public golden output bytes; a completed result envelope without file effects is invalid. The copied S2 fixtures deliberately expose legacy .orchestrator/project.yaml fields purpose, requirements, and task_order; before each B1 adapter preflight, replace that prepared-workspace file with the strict current ProjectConfig fields schema_version, project_id, core_compat, repository_root, default_capability_profile, and default_policy derived from the public capability and policy documents."
+    goal: "Implement only the structured S2 reserve and routing policy, including strict caps and invalid-input rejection."
     completion_criteria:
-      - {id: R07C1, text: "The required S2 and legacy regression groups are present and pass, including exact legacy-to-current B1 project-pack canonicalization before preflight.", check_names: [r07_contract]}
-    depends_on: [R01, R03, R06]
-    inputs:
-      - {path: "profile-r/work/migration-ledger.json"}
-      - {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}
-      - {path: "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/**"
-      - "tools/benchmark-runner/src/benchmark_runner/**"
-      - "tools/benchmark-runner/tests/**"
-    write_scope:
-      - "tools/benchmark-runner/tests/test_judge.py"
-      - "tools/benchmark-runner/tests/test_routing_s2.py"
-      - "tools/benchmark-runner/tests/test_routing_suite.py"
+      - {id: R07C1, text: "Reserve and routing decisions are isolated, capped, deterministic, and reject invalid inputs.", check_names: [r07_contract]}
+    depends_on: [R06]
+    inputs: [{path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}, {path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "tools/benchmark-runner/src/benchmark_runner/**"]
+    write_scope: ["tools/benchmark-runner/src/benchmark_runner/s2_policy.py"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r07_contract, diff_check]
+    own_check: r07_contract
     approval: none
   - key: R08
-    goal: "Make the machine-readable operator commands, states, stop rules, failure meanings, implementation symbols, public Schemas, and operator documentation agree."
+    goal: "Connect S2 to the existing create, status, and run-next lifecycle without creating an S2-only Controller or runtime."
     completion_criteria:
-      - {id: R08C1, text: "The structured operator contract is complete and referenced by the operator README.", check_names: [r08_contract]}
-    depends_on: [R02, R07]
-    inputs:
-      - {path: "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml"}
-      - {path: "tools/benchmark-runner/tests/test_routing_s2.py"}
-      - {path: "profile-r/requirements/operator-contract-schema.json"}
-    read_scope:
-      - "README.md"
-      - "profile-r/requirements/**"
-      - "profile-r/work/operator-contract.json"
-      - "benchmark_checks/check_profile_r.py"
-      - "benchmarks/suites/sdk-routing-v1/**"
-      - "tools/benchmark-runner/src/benchmark_runner/**"
-      - "tools/benchmark-runner/tests/test_routing_s2.py"
-      - "tools/benchmark-runner/README.md"
-    write_scope:
-      - "profile-r/work/operator-contract.json"
-      - "tools/benchmark-runner/README.md"
+      - {id: R08C1, text: "Behavioral lifecycle probes prove reuse of the shared Controller path.", check_names: [r08_contract]}
+    depends_on: [R07]
+    inputs: [{path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}, {path: "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "tools/benchmark-runner/src/benchmark_runner/**"]
+    write_scope: ["tools/benchmark-runner/src/benchmark_runner/adapter.py", "tools/benchmark-runner/src/benchmark_runner/routing_live.py", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py", "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py"]
     capability_profile: code_change
     workspace_mode: shared_serial_write
-    check_names: [r08_contract, diff_check]
+    own_check: r08_contract
+    approval: none
+  - key: R09
+    goal: "Implement deterministic S2 status and post-hoc property evaluation on the shared lifecycle state."
+    completion_criteria:
+      - {id: R09C1, text: "Status transitions and post-hoc labels are deterministic and semantically correct.", check_names: [r09_contract]}
+    depends_on: [R08]
+    inputs: [{path: "tools/benchmark-runner/src/benchmark_runner/routing_live.py"}, {path: "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/intermediate/**", "tools/benchmark-runner/src/benchmark_runner/**"]
+    write_scope: ["tools/benchmark-runner/src/benchmark_runner/routing_live.py", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py", "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py", "tools/benchmark-runner/src/benchmark_runner/sdk_pilot.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    own_check: r09_contract
+    approval: none
+  - key: R10
+    goal: "Implement sealed S2 export, verification, and deterministic tamper rejection without changing S1 meanings."
+    completion_criteria:
+      - {id: R10C1, text: "Create-to-seal export/verify passes and every declared tamper is rejected.", check_names: [r10_contract]}
+    depends_on: [R09]
+    inputs: [{path: "tools/benchmark-runner/src/benchmark_runner/routing_suite.py"}, {path: "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "benchmarks/fixtures/routing-v1/intermediate/**", "tools/benchmark-runner/src/benchmark_runner/**"]
+    write_scope: ["benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/**", "tools/benchmark-runner/src/benchmark_runner/routing_live.py", "tools/benchmark-runner/src/benchmark_runner/routing_suite.py", "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    own_check: r10_contract
+    approval: none
+  - key: R11
+    goal: "Add a model-free S2 four-Cell E2E regression with explicit write effects, Measurements, Cell seals, and per-Cell diagnostics."
+    completion_criteria:
+      - {id: R11C1, text: "The exact four S2 Cells seal with successful Checks, Measurements, seals, and zero model turns.", check_names: [r11_contract]}
+    depends_on: [R10]
+    inputs: [{path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}, {path: "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/**", "tools/benchmark-runner/src/benchmark_runner/**", "tools/benchmark-runner/tests/**"]
+    write_scope: ["tools/benchmark-runner/tests/test_judge.py", "tools/benchmark-runner/tests/test_routing_s2.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    own_check: r11_contract
+    approval: none
+  - key: R12
+    goal: "Make the legacy S1 regressions self-contained using only Worker-readable fixture bytes and a deterministic isolated Git repository; never read historical Git objects."
+    completion_criteria:
+      - {id: R12C1, text: "All selected S1 regressions pass without e915 or any historical object dependency.", check_names: [r12_contract]}
+    depends_on: [R11]
+    inputs: [{path: "profile-r/work/migration-ledger.json"}, {path: "benchmarks/manifests/sdk-routing-s2-intermediate.yaml"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "benchmark_checks/check_profile_r.py", "benchmarks/**", "tools/benchmark-runner/src/benchmark_runner/**", "tools/benchmark-runner/tests/**"]
+    write_scope: ["tools/benchmark-runner/tests/test_routing_suite.py"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    own_check: r12_contract
+    approval: none
+  - key: R13
+    goal: "Make machine-readable operator commands, states, stop rules, failure meanings, implementation symbols, public Schemas, and operator documentation agree behaviorally."
+    completion_criteria:
+      - {id: R13C1, text: "The operator contract validates against its Schema and exactly matches implementation semantics.", check_names: [r13_contract]}
+    depends_on: [R12]
+    inputs: [{path: "tools/benchmark-runner/tests/test_routing_s2.py"}, {path: "profile-r/requirements/operator-contract-schema.json"}]
+    read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/operator-contract.json", "benchmark_checks/check_profile_r.py", "benchmarks/suites/sdk-routing-v1/**", "tools/benchmark-runner/src/benchmark_runner/**", "tools/benchmark-runner/tests/**", "tools/benchmark-runner/README.md"]
+    write_scope: ["profile-r/work/operator-contract.json", "tools/benchmark-runner/README.md"]
+    capability_profile: code_change
+    workspace_mode: shared_serial_write
+    own_check: r13_contract
     approval: none

@@ -4,7 +4,7 @@ policies:
     max_concurrent_attempts: 1
     max_attempts_per_task: 2
     max_resume_per_attempt: 1
-    max_turns_per_run: 10
+    max_turns_per_run: 15
     run_timeout_seconds: 9000
     # Worker model-turn deadline only; command Checks use check_timeout_seconds.
     task_timeout_seconds: 900

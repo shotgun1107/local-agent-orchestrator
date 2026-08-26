@@ -121,6 +121,71 @@ def test_command_check_uses_argv_shell_false_and_deterministic_env(monkeypatch, 
     assert not Path(captured["env"]["TEMP"]).exists()
 
 
+def test_command_check_prefers_structured_mixed_diagnostics(
+    monkeypatch,
+    project_factory,
+) -> None:
+    root = project_factory()
+    diagnostic = {
+        "classification": "MIXED_PRODUCT_AND_ENVIRONMENT",
+        "comparison_valid": False,
+        "environment_failure_present": True,
+        "nodes": [
+            {
+                "classification": "PRODUCT_ASSERTION",
+                "node_id": "R11::cell_s2_a_1_c2",
+                "passed": False,
+                "reason_code": "CHECK_SUCCESS_FALSE",
+            },
+            {
+                "classification": "ENVIRONMENT",
+                "node_id": "R12::git-bootstrap",
+                "passed": False,
+                "reason_code": "GIT_EXEC_FAILED",
+            },
+        ],
+        "product_failure_present": True,
+        "schema_version": 1,
+        "task_id": "R12",
+    }
+    marker = json.dumps(
+        diagnostic,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+    def fake_run(argv, *, cwd, environment, timeout_seconds, termination_grace_seconds):
+        del cwd, environment, timeout_seconds, termination_grace_seconds
+        return subprocess.CompletedProcess(
+            argv,
+            1,
+            f"CHECK_DIAGNOSTIC_RESULT:{marker}\n",
+            "",
+        ), False
+
+    monkeypatch.setattr("orchestrator.verify._run_bounded_check_process", fake_run)
+    result = run_command_check(
+        "mixed",
+        CommandCheck(
+            kind="command",
+            argv=["python", "-V"],
+            cwd=".",
+            timeout_seconds=3,
+            expected_exit_codes=[0],
+        ),
+        GitWorkspace(root),
+        temp_root=root.parent / "external-check-temp",
+    )
+
+    assert result.failure_classification == "MIXED_PRODUCT_AND_ENVIRONMENT"
+    assert result.failure_classification_source == "structured_check_protocol"
+    assert result.diagnostic_result is not None
+    assert result.diagnostic_result.comparison_valid is False
+    assert result.diagnostic_result.product_failure_present is True
+    assert result.diagnostic_result.environment_failure_present is True
+
+
 def test_windows_job_descendant_check_allows_transient_exited_root_accounting(
     monkeypatch,
 ) -> None:
