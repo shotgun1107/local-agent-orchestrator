@@ -1107,3 +1107,22 @@ model-free 생성이다. Live는 readiness 이후 별도 Environment Closure와 
 
 다음 관문은 candidate v17의 독립 acceptance 1·2다. 두 acceptance와 readiness가 봉인된
 뒤에도 Live는 별도 Environment Closure GO와 그 다음 사용자 승인 전까지 실행하지 않는다.
+
+## 54. 2026-08-26 candidate v17 acceptance 1회차
+
+- acceptance harness를 candidate v17, R01~R13 public contract 13개와 R12 portability
+  evidence에 맞춘 commit `db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25`에서 실행했다.
+- official Evidence는 `C:\pf-v17-acceptance-company-official\acceptance-1`이며 pytest
+  결과는 `1 passed in 227.52s`, JUnit은 1 test/0 failure/0 error/0 skip이다.
+- lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`, public contracts 13/13,
+  cumulative Check 104/104, automatic continuation false다.
+- R12 nested pytest 5/5, path growth margin 32, SS1/B1 scope·Evidence hash true,
+  secret finding과 TEMP/process/lock residue 0이다.
+- official 파일은 정확히 10개이고 files manifest 8/8 재검산 mismatch 0이다. attestation
+  SHA는 `eadd2404...f667`, state SHA는 `840e7e87...6c5`, SS1/B1 Measurement SHA는
+  각각 `b000cab3...074a`, `9084cd85...61fd`다.
+- model·SDK thread/turn·Docker workload는 0이다. acceptance 2, readiness,
+  Environment Closure와 Live는 실행하지 않았다.
+
+다음 관문은 같은 candidate v17을 다른 fresh pytest root와 R12 alternate-deep repository
+topology로 검증하는 acceptance 2회차다.

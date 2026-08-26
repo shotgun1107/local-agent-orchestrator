@@ -2928,3 +2928,23 @@ candidate를 model-free 생성하는 것이다. Live 실행 승인은 여전히 
 
 다음 관문은 이 candidate v17을 대상으로 한 독립 acceptance run 1과 run 2다. readiness,
 Environment Closure와 Live는 acceptance 2회가 봉인될 때까지 `NO-GO`다.
+
+## Profile R R01~R13 exact-candidate acceptance v9 run 1
+
+- 작업일: 2026-08-26. acceptance harness를 candidate v17과 13 public contracts에 맞추고
+  R12 portability의 alternate repository/evidence 명칭으로 교정한 commit
+  `db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25`를 원격에 먼저 고정했다.
+- fresh roots `C:\pf-v17-acceptance-company-official\acceptance-1`과
+  `C:\pfa17o-1`에서 parameter `[1]` 하나만 model-free 실행해 `1 passed in 227.52s`다.
+- SS1 Cell 1과 B1 Cell 2는 SEALED, Cell 3·4는 PLANNED, automatic continuation false다.
+  R01~R13 public contracts 13/13과 cumulative Check 104/104가 통과했다.
+- R12 isolated Git nested pytest는 5 tests, failure/error/skip/warning 0, path growth margin
+  32다. SS1/B1 Measurement scope와 Evidence hash는 true, secret finding 0이다.
+- official root는 exact 10파일, manifest 8/8 mismatch 0, JUnit 1/0/0/0이다. attestation
+  SHA는 `eadd2404...f667`, files manifest file SHA는 `0fa8b638...1dc7`, JUnit SHA는
+  `097a3573...626e`다.
+- acceptance 임시 root는 관련 process 0을 확인한 뒤 삭제해 TEMP/process/lock residue를
+  모두 0으로 닫았다. model, SDK thread/turn, Docker workload와 network는 0이다.
+
+이 결과는 acceptance 1회차만 통과시킨다. 다음 관문은 다른 fresh root와 R12 alternate-deep
+topology를 사용하는 acceptance run 2이며 readiness와 Live는 계속 `NO-GO`다.
