@@ -1126,3 +1126,23 @@ model-free 생성이다. Live는 readiness 이후 별도 Environment Closure와 
 
 다음 관문은 같은 candidate v17을 다른 fresh pytest root와 R12 alternate-deep repository
 topology로 검증하는 acceptance 2회차다.
+
+## 55. 2026-08-26 candidate v17 acceptance 2회차·최종 2/2
+
+- 같은 candidate v17로 parameter `[2]`를 fresh root에서 실행해
+  `1 passed in 234.06s`다. candidate seal file SHA `ed1ed4af...57b1`은 run 1과 같다.
+- run 2는 R12의 source repository를 `alternate-valid-worker-internal-repository-root`로
+  바꾼 reference를 실제 B1 workspace에 적용했고 R12 nested pytest 5/5로 통과했다.
+- lifecycle `SEALED, SEALED, PLANNED, PLANNED`, public contracts 13/13, cumulative Check
+  104/104, automatic continuation false다.
+- official root `C:\pf-v17-acceptance-company-official\acceptance-2`는 exact 10파일,
+  manifest 8/8 mismatch 0, JUnit 1/0/0/0이다.
+- attestation SHA `21156e0c...aa33`, state SHA `5caf86d6...17cb`, SS1/B1 Measurement SHA는
+  `d9ca22a2...1d70`, `568a4c97...e1d8`이다. scope·Evidence hash true, secret finding과
+  active TEMP/process/lock residue 0이다.
+- run 2 임시 복제 root는 삭제 정책 차단 뒤 별도
+  `C:\pf-v17-acceptance-run2-temp-preserved`로 이동 보존했다. official manifest에는
+  포함하지 않는다. model·SDK thread/turn·Docker workload는 0이다.
+
+acceptance는 최종 `2/2 PASS`다. 다음 관문은 readiness package 조립·독립 검증이며,
+그 뒤에도 실제 Live 전에는 별도 Environment Closure 턴과 다음 사용자 승인이 필요하다.

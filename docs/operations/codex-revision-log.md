@@ -2948,3 +2948,25 @@ Environment Closure와 Live는 acceptance 2회가 봉인될 때까지 `NO-GO`다
 
 이 결과는 acceptance 1회차만 통과시킨다. 다음 관문은 다른 fresh root와 R12 alternate-deep
 topology를 사용하는 acceptance run 2이며 readiness와 Live는 계속 `NO-GO`다.
+
+## Profile R R01~R13 exact-candidate acceptance v9 run 2·2/2 봉인
+
+- 작업일: 2026-08-26. 같은 candidate v17과 seal file `ed1ed4af...57b1`을 fresh
+  `C:\pfa17o-2`에서 parameter `[2]`로 실행해 `1 passed in 234.06s`다.
+- run 2 checkout은 `27025fa9...27ee`다. run 1 checkout `db6d9eee...7f25`와의 차이는
+  run 1 결과 문서 4개뿐이며 candidate, Worker, Judge, acceptance harness와 runtime source
+  diff는 0이다.
+- alternate-deep R12 marker가 reference와 실제 B1 workspace 양쪽에 존재했고 R12 nested
+  pytest 5/5, failure/error/skip/warning 0, growth margin 32로 통과했다.
+- run 2도 exact 10파일, manifest 8/8 mismatch 0, JUnit 1/0/0/0, public contracts 13/13,
+  cumulative Check 104/104, lifecycle `SEALED, SEALED, PLANNED, PLANNED`다.
+- attestation SHA는 `21156e0c...aa33`, files manifest file SHA는 `0ba2011a...33c4`,
+  JUnit SHA는 `00cf0a7a...77b2`다. SS1/B1 Measurement scope·Evidence hash true,
+  secret finding과 active TEMP/process/lock residue는 0이다.
+- host 정책이 recursive delete를 실행 전에 차단해 아무것도 삭제되지 않은 뒤, 관련 process
+  0을 확인하고 basetemp를 `C:\pf-v17-acceptance-run2-temp-preserved`로 이동 보존했다.
+  official Evidence 10파일에는 이 raw 복제본을 섞지 않았다.
+
+두 acceptance가 모두 통과해 현재 판정은 `EXACT_CANDIDATE_ACCEPTANCE_PASS`다. 다음 관문은
+candidate v17, q19, q1/budget과 acceptance 1·2를 직접 결합하는 readiness package다.
+Environment Closure와 Live는 계속 `NO-GO`다.
