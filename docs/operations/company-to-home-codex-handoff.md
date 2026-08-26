@@ -1146,3 +1146,27 @@ topology로 검증하는 acceptance 2회차다.
 
 acceptance는 최종 `2/2 PASS`다. 다음 관문은 readiness package 조립·독립 검증이며,
 그 뒤에도 실제 Live 전에는 별도 Environment Closure 턴과 다음 사용자 승인이 필요하다.
+
+## 56. 2026-08-26 Profile R R01~R13 readiness v9 봉인
+
+- package record commit/tree는 `b4aae142...b449` / `8289d5a1...039e`다.
+- 최종 local package는
+  `benchmarks/.local-r6/profile-r-live-readiness-v9-b4aae14-r4`, ZIP은 같은 prefix의
+  `.zip`, 새 해제 검증 root는 `-r4-verify`다.
+- package는 exact 533파일이고 repository 417, q19 74, qualification 2, q1 3,
+  reference 4, candidate 6, acceptance 20, Git 2와 root control 5를 결합한다.
+- manifest 532, payload 531, manifest file SHA `0e8809eb...ecb4`, payload aggregate
+  `e4e18dc3...08ad`, readiness seal `569ac575...b015`, seal file SHA
+  `67b376ae...8095`다.
+- ZIP은 3,046,118 bytes, SHA `d9befe0a...5691`, entry 533, duplicate·directory·unsafe
+  path·CRC failure 0이다. 원본과 해제본 verifier가 동일 identity로 PASS했다.
+- 실제 credential finding은 0이고 공개 회귀시험의 known-fake marker 파일만 5개다.
+  model·SDK thread/turn·Docker workload는 0이다.
+- r1/r2/r3 partial root는 각각 경로 quoting, Windows long path, fake marker 분류에서 seal
+  전 중단됐으며 manifest·ZIP이 없어 성공 자료로 사용하지 않는다.
+- readiness seal은 `INTERNAL_PRELIVE_READY`, `live_authorized=false`다. 기존 live v16과
+  실패 pair state/raw/Measurement/seal은 변경하지 않았다.
+
+`DEV-20260825-001`은 resolved다. 다음 관문은 별도 Environment Closure 한 턴이며, GO여도
+그 턴에 실제 SS1을 실행하지 않는다. 그 다음 새 사용자 승인에서 fresh SS1 Cell 1 하나만
+실행하고 정지한다.

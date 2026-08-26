@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260825-001",
   "title": "Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함",
-  "status": "open",
+  "status": "resolved",
   "stage": "phase-f-profile-r-b1",
   "category": "test",
   "discovered_at": "2026-08-25T08:00:54Z",
-  "resolved_at": null,
+  "resolved_at": "2026-08-26T06:36:56.3404544Z",
   "discovered_by": "Phase F Profile R B1 company v16 live",
   "symptom": "B1은 R01~R06을 통과했지만 R07 public pytest가 worker 저장소에 존재하지 않는 e915914c commit의 fixture tree를 조회해 check_unknown으로 중단되고 R08은 실행되지 않았다.",
   "reproduction": [
@@ -21,11 +21,23 @@
   ],
   "root_cause": "v16의 R01~R08 Task ownership과 public Check·hidden Judge property ownership이 일치하지 않았고, R07 public regression은 Worker-readable bytes로 재구성하지 않은 historical commit e915914c를 직접 요구했다. 그 결과 모델 산출물 오류와 시험환경 결손을 독립 진단할 수 없었다.",
   "considered_options": [
-    "R07에 e915914c object만 공급하거나 해당 조회만 제거하는 최소 patch",
-    "R01~R08 전체를 그대로 두고 timeout·feedback만 조정",
-    "Task/public Check/hidden Judge를 1:1로 맞춘 R01~R13 Task Pack 재설계"
+    {
+      "option": "R07에 e915914c object만 공급하거나 해당 조회만 제거하는 최소 patch",
+      "decision": "rejected",
+      "reason": "R07의 직접 증상만 가리고 v16에서 드러난 Task·public Check·Judge ownership 불일치와 누적 invariant 결손을 남긴다"
+    },
+    {
+      "option": "R01~R08 전체를 그대로 두고 timeout·feedback만 조정",
+      "decision": "rejected",
+      "reason": "시험환경 결손과 제품 실패의 구조적 분리, 독립 property 실행과 positive/negative qualification을 해결하지 못한다"
+    },
+    {
+      "option": "Task/public Check/hidden Judge를 1:1로 맞춘 R01~R13 Task Pack 재설계",
+      "decision": "adopted",
+      "reason": "Pro 진단과 내부 재현에서 확인된 ownership·정보경계·reference intermediate tree·실패분류 결함을 같은 qualification chain에서 닫는다"
+    }
   ],
-  "resolution": "ChatGPT Pro의 문제 보고와 해법 원문을 보존하고 R01~R13 exact linear Task Pack, cumulative public Checks, 13 independent Judge properties, structured failure diagnostics, self-contained R12 Git contract, Worker information boundary, reference-chain 및 q1 qualification 도구, Phase E schema v3 binding을 model-free로 구현했다. base→R01→…→R13 reference Git bundle과 Task Pack q1·동일 budget을 봉인했고, exact source commit 71713a1cb5713088df877e0b2485b1b8006ca930의 14-cell Docker q19도 CHALLENGE_READY로 봉인했다. q19/q1/budget exact identity를 결합한 Phase E schema v3 candidate v17을 source commit e09652b69730cf30b4e9b363c44bd79c40afdb12에서 actual model turn 0으로 생성·독립 검증했다. candidate v17의 exact-candidate acceptance 두 회차도 각각 13 public contracts, cumulative Check 104, lifecycle SEALED·SEALED·PLANNED·PLANNED와 active residue 0으로 통과했다. run 2는 alternate-deep R12 Git topology가 reference와 B1 workspace에 적용된 상태로 통과했다. 기존 v16 state/raw/Measurement/seal은 수정하지 않는다. incident는 readiness가 봉인될 때까지 open으로 유지한다.",
+  "resolution": "ChatGPT Pro의 문제 보고와 해법 원문을 보존하고 R01~R13 exact linear Task Pack, cumulative public Checks, 13 independent Judge properties, structured failure diagnostics, self-contained R12 Git contract, Worker information boundary, reference-chain 및 q1 qualification 도구, Phase E schema v3 binding을 model-free로 구현했다. base→R01→…→R13 reference Git bundle과 Task Pack q1·동일 budget을 봉인했고, exact source commit 71713a1cb5713088df877e0b2485b1b8006ca930의 14-cell Docker q19도 CHALLENGE_READY로 봉인했다. q19/q1/budget exact identity를 결합한 Phase E schema v3 candidate v17을 source commit e09652b69730cf30b4e9b363c44bd79c40afdb12에서 actual model turn 0으로 생성·독립 검증했다. candidate v17의 exact-candidate acceptance 두 회차도 각각 13 public contracts, cumulative Check 104, lifecycle SEALED·SEALED·PLANNED·PLANNED와 active residue 0으로 통과했다. run 2는 alternate-deep R12 Git topology가 reference와 B1 workspace에 적용된 상태로 통과했다. package record commit b4aae142ceea0ed46dd1c15ea6b22ed0beeab449에서 q19, q1/budget, reference, candidate v17과 acceptance 2회를 직접 결합한 readiness v9 r4 package를 만들고 원본·ZIP 해제본 verifier를 모두 통과했다. 기존 v16 state/raw/Measurement/seal은 수정하지 않는다.",
   "affected_files": [
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
@@ -56,17 +68,17 @@
     "exact source commit 71713a1cb5713088df877e0b2485b1b8006ca930의 Docker q19은 reference 1개와 전용 mutation 13개가 14/14 기대 일치했고, 모든 셀에서 13개 property가 prerequisite blocking 없이 실행돼 CHALLENGE_READY로 봉인됨",
     "Phase E schema v3 candidate v17은 source e09652b69730cf30b4e9b363c44bd79c40afdb12, Plan 3d512c44d88892b7abc0cc13390d33bd5e291fb2c69e01391dda32b3cc2fd017, seal 5a460cfc47d5a52988d0a10527a4b7cf3bba88e02cf83ea9204da73e9ad922f7에 결합됐고 별도 verifier와 checked-in 회귀시험을 통과함",
     "exact-candidate acceptance run 1은 checkout db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25에서 1 passed, manifest 8/8 mismatch 0, public contract 13/13, Cell 3·4 PLANNED, model turn과 TEMP/process/lock residue 0으로 통과함",
-    "exact-candidate acceptance run 2는 checkout 27025fa9b9fba9a213ff3245f4d5fb93e41627ee에서 alternate-deep R12 marker가 reference와 B1 workspace에 적용된 채 1 passed, manifest 8/8 mismatch 0, public contract 13/13, Cell 3·4 PLANNED와 active residue 0으로 통과함"
+    "exact-candidate acceptance run 2는 checkout 27025fa9b9fba9a213ff3245f4d5fb93e41627ee에서 alternate-deep R12 marker가 reference와 B1 workspace에 적용된 채 1 passed, manifest 8/8 mismatch 0, public contract 13/13, Cell 3·4 PLANNED와 active residue 0으로 통과함",
+    "readiness v9 r4 package는 exact 533 files, manifest 532, payload 531, ZIP duplicate/directory/unsafe path 0, credential 실제 finding 0이며 원본과 새 해제본에서 동일 payload aggregate e4e18dc3bb0032e9ebfd1d3d3627988c0870bb4ca249ee65d82a73908eae08ad와 seal 569ac57514bafb25f927ed0e4d46af75d31869d89870eeea82cb159a2c94b015로 검증됨"
   ],
-  "remaining_risks": [
-    "새 Phase E candidate의 readiness·Environment Closure는 아직 생성 또는 실행되지 않음"
-  ],
+  "remaining_risks": [],
   "related_commits": [
     "71713a1cb5713088df877e0b2485b1b8006ca930",
     "f8c2249fb691041fadeabd2dbb112a91838a34fa",
     "e09652b69730cf30b4e9b363c44bd79c40afdb12",
     "db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25",
-    "27025fa9b9fba9a213ff3245f4d5fb93e41627ee"
+    "27025fa9b9fba9a213ff3245f4d5fb93e41627ee",
+    "b4aae142ceea0ed46dd1c15ea6b22ed0beeab449"
   ],
   "source_references": [
     "docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-problem-report.md",
@@ -81,6 +93,7 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v17-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v9-run1-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v9-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v9-package-result.md",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
     "tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py"
   ]

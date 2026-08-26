@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 61건
-- 해결: 58건
+- 해결: 59건
 - 조사 중: 2건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -73,7 +73,7 @@
 | DEV-20260815-003 | resolved | phase-d-profile-r | tooling | Profile R Judge bundle이 R07 임시 절대경로 stdout을 봉인해 재생성마다 달라짐 |
 | DEV-20260823-001 | resolved | phase-f-profile-r | test | Phase F model-free acceptance가 SS1 task scope 위반을 통과시키고 Evidence에서 누락함 |
 | DEV-20260823-002 | resolved | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
-| DEV-20260825-001 | open | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
+| DEV-20260825-001 | resolved | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -3904,11 +3904,11 @@ v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder�
 
 ## DEV-20260825-001 — Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-b1`
 - 분류: `test`
 - 발견: 2026-08-25T08:00:54Z / Phase F Profile R B1 company v16 live
-- 해결: 미해결
+- 해결: 2026-08-26T06:36:56.3404544Z
 
 ### 증상
 
@@ -3924,27 +3924,53 @@ B1은 R01~R06을 통과했지만 R07 public pytest가 worker 저장소에 존재
 
 ### 근본 원인
 
-미확인
+v16의 R01~R08 Task ownership과 public Check·hidden Judge property ownership이 일치하지 않았고, R07 public regression은 Worker-readable bytes로 재구성하지 않은 historical commit e915914c를 직접 요구했다. 그 결과 모델 산출물 오류와 시험환경 결손을 독립 진단할 수 없었다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` R07에 e915914c object만 공급하거나 해당 조회만 제거하는 최소 patch — R07의 직접 증상만 가리고 v16에서 드러난 Task·public Check·Judge ownership 불일치와 누적 invariant 결손을 남긴다
+- `rejected` R01~R08 전체를 그대로 두고 timeout·feedback만 조정 — 시험환경 결손과 제품 실패의 구조적 분리, 독립 property 실행과 positive/negative qualification을 해결하지 못한다
+- `adopted` Task/public Check/hidden Judge를 1:1로 맞춘 R01~R13 Task Pack 재설계 — Pro 진단과 내부 재현에서 확인된 ownership·정보경계·reference intermediate tree·실패분류 결함을 같은 qualification chain에서 닫는다
 
 ### 채택한 해결
 
-미해결
+ChatGPT Pro의 문제 보고와 해법 원문을 보존하고 R01~R13 exact linear Task Pack, cumulative public Checks, 13 independent Judge properties, structured failure diagnostics, self-contained R12 Git contract, Worker information boundary, reference-chain 및 q1 qualification 도구, Phase E schema v3 binding을 model-free로 구현했다. base→R01→…→R13 reference Git bundle과 Task Pack q1·동일 budget을 봉인했고, exact source commit 71713a1cb5713088df877e0b2485b1b8006ca930의 14-cell Docker q19도 CHALLENGE_READY로 봉인했다. q19/q1/budget exact identity를 결합한 Phase E schema v3 candidate v17을 source commit e09652b69730cf30b4e9b363c44bd79c40afdb12에서 actual model turn 0으로 생성·독립 검증했다. candidate v17의 exact-candidate acceptance 두 회차도 각각 13 public contracts, cumulative Check 104, lifecycle SEALED·SEALED·PLANNED·PLANNED와 active residue 0으로 통과했다. run 2는 alternate-deep R12 Git topology가 reference와 B1 workspace에 적용된 상태로 통과했다. package record commit b4aae142ceea0ed46dd1c15ea6b22ed0beeab449에서 q19, q1/budget, reference, candidate v17과 acceptance 2회를 직접 결합한 readiness v9 r4 package를 만들고 원본·ZIP 해제본 verifier를 모두 통과했다. 기존 v16 state/raw/Measurement/seal은 수정하지 않는다.
 
 ### 수정 파일
 
-- 기록 없음
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py
+- stages/b1-sequential/src/orchestrator/contract.py
+- stages/b1-sequential/src/orchestrator/verify.py
+- tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
+- benchmarks/suites/sdk-routing-realistic-high-difficulty-v1/stages/realistic-high-difficulty-initial.json
+- tools/benchmark-runner/tests/test_realistic_phase_e.py
 
 ### 회귀시험
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_profile_r_redesign.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py
+- stages/b1-sequential/tests/unit/test_verify.py
 
 ### 검증 결과
 
-- 기록 없음
+- R01~R13 reference workspace에서 hidden Judge 13/13 pass 및 workspace_mutated=false
+- 13개 known-bad mutation은 담당 hidden property를 fail하며 prerequisite blocking 없이 모든 property가 실행됨
+- Worker snapshot의 reviewer/reference 정보 경계와 transient cache 거부가 model-free test로 확인됨
+- 14-commit reference Git bundle의 parent·A/M-only·UTF-8 LF·scope·중간 tree seal을 재검증함
+- Task Pack q1은 R01~R13 positive transition과 누적 public Checks, 13개 public negative mutation을 통과해 TASK_PACK_READY로 봉인됨
+- 동일 SS1/B1 budget은 Task당 최대 2, Cell base 13, Cell 최대 15, retry/resume 총 2로 봉인됨
+- exact source commit 71713a1cb5713088df877e0b2485b1b8006ca930의 Docker q19은 reference 1개와 전용 mutation 13개가 14/14 기대 일치했고, 모든 셀에서 13개 property가 prerequisite blocking 없이 실행돼 CHALLENGE_READY로 봉인됨
+- Phase E schema v3 candidate v17은 source e09652b69730cf30b4e9b363c44bd79c40afdb12, Plan 3d512c44d88892b7abc0cc13390d33bd5e291fb2c69e01391dda32b3cc2fd017, seal 5a460cfc47d5a52988d0a10527a4b7cf3bba88e02cf83ea9204da73e9ad922f7에 결합됐고 별도 verifier와 checked-in 회귀시험을 통과함
+- exact-candidate acceptance run 1은 checkout db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25에서 1 passed, manifest 8/8 mismatch 0, public contract 13/13, Cell 3·4 PLANNED, model turn과 TEMP/process/lock residue 0으로 통과함
+- exact-candidate acceptance run 2는 checkout 27025fa9b9fba9a213ff3245f4d5fb93e41627ee에서 alternate-deep R12 marker가 reference와 B1 workspace에 적용된 채 1 passed, manifest 8/8 mismatch 0, public contract 13/13, Cell 3·4 PLANNED와 active residue 0으로 통과함
+- readiness v9 r4 package는 exact 533 files, manifest 532, payload 531, ZIP duplicate/directory/unsafe path 0, credential 실제 finding 0이며 원본과 새 해제본에서 동일 payload aggregate e4e18dc3bb0032e9ebfd1d3d3627988c0870bb4ca249ee65d82a73908eae08ad와 seal 569ac57514bafb25f927ed0e4d46af75d31869d89870eeea82cb159a2c94b015로 검증됨
 
 ### 남은 위험
 
@@ -3952,7 +3978,19 @@ B1은 R01~R06을 통과했지만 R07 public pytest가 worker 저장소에 존재
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
-- 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmarks/manifests/b0-b1-frozen.yaml
-- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
-- 출처: tools/benchmark-runner/tests/test_routing_s2.py
+- 관련 커밋: 71713a1cb5713088df877e0b2485b1b8006ca930, f8c2249fb691041fadeabd2dbb112a91838a34fa, e09652b69730cf30b4e9b363c44bd79c40afdb12, db6d9eeea693a3632b06c5e38fe4f5d6c96d7f25, 27025fa9b9fba9a213ff3245f4d5fb93e41627ee, b4aae142ceea0ed46dd1c15ea6b22ed0beeab449
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-problem-report.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-profile-r-r01-r13-redesign-solution.md
+- 출처: docs/reviews/benchmark-runner/profile-r-r01-r13-redesign-decision.json
+- 출처: benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/reference-repository-manifest.json
+- 출처: benchmarks/artifacts/profile-r-task-pack-q1/artifact-manifest.json
+- 출처: benchmarks/artifacts/profile-r-docker-judge-qualification-v16/qualification.json
+- 출처: benchmarks/artifacts/profile-r-docker-judge-qualification-v16/docker-environment.json
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q19-company-result.md
+- 출처: benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v17/candidate-seal.json
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v17-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v9-run1-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v9-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v9-package-result.md
+- 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- 출처: tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py
