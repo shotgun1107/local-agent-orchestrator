@@ -65,14 +65,14 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v16"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v17"
 )
 REFERENCE_PATCH = (
     REPOSITORY
     / "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/"
     "realistic-compat-migration-001/reference.patch"
 )
-R07_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
+R12_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 ACCEPTANCE_EVIDENCE_ROOT_ENV = "LAO_PHASE_F_ACCEPTANCE_EVIDENCE_ROOT"
 ACCEPTANCE_COMMAND_ENV = "LAO_PHASE_F_ACCEPTANCE_COMMAND"
@@ -273,7 +273,7 @@ def _reference_b1_runtime(
     workspace: Path,
     reference_workspace: Path,
     source_environment: dict[str, str],
-    alternate_deep_r07_repository: bool = False,
+    alternate_deep_r12_repository: bool = False,
 ) -> B1FakeRuntime:
     materialize_profile_r_workspace(
         REPOSITORY,
@@ -302,16 +302,16 @@ def _reference_b1_runtime(
         env=git_environment,
     )
     assert applied.returncode == 0, applied.stderr.decode("utf-8", errors="replace")
-    if alternate_deep_r07_repository:
-        r07_test = reference_workspace / R07_PUBLIC_FIX_PATH
+    if alternate_deep_r12_repository:
+        r12_test = reference_workspace / R12_PUBLIC_FIX_PATH
         original = 'source = tmp_path / "source"'
         replacement = (
             'source = tmp_path / '
             '"alternate-valid-worker-internal-repository-root"'
         )
-        content = r07_test.read_text(encoding="utf-8")
+        content = r12_test.read_text(encoding="utf-8")
         assert content.count(original) == 1
-        r07_test.write_text(
+        r12_test.write_text(
             content.replace(original, replacement),
             encoding="utf-8",
             newline="\n",
@@ -694,7 +694,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             workspace=workspace,
             reference_workspace=tmp_path / "reference-worker",
             source_environment=source_environment,
-            alternate_deep_r07_repository=acceptance_run == 2,
+            alternate_deep_r12_repository=acceptance_run == 2,
         )
         b1_runtimes.append(runtime)
         return runtime
@@ -853,7 +853,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         "automatic_continuation": False,
         "cell_lifecycles": [item["lifecycle"] for item in after_b1["cells"]],
         "public_check_ids": sorted(public_records),
-        "public_checks_passed": 8,
+        "public_checks_passed": 13,
         "path_identities": {
             "phase_f_state": _path_identity(experiment_dir),
             "artifact_root": _path_identity(artifact_root),
@@ -872,7 +872,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         "active_controller_lock_residue": 0,
         "controller_lock_reacquired": True,
         "unexpected_lock_file_residue": 0,
-        "r07_environment": environment_evidence,
+        "r12_environment": environment_evidence,
     }
     _write_acceptance_evidence(
         acceptance_run=acceptance_run,
