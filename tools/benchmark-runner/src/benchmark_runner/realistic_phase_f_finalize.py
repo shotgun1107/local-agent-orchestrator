@@ -35,12 +35,13 @@ from benchmark_runner.contract import (
     VariantMetrics,
     utc_now,
 )
-from benchmark_runner.realistic_phase_e import verify_phase_e_candidate
+from benchmark_runner.realistic_phase_e import PhaseEStageManifest
 from benchmark_runner.realistic_phase_f import (
-    PHASE_F_PLAN_FILENAME,
     PhaseFBackendResult,
     PhaseFDispatchRequest,
     PhaseFRuntimeMode,
+    load_verified_phase_f_candidate,
+    phase_f_cell_model_turn_ceiling,
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.runner import sha256_bytes, sha256_file
@@ -496,10 +497,13 @@ class ProfileRPhaseFCellFinalizerBackend:
         self.judge = judge
         self.runtime_mode = worker_backend.runtime_mode
 
-    def _plan(self, request: PhaseFDispatchRequest) -> ExecutionPlan:
-        verify_phase_e_candidate(self.repository, self.candidate_root)
-        plan = ExecutionPlan.model_validate_json(
-            (self.candidate_root / PHASE_F_PLAN_FILENAME).read_bytes()
+    def _plan(
+        self,
+        request: PhaseFDispatchRequest,
+    ) -> tuple[ExecutionPlan, PhaseEStageManifest]:
+        _seal, plan, _plan_bytes, stage = load_verified_phase_f_candidate(
+            self.repository,
+            self.candidate_root,
         )
         planned = next((item for item in plan.cells if item.cell_id == request.cell_id), None)
         if (
@@ -510,14 +514,25 @@ class ProfileRPhaseFCellFinalizerBackend:
             or planned.variant_id != request.variant_id
         ):
             raise PhaseFFinalizationError("Phase F finalizer Plan identity differs")
-        return plan
+        return plan, stage
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
-        plan = self._plan(request)
+        plan, stage = self._plan(request)
         total_started = time.monotonic()
         worker_started = time.monotonic()
         worker = self.worker_backend.run_one_cell(request)
         worker_seconds = time.monotonic() - worker_started
+        planned_cell = next(item for item in plan.cells if item.cell_id == request.cell_id)
+        turn_ceiling = phase_f_cell_model_turn_ceiling(
+            stage=stage,
+            cell=planned_cell,
+        )
+        if worker.actual_model_turns > turn_ceiling:
+            raise PhaseFFinalizationError(
+                "Phase F worker model turns "
+                f"{worker.actual_model_turns} exceed candidate Cell ceiling "
+                f"{turn_ceiling} before Judge"
+            )
         cell_root = self.worker_backend.artifact_root / request.cell_id
         workspace = cell_root / "workspace"
         adapter_path = cell_root / self.worker_backend.evidence_filename

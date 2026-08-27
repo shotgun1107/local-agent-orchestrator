@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260827-001",
+  "title": "Profile R 15-turn 완료 결과를 Phase F의 과거 10-turn 상한이 거부함",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-ss1",
+  "category": "integration",
+  "discovered_at": "2026-08-26T09:06:16.660761Z",
+  "resolved_at": "2026-08-26T23:39:57.4876777Z",
+  "discovered_by": "Phase F Profile R SS1 candidate v17 live",
+  "symptom": "SS1 adapter는 R01~R13 initial turn과 R01·R02 self-review를 합쳐 15 model turns로 completed를 반환했지만 PhaseFBackendResult 생성 시 actual_model_turns의 과거 le=10 제약에 걸려 Judge 전에 ValidationError로 중단됐다.",
+  "reproduction": [
+    "candidate v17의 Profile R Cell 1 결과로 actual_model_turns=15인 live PhaseFBackendResult를 만들고 run_next_phase_f_cell의 결과 저장 경로를 통과시킨다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "보존된 ss1-adapter-evidence.json은 task_count=13, actual_model_turns=15, adapter_outcome_state=completed, adapter_failure_kind=null, judge_executed=false를 기록하며 file SHA-256은 ab842a95bdc0c2daf2abda5e56c81586eb1ba36e84b3da58aa3338adffbb56aa다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "candidate v17 stage-manifest는 Profile R total_turn_ceiling_per_variant=15를 봉인했지만 realistic_phase_f.py의 PhaseFCellState와 PhaseFBackendResult는 actual_model_turns에 le=10을 고정했다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "candidate v17을 사용하는 model-free Controller 회귀에서 15-turn 결과는 Cell 1을 SEALED로 만들고 16-turn 결과는 ModelTurnCeilingExceeded로 중단됨을 확인했다."
+    }
+  ],
+  "root_cause": "Profile R을 8 Task에서 13 Task로 확장하면서 candidate budget은 Cell당 10에서 15로 변경했지만 공통 Phase F state/result DTO의 정적 le=10 제약을 갱신하지 않았다. q19과 q1은 Judge와 Task Pack을 검사했고 exact-candidate acceptance는 actual_model_turns=0인 model-free 결과만 통과시켜 candidate budget과 Controller 결과 저장 계약의 15-turn 경계를 실행하지 않았다.",
+  "considered_options": [
+    {
+      "option": "두 DTO의 상한을 15로 교체",
+      "decision": "rejected",
+      "reason": "Profile I의 상한 10과 향후 Task 수 변경을 다시 정적 숫자에 결합해 같은 drift를 반복한다"
+    },
+    {
+      "option": "DTO는 비음수 turn을 표현하고 Controller가 봉인 candidate의 Cell별 budget을 조회해 집행",
+      "decision": "adopted",
+      "reason": "Profile R 15와 Profile I 10을 같은 코드에서 정확히 적용하고 향후 profile budget 변경도 candidate 계약으로 통제한다"
+    }
+  ],
+  "resolution": "PhaseFCellState와 PhaseFBackendResult에서 과거 le=10을 제거하고, verified candidate stage의 Cell ordinal→profile→snapshot→profile budget 결합으로 해당 Cell의 total_turn_ceiling_per_variant를 찾도록 수정했다. 새 결과는 backend-result 저장 전에 candidate Cell ceiling을 초과하면 ModelTurnCeilingExceeded로 fail-closed 처리하며, 이미 봉인된 결과를 다시 읽을 때도 같은 candidate ceiling을 재검증한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py::test_redesigned_profile_r_accepts_candidate_ceiling_fifteen",
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py::test_redesigned_profile_r_rejects_turn_sixteen_and_stops",
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py::test_legacy_profile_r_still_rejects_turn_eleven",
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py::test_candidate_budget_file_change_during_verification_is_rejected",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_fake_ss1_judge_measurement_and_seal_complete_only_cell_one",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_over_budget_worker_result_is_rejected_before_judge"
+  ],
+  "verification": [
+    "Controller와 finalizer 전체 model-free 회귀: 15 passed, 1 Docker opt-in test skipped",
+    "candidate v17 Profile R 15-turn fake-live result은 Cell 1 SEALED, Cell 2 PLANNED, automatic_continuation=false로 종료",
+    "candidate v17 Profile R 16-turn fake-live result은 backend-result를 쓰지 않고 Cell 1 FAILED/ModelTurnCeilingExceeded로 중단",
+    "legacy candidate Profile R 11-turn fake-live result은 기존 Cell ceiling 10에 의해 거부",
+    "candidate stage가 verifier 반환 직후 변경되면 Controller가 candidate changed during verification으로 거부",
+    "v17 R01~R13 model-free finalizer는 13 Task를 Controller→fake Judge→Measurement→Cell seal 경로로 통과",
+    "v17 Profile R 16-turn worker result은 finalizer가 Judge 호출 전에 거부하고 Judge call count 0을 유지",
+    "SS1 단독과 B1 단독 대표 model-free 연결시험 2 passed, Windows process inventory 의존 항목 2 skipped"
+  ],
+  "remaining_risks": [
+    "수정 source를 결합한 새 candidate·acceptance·readiness와 새 experiment가 필요하며 기존 v17 실패 state는 재사용하지 않는다",
+    "외부 Pro 적대적 감사 전에는 교차 계약 누락이 완전히 닫혔다고 주장하지 않는다"
+  ],
+  "related_commits": [
+    "e09652b69730cf30b4e9b363c44bd79c40afdb12",
+    "1f075fe93b25b914cb0482b073d544cf7ad79ecf"
+  ],
+  "source_references": [
+    "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v17/stage-manifest.json",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v17-result.md",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f.py"
+  ]
+}

@@ -27,6 +27,7 @@ from benchmark_runner.contract import (
 from benchmark_runner.realistic_phase_e import (
     PHASE_E_TRACK,
     PhaseECandidateSeal,
+    PhaseEStageManifest,
     verify_phase_e_candidate,
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
@@ -71,7 +72,7 @@ class PhaseFCellState(StrictModel):
     claimed_at: datetime | None = None
     completed_at: datetime | None = None
     runtime_mode: PhaseFRuntimeMode | None = None
-    actual_model_turns: int | None = Field(default=None, ge=0, le=10)
+    actual_model_turns: int | None = Field(default=None, ge=0)
     backend_result_sha256: Sha256 | None = None
     failure_type: str | None = None
     automatic_retry: Literal[False] = False
@@ -243,7 +244,7 @@ class PhaseFBackendResult(StrictModel):
     runtime_mode: PhaseFRuntimeMode
     request_sha256: Sha256
     outcome_state: str = Field(min_length=1)
-    actual_model_turns: int = Field(ge=0, le=10)
+    actual_model_turns: int = Field(ge=0)
     sealed_artifact_sha256: Sha256
     public_summary: dict[str, JsonValue] = Field(default_factory=dict)
 
@@ -335,13 +336,19 @@ def _write_new(path: Path, data: bytes) -> None:
         raise PhaseFControllerError(f"Phase F write-once artifact exists: {path.name}") from exc
 
 
-def _load_candidate(
+def load_verified_phase_f_candidate(
     repository: Path,
     candidate_root: Path,
-) -> tuple[PhaseECandidateSeal, ExecutionPlan, bytes]:
+) -> tuple[PhaseECandidateSeal, ExecutionPlan, bytes, PhaseEStageManifest]:
+    plan_path = candidate_root / PHASE_F_PLAN_FILENAME
+    stage_path = candidate_root / "stage-manifest.json"
+    plan_bytes = plan_path.read_bytes()
+    stage_bytes = stage_path.read_bytes()
     seal = verify_phase_e_candidate(repository, candidate_root)
-    plan_bytes = (candidate_root / PHASE_F_PLAN_FILENAME).read_bytes()
+    if plan_path.read_bytes() != plan_bytes or stage_path.read_bytes() != stage_bytes:
+        raise PhaseFControllerError("Phase E candidate changed during verification")
     plan = ExecutionPlan.model_validate_json(plan_bytes)
+    stage = PhaseEStageManifest.model_validate_json(stage_bytes)
     if (
         plan.environment_fingerprint.get("source_commit") != seal.source_commit
         or plan.environment_fingerprint.get("auth_method") != "chatgpt"
@@ -372,7 +379,42 @@ def _load_candidate(
     ]
     if actual != expected:
         raise PhaseFControllerError("Phase F Plan Cell order differs")
-    return seal, plan, plan_bytes
+    return seal, plan, plan_bytes, stage
+
+
+def phase_f_cell_model_turn_ceiling(
+    *,
+    stage: PhaseEStageManifest,
+    cell: PlannedCell,
+) -> int:
+    """Resolve one Cell's turn ceiling from the verified candidate stage."""
+    matching_stage_cells = [
+        item for item in stage.cell_order if item.ordinal == cell.execution_ordinal
+    ]
+    if len(matching_stage_cells) != 1:
+        raise PhaseFControllerError("Phase F stage Cell budget binding differs")
+    stage_cell = matching_stage_cells[0]
+    if stage_cell.variant_id != cell.variant_id:
+        raise PhaseFControllerError("Phase F stage Cell variant binding differs")
+
+    matching_profiles = [
+        item for item in stage.profiles if item.profile_id == stage_cell.profile_id
+    ]
+    if (
+        len(matching_profiles) != 1
+        or matching_profiles[0].snapshot_id != cell.fixture_id
+    ):
+        raise PhaseFControllerError("Phase F stage Cell profile binding differs")
+
+    profile_budgets = stage.budget.profile_budgets
+    if profile_budgets is None:
+        return stage.budget.total_turn_ceiling_per_variant
+    matching_budgets = [
+        item for item in profile_budgets if item.profile_id == stage_cell.profile_id
+    ]
+    if len(matching_budgets) != 1:
+        raise PhaseFControllerError("Phase F stage Cell turn budget differs")
+    return matching_budgets[0].total_turn_ceiling_per_variant
 
 
 def initialize_phase_f_execution(
@@ -391,7 +433,9 @@ def initialize_phase_f_execution(
         raise PhaseFControllerError("Phase F state root must be outside source and candidate")
     if present_api_key_environment_names():
         raise PhaseFControllerError("API key environment names are present")
-    seal, plan, plan_bytes = _load_candidate(repository, candidate_root)
+    seal, plan, plan_bytes, _stage = load_verified_phase_f_candidate(
+        repository, candidate_root
+    )
     experiment_dir = state_root / plan.experiment_id
     experiment_dir.mkdir(parents=True, exist_ok=False)
     _write_new(experiment_dir / PHASE_F_PLAN_FILENAME, plan_bytes)
@@ -434,13 +478,21 @@ def _load_execution(
     repository: Path,
     candidate_root: Path,
     experiment_dir: Path,
-) -> tuple[PhaseECandidateSeal, ExecutionPlan, PhaseFExecutionState]:
+) -> tuple[
+    PhaseECandidateSeal,
+    ExecutionPlan,
+    PhaseEStageManifest,
+    PhaseFExecutionState,
+]:
     repository = repository.resolve()
     candidate_root = candidate_root.resolve()
     experiment_dir = experiment_dir.resolve()
-    seal, candidate_plan, candidate_plan_bytes = _load_candidate(
-        repository, candidate_root
-    )
+    (
+        seal,
+        candidate_plan,
+        candidate_plan_bytes,
+        candidate_stage,
+    ) = load_verified_phase_f_candidate(repository, candidate_root)
     persisted_plan_bytes = (experiment_dir / PHASE_F_PLAN_FILENAME).read_bytes()
     persisted_candidate_seal_bytes = (experiment_dir / "candidate-seal.json").read_bytes()
     candidate_seal_bytes = (candidate_root / "candidate-seal.json").read_bytes()
@@ -498,9 +550,20 @@ def _load_execution(
                 or result.actual_model_turns != cell.actual_model_turns
             ):
                 raise PhaseFControllerError("sealed Phase F backend result identity differs")
+            planned_cell = next(
+                item for item in candidate_plan.cells if item.cell_id == cell.cell_id
+            )
+            turn_ceiling = phase_f_cell_model_turn_ceiling(
+                stage=candidate_stage,
+                cell=planned_cell,
+            )
+            if result.actual_model_turns > turn_ceiling:
+                raise PhaseFControllerError(
+                    "sealed Phase F Cell exceeds its candidate turn ceiling"
+                )
         elif result_path.exists():
             raise PhaseFControllerError("unsealed Phase F Cell has a backend result")
-    return seal, candidate_plan, state
+    return seal, candidate_plan, candidate_stage, state
 
 
 def phase_f_status(
@@ -509,7 +572,7 @@ def phase_f_status(
     candidate_root: Path,
     experiment_dir: Path,
 ) -> dict[str, object]:
-    _, plan, state = _load_execution(
+    _, plan, _stage, state = _load_execution(
         repository=repository,
         candidate_root=candidate_root,
         experiment_dir=experiment_dir,
@@ -580,7 +643,7 @@ def run_next_phase_f_cell(
         raise PhaseFControllerError("live Phase F Cell requires model-usage confirmation")
     if runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE and confirm_model_usage:
         raise PhaseFControllerError("model-free Phase F test cannot consume model approval")
-    seal, plan, state = _load_execution(
+    seal, plan, stage, state = _load_execution(
         repository=repository,
         candidate_root=candidate_root,
         experiment_dir=experiment_dir,
@@ -668,6 +731,25 @@ def run_next_phase_f_cell(
         state = _replace_cell(state, failed_state)
         atomic_write(experiment_dir / PHASE_F_STATE_FILENAME, canonical_json_bytes(state))
         raise PhaseFControllerError("Phase F backend result identity differs")
+    turn_ceiling = phase_f_cell_model_turn_ceiling(
+        stage=stage,
+        cell=planned_cell,
+    )
+    if backend_result.actual_model_turns > turn_ceiling:
+        failed_state = claimed_state.model_copy(
+            update={
+                "lifecycle": PhaseFCellLifecycle.FAILED,
+                "completed_at": utc_now(),
+                "failure_type": "ModelTurnCeilingExceeded",
+            }
+        )
+        state = _replace_cell(state, failed_state)
+        atomic_write(experiment_dir / PHASE_F_STATE_FILENAME, canonical_json_bytes(state))
+        raise PhaseFControllerError(
+            "Phase F backend result model turns "
+            f"{backend_result.actual_model_turns} exceed candidate Cell ceiling "
+            f"{turn_ceiling}"
+        )
     result_bytes = canonical_json_bytes(backend_result)
     result_sha256 = sha256_bytes(result_bytes)
     _write_new(cell_dir / PHASE_F_BACKEND_RESULT_FILENAME, result_bytes)
