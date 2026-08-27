@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,12 @@ CANDIDATE_ROOT = (
     / "benchmarks"
     / "artifacts"
     / "sdk-routing-realistic-high-difficulty-phase-e-v1"
+)
+CANDIDATE_V17_ROOT = (
+    REPOSITORY
+    / "benchmarks"
+    / "artifacts"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v17"
 )
 
 
@@ -66,6 +73,33 @@ class RaisingFakeBackend(FakePhaseFBackend):
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         self.calls.append(request)
         raise RuntimeError("model-free backend failure")
+
+
+class FixedLiveTurnsBackend:
+    runtime_mode = PhaseFRuntimeMode.LIVE_CHATGPT
+
+    def __init__(self, actual_model_turns: int) -> None:
+        self.actual_model_turns = actual_model_turns
+        self.calls: list[PhaseFDispatchRequest] = []
+
+    def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
+        self.calls.append(request)
+        return PhaseFBackendResult(
+            experiment_id=request.experiment_id,
+            plan_fingerprint=request.plan_fingerprint,
+            execution_ordinal=request.execution_ordinal,
+            cell_id=request.cell_id,
+            fixture_id=request.fixture_id,
+            variant_id=request.variant_id,
+            runtime_mode=self.runtime_mode,
+            request_sha256=request.request_sha256,
+            outcome_state="completed",
+            actual_model_turns=self.actual_model_turns,
+            sealed_artifact_sha256=sha256_bytes(
+                f"live:{request.request_sha256}".encode("utf-8")
+            ),
+            public_summary={"fake_live_result": True},
+        )
 
 
 def _initialize(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -124,6 +158,134 @@ def test_fake_run_dispatches_only_cell_one_and_never_auto_starts_cell_two(
         / cell_two["cell_id"]
         / PHASE_F_CLAIM_FILENAME
     ).exists()
+
+
+def test_redesigned_profile_r_accepts_candidate_ceiling_fifteen(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_V17_ROOT,
+        state_root=tmp_path / "state",
+    )
+    backend = FixedLiveTurnsBackend(15)
+
+    result = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_V17_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=True,
+    )
+
+    assert result.actual_model_turns == 15
+    status = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_V17_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert status["cells"][0]["lifecycle"] == PhaseFCellLifecycle.SEALED.value
+    assert status["cells"][0]["actual_model_turns"] == 15
+    assert status["cells"][1]["lifecycle"] == PhaseFCellLifecycle.PLANNED.value
+    assert status["automatic_continuation"] is False
+
+
+def test_redesigned_profile_r_rejects_turn_sixteen_and_stops(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_V17_ROOT,
+        state_root=tmp_path / "state",
+    )
+    backend = FixedLiveTurnsBackend(16)
+
+    with pytest.raises(
+        PhaseFControllerError,
+        match="model turns 16 exceed candidate Cell ceiling 15",
+    ):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_V17_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=True,
+        )
+
+    status = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_V17_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert status["stopped"] is True
+    assert status["sealed_cells"] == 0
+    assert status["cells"][0]["lifecycle"] == PhaseFCellLifecycle.FAILED.value
+    assert status["cells"][0]["failure_type"] == "ModelTurnCeilingExceeded"
+    assert status["cells"][1]["lifecycle"] == PhaseFCellLifecycle.PLANNED.value
+    assert not any(
+        experiment_dir.joinpath(PHASE_F_CELLS_DIRECTORY).glob(
+            f"*/{phase_f_module.PHASE_F_BACKEND_RESULT_FILENAME}"
+        )
+    )
+
+
+def test_legacy_profile_r_still_rejects_turn_eleven(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    backend = FixedLiveTurnsBackend(11)
+
+    with pytest.raises(
+        PhaseFControllerError,
+        match="model turns 11 exceed candidate Cell ceiling 10",
+    ):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=True,
+        )
+
+
+def test_candidate_budget_file_change_during_verification_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = tmp_path / "candidate"
+    shutil.copytree(CANDIDATE_V17_ROOT, candidate)
+    original_verify = phase_f_module.verify_phase_e_candidate
+
+    def verify_then_mutate(repository: Path, candidate_root: Path):
+        seal = original_verify(repository, candidate_root)
+        stage_path = candidate_root / "stage-manifest.json"
+        stage_path.write_bytes(stage_path.read_bytes() + b" ")
+        return seal
+
+    monkeypatch.setattr(
+        phase_f_module,
+        "verify_phase_e_candidate",
+        verify_then_mutate,
+    )
+
+    with pytest.raises(
+        PhaseFControllerError,
+        match="candidate changed during verification",
+    ):
+        phase_f_module.load_verified_phase_f_candidate(REPOSITORY, candidate)
 
 
 def test_wrong_expected_ordinal_is_rejected_before_fake_backend(

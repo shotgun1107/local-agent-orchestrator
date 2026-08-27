@@ -13,6 +13,7 @@ from benchmark_runner.realistic_docker_judge import (
 from benchmark_runner.realistic_phase_f import (
     PHASE_F_CELLS_DIRECTORY,
     PHASE_F_CLAIM_FILENAME,
+    PhaseFBackendResult,
     PhaseFCellLifecycle,
     PhaseFRuntimeMode,
     initialize_phase_f_execution,
@@ -37,7 +38,7 @@ from benchmark_runner.realistic_phase_f_ss1 import (
     ProfileRPhaseFSS1Backend,
 )
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
-from benchmark_runner.runner import sha256_file
+from benchmark_runner.runner import sha256_bytes, sha256_file
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]
@@ -45,7 +46,7 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v1"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v17"
 )
 
 
@@ -72,26 +73,46 @@ def _runtime_factory(captured: list[FakeSdkRuntime]):
                 "benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml",
                 "schema_version: 1\nstage_id: s2-intermediate\n",
             ),
+        ),
+        "R03": (
+            (
+                "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml",
+                "schema_version: 1\ntasks: []\n",
+            ),
+        ),
+        "R04": (
+            (
+                "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml",
+                "schema_version: 1\ntasks: []\n",
+            ),
+        ),
+        "R05": (
             (
                 "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
                 "schema_version: 1\nstatus: fake\n",
             ),
         ),
-        "R05": (
+        "R07": (
             (
                 "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
                 '"""Model-free fake S2 policy."""\n',
             ),
         ),
-        "R06": (
+        "R09": (
             (
                 "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
                 '"""Model-free fake S2 posthoc."""\n',
             ),
         ),
-        "R07": (
+        "R11": (
             (
                 "tools/benchmark-runner/tests/test_routing_s2.py",
+                "def test_model_free_placeholder():\n    assert True\n",
+            ),
+        ),
+        "R12": (
+            (
+                "tools/benchmark-runner/tests/test_routing_suite.py",
                 "def test_model_free_placeholder():\n    assert True\n",
             ),
         ),
@@ -177,7 +198,7 @@ def test_fake_ss1_judge_measurement_and_seal_complete_only_cell_one(
     )
     assert measurement.outcome.state == "completed"
     assert measurement.outcome.check_success is True
-    assert measurement.resource.turn_count.value == 8
+    assert measurement.resource.turn_count.value == 13
     assert measurement.resource.session_count.value == 1
     assert measurement.variant_metrics.values["actual_model_turns"] == 0
     assert measurement.variant_metrics.values["automatic_continuation"] is False
@@ -207,6 +228,73 @@ def test_fake_ss1_judge_measurement_and_seal_complete_only_cell_one(
         / second["cell_id"]
         / PHASE_F_CLAIM_FILENAME
     ).exists()
+
+
+def test_over_budget_worker_result_is_rejected_before_judge(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        state_root=tmp_path / "state",
+    )
+
+    class OverBudgetWorker:
+        runtime_mode = PhaseFRuntimeMode.LIVE_CHATGPT
+        artifact_root = tmp_path / "backend"
+        evidence_filename = "unused-adapter-evidence.json"
+
+        @staticmethod
+        def run_one_cell(request):
+            return PhaseFBackendResult(
+                experiment_id=request.experiment_id,
+                plan_fingerprint=request.plan_fingerprint,
+                execution_ordinal=request.execution_ordinal,
+                cell_id=request.cell_id,
+                fixture_id=request.fixture_id,
+                variant_id=request.variant_id,
+                runtime_mode=PhaseFRuntimeMode.LIVE_CHATGPT,
+                request_sha256=request.request_sha256,
+                outcome_state="completed",
+                actual_model_turns=16,
+                sealed_artifact_sha256=sha256_bytes(b"unused"),
+                public_summary={},
+            )
+
+    judge = FakePhaseFJudgePort(check_success=True)
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=OverBudgetWorker(),
+        judge=judge,
+    )
+
+    with pytest.raises(
+        PhaseFFinalizationError,
+        match="model turns 16 exceed candidate Cell ceiling 15 before Judge",
+    ):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=True,
+        )
+
+    assert judge.calls == []
+    status = phase_f_status(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+    )
+    assert status["stopped"] is True
+    assert status["cells"][0]["lifecycle"] == PhaseFCellLifecycle.FAILED.value
+    assert status["cells"][0]["failure_type"] == "PhaseFFinalizationError"
 
 
 def test_final_seal_verifier_rejects_judge_file_tamper(
