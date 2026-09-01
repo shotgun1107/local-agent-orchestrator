@@ -135,17 +135,17 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 3
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v18/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v19/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v18/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v19/"
         "docker-environment.json"
     )
     assert stage.profiles[0].task_pack_qualification_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q2/qualification.json"
+        "benchmarks/artifacts/profile-r-task-pack-q3/qualification.json"
     )
     assert stage.profiles[0].task_budget_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q2/task-budget.json"
+        "benchmarks/artifacts/profile-r-task-pack-q3/task-budget.json"
     )
     assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
@@ -606,19 +606,19 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     assert bindings.schema_version == 3
     profile_r = bindings.profiles[0]
     assert profile_r.qualification_sha256 == (
-        "27d49bf2cfb218dce77270d6f0a943f846023000adccf9db3372e3883c23d554"
+        "b4e0753d99572221c9d9edc1b7fda12d30237e87b6eaf6e9d4dc00b459fac40f"
     )
     assert profile_r.task_pack_qualification_sha256 == (
-        "487f7691d4cce64db8d7b997164ca45179df3186e0c4ed7eed99db5c8c2964f9"
+        "601a699e8c7b073a572db0079209eedd4180fea0707e69223758d93f811eb992"
     )
     assert profile_r.task_pack_qualification_seal_sha256 == (
-        "61181ffa0867c67b7d087059f777d5838f5c61a3d6250d45422c04d945312c11"
+        "724558225db9917f8963b3c54cefef92407192ad529cdf07c621796e5866ec62"
     )
     assert profile_r.task_budget_sha256 == (
-        "3e2dbd5c8bdc040c5b57d1aaac3dd9473d929b83f35f4e7bc4c09b91c94c146d"
+        "43ef9eddc225fcd4dac9e03e5196bd2a90c6b36ef6b3d6f079c4f5607430d39f"
     )
     assert profile_r.task_budget_seal_sha256 == (
-        "0a1f77373b5db871c3a1967834fac5985ce38d6e8cb2511a5165cafb638df60b"
+        "5cb10ca6d7dbcba20edfbfa3362e129d19230cff6e0fbdccac01accb54fb0c2d"
     )
     assert plan.decision_policy["planned_initial_model_turns"] == 42
     assert plan.decision_policy["planned_model_turn_ceiling"] == 50
