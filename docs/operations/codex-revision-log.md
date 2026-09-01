@@ -3077,3 +3077,22 @@ acceptance run 1의 양성 Evidence는 통과로 보존한다. 그러나 public 
 Worker bytes와 source binding이 바뀌므로 v18 acceptance run 2와 readiness는 중단한다. 다음
 관문은 incident 수정·회귀검증 뒤 필요한 qualification과 새 candidate identity를 만드는 것이다.
 Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R public failure diagnostic 교정
+
+- 작업일: 2026-09-01. acceptance v10 preflight에서 발견한 `DEV-20260901-002`를 source commit
+  `c5f9a02459ef67d763dc8be47c7a9f15ebd96db3`, tree
+  `7966b128940fa4d1191a2fc3d713e5ba4b1545b2`로 교정했다.
+- public checker의 제품 진단과 환경 진단 출력 조건을 분리했다. 제품 실패는 제품 진단만,
+  환경 실패는 환경 진단만, 혼합 실패는 두 기록을 각각 한 번 출력한다.
+- overlay와 generated Worker checker bytes를 일치시키고 snapshot manifest를 builder 출력과
+  exact 대조했다. checker SHA는 `c1da5425...db5c`, Worker aggregate는
+  `d071f4ad...2545`, file count는 130이다.
+- 제품·환경·혼합 전용 회귀, R07 적대적 검사, B1 verify와 Phase F B1 경계를 clean commit에서
+  실행해 `69 passed in 24.71s`다. model, SDK thread/turn과 Docker workload는 0이다.
+- 기존 R07 적대적 테스트 한 개의 stale keyword-only 호출도 현재 JUnit/task identity 계약에
+  맞췄다. incident는 resolved로 닫았다.
+
+Worker baseline tree가 바뀌었으므로 기존 q19, Task Pack q1, candidate v18과 acceptance run 1은
+역사 Evidence로만 보존한다. 다음 관문은 새 reference chain→Judge qualification→Task Pack
+qualification→candidate 순서다. acceptance와 Live는 계속 `NO-GO`다.
