@@ -3217,3 +3217,21 @@ qualification→candidate다. official acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 clean source를 고정한 fresh q22 Docker Judge qualification이다. q21/q2/v19는
 역사 Evidence로만 보존하며 Task Pack q3, 새 candidate, acceptance와 Live는 `NO-GO`다.
+
+## Profile R Docker Judge q22 봉인
+
+- 작업일: 2026-09-02. q3 reference와 packaged pytest identity를 교정한 clean source
+  `202ece7ebe14a3fa37c9324e32351fb5f85ff8e3`, tree
+  `fd7ea1092c769e00b69e186f4485b5ae044ac5ab`에서 fresh q22를 실행했다.
+- reference 13/13 pass, 13개 negative mutation은 각 target property fail이며 expectation
+  `14/14`, prerequisite blocking 0, model turn 0이다.
+- raw는 `C:\q22\profile-r-docker-matrix-q22-company-r01-r13`, projection은 qualification
+  v19다. raw file_count 72, seal `553d5327...d397`, projection file SHA
+  `b4e0753d...c40f`, residual container 0이다.
+- independent raw verifier와 path-free projection exact recomputation이 통과했다. Docker
+  context, daemon, CLI hash, image digest와 build input hash는 q21과 exact 일치한다.
+- 첫 CLI는 fresh base parent 부재로 matrix 생성 전에 종료됐고, raw·projection·Cell 0을
+  확인한 뒤 부모만 생성해 본 실행했다. 관련 artifact 회귀는 7 passed다.
+
+다음 관문은 q22 qualification v19와 reference q3에 직접 결합한 model-free Task Pack q3다.
+candidate, acceptance와 Live는 계속 `NO-GO`다.
