@@ -211,7 +211,8 @@ source를 `f5d027d4ca284c61165dbab00429bcc1f6aa288d`로 commit한 clean tree에�
 sandbox에서 Windows process inventory를 제공하지 않아 생긴 2건이다. 신규 P1 핵심 6개와
 count mismatch matrix 6개도 포함해 통과했다.
 
-따라서 P1 source 교정과 clean-tree model-free 회귀는 완료됐지만 새 candidate는 아직 만들지
-않았다. 다음 관문은 이 source를 결합한 새 candidate→acceptance 2회→readiness다. 기존 v17
-state와 결과는 수정·재사용하지 않는다. P2인 임의 Cell 수·B2/B3 범용 topology 분리는 기존
-버그 수정과 B1 검증 뒤 별도 작업으로 남긴다.
+P1 source 교정과 clean-tree model-free 회귀 뒤 source `7d0b35d057ae84fc005fd3cf3e8bf9df310f05b7`을
+결합한 Phase E candidate v18을 0-turn으로 생성했다. 생성기 내부 verifier, 별도 process
+verifier와 checked-in candidate 회귀가 통과했다. 다음 관문은 v18 acceptance 2회와
+readiness다. 기존 v17 state와 결과는 수정·재사용하지 않는다. P2인 임의 Cell 수·B2/B3
+범용 topology 분리는 기존 버그 수정과 B1 검증 뒤 별도 작업으로 남긴다.

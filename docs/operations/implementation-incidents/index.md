@@ -4138,7 +4138,7 @@ Phase E verifier가 candidate 전 파일을 한 번만 읽은 immutable Verified
 
 ### 남은 위험
 
-- 새 candidate·acceptance 2회·readiness·Environment Closure는 아직 생성하거나 실행하지 않았다
+- P1 source를 결합한 candidate v18은 0-turn으로 생성·검증했지만 acceptance 2회·readiness·Environment Closure는 아직 실행하지 않았다
 - anchor root는 execution root와 분리하고 one-Cell 반환 anchor SHA를 운영자가 별도 보존해야 하며 Live 전 ACL·경로·복구 절차를 검증해야 한다
 - B2/B3와 임의 Cell 수를 위한 generic topology 분리는 P2 후속 작업으로 남아 있다
 
@@ -4146,6 +4146,7 @@ Phase E verifier가 candidate 전 파일을 한 번만 읽은 immutable Verified
 
 - 관련 커밋: 2b5c40bb4f7d0fefc924b8972009d3510673c18a, f5d027d4ca284c61165dbab00429bcc1f6aa288d
 - 출처: docs/audits/profile-r-controller-turn-budget-audit-overview-v1.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v18-result.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-adversarial-audit-profile-r-controller-turn-budget-v1.md
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-adversarial-audit-prompt-profile-r-controller-turn-budget-v1.md
 - 출처: docs/operations/implementation-incidents/entries/DEV-20260827-001.json
