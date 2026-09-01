@@ -114,7 +114,11 @@ def test_r07_executes_and_rejects_an_assert_false_regression(tmp_path: Path) -> 
     assert collected[0].endswith("test_failure.py::test_declared")
     assert result.returncode != 0
     with pytest.raises(checker.PublicContractError, match="regressions failed"):
-        checker._require_r07_pytest_success(result)
+        checker._require_r07_pytest_success(
+            result,
+            junit_path=tmp_path / "check-temp" / "result.xml",
+            task_id="R07",
+        )
 
 
 @pytest.mark.parametrize(
