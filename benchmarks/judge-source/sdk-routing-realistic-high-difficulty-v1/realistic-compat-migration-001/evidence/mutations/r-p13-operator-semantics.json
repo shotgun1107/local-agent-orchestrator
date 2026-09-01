@@ -4,7 +4,7 @@
   "cell_id": "r-p13-operator-semantics",
   "checker_run_status": "completed",
   "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
-  "envelope_sha256": "357a9864dbe46f72d965d9d6c9aeed39d9b04ee218c0536b8f5806ba0f14805d",
+  "envelope_sha256": "787e13c21c16449161bcb324123495fba0c9ab2ed744875aeb51f5ce24cd120f",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "ec0ed1abbb43a787541a25f5ff848d1f52e72c0a20f8c4020ff3dd91192df95a",
-  "workspace_before_sha256": "ec0ed1abbb43a787541a25f5ff848d1f52e72c0a20f8c4020ff3dd91192df95a",
+  "workspace_after_sha256": "ab43ed6a5bda1ac0584035087665a08e20b61f1ca754eba8d426dc1e2b871975",
+  "workspace_before_sha256": "ab43ed6a5bda1ac0584035087665a08e20b61f1ca754eba8d426dc1e2b871975",
   "workspace_mutated": false
 }

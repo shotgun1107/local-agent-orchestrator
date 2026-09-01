@@ -3096,3 +3096,24 @@ Environment Closure와 Live는 계속 `NO-GO`다.
 Worker baseline tree가 바뀌었으므로 기존 q19, Task Pack q1, candidate v18과 acceptance run 1은
 역사 Evidence로만 보존한다. 다음 관문은 새 reference chain→Judge qualification→Task Pack
 qualification→candidate 순서다. acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R reference q2와 Docker Judge q20 실패 진단
+
+- 작업일: 2026-09-01. 교정된 Worker baseline으로 dedicated reference repository를 다시 만들었다.
+  base+R01~R13 exact 14 commit, base tree `5a6833ad...c7f1`, final tree
+  `8ccd1d3c...9524`, chain seal `b75403dc...675a`다.
+- 이전 chain과 Task effect는 13개 모두 exact 같고 checker baseline 때문에 모든 intermediate
+  commit/tree identity만 달라졌다. bundle complete history, unreachable object 0, reference
+  artifact 회귀 9/9를 통과해 commit `af7f50055a07b1c31b4aa4c972d2c9f3f3d912fb`에 고정했다.
+- 같은 source로 q20 14-cell Docker matrix를 실행했다. reference 13/13 pass와 각 mutation의
+  target fail은 모두 맞았지만 protected Judge expected workspace가 이전 baseline이라 14개
+  모두 before/after mismatch가 됐다. 최종 상태는 `CHALLENGE_NOT_READY`, match 0/14다.
+- q20 raw는 `C:\q20\profile-r-docker-matrix-q20-company-r01-r13`, projection은 qualification
+  v17이다. seal은 `f55996ab...85ba`, file_count 72, residual container와 model turn은 0이다.
+- q20은 재실행·재분류하지 않았다. `DEV-20260901-003`을 등록하고 Judge source bundle을 새
+  baseline에서 재생성했다. protected workspace hash는 q20 실제값과 14/14 exact 일치한다.
+- 새 source bundle은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, 47파일, aggregate
+  `ee01f8c5...63ff`이며 관련 회귀는 36 passed다.
+
+다음 관문은 교정된 Judge source를 commit한 뒤 fresh q21 Docker qualification을 실행하는
+것이다. q21 전에는 Task Pack q2와 candidate를 만들지 않으며 acceptance와 Live는 `NO-GO`다.
