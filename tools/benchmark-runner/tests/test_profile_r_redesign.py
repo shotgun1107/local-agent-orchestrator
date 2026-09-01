@@ -232,6 +232,29 @@ def test_task_budget_requires_ready_q1_and_seals_equal_variant_limits(
     assert budget["ss1_b1_identical"] is True
 
 
+def test_task_pack_qualification_id_can_advance_without_changing_q1_default() -> None:
+    repository = Path(__file__).resolve().parents[3]
+    script = repository / "tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py"
+    spec = importlib.util.spec_from_file_location("profile_r_task_pack", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    q1 = module.qualify(repository)
+    q2 = module.qualify(
+        repository,
+        qualification_id="profile-r-task-pack-q2",
+    )
+    assert q1["qualification_id"] == "profile-r-task-pack-q1"
+    assert q2["qualification_id"] == "profile-r-task-pack-q2"
+    assert q1["seal_sha256"] != q2["seal_sha256"]
+    with pytest.raises(RuntimeError, match="ID is invalid"):
+        module.qualify(
+            repository,
+            qualification_id="profile-r-task-pack-latest",
+        )
+
+
 def test_repository_reference_bundle_matches_chain_and_self_seals(
     tmp_path: Path,
 ) -> None:
