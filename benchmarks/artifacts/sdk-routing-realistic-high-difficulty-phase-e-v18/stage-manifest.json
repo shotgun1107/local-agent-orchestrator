@@ -1,0 +1,108 @@
+{
+  "schema_version": 3,
+  "status": "frozen_before_model_use",
+  "suite_id": "sdk-routing-realistic-high-difficulty-v1",
+  "stage_id": "realistic-high-difficulty-initial",
+  "track": "sdk_routing_realistic_high_difficulty_live_initial",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "high",
+  "auth_method": "chatgpt",
+  "api_key_environment_names_forbidden": [
+    "CODEX_API_KEY",
+    "OPENAI_API_KEY"
+  ],
+  "runtime_contract": {
+    "version": 2,
+    "permission_profile_id": "runtime-boundary-worker",
+    "default_permissions_override": "runtime-boundary-worker",
+    "thread_sandbox_argument": "omitted",
+    "turn_sandbox_argument": "omitted",
+    "legacy_sandbox_settings_present": false,
+    "approval_mode": "deny_all",
+    "approval_policy_wire_value": "never",
+    "active_profile_provenance_required": true
+  },
+  "profiles": [
+    {
+      "profile_id": "repository-wide-compatibility-migration",
+      "snapshot_id": "realistic-compat-migration-001",
+      "fixture_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace",
+      "worker_manifest_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json",
+      "judge_path": "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001",
+      "qualification_path": "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/qualification.json",
+      "docker_environment_path": "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/docker-environment.json",
+      "task_pack_qualification_path": "benchmarks/artifacts/profile-r-task-pack-q1/qualification.json",
+      "task_budget_path": "benchmarks/artifacts/profile-r-task-pack-q1/task-budget.json",
+      "task_count": 13
+    },
+    {
+      "profile_id": "evidence-bound-incident-repair",
+      "snapshot_id": "realistic-incident-repair-001",
+      "fixture_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/workspace",
+      "worker_manifest_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/worker-snapshot-manifest.json",
+      "judge_path": "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-incident-repair-001",
+      "qualification_path": "benchmarks/artifacts/profile-i-docker-judge-qualification-v1/qualification.json",
+      "task_count": 8
+    }
+  ],
+  "cell_order": [
+    {
+      "ordinal": 1,
+      "profile_id": "repository-wide-compatibility-migration",
+      "variant_id": "ss1"
+    },
+    {
+      "ordinal": 2,
+      "profile_id": "repository-wide-compatibility-migration",
+      "variant_id": "b1"
+    },
+    {
+      "ordinal": 3,
+      "profile_id": "evidence-bound-incident-repair",
+      "variant_id": "b1"
+    },
+    {
+      "ordinal": 4,
+      "profile_id": "evidence-bound-incident-repair",
+      "variant_id": "ss1"
+    }
+  ],
+  "budget": {
+    "task_initial_turns": 1,
+    "task_extra_turn_ceiling": 1,
+    "variant_extra_turn_ceiling": 2,
+    "base_turns_per_variant": 13,
+    "total_turn_ceiling_per_variant": 15,
+    "total_initial_turns": 42,
+    "total_turn_ceiling": 50,
+    "model_active_seconds_ceiling_per_variant": 7200,
+    "wall_clock_seconds_ceiling_per_variant": 9000,
+    "unused_reserve_transfer": "forbidden",
+    "profile_budgets": [
+      {
+        "profile_id": "repository-wide-compatibility-migration",
+        "task_count": 13,
+        "base_turns_per_variant": 13,
+        "total_turn_ceiling_per_variant": 15
+      },
+      {
+        "profile_id": "evidence-bound-incident-repair",
+        "task_count": 8,
+        "base_turns_per_variant": 8,
+        "total_turn_ceiling_per_variant": 10
+      }
+    ]
+  },
+  "dispatch": {
+    "one_cell_per_invocation": true,
+    "explicit_confirmation_per_cell": true,
+    "automatic_continuation": false,
+    "retry_after_unsealed_failure": false,
+    "stop_after_first_profile_pair": true
+  },
+  "claims": {
+    "route_decision_allowed": false,
+    "single_run_generalization_allowed": false,
+    "b1_default_adoption_allowed": false
+  }
+}

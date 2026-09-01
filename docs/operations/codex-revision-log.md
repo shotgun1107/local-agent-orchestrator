@@ -3031,3 +3031,23 @@ Environment Closure와 Live는 계속 `NO-GO`다.
 - 새 candidate, acceptance, readiness와 Live는 생성·실행하지 않았다. 다음 관문은 이 source를
   결합한 새 candidate다. 기존 v17 state는 재사용하지 않으며 generic B2/B3 topology P2는 B1
   검증 뒤 별도 작업으로 남긴다.
+
+## Profile R P1 교정 Phase E candidate v18
+
+- 작업일: 2026-09-01. P1 구현 commit `f5d027d4ca284c61165dbab00429bcc1f6aa288d`와
+  clean-tree 검증 기록을 포함한 source `7d0b35d057ae84fc005fd3cf3e8bf9df310f05b7`, tree
+  `c01e7175af1414b380c9c9870dfbce37e14e0bed`를 Phase E schema v3 candidate v18에 결합했다.
+- candidate는 `sdk-routing-realistic-high-difficulty-phase-e-v18`, experiment
+  `exp_20260901_d7869ee7_1`, Plan `d7869ee7...3742`, bindings `d104d2cd...149e`, verified
+  snapshot `c68580b8...9323`, seal `dd7db2bc...19fe`, seal file `59651c8b...c2dd`다.
+- q19 v16, Task Pack q1, budget q1과 Docker environment identity는 바뀌지 않았고 source
+  binding과 Plan에 계속 직접 결합된다. Profile R Cell ceiling 15와 Profile I/legacy 10 계약도
+  유지된다.
+- SDK 0-turn preflight는 ChatGPT account, SDK 0.144.4와 `gpt-5.6-sol` 노출만 확인했다.
+  API-key 환경 이름, SDK thread/start, turn/start, Worker, Judge, Docker workload와 model turn은
+  모두 0이다.
+- 생성기 내부 verifier, 별도 process verifier와 checked-in v18 회귀가 통과했다. 기존 v17
+  candidate와 실패 state/raw/Measurement/seal은 수정하지 않았다.
+
+다음 관문은 v18 exact-candidate acceptance 1회차다. acceptance 2회와 readiness,
+Environment Closure 전에는 실제 SS1/B1을 실행하지 않는다.
