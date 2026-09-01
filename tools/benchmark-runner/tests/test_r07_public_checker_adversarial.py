@@ -113,12 +113,98 @@ def test_r07_executes_and_rejects_an_assert_false_regression(tmp_path: Path) -> 
     assert len(collected) == 1
     assert collected[0].endswith("test_failure.py::test_declared")
     assert result.returncode != 0
-    with pytest.raises(checker.PublicContractError, match="regressions failed"):
+    with pytest.raises(checker.PublicContractError, match="regressions failed") as raised:
         checker._require_r07_pytest_success(
             result,
             junit_path=tmp_path / "check-temp" / "result.xml",
             task_id="R07",
         )
+    assert raised.value.failure_classification == "PRODUCT_ASSERTION"
+    assert raised.value.environment_diagnostic is None
+    assert raised.value.diagnostic_result["product_failure_present"] is True
+    assert raised.value.diagnostic_result["environment_failure_present"] is False
+
+
+def test_r07_structurally_classifies_pytest_oserror_as_environment(
+    tmp_path: Path,
+) -> None:
+    checker = _load_checker()
+    checker.ROOT = tmp_path
+    source = tmp_path / "test_environment.py"
+    _write_test(
+        source,
+        "def test_environment():\n    raise PermissionError('denied')\n",
+    )
+    temp_root = tmp_path / "check-temp"
+    junit_path = temp_root / "result.xml"
+
+    result, collected = checker._collect_and_run_r07_pytest(
+        expected_sources={"test_environment": source},
+        temp_root=temp_root,
+        junit_path=junit_path,
+    )
+
+    assert result.returncode != 0
+    assert len(collected) == 1
+    with pytest.raises(checker.PublicContractError) as raised:
+        checker._require_r07_pytest_success(
+            result,
+            junit_path=junit_path,
+            task_id="R12",
+        )
+    error = raised.value
+    assert error.failure_classification == "ENVIRONMENT"
+    assert error.environment_diagnostic["safe_error_code"] == (
+        "PYTEST_NODE_ENVIRONMENT_FAILURE"
+    )
+    assert error.diagnostic_result["product_failure_present"] is False
+    assert error.diagnostic_result["environment_failure_present"] is True
+    assert error.diagnostic_result["nodes"] == [
+        {
+            "node_id": "R12::test_environment::test_environment",
+            "classification": "ENVIRONMENT",
+            "passed": False,
+            "reason_code": "PYTEST_NODE_ENVIRONMENT_EXCEPTION",
+        }
+    ]
+
+
+def test_r07_structurally_aggregates_mixed_pytest_failures(tmp_path: Path) -> None:
+    checker = _load_checker()
+    checker.ROOT = tmp_path
+    source = tmp_path / "test_mixed.py"
+    _write_test(
+        source,
+        (
+            "def test_product():\n    assert False\n\n"
+            "def test_environment():\n    raise PermissionError('denied')\n"
+        ),
+    )
+    temp_root = tmp_path / "check-temp"
+    junit_path = temp_root / "result.xml"
+
+    result, collected = checker._collect_and_run_r07_pytest(
+        expected_sources={
+            "test_environment": source,
+            "test_product": source,
+        },
+        temp_root=temp_root,
+        junit_path=junit_path,
+    )
+
+    assert result.returncode != 0
+    assert len(collected) == 2
+    with pytest.raises(checker.PublicContractError) as raised:
+        checker._require_r07_pytest_success(
+            result,
+            junit_path=junit_path,
+            task_id="R11",
+        )
+    error = raised.value
+    assert error.failure_classification == "MIXED_PRODUCT_AND_ENVIRONMENT"
+    assert error.environment_diagnostic is not None
+    assert error.diagnostic_result["product_failure_present"] is True
+    assert error.diagnostic_result["environment_failure_present"] is True
 
 
 @pytest.mark.parametrize(
