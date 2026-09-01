@@ -125,6 +125,44 @@ def test_r07_executes_and_rejects_an_assert_false_regression(tmp_path: Path) -> 
     assert raised.value.diagnostic_result["environment_failure_present"] is False
 
 
+def test_r07_structurally_matches_packaged_pytest_junit_identity(
+    tmp_path: Path,
+) -> None:
+    checker = _load_checker()
+    checker.ROOT = tmp_path
+    source = tmp_path / "tests" / "test_packaged.py"
+    _write_test(tmp_path / "tests" / "__init__.py", "")
+    _write_test(source, "def test_packaged():\n    assert False\n")
+    temp_root = tmp_path / "check-temp"
+    junit_path = temp_root / "result.xml"
+
+    result, collected = checker._collect_and_run_r07_pytest(
+        expected_sources={"test_packaged": source},
+        temp_root=temp_root,
+        junit_path=junit_path,
+    )
+
+    assert result.returncode != 0
+    assert len(collected) == 1
+    with pytest.raises(checker.PublicContractError) as raised:
+        checker._require_r07_pytest_success(
+            result,
+            junit_path=junit_path,
+            task_id="R11",
+        )
+    error = raised.value
+    assert error.failure_classification == "PRODUCT_ASSERTION"
+    assert error.diagnostic_result["comparison_valid"] is True
+    assert error.diagnostic_result["nodes"] == [
+        {
+            "node_id": "R11::test_packaged::test_packaged",
+            "classification": "PRODUCT_ASSERTION",
+            "passed": False,
+            "reason_code": "PYTEST_NODE_FAILED",
+        }
+    ]
+
+
 def test_r07_structurally_classifies_pytest_oserror_as_environment(
     tmp_path: Path,
 ) -> None:

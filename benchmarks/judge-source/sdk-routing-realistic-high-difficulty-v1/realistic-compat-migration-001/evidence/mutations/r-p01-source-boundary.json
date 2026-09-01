@@ -4,7 +4,7 @@
   "cell_id": "r-p01-source-boundary",
   "checker_run_status": "completed",
   "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
-  "envelope_sha256": "c1285f07f7f027b09f64366ac0e8b59ff91b6e6473b36ed61b02d0a683f73b73",
+  "envelope_sha256": "71b155e8481309ff2aec7b07ecb4ecc3b297a11ce023177aa2338b3108b2d61e",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "305c456318613723ed78af21a13ebeff5269bd9024efc9934f7b2d034a253ea9",
-  "workspace_before_sha256": "305c456318613723ed78af21a13ebeff5269bd9024efc9934f7b2d034a253ea9",
+  "workspace_after_sha256": "1e5e5f2bbb27a982abca35e34ea13670d09dc02f056b5262bcf75f1e4201eed1",
+  "workspace_before_sha256": "1e5e5f2bbb27a982abca35e34ea13670d09dc02f056b5262bcf75f1e4201eed1",
   "workspace_mutated": false
 }
