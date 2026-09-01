@@ -22,8 +22,12 @@ from orchestrator.recover import ControllerLock
 from orchestrator.runtime import FakeRuntime as B1FakeRuntime
 
 from benchmark_runner.realistic_phase_f import (
+    PHASE_F_ANCHOR_DIRECTORY,
+    PHASE_F_CELL_ANCHOR_FILENAME,
     PHASE_F_CELLS_DIRECTORY,
     PHASE_F_CLAIM_FILENAME,
+    PHASE_F_EXECUTION_ANCHOR_FILENAME,
+    PHASE_F_INITIAL_STATE_ANCHOR_FILENAME,
     PHASE_F_STATE_FILENAME,
     PhaseFCellLifecycle,
     PhaseFRuntimeMode,
@@ -71,7 +75,7 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v17"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v18"
 )
 REFERENCE_PATCH = (
     REPOSITORY
@@ -205,6 +209,7 @@ def _write_acceptance_evidence(
     *,
     acceptance_run: int,
     experiment_dir: Path,
+    anchor_root: Path,
     artifact_root: Path,
     ss1_cell_id: str,
     b1_cell_id: str,
@@ -260,11 +265,34 @@ def _write_acceptance_evidence(
     run_root.mkdir(parents=True, exist_ok=False)
     payload_root = run_root / "payload"
     payload_root.mkdir()
+    execution_anchor_root = (
+        anchor_root
+        / PHASE_F_ANCHOR_DIRECTORY
+        / experiment_dir.name
+    )
     sources = {
         "phase-f-state.json": experiment_dir / PHASE_F_STATE_FILENAME,
+        "initial-state-anchor.json": (
+            execution_anchor_root / PHASE_F_INITIAL_STATE_ANCHOR_FILENAME
+        ),
+        "execution-anchor.json": (
+            execution_anchor_root / PHASE_F_EXECUTION_ANCHOR_FILENAME
+        ),
+        "ss1-cell-anchor.json": (
+            execution_anchor_root
+            / PHASE_F_CELLS_DIRECTORY
+            / ss1_cell_id
+            / PHASE_F_CELL_ANCHOR_FILENAME
+        ),
         "ss1-adapter-evidence.json": artifact_root / ss1_cell_id / PHASE_F_SS1_EVIDENCE_FILENAME,
         "ss1-measurement.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_MEASUREMENT_FILENAME,
         "ss1-cell-seal.json": artifact_root / ss1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_CELL_SEAL_FILENAME,
+        "b1-cell-anchor.json": (
+            execution_anchor_root
+            / PHASE_F_CELLS_DIRECTORY
+            / b1_cell_id
+            / PHASE_F_CELL_ANCHOR_FILENAME
+        ),
         "b1-adapter-evidence.json": artifact_root / b1_cell_id / "b1-adapter-evidence.json",
         "b1-measurement.json": artifact_root / b1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_MEASUREMENT_FILENAME,
         "b1-cell-seal.json": artifact_root / b1_cell_id / PHASE_F_FINAL_DIRECTORY / PHASE_F_SEALED_DIRECTORY / PHASE_F_CELL_SEAL_FILENAME,
@@ -704,6 +732,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         "GIT_CONFIG_GLOBAL": str(hostile_config),
     }
     experiment_dir = _initialize(tmp_path, monkeypatch)
+    anchor_root = tmp_path / "state-anchors"
     artifact_root = tmp_path / "backend"
     ss1_runtimes: list[FakeSdkRuntime] = []
     ss1 = ProfileRPhaseFCellFinalizerBackend(
@@ -768,7 +797,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         return runtime
 
     check_temp_token = hashlib.sha256(str(tmp_path).encode("utf-8")).hexdigest()[:12]
-    check_temp_root = Path(tempfile.gettempdir()) / f"pfa{check_temp_token[:4]}"
+    check_temp_root = Path(tempfile.gettempdir()) / f"pfa{check_temp_token}"
     if check_temp_root.exists():
         shutil.rmtree(check_temp_root)
     b1 = ProfileRPhaseFCellFinalizerBackend(
@@ -868,6 +897,37 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         PhaseFCellLifecycle.PLANNED.value,
         PhaseFCellLifecycle.PLANNED.value,
     ]
+    execution_anchor_root = (
+        anchor_root / PHASE_F_ANCHOR_DIRECTORY / experiment_dir.name
+    )
+    initial_state_anchor_path = (
+        execution_anchor_root / PHASE_F_INITIAL_STATE_ANCHOR_FILENAME
+    )
+    execution_anchor_path = (
+        execution_anchor_root / PHASE_F_EXECUTION_ANCHOR_FILENAME
+    )
+    assert initial_state_anchor_path.is_file()
+    execution_anchor = json.loads(
+        execution_anchor_path.read_text(encoding="utf-8")
+    )
+    anchor_results = (
+        ("ss1", first),
+        ("b1", second),
+    )
+    previous_anchor_sha256 = execution_anchor["anchor_sha256"]
+    for _variant, result in anchor_results:
+        anchor_path = (
+            execution_anchor_root
+            / PHASE_F_CELLS_DIRECTORY
+            / result.executed_cell_id
+            / PHASE_F_CELL_ANCHOR_FILENAME
+        )
+        anchor = json.loads(anchor_path.read_text(encoding="utf-8"))
+        assert anchor["anchor_sha256"] == result.cell_anchor_sha256
+        assert sha256_file(anchor_path) == result.cell_anchor_file_sha256
+        assert anchor["previous_anchor_sha256"] == previous_anchor_sha256
+        assert anchor["actual_model_turns"] == 0
+        previous_anchor_sha256 = anchor["anchor_sha256"]
     for cell_id in (first.executed_cell_id, second.executed_cell_id):
         sealed_root = (
             artifact_root
@@ -899,6 +959,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
         REPOSITORY,
         CANDIDATE_ROOT,
         experiment_dir,
+        anchor_root,
         artifact_root,
     )
     assert all(not _paths_overlap(check_temp_root, root) for root in protected_roots)
@@ -919,11 +980,20 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     attestation = {
         "actual_model_turns": 0,
         "automatic_continuation": False,
+        "cell_anchor_sha256": {
+            "ss1": first.cell_anchor_sha256,
+            "b1": second.cell_anchor_sha256,
+        },
+        "cell_anchor_file_sha256": {
+            "ss1": first.cell_anchor_file_sha256,
+            "b1": second.cell_anchor_file_sha256,
+        },
         "cell_lifecycles": [item["lifecycle"] for item in after_b1["cells"]],
         "public_check_ids": sorted(public_records),
         "public_checks_passed": 13,
         "path_identities": {
             "phase_f_state": _path_identity(experiment_dir),
+            "phase_f_anchor_root": _path_identity(anchor_root),
             "artifact_root": _path_identity(artifact_root),
             "ss1_workspace": _path_identity(
                 artifact_root / first.executed_cell_id / "workspace"
@@ -945,6 +1015,7 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     _write_acceptance_evidence(
         acceptance_run=acceptance_run,
         experiment_dir=experiment_dir,
+        anchor_root=anchor_root,
         artifact_root=artifact_root,
         ss1_cell_id=first.executed_cell_id,
         b1_cell_id=second.executed_cell_id,
