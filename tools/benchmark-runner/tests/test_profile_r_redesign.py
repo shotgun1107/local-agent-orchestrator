@@ -310,6 +310,7 @@ def test_repository_reference_bundle_matches_chain_and_self_seals(
     (
         ("profile-r-task-pack-q1", "profile-r-task-pack-q1"),
         ("profile-r-task-pack-q2", "profile-r-task-pack-q2"),
+        ("profile-r-task-pack-q3", "profile-r-task-pack-q3"),
     ),
 )
 def test_task_pack_artifact_and_budget_are_self_sealed(

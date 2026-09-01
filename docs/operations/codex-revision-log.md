@@ -3235,3 +3235,23 @@ qualification→candidate다. official acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 q22 qualification v19와 reference q3에 직접 결합한 model-free Task Pack q3다.
 candidate, acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R Worker Task Pack q3 봉인
+
+- 작업일: 2026-09-02. q22와 reference q3에 대응하는 Task Pack q3를 source
+  `c40ae6aa099116b0067314448c4c6a10d936e6e7`에서 model-free 실행했다.
+- qualification ID는 `profile-r-task-pack-q3`다. positive transition 13/13, cumulative
+  public Checks 104/104, negative mutation 13/13 거부와 Worker information boundary를
+  통과했다.
+- Worker manifest file SHA는 `abe804f9...d597`, tree aggregate는 `01ef36e3...b226`,
+  reference chain file/seal은 `35649127...eda8` / `19cf0754...3428`이다.
+- q3 qualification file/seal은 `601a699e...b992` / `72455822...c62`, budget file/seal은
+  `43ef9edd...d39f` / `5cb10ca6...0c2d`, artifact manifest seal은
+  `f8c4fbda...cbc1`이다.
+- budget은 SS1/B1 공통 Task당 2, base 13, Cell 최대 15, retry/resume 2, reserve transfer
+  forbidden이다. model, SDK thread/turn과 Docker workload는 0이다.
+- artifact self-seal 회귀는 12 passed다. disposable q3 reference/TEMP는 clean과 unreachable
+  object 0 확인 뒤 삭제했다.
+
+다음 관문은 q22 qualification v19와 q3 qualification/budget의 exact file SHA·seal을 직접
+결합한 새 Phase E candidate다. acceptance와 Live는 계속 `NO-GO`다.
