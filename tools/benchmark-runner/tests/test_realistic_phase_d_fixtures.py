@@ -647,6 +647,97 @@ def test_profile_r_r07_exports_bounded_actionable_public_pytest_feedback(
     ]
 
 
+def test_profile_r_public_check_main_separates_structured_failure_diagnostics(
+    capsys,
+) -> None:
+    checker = _load_profile_r_public_checker()
+    diagnostic_result = {
+        "classification": "PRODUCT_ASSERTION",
+        "comparison_valid": False,
+        "environment_failure_present": False,
+        "nodes": [],
+        "product_failure_present": True,
+        "schema_version": 1,
+        "task_id": "R11",
+    }
+    environment_diagnostic = checker._default_environment_diagnostic(
+        "R11",
+        "TEST_ENVIRONMENT_FAILURE",
+    )
+
+    def fail_product() -> None:
+        raise checker.PublicContractError(
+            "product failed",
+            diagnostic_result=diagnostic_result,
+            public_feedback=["repair the public behavior"],
+        )
+
+    checker.CHECKS["R11"] = fail_product
+    assert checker.main(["check_profile_r.py", "R11"]) == 1
+    assert capsys.readouterr().out.splitlines() == [
+        "R11_PUBLIC_CONTRACT_FAILED",
+        "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
+        checker.CHECK_DIAGNOSTIC_RESULT_PREFIX
+        + json.dumps(
+            diagnostic_result,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        "WORKER_FEEDBACK:repair the public behavior",
+    ]
+
+    def fail_environment() -> None:
+        raise checker.PublicContractError(
+            "environment failed",
+            failure_classification="ENVIRONMENT",
+            environment_diagnostic=environment_diagnostic,
+        )
+
+    checker.CHECKS["R11"] = fail_environment
+    assert checker.main(["check_profile_r.py", "R11"]) == 1
+    assert capsys.readouterr().out.splitlines() == [
+        "R11_PUBLIC_CONTRACT_FAILED",
+        "CHECK_FAILURE_CLASS:ENVIRONMENT",
+        checker.CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX
+        + json.dumps(
+            environment_diagnostic,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    ]
+
+    def fail_mixed() -> None:
+        raise checker.PublicContractError(
+            "mixed failure",
+            failure_classification="MIXED_PRODUCT_AND_ENVIRONMENT",
+            environment_diagnostic=environment_diagnostic,
+            diagnostic_result=diagnostic_result,
+        )
+
+    checker.CHECKS["R11"] = fail_mixed
+    assert checker.main(["check_profile_r.py", "R11"]) == 1
+    assert capsys.readouterr().out.splitlines() == [
+        "R11_PUBLIC_CONTRACT_FAILED",
+        "CHECK_FAILURE_CLASS:MIXED_PRODUCT_AND_ENVIRONMENT",
+        checker.CHECK_DIAGNOSTIC_RESULT_PREFIX
+        + json.dumps(
+            diagnostic_result,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        checker.CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX
+        + json.dumps(
+            environment_diagnostic,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    ]
+
+
 def test_profile_r_pristine_task_pack_fails_each_public_completion_check() -> None:
     check_path = WORKER_ROOT / "benchmark_checks/check_profile_r.py"
     for number in range(1, 14):

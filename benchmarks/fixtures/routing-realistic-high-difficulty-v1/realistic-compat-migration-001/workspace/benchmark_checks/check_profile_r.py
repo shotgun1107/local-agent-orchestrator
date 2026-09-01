@@ -2199,11 +2199,6 @@ def main(argv: list[str]) -> int:
     except PublicContractError as exc:
         print(f"{task_id}_PUBLIC_CONTRACT_FAILED")
         print(f"{CHECK_FAILURE_CLASS_PREFIX}{exc.failure_classification}")
-        if exc.failure_classification == "ENVIRONMENT":
-            diagnostic = exc.environment_diagnostic or _default_environment_diagnostic(
-                task_id,
-                "PUBLIC_CONTRACT_ENVIRONMENT_FAILED",
-            )
         if exc.diagnostic_result is not None:
             print(
                 CHECK_DIAGNOSTIC_RESULT_PREFIX
@@ -2213,6 +2208,14 @@ def main(argv: list[str]) -> int:
                     sort_keys=True,
                     separators=(",", ":"),
                 )
+            )
+        if exc.failure_classification in {
+            "ENVIRONMENT",
+            "MIXED_PRODUCT_AND_ENVIRONMENT",
+        }:
+            diagnostic = exc.environment_diagnostic or _default_environment_diagnostic(
+                task_id,
+                "PUBLIC_CONTRACT_ENVIRONMENT_FAILED",
             )
             print(
                 CHECK_ENVIRONMENT_DIAGNOSTIC_PREFIX
