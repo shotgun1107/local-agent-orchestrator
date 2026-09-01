@@ -517,6 +517,62 @@ def test_profile_r_redesign_q21_v18_is_exact_fourteen_cell_projection() -> None:
     )
 
 
+def test_profile_r_redesign_q22_v19_is_exact_fourteen_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v19"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["schema_version"] == 2
+    assert qualification["source_commit"] == (
+        "202ece7ebe14a3fa37c9324e32351fb5f85ff8e3"
+    )
+    assert qualification["batch_id"] == (
+        "profile-r-docker-matrix-q22-company-r01-r13"
+    )
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(
+        range(1, 15)
+    )
+    assert qualification["cells"][0]["variant_id"] == "reference"
+    assert qualification["cells"][0]["aggregate_status"] == "pass"
+    assert all(
+        cell["matched_expectation"] is True for cell in qualification["cells"]
+    )
+    assert all(
+        cell["aggregate_status"] == "fail"
+        for cell in qualification["cells"][1:]
+    )
+    assert all(len(cell["properties"]) == 13 for cell in qualification["cells"])
+    assert all(
+        property_result["status"] != "blocked_by_prerequisite"
+        for cell in qualification["cells"]
+        for property_result in cell["properties"]
+    )
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 14,
+        "cell_count": 14,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
+
+
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
     included = (
         "src/benchmark_runner/sdk_baselines.py",
