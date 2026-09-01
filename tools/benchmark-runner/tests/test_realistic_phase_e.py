@@ -135,17 +135,17 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 3
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v18/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v16/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v18/"
         "docker-environment.json"
     )
     assert stage.profiles[0].task_pack_qualification_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q1/qualification.json"
+        "benchmarks/artifacts/profile-r-task-pack-q2/qualification.json"
     )
     assert stage.profiles[0].task_budget_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q1/task-budget.json"
+        "benchmarks/artifacts/profile-r-task-pack-q2/task-budget.json"
     )
     assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
@@ -461,6 +461,62 @@ def test_profile_r_redesign_q19_v16_is_exact_fourteen_cell_projection() -> None:
     )
 
 
+def test_profile_r_redesign_q21_v18_is_exact_fourteen_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v18"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["schema_version"] == 2
+    assert qualification["source_commit"] == (
+        "8d4627f75eca3233203ad906d2a19f1255591ee7"
+    )
+    assert qualification["batch_id"] == (
+        "profile-r-docker-matrix-q21-company-r01-r13"
+    )
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(
+        range(1, 15)
+    )
+    assert qualification["cells"][0]["variant_id"] == "reference"
+    assert qualification["cells"][0]["aggregate_status"] == "pass"
+    assert all(
+        cell["matched_expectation"] is True for cell in qualification["cells"]
+    )
+    assert all(
+        cell["aggregate_status"] == "fail"
+        for cell in qualification["cells"][1:]
+    )
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 14,
+        "cell_count": 14,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert all(len(cell["properties"]) == 13 for cell in qualification["cells"])
+    assert all(
+        property_result["status"] != "blocked_by_prerequisite"
+        for cell in qualification["cells"]
+        for property_result in cell["properties"]
+    )
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
+
+
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
     included = (
         "src/benchmark_runner/sdk_baselines.py",
@@ -494,19 +550,19 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     assert bindings.schema_version == 3
     profile_r = bindings.profiles[0]
     assert profile_r.qualification_sha256 == (
-        "2afc443afe5f0604ce9b7b1bd4765826d97d7bbbb54a706b699583fcc9fcc648"
+        "27d49bf2cfb218dce77270d6f0a943f846023000adccf9db3372e3883c23d554"
     )
     assert profile_r.task_pack_qualification_sha256 == (
-        "08a4fa39de94e47ef82b277b2cb0fe8ab4de6ddde58e1512737b383d13208ad7"
+        "487f7691d4cce64db8d7b997164ca45179df3186e0c4ed7eed99db5c8c2964f9"
     )
     assert profile_r.task_pack_qualification_seal_sha256 == (
-        "ad803c61aecf533eccba6d6690dc9945bbf2212724df81e66cf5272e894738dc"
+        "61181ffa0867c67b7d087059f777d5838f5c61a3d6250d45422c04d945312c11"
     )
     assert profile_r.task_budget_sha256 == (
-        "26d3919f9ab6143df8d281cf363daf0a0a69e4e4e5fa0a8c93a2d08d6636ed79"
+        "3e2dbd5c8bdc040c5b57d1aaac3dd9473d929b83f35f4e7bc4c09b91c94c146d"
     )
     assert profile_r.task_budget_seal_sha256 == (
-        "756c984117324a4f875231d565b92979e1e8d9e8fc6457a80c0d3288dcfdfbd6"
+        "0a1f77373b5db871c3a1967834fac5985ce38d6e8cb2511a5165cafb638df60b"
     )
     assert plan.decision_policy["planned_initial_model_turns"] == 42
     assert plan.decision_policy["planned_model_turn_ceiling"] == 50
