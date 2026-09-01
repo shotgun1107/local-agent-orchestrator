@@ -52,6 +52,8 @@ def _request() -> PhaseFDispatchRequest:
         "experiment_id": "exp_phase_f_test",
         "plan_fingerprint": "a" * 64,
         "candidate_seal_sha256": "b" * 64,
+        "candidate_snapshot_sha256": "c" * 64,
+        "model_turn_ceiling": 15,
         "execution_ordinal": 1,
         "cell_id": "cell_phase-e_1_realistic-compat-migration-001_ss1",
         "fixture_id": "realistic-compat-migration-001",

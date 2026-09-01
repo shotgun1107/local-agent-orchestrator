@@ -11,8 +11,10 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path, PurePosixPath
+from types import MappingProxyType
 from typing import Any, Literal, Mapping
 
 import yaml
@@ -526,6 +528,27 @@ class PhaseECandidateSeal(StrictModel):
 
 class PhaseECandidateError(RuntimeError):
     """Raised when the zero-turn candidate cannot be frozen or verified."""
+
+
+@dataclass(frozen=True)
+class VerifiedPhaseECandidateSnapshot:
+    """Immutable bytes and parsed objects from one candidate verification read."""
+
+    seal: PhaseECandidateSeal
+    plan: ExecutionPlan
+    preflight: PhaseEPreflightEvidence
+    bindings: PhaseESourceBindings
+    stage: PhaseEStageManifest
+    files: Mapping[str, bytes]
+    snapshot_sha256: Sha256
+
+    def file_bytes(self, relative: str) -> bytes:
+        try:
+            return self.files[relative]
+        except KeyError as exc:
+            raise PhaseECandidateError(
+                f"Phase E verified snapshot file is unavailable: {relative}"
+            ) from exc
 
 
 def _git(repository: Path, *args: str) -> bytes:
@@ -1243,32 +1266,53 @@ def create_phase_e_candidate(
     return seal
 
 
-def verify_phase_e_candidate(repository: Path, candidate_root: Path) -> PhaseECandidateSeal:
+def verify_phase_e_candidate_snapshot(
+    repository: Path,
+    candidate_root: Path,
+) -> VerifiedPhaseECandidateSnapshot:
+    """Verify one immutable in-memory read of every candidate file.
+
+    All candidate-dependent parsing below consumes ``candidate_files``.  The
+    caller therefore uses the exact bytes the verifier accepted, even if the
+    directory is replaced or restored while verification is in progress.
+    """
+
     repository = repository.resolve()
     candidate_root = candidate_root.resolve()
     actual_names = tuple(sorted(path.name for path in candidate_root.iterdir() if path.is_file()))
     if actual_names != tuple(sorted(ALL_CANDIDATE_FILES)):
         raise PhaseECandidateError("Phase E candidate file set differs")
-    seal = PhaseECandidateSeal.model_validate_json(
-        (candidate_root / "candidate-seal.json").read_bytes()
+    candidate_files = MappingProxyType(
+        {
+            relative: (candidate_root / relative).read_bytes()
+            for relative in ALL_CANDIDATE_FILES
+        }
     )
-    records = [_file_record(candidate_root, relative) for relative in PAYLOAD_FILES]
+    seal = PhaseECandidateSeal.model_validate_json(candidate_files["candidate-seal.json"])
+    records = [
+        PhaseECandidateFile(
+            path=relative,
+            size=len(candidate_files[relative]),
+            sha256=_sha256(candidate_files[relative]),
+        )
+        for relative in PAYLOAD_FILES
+    ]
     if records != seal.payload_files:
         raise PhaseECandidateError("Phase E candidate payload bytes changed")
     files_bytes = _files_manifest_bytes(records)
-    if (candidate_root / "files.sha256").read_bytes() != files_bytes:
+    if candidate_files["files.sha256"] != files_bytes:
         raise PhaseECandidateError("Phase E files manifest differs")
     if _sha256(files_bytes) != seal.files_manifest_sha256:
         raise PhaseECandidateError("Phase E files manifest hash differs")
-    plan = ExecutionPlan.model_validate_json((candidate_root / "execution-plan.json").read_bytes())
+    plan = ExecutionPlan.model_validate_json(candidate_files["execution-plan.json"])
     preflight = PhaseEPreflightEvidence.model_validate_json(
-        (candidate_root / "phase-e-preflight.json").read_bytes()
+        candidate_files["phase-e-preflight.json"]
     )
     bindings = PhaseESourceBindings.model_validate_json(
-        (candidate_root / "source-bindings.json").read_bytes()
+        candidate_files["source-bindings.json"]
     )
     stage = PhaseEStageManifest.model_validate_json(
-        (candidate_root / "stage-manifest.json").read_bytes()
+        candidate_files["stage-manifest.json"]
     )
     assert_plan_integrity(plan)
     if not (
@@ -1331,10 +1375,32 @@ def verify_phase_e_candidate(repository: Path, candidate_root: Path) -> PhaseECa
     if plan != expected_plan or bindings != expected_bindings:
         raise PhaseECandidateError("Phase E candidate is not reproducible from its source commit")
     source_stage = _git_bytes(repository, seal.source_commit, PHASE_E_STAGE_RELATIVE)
-    if (candidate_root / "stage-manifest.json").read_bytes() != source_stage:
+    if candidate_files["stage-manifest.json"] != source_stage:
         raise PhaseECandidateError("Phase E copied stage manifest differs")
     if stage.model != preflight.model or stage.reasoning_effort != preflight.reasoning_effort:
         raise PhaseECandidateError("Phase E preflight and stage controls differ")
     if present_api_key_environment_names():
         raise PhaseECandidateError("API key environment names are present during verification")
-    return seal
+    snapshot_records = [
+        PhaseECandidateFile(
+            path=relative,
+            size=len(candidate_files[relative]),
+            sha256=_sha256(candidate_files[relative]),
+        ).model_dump(mode="json")
+        for relative in sorted(ALL_CANDIDATE_FILES)
+    ]
+    return VerifiedPhaseECandidateSnapshot(
+        seal=seal,
+        plan=plan,
+        preflight=preflight,
+        bindings=bindings,
+        stage=stage,
+        files=candidate_files,
+        snapshot_sha256=canonical_sha256(snapshot_records),
+    )
+
+
+def verify_phase_e_candidate(repository: Path, candidate_root: Path) -> PhaseECandidateSeal:
+    """Compatibility wrapper returning the seal from the verified snapshot."""
+
+    return verify_phase_e_candidate_snapshot(repository, candidate_root).seal

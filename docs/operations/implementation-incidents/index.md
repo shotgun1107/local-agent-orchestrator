@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 62건
-- 해결: 60건
+- 전체: 63건
+- 해결: 61건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -75,6 +75,7 @@
 | DEV-20260823-002 | resolved | phase-e-profile-r | implementation | Phase E candidate가 exact Docker environment SHA를 source identity에 결합하지 않음 |
 | DEV-20260825-001 | resolved | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
 | DEV-20260827-001 | resolved | phase-f-profile-r-ss1 | integration | Profile R 15-turn 완료 결과를 Phase F의 과거 10-turn 상한이 거부함 |
+| DEV-20260901-001 | resolved | phase-f-profile-r-controller-hardening | integration | Profile R turn-budget 수정이 Worker 호출·Evidence·candidate snapshot·봉인 anchor를 하나의 계약으로 묶지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4069,3 +4070,85 @@ PhaseFCellState와 PhaseFBackendResult에서 과거 le=10을 제거하고, verif
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v17-result.md
 - 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f.py
+
+## DEV-20260901-001 — Profile R turn-budget 수정이 Worker 호출·Evidence·candidate snapshot·봉인 anchor를 하나의 계약으로 묶지 않음
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-controller-hardening`
+- 분류: `integration`
+- 발견: 2026-09-01T01:21:35Z / ChatGPT Pro adversarial static audit follow-up
+- 해결: 2026-09-01T01:21:35Z
+
+### 증상
+
+candidate-derived 결과 상한은 적용됐지만 실제 turn-start 횟수와 Worker 보고값이 다를 수 있었고, B1은 legacy ceiling 10에서도 내부 상수 15까지 먼저 호출할 수 있었으며, candidate ABA 교체와 Judge 전 Worker identity 불일치 및 state/result 동시 재해시 공격을 닫지 못했다.
+
+### 재현
+
+- Adapter Evidence에 turn 16개를 기록하고 PhaseFBackendResult.actual_model_turns만 15로 반환하면 기존 Finalizer는 Judge를 실행할 수 있었다.
+- legacy ceiling 10 candidate에서도 B1 max_turns_override=15가 Worker 완료 전 11~15번째 start_turn을 허용할 수 있었다.
+- backend-result와 phase-f-state를 함께 수정하고 두 로컬 hash를 다시 계산하면 독립 anchor 없이 상호 일치 검사를 통과할 수 있었다.
+
+### 증거
+
+- `review-finding`: 외부 적대적 감사는 actual/result/Evidence count 불일치, candidate ABA, Worker 선제 ceiling 부재, Judge 전 identity 검사 부재, 로컬 self-hash 동시 재계산을 P1 5건으로 판정했다.
+- `source-inspection`: realistic_phase_f_b1.py는 max_turns_override=15를 고정했고 Finalizer는 worker.actual_model_turns 하나와 artifact file hash만 Judge 전에 확인했다.
+- `reproducible-test`: Evidence 16/result 15, raw/normalized/boundary/runtime count 불일치, SS1/B1 11번째 선제 차단, Worker identity mismatch와 state/result 동시 재해시를 model-free 회귀로 고정했다.
+
+### 근본 원인
+
+turn budget이 candidate stage, dispatch request, Worker 호출 경계, Adapter Evidence, Finalizer, Measurement와 재로딩 state 사이에서 하나의 end-to-end identity로 전달되지 않았다. candidate verifier도 검증한 bytes를 반환하지 않아 Controller가 경로를 다시 읽었고, 봉인 무결성은 같은 execution root 안의 self-hash에만 의존했다.
+
+### 검토한 해결안
+
+- `rejected` Finalizer의 worker.actual_model_turns 검사와 B1 상수만 개별 수정 — 보고값 축소, SS1/B1 비대칭, candidate ABA와 사후 state/result 변조가 그대로 남는다
+- `adopted` candidate snapshot→dispatch contract→Worker pre-call guard→표준 receipt Evidence→Judge 전 교차검증→외부 anchor를 하나의 chain으로 구현 — P1 5개를 동일한 candidate identity와 turn accounting으로 함께 닫고 각 경계의 우회를 회귀시험으로 분리할 수 있다
+- `deferred` 동시에 Cell·profile·variant topology 전체를 범용화 — 현재 P2이며 사용자가 기존 버그 수정과 B1 검증 이후 별도 작업으로 진행하도록 결정했다
+
+### 채택한 해결
+
+Phase E verifier가 candidate 전 파일을 한 번만 읽은 immutable VerifiedPhaseECandidateSnapshot을 반환하도록 바꾸고 Controller와 Finalizer가 그 객체만 사용하게 했다. dispatch request와 backend result에 candidate snapshot SHA와 Cell별 model_turn_ceiling을 결합했다. SS1/B1 공통 wrapper는 매 start/resume 직전에 ceiling을 검사하고 issued request와 accepted/simulated/uncertain receipt를 구조화해 보존한다. Finalizer는 Worker 전체 identity와 top/raw/normalized/ledger/turn/boundary/receipt count를 Judge 전에 교차검증한다. Cell seal은 candidate·ceiling·count·Adapter path를 포함하며 재검증 시 Adapter와 Measurement를 다시 읽는다. execution root 밖 별도 anchor root에 초기 state와 Cell별 hash chain을 write-once로 기록하고 각 one-Cell 결과에 anchor self/file SHA를 반환한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_ss1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_phase_f.py::test_verified_candidate_snapshot_is_used_after_candidate_path_changes
+- tools/benchmark-runner/tests/test_realistic_phase_f.py::test_result_and_state_rehash_cannot_bypass_external_cell_anchor
+- tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_evidence_sixteen_result_fifteen_is_rejected_before_judge
+- tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_worker_identity_mismatch_is_rejected_before_judge
+- tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_turn_count_mismatch_matrix_is_rejected_before_judge_boundary
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py::test_ss1_budget_wrapper_blocks_eleventh_turn_before_delegate_call
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py::test_b1_budget_wrapper_blocks_eleventh_turn_before_delegate_call
+
+### 검증 결과
+
+- 신규 P1 핵심 회귀 6 passed와 count mismatch matrix 6 passed
+- Controller와 Finalizer 전체 model-free 회귀 24 passed, Docker opt-in 1 skipped
+- B1 scheduler와 Finalizer model-free 회귀 8 passed, Docker opt-in 1 skipped
+- Phase E와 Controller 회귀 43 passed; clean source를 요구하는 candidate 생성 1건은 작업 tree가 dirty인 정상 개발 조건 때문에 실행 전 중단
+- SS1 단독 및 실패 봉인 model-free 연결 2 passed; Windows process inventory를 사용할 수 없는 sandbox 항목 2 skipped
+- Python py_compile과 git diff --check 통과
+
+### 남은 위험
+
+- 새 source commit 이후 clean tree에서 candidate 생성 회귀와 전체 Phase E suite를 다시 통과시켜야 한다
+- 새 candidate·acceptance 2회·readiness·Environment Closure는 아직 생성하거나 실행하지 않았다
+- anchor root는 execution root와 분리하고 one-Cell 반환 anchor SHA를 운영자가 별도 보존해야 하며 Live 전 ACL·경로·복구 절차를 검증해야 한다
+- B2/B3와 임의 Cell 수를 위한 generic topology 분리는 P2 후속 작업으로 남아 있다
+
+### 추적 정보
+
+- 관련 커밋: 2b5c40bb4f7d0fefc924b8972009d3510673c18a
+- 출처: docs/audits/profile-r-controller-turn-budget-audit-overview-v1.md
+- 출처: docs/reviews/benchmark-runner/chatgpt-pro-adversarial-audit-profile-r-controller-turn-budget-v1.md
+- 출처: docs/prompts/benchmark-runner/chatgpt-pro-adversarial-audit-prompt-profile-r-controller-turn-budget-v1.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260827-001.json
+- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py

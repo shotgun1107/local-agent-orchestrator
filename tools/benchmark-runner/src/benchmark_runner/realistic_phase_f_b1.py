@@ -22,7 +22,10 @@ from benchmark_runner.contract import present_api_key_environment_names
 from benchmark_runner.realistic_phase_f import (
     PhaseFBackendResult,
     PhaseFDispatchRequest,
+    PhaseFModelTurnAccounting,
+    PhaseFModelTurnReceipt,
     PhaseFRuntimeMode,
+    phase_f_model_turn_receipt,
 )
 from benchmark_runner.realistic_phase_f_sdk import (
     PHASE_F_PINNED_MODEL,
@@ -402,6 +405,142 @@ class PhaseFB1RuntimeV2(RuntimePort):
         self._preflight_complete = False
 
 
+class _BudgetedB1Runtime(RuntimePort):
+    """Fail closed before every B1 start/resume and preserve start receipts."""
+
+    def __init__(
+        self,
+        delegate: RuntimePort,
+        *,
+        runtime_mode: PhaseFRuntimeMode,
+        model_turn_ceiling: int,
+    ) -> None:
+        self.delegate = delegate
+        self.runtime_mode = runtime_mode
+        self.model_turn_ceiling = model_turn_ceiling
+        self._turn_start_attempts = 0
+        self._receipts: list[PhaseFModelTurnReceipt] = []
+
+    @property
+    def actual_model_turns(self) -> int:
+        if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
+            return 0
+        return self._turn_start_attempts
+
+    @property
+    def runtime_reported_model_turns(self) -> int:
+        if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
+            return 0
+        value = getattr(self.delegate, "actual_model_turns", None)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise PhaseFB1BackendError("Phase F B1 runtime did not report model turns")
+        return value
+
+    @property
+    def thread_evidence(self) -> tuple[dict[str, JsonValue], ...]:
+        values = getattr(self.delegate, "thread_evidence", ())
+        return tuple(dict(value) for value in values)
+
+    def model_turn_accounting(self) -> PhaseFModelTurnAccounting:
+        return PhaseFModelTurnAccounting(
+            runtime_mode=self.runtime_mode,
+            model_turn_ceiling=self.model_turn_ceiling,
+            turn_start_attempts=self._turn_start_attempts,
+            actual_model_turns=self.actual_model_turns,
+            runtime_reported_model_turns=self.runtime_reported_model_turns,
+            receipts=list(self._receipts),
+        )
+
+    def preflight(self) -> None:
+        preflight = getattr(self.delegate, "preflight", None)
+        if callable(preflight):
+            preflight()
+
+    def capabilities(self) -> RuntimeCapabilities:
+        return self.delegate.capabilities()
+
+    def start_session(
+        self,
+        task_envelope: TaskEnvelope,
+        runtime_profile: Any,
+    ) -> SessionHandle:
+        return self.delegate.start_session(task_envelope, runtime_profile)
+
+    def _start(
+        self,
+        *,
+        task_id: str,
+        call: Callable[[], TurnHandle],
+    ) -> TurnHandle:
+        if self._turn_start_attempts >= self.model_turn_ceiling:
+            raise PhaseFB1BackendError(
+                "Phase F B1 model turn ceiling reached before dispatch"
+            )
+        self._turn_start_attempts += 1
+        ordinal = self._turn_start_attempts
+        try:
+            handle = call()
+        except Exception:
+            self._receipts.append(
+                phase_f_model_turn_receipt(
+                    ordinal=ordinal,
+                    task_id=task_id,
+                    status="start_outcome_unknown",
+                    turn_id=None,
+                )
+            )
+            raise
+        self._receipts.append(
+            phase_f_model_turn_receipt(
+                ordinal=ordinal,
+                task_id=task_id,
+                status=(
+                    "simulated"
+                    if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE
+                    else "accepted"
+                ),
+                turn_id=handle.id,
+            )
+        )
+        return handle
+
+    def start_turn(
+        self,
+        session_handle: SessionHandle,
+        task_envelope: TaskEnvelope,
+    ) -> TurnHandle:
+        return self._start(
+            task_id=task_envelope.task_id,
+            call=lambda: self.delegate.start_turn(session_handle, task_envelope),
+        )
+
+    def await_terminal(
+        self,
+        turn_handle: TurnHandle,
+        monotonic_deadline: float,
+    ) -> RuntimeOutcome:
+        return self.delegate.await_terminal(turn_handle, monotonic_deadline)
+
+    def resume_session(
+        self,
+        session_handle: SessionHandle,
+        feedback_envelope: dict[str, Any],
+    ) -> TurnHandle:
+        return self._start(
+            task_id=session_handle.envelope.task_id,
+            call=lambda: self.delegate.resume_session(
+                session_handle,
+                feedback_envelope,
+            ),
+        )
+
+    def interrupt(self, turn_handle: TurnHandle) -> InterruptOutcome:
+        return self.delegate.interrupt(turn_handle)
+
+    def close(self) -> None:
+        self.delegate.close()
+
+
 class ProfileRPhaseFB1Backend:
     """Run exactly Profile R/B1 Cell 2 through the existing B1 scheduler."""
 
@@ -523,7 +662,11 @@ class ProfileRPhaseFB1Backend:
             records.append(record)
             return record
 
-        runtime = self.runtime_factory(workspace)
+        runtime = _BudgetedB1Runtime(
+            self.runtime_factory(workspace),
+            runtime_mode=self.runtime_mode,
+            model_turn_ceiling=request.model_turn_ceiling,
+        )
         if hasattr(runtime, "preflight"):
             runtime.preflight()  # type: ignore[attr-defined]
         loaded = load_project(workspace)
@@ -541,10 +684,7 @@ class ProfileRPhaseFB1Backend:
                 else dict(self.source_environment)
             ),
             runtime_kind="injected_codex_v2",
-            # Thirteen base Task turns plus the sealed two-turn
-            # retry/resume reserve.  A new Phase E candidate must bind the
-            # matching Profile R budget artifact before this path is live.
-            max_turns_override=15,
+            max_turns_override=request.model_turn_ceiling,
             runtime_port=runtime,
             runtime_profile_override=RuntimeProfile(
                 runtime="codex",
@@ -667,9 +807,8 @@ class ProfileRPhaseFB1Backend:
         report_path = cell_root / "b1-state" / "runs" / run_id / "report" / "summary.json"
         report = json.loads(report_path.read_text(encoding="utf-8"))
         metrics = report["metrics"]
-        actual_model_turns = int(getattr(runtime, "actual_model_turns", 0))
-        if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
-            actual_model_turns = 0
+        turn_accounting = runtime.model_turn_accounting()
+        actual_model_turns = turn_accounting.actual_model_turns
         state = str(snapshot["run"]["state"])
         outcome, failure_kind = _b1_adapter_outcome(state, report)
         report_failure_kinds = {
@@ -733,6 +872,7 @@ class ProfileRPhaseFB1Backend:
             "worker_tree_final_sha256": _tree_sha256(_file_state(workspace)),
             "git_provenance": git_provenance,
             "actual_model_turns": actual_model_turns,
+            "model_turn_accounting": turn_accounting.model_dump(mode="json"),
             "adapter_outcome_state": outcome,
             "adapter_failure_kind": failure_kind,
             "adapter_attempt_count": int(metrics["attempts"]),
@@ -757,6 +897,9 @@ class ProfileRPhaseFB1Backend:
         return PhaseFBackendResult(
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
+            candidate_seal_sha256=request.candidate_seal_sha256,
+            candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+            model_turn_ceiling=request.model_turn_ceiling,
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,

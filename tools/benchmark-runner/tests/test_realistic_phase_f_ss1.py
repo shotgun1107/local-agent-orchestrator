@@ -49,11 +49,17 @@ from benchmark_runner.realistic_phase_f_ss1 import (
     ModelFreeClearBoundaryTelemetry,
     PhaseFSS1BackendError,
     ProfileRPhaseFSS1Backend,
+    _WorkspaceTrackingRuntime,
     build_profile_r_ss1_tasks,
     materialize_profile_r_workspace,
     refresh_profile_r_ss1_task,
 )
-from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
+from benchmark_runner.sdk_common import (
+    FakeSdkRuntime,
+    FakeTurnScript,
+    SdkThread,
+    SdkTurnResult,
+)
 from benchmark_runner.workspace import (
     build_hermetic_git_environment,
     path_matches_write_scope,
@@ -76,6 +82,68 @@ R12_PUBLIC_FIX_PATH = "tools/benchmark-runner/tests/test_routing_s2.py"
 CHECK_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
 ACCEPTANCE_EVIDENCE_ROOT_ENV = "LAO_PHASE_F_ACCEPTANCE_EVIDENCE_ROOT"
 ACCEPTANCE_COMMAND_ENV = "LAO_PHASE_F_ACCEPTANCE_COMMAND"
+
+
+def test_ss1_budget_wrapper_blocks_eleventh_turn_before_delegate_call(
+    tmp_path: Path,
+) -> None:
+    class CountingRuntime:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        @property
+        def actual_model_turns(self) -> int:
+            return self.calls
+
+        def run_turn(self, thread, *, task_id, prompt, output_schema):
+            del thread, task_id, prompt, output_schema
+            self.calls += 1
+            return SdkTurnResult(
+                terminal_status="completed",
+                raw_result={},
+                cumulative_usage=None,
+                duration_seconds=0.0,
+            )
+
+        def preflight(self) -> None:
+            return None
+
+        def start_thread(self) -> SdkThread:
+            return SdkThread("thread-1")
+
+        def close(self) -> None:
+            return None
+
+    delegate = CountingRuntime()
+    runtime = _WorkspaceTrackingRuntime(
+        tmp_path,
+        delegate,  # type: ignore[arg-type]
+        runtime_mode=PhaseFRuntimeMode.LIVE_CHATGPT,
+        model_turn_ceiling=10,
+    )
+    thread = SdkThread("thread-1")
+
+    for ordinal in range(10):
+        runtime.run_turn(
+            thread,
+            task_id=f"R{ordinal + 1:02d}",
+            prompt="test",
+            output_schema={},
+        )
+
+    with pytest.raises(PhaseFSS1BackendError, match="ceiling reached before dispatch"):
+        runtime.run_turn(
+            thread,
+            task_id="R11",
+            prompt="test",
+            output_schema={},
+        )
+
+    assert delegate.calls == 10
+    accounting = runtime.model_turn_accounting()
+    assert accounting.actual_model_turns == 10
+    assert accounting.turn_start_attempts == 10
+    assert len(accounting.receipts) == 10
 
 
 def _paths_overlap(left: Path, right: Path) -> bool:
