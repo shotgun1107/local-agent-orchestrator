@@ -68,18 +68,18 @@
     "신규 P1 핵심 회귀 6 passed와 count mismatch matrix 6 passed",
     "Controller와 Finalizer 전체 model-free 회귀 24 passed, Docker opt-in 1 skipped",
     "B1 scheduler와 Finalizer model-free 회귀 8 passed, Docker opt-in 1 skipped",
-    "Phase E와 Controller 회귀 43 passed; clean source를 요구하는 candidate 생성 1건은 작업 tree가 dirty인 정상 개발 조건 때문에 실행 전 중단",
+    "source commit f5d027d4ca284c61165dbab00429bcc1f6aa288d의 clean tree에서 Phase E candidate 생성·검증과 Phase F Controller·Finalizer·SS1·B1·Docker 경계 전체 model-free 회귀 69 passed, 4 skipped, 0 failed (828.56s)",
     "SS1 단독 및 실패 봉인 model-free 연결 2 passed; Windows process inventory를 사용할 수 없는 sandbox 항목 2 skipped",
     "Python py_compile과 git diff --check 통과"
   ],
   "remaining_risks": [
-    "새 source commit 이후 clean tree에서 candidate 생성 회귀와 전체 Phase E suite를 다시 통과시켜야 한다",
     "새 candidate·acceptance 2회·readiness·Environment Closure는 아직 생성하거나 실행하지 않았다",
     "anchor root는 execution root와 분리하고 one-Cell 반환 anchor SHA를 운영자가 별도 보존해야 하며 Live 전 ACL·경로·복구 절차를 검증해야 한다",
     "B2/B3와 임의 Cell 수를 위한 generic topology 분리는 P2 후속 작업으로 남아 있다"
   ],
   "related_commits": [
-    "2b5c40bb4f7d0fefc924b8972009d3510673c18a"
+    "2b5c40bb4f7d0fefc924b8972009d3510673c18a",
+    "f5d027d4ca284c61165dbab00429bcc1f6aa288d"
   ],
   "source_references": [
     "docs/audits/profile-r-controller-turn-budget-audit-overview-v1.md",

@@ -205,14 +205,13 @@ Cell seal은 candidate snapshot, ceiling, authoritative count와 Adapter path를
 초기 state 및 Cell별 hash chain을 write-once로 기록한다. one-Cell 반환값은 anchor self-hash와
 file SHA를 함께 반환하므로 운영자가 mutable execution root와 분리해 보존할 수 있다.
 
-현재 model-free 결과는 Controller·Finalizer `24 passed / 1 Docker opt-in skipped`, B1·Finalizer
-`8 passed / 1 Docker opt-in skipped`, 신규 P1 핵심 6개와 count mismatch matrix 6개 pass다.
-SS1 단독·실패 봉인 연결은 2 pass이며 Windows process inventory가 없는 sandbox 항목 2개는
-skip이다. Phase E·Controller 44개 중 43개는 pass했고, 남은 candidate 생성 시험 1개는
-변경 중인 Git tree가 clean하지 않아 의도된 사전조건에서 중단됐다.
+source를 `f5d027d4ca284c61165dbab00429bcc1f6aa288d`로 commit한 clean tree에서 Phase E candidate
+생성·검증과 Phase F Controller·Finalizer·SS1·B1·Docker 경계 전체 model-free 회귀는
+`69 passed, 4 skipped, 0 failed in 828.56s`다. skip은 명시적 Docker opt-in 2건과 이
+sandbox에서 Windows process inventory를 제공하지 않아 생긴 2건이다. 신규 P1 핵심 6개와
+count mismatch matrix 6개도 포함해 통과했다.
 
-따라서 P1 source 교정은 완료됐지만 새 candidate 생성은 아직 `NO-GO`다. 다음 관문은 source를
-commit으로 고정한 뒤 clean tree에서 전체 model-free 회귀를 다시 통과시키는 것이다. 이후에만
-새 candidate→acceptance 2회→readiness를 진행한다. 기존 v17 state와 결과는 수정·재사용하지
-않는다. P2인 임의 Cell 수·B2/B3 범용 topology 분리는 기존 버그 수정과 B1 검증 뒤 별도 작업으로
-남긴다.
+따라서 P1 source 교정과 clean-tree model-free 회귀는 완료됐지만 새 candidate는 아직 만들지
+않았다. 다음 관문은 이 source를 결합한 새 candidate→acceptance 2회→readiness다. 기존 v17
+state와 결과는 수정·재사용하지 않는다. P2인 임의 Cell 수·B2/B3 범용 topology 분리는 기존
+버그 수정과 B1 검증 뒤 별도 작업으로 남긴다.

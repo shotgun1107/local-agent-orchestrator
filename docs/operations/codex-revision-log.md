@@ -3024,10 +3024,10 @@ Environment Closure와 Live는 계속 `NO-GO`다.
   write-once로 기록한다. one-Cell 반환값은 anchor self-hash와 file SHA를 함께 반환한다.
   Live 전에는 anchor 경로·ACL과 반환 SHA의 별도 보존 절차를 Environment Closure에서 확인해야
   한다.
-- 신규 P1 핵심 6개와 mismatch matrix 6개, Controller·Finalizer 24개, B1·Finalizer 8개가
-  model-free로 통과했다. SS1 단독·실패 봉인 연결 2개도 통과했고 Windows process inventory
-  의존 2개와 Docker opt-in은 skip이다. Phase E·Controller 44개 중 43개는 통과했고 clean
-  source를 요구하는 candidate 생성 1개는 현재 uncommitted 변경 때문에 사전조건에서 중단됐다.
-- 새 candidate, acceptance, readiness와 Live는 생성·실행하지 않았다. 다음 관문은 source
-  commit 후 clean tree 전체 model-free 회귀다. 기존 v17 state는 재사용하지 않으며 generic
-  B2/B3 topology P2는 B1 검증 뒤 별도 작업으로 남긴다.
+- P1 source를 `f5d027d4ca284c61165dbab00429bcc1f6aa288d`로 고정한 clean tree에서 Phase E
+  candidate 생성·검증과 Phase F Controller·Finalizer·SS1·B1·Docker 경계 전체 model-free
+  회귀를 실행해 `69 passed, 4 skipped, 0 failed in 828.56s`다. skip은 명시적 Docker opt-in
+  2건과 이 sandbox에서 Windows process inventory를 사용할 수 없는 2건이다.
+- 새 candidate, acceptance, readiness와 Live는 생성·실행하지 않았다. 다음 관문은 이 source를
+  결합한 새 candidate다. 기존 v17 state는 재사용하지 않으며 generic B2/B3 topology P2는 B1
+  검증 뒤 별도 작업으로 남긴다.
