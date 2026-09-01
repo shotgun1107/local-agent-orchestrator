@@ -305,9 +305,19 @@ def test_repository_reference_bundle_matches_chain_and_self_seals(
     assert recomputed == seal
 
 
-def test_task_pack_q1_artifact_and_budget_are_self_sealed() -> None:
+@pytest.mark.parametrize(
+    ("artifact_name", "qualification_id"),
+    (
+        ("profile-r-task-pack-q1", "profile-r-task-pack-q1"),
+        ("profile-r-task-pack-q2", "profile-r-task-pack-q2"),
+    ),
+)
+def test_task_pack_artifact_and_budget_are_self_sealed(
+    artifact_name: str,
+    qualification_id: str,
+) -> None:
     repository = Path(__file__).resolve().parents[3]
-    root = repository / "benchmarks/artifacts/profile-r-task-pack-q1"
+    root = repository / "benchmarks/artifacts" / artifact_name
     manifest = json.loads(
         (root / "artifact-manifest.json").read_text(encoding="utf-8")
     )
@@ -333,6 +343,7 @@ def test_task_pack_q1_artifact_and_budget_are_self_sealed() -> None:
     )
     budget = json.loads((root / "task-budget.json").read_text(encoding="utf-8"))
     assert qualification["status"] == "TASK_PACK_READY"
+    assert qualification["qualification_id"] == qualification_id
     assert budget["status"] == "PROFILE_R_TASK_BUDGET_SEALED"
     assert budget["task_pack_qualification_seal_sha256"] == qualification[
         "seal_sha256"

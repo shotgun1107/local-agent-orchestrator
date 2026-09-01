@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "R",
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "TASK_PACK_READY",
+  "model_turns": 0,
+  "qualification": {
+    "path": "qualification.json",
+    "size": 42242,
+    "sha256": "487f7691d4cce64db8d7b997164ca45179df3186e0c4ed7eed99db5c8c2964f9",
+    "seal_sha256": "61181ffa0867c67b7d087059f777d5838f5c61a3d6250d45422c04d945312c11"
+  },
+  "task_budget": {
+    "path": "task-budget.json",
+    "size": 1015,
+    "sha256": "3e2dbd5c8bdc040c5b57d1aaac3dd9473d929b83f35f4e7bc4c09b91c94c146d",
+    "seal_sha256": "0a1f77373b5db871c3a1967834fac5985ce38d6e8cb2511a5165cafb638df60b"
+  },
+  "reference_repository": {
+    "manifest_path": "../../reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/reference-repository-manifest.json",
+    "manifest_seal_sha256": "4002ea4461f7b2f867ede36401429f1aa9b432d662e6f747261bbdc55f2c024c",
+    "chain_seal_sha256": "b75403dc38a05da02abb032a1a346cbb6c4753bb1e677a03cd8a21b6c948675a"
+  },
+  "seal_sha256": "fe613160f8d4408a8aaaa98519ea607c24634c187c4b26484f88ea2804f0c807"
+}
