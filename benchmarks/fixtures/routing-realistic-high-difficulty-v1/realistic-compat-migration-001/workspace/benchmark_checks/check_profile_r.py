@@ -1635,7 +1635,7 @@ def pytest_runtest_makereport(item, call):
         classification, reason_code = _failure_classification(call)
     record = {
         "classification": classification,
-        "node_id": f"{item.module.__name__}::{item.name}",
+        "node_id": f"{item.path.stem}::{item.name}",
         "passed": bool(report.passed),
         "reason_code": reason_code,
     }
@@ -1849,7 +1849,7 @@ def _regression_diagnostic_result(
     for case in root.iter("testcase"):
         name = str(case.attrib.get("name", "unknown"))
         class_name = str(case.attrib.get("classname", "unknown"))
-        identity = f"{class_name}::{name}"
+        identity = f"{class_name.rsplit('.', 1)[-1]}::{name}"
         observed_identities.add(identity)
         failure = next(
             (
