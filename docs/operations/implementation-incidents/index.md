@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 66건
-- 해결: 64건
+- 전체: 67건
+- 해결: 65건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -79,6 +79,7 @@
 | DEV-20260901-002 | resolved | phase-f-profile-r-exact-candidate-acceptance-v10 | implementation | Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음 |
 | DEV-20260901-003 | resolved | profile-r-docker-judge-q20 | integration | Profile R reference chain 교체 후 protected Judge workspace Evidence를 재생성하지 않음 |
 | DEV-20260901-004 | resolved | phase-f-profile-r-candidate-v19-acceptance-preflight | integration | Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함 |
+| DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4358,4 +4359,73 @@ public checker가 external Check TEMP에 일회용 pytest hook을 만들고 node
 - 관련 커밋: 38f5032493a014900c56c1f0f0b4b9a46c95d6b4, 43f25170f5fe1da1a29f3d721c19a27f7f91a2b1
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v11-preflight-result.md
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
+
+## DEV-20260902-001 — pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨
+
+- 상태: `resolved`
+- 단계: `profile-r-reference-q3-judge-source-bundle`
+- 분류: `integration`
+- 발견: 2026-09-01T23:36:13Z / Profile R Judge source bundle regeneration
+- 해결: 2026-09-01T23:36:14Z
+
+### 증상
+
+R11 known-bad mutation은 실제 AssertionError를 발생시켰지만 public contract가 PRODUCT_ASSERTION 대신 UNKNOWN을 출력해 source bundle이 CHALLENGE_NOT_READY가 됐다.
+
+### 재현
+
+- reference solution에 r-p11-s2-e2e mutation을 적용하고 public R11 contract를 실행한다.
+- pytest hook JSON은 test_routing_s2::test_name을 기록하지만 JUnit은 tests.test_routing_s2::test_name을 기록한다.
+- structured diagnostic cross-check가 STRUCTURED_DIAGNOSTIC_MISMATCH로 fail-closed 처리한다.
+
+### 증거
+
+- `direct-observation`: 첫 Judge source bundle 재생성은 file_count 47, status CHALLENGE_NOT_READY였고 R11 public classification만 null이었다.
+- `source-inspection`: hook JSON과 JUnit testcase를 직접 비교해 module __name__과 JUnit classname의 package prefix 차이를 확인했다.
+- `reproducible-test`: packaged test 회귀와 실제 R11 known-bad 전체 public path가 PRODUCT_ASSERTION, comparison_valid true를 반환한다.
+
+### 근본 원인
+
+pytest hook은 item.module.__name__을 사용하고 JUnit parser는 classname 전체를 사용해 동일 packaged test에 서로 다른 identity를 만들었다.
+
+### 검토한 해결안
+
+- `rejected` package prefix 차이가 있으면 node name만 비교 — 서로 다른 파일에 같은 test name이 있을 때 충돌할 수 있다
+- `adopted` hook의 item.path.stem과 JUnit classname의 마지막 segment를 결합해 file stem과 test name으로 정규화 — 현재 public regression의 file identity를 유지하면서 package import 방식 차이를 제거한다
+
+### 채택한 해결
+
+hook node identity를 item.path.stem으로 만들고 JUnit classname은 마지막 dotted segment로 정규화했다. packaged test 회귀를 추가하고 Worker snapshot, reference chain과 Judge source bundle을 모두 재생성했다.
+
+### 수정 파일
+
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_structurally_matches_packaged_pytest_junit_identity
+- Profile R r-p11-s2-e2e public known-bad full-path rejection
+- Profile R Judge source bundle regeneration
+
+### 검증 결과
+
+- packaged identity, product, environment and mixed targeted regressions 4 passed
+- related checker/B1 suite 69 passed
+- reference and Judge source suite 32 passed
+- PROFILE_R_SOURCE_BUNDLE_VERIFIED with 47 files and payload aggregate 244451075f0aad81017b74a08570cc9c10ca9df5f61986bc6aac40619c555cac
+- actual model turn, SDK thread/start, turn/start and Docker workload count 0
+
+### 남은 위험
+
+- fresh q22 Docker Judge qualification has not run.
+- Task Pack q3, new candidate and independent acceptance remain required before Live.
+
+### 추적 정보
+
+- 관련 커밋: bf5322ba97d87dd95ead9f6b672f553f261bdfda
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-reference-q3-source-bundle-company-result.md
+- 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-negative-matrix.json
 - 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
