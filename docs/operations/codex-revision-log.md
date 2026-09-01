@@ -3175,3 +3175,24 @@ qualification→candidate 순서다. acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 candidate v19 independent model-free acceptance run 1이다. acceptance 2와
 readiness, Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v19 acceptance preflight 환경 분류 교정
+
+- 작업일: 2026-09-01. harness를 v19로 전환한 commit `38f5032493a014900c56c1f0f0b4b9a46c95d6b4`에서
+  fresh preflight parameter 1을 실행했다. SS1 후 B1 R12에서 Windows `os.replace`가
+  PermissionError WinError 5를 반환해 Check pass 88/fail 1, R12 blocked, R13 pending이 됐다.
+- 기존 checker는 모든 JUnit failure를 PRODUCT_ASSERTION으로 고정해 B1이 retry했고 두 번째
+  reference effect가 scope violation으로 막히면서 원래 환경 오류가 가려졌다.
+- 같은 보존 Worker의 R12만 fresh TEMP에서 실행하면 5/5 pass, growth margin 43이다. official
+  acceptance root는 생성하지 않았고 actual model turn은 0이다.
+- `DEV-20260901-004`를 등록하고 pytest hook이 `call.excinfo.type`을 구조적으로 분류하도록
+  교정했다. stdout/traceback 문자열은 분류 근거로 사용하지 않는다.
+- checker는 hook JSON과 JUnit node set/pass를 exact 대조하며 PermissionError는 ENVIRONMENT,
+  assertion은 PRODUCT_ASSERTION, 공존하면 MIXED, 누락·불일치는 UNKNOWN으로 처리한다.
+- fix source는 `43f25170f5fe1da1a29f3d721c19a27f7f91a2b1`, tree
+  `fc3579caab75b3698214f3a4f35b13872ffa6585`다. checker SHA는 `c99e67cd...e24b`, Worker
+  aggregate는 `66c8f308...ba95`, 관련 회귀는 71 passed다.
+
+failed preflight는 성공으로 재분류하지 않는다. q21/q2/candidate v19는 새 Worker 성공 근거로
+재사용하지 않으며 다음 관문은 새 reference chain→Judge qualification→Task Pack
+qualification→candidate다. official acceptance와 Live는 계속 `NO-GO`다.

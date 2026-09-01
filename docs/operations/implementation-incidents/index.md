@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 65건
-- 해결: 63건
+- 전체: 66건
+- 해결: 64건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -78,6 +78,7 @@
 | DEV-20260901-001 | resolved | phase-f-profile-r-controller-hardening | integration | Profile R turn-budget 수정이 Worker 호출·Evidence·candidate snapshot·봉인 anchor를 하나의 계약으로 묶지 않음 |
 | DEV-20260901-002 | resolved | phase-f-profile-r-exact-candidate-acceptance-v10 | implementation | Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음 |
 | DEV-20260901-003 | resolved | profile-r-docker-judge-q20 | integration | Profile R reference chain 교체 후 protected Judge workspace Evidence를 재생성하지 않음 |
+| DEV-20260901-004 | resolved | phase-f-profile-r-candidate-v19-acceptance-preflight | integration | Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4290,3 +4291,71 @@ build_profile_r_judge_bundle.py를 새 Worker baseline에서 model-free 실행�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q20-company-result.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py
+
+## DEV-20260901-004 — Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-candidate-v19-acceptance-preflight`
+- 분류: `integration`
+- 발견: 2026-09-01T08:20:36Z / candidate v19 model-free acceptance preflight
+- 해결: 2026-09-01T08:32:41Z
+
+### 증상
+
+R12 public regression에서 Windows os.replace PermissionError가 발생했지만 structured diagnostic이 PRODUCT_ASSERTION으로 기록돼 B1이 제품 retry를 수행했고, 두 번째 reference effect 적용이 scope violation으로 blocked되면서 원래 환경 오류가 가려졌다.
+
+### 재현
+
+- candidate v19 acceptance parameter 1을 fresh C:\pfa19p-1에서 model-free 실행하면 B1 R12의 test_all_eight_model_free_cells_seal_export_and_detect_tampering가 WinError 5로 실패한다.
+- B1 adapter Evidence는 checks_passed 88, checks_failed 1, R12 BLOCKED, R13 PENDING이며 실패 classification은 PRODUCT_ASSERTION이다.
+- 같은 보존 Worker에서 R12만 fresh C:\pfa19-r12-diagnostic으로 실행하면 5 tests 모두 통과한다.
+
+### 증거
+
+- `direct-observation`: 실패 traceback의 직접 예외는 atomic_write os.replace가 반환한 PermissionError WinError 5이고 제품 assertion은 발생하지 않았다.
+- `source-inspection`: _regression_diagnostic_result는 JUnit failure/error element가 있으면 예외 타입과 무관하게 모든 node를 PRODUCT_ASSERTION으로 고정했다.
+- `reproducible-test`: PermissionError, AssertionError, 두 예외 혼합을 각각 ENVIRONMENT, PRODUCT_ASSERTION, MIXED_PRODUCT_AND_ENVIRONMENT로 분류하는 pytest hook 회귀를 추가했다.
+
+### 근본 원인
+
+pytest subprocess 경계는 JUnit pass/fail 정보만 전달했고 checker가 실제 예외 타입에 대한 구조화 Evidence를 수집하지 않았다. 그래서 테스트 내부 OSError까지 제품 실패로 단정했으며 B1 retry 정책이 잘못 적용됐다.
+
+### 검토한 해결안
+
+- `rejected` JUnit message나 stdout traceback에서 PermissionError 문자열을 검색 — 문자열 추론은 지역화·표현 변경에 취약하고 구조화된 node 결과만 사용한다는 동결 계약을 위반한다
+- `adopted` pytest hook에서 call.excinfo.type을 분류해 bounded canonical JSON node Evidence 생성 — 예외 객체의 타입 관계를 직접 검사하고 JUnit node set과 교차검증해 제품·환경·혼합 실패를 안정적으로 구분한다
+
+### 채택한 해결
+
+public checker가 external Check TEMP에 일회용 pytest hook을 만들고 node별 classification, pass 상태와 reason code를 canonical JSON으로 수집하도록 했다. checker는 이 구조화 Evidence와 JUnit identity/pass 상태를 exact 대조하며 누락·불일치는 UNKNOWN으로 fail-closed 처리한다. OSError와 subprocess.SubprocessError subclass는 ENVIRONMENT, 일반 assertion은 PRODUCT_ASSERTION, 두 종류가 공존하면 MIXED_PRODUCT_AND_ENVIRONMENT로 집계하고 환경·혼합에는 bounded environment diagnostic을 추가한다.
+
+### 수정 파일
+
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_executes_and_rejects_an_assert_false_regression
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_structurally_classifies_pytest_oserror_as_environment
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_structurally_aggregates_mixed_pytest_failures
+
+### 검증 결과
+
+- 제품·환경·혼합 targeted regression 3 passed
+- public checker, R07 adversarial, B1 verify와 Phase F B1 boundary 71 passed in 25.52s on clean commit 43f25170f5fe1da1a29f3d721c19a27f7f91a2b1
+- Worker snapshot builder output and checked-in workspace/manifest exact byte match, aggregate 66c8f308f5382062a7d2d7b099166e31e9175cf491af2cef82555fe37c52ba95
+- actual model turn, SDK thread/start, turn/start and official acceptance run count 0
+
+### 남은 위험
+
+- 새 Worker bytes는 reference chain, Judge qualification, Task Pack qualification과 candidate를 다시 봉인해야 한다.
+- 새 candidate의 independent acceptance 전까지 Live는 NO-GO다.
+
+### 추적 정보
+
+- 관련 커밋: 38f5032493a014900c56c1f0f0b4b9a46c95d6b4, 43f25170f5fe1da1a29f3d721c19a27f7f91a2b1
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v11-preflight-result.md
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
