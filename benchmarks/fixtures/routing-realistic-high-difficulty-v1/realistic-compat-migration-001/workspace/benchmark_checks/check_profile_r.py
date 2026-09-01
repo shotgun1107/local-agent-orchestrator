@@ -39,6 +39,9 @@ R07_EXECUTION_TIMEOUT_SECONDS = 600
 R07_GIT_COMMAND_TIMEOUT_SECONDS = 30
 R07_GIT_COMMAND_COUNT = 6
 R07_INTERNAL_CHILD_BUDGET_SECONDS = 900
+PYTEST_DIAGNOSTIC_ENV = "PROFILE_R_PYTEST_DIAGNOSTIC_PATH"
+PYTEST_DIAGNOSTIC_FILENAME = "pytest-node-diagnostics.json"
+PYTEST_DIAGNOSTIC_PLUGIN_FILENAME = "profile_r_pytest_diagnostics.py"
 
 
 def _environment_diagnostic(
@@ -1541,6 +1544,7 @@ def _run_r07_subprocess(
     safe_error_code: str,
     path_lengths: dict[str, int],
     timeout: int,
+    environment_overrides: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -1555,6 +1559,7 @@ def _run_r07_subprocess(
                 **os.environ,
                 "PYTHONDONTWRITEBYTECODE": "1",
                 "PYTEST_ADDOPTS": "",
+                **(environment_overrides or {}),
             },
         )
     except (OSError, subprocess.SubprocessError) as exc:
@@ -1570,6 +1575,92 @@ def _run_r07_subprocess(
                 path_lengths=path_lengths,
             ),
         ) from exc
+
+
+def _pytest_diagnostic_plugin_source() -> str:
+    return '''from __future__ import annotations
+
+import json
+import os
+import subprocess
+from pathlib import Path
+
+import pytest
+
+
+DIAGNOSTIC_ENV = "PROFILE_R_PYTEST_DIAGNOSTIC_PATH"
+_RECORDS: dict[str, dict[str, object]] = {}
+
+
+def _failure_classification(call) -> tuple[str, str]:
+    exception_type = call.excinfo.type if call.excinfo is not None else None
+    if (
+        isinstance(exception_type, type)
+        and issubclass(exception_type, (OSError, subprocess.SubprocessError))
+    ):
+        return "ENVIRONMENT", "PYTEST_NODE_ENVIRONMENT_EXCEPTION"
+    return "PRODUCT_ASSERTION", "PYTEST_NODE_FAILED"
+
+
+def _merge(existing: dict[str, object], current: dict[str, object]) -> dict[str, object]:
+    if existing["passed"]:
+        return current
+    if current["passed"]:
+        return existing
+    classifications = {existing["classification"], current["classification"]}
+    if classifications == {"PRODUCT_ASSERTION", "ENVIRONMENT"}:
+        return {
+            **current,
+            "classification": "MIXED_PRODUCT_AND_ENVIRONMENT",
+            "reason_code": "PYTEST_NODE_MULTIPLE_FAILURES",
+        }
+    return existing
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == "setup" and report.passed:
+        return
+    if report.when == "teardown" and report.passed:
+        return
+    if report.passed:
+        classification = None
+        reason_code = "PASSED"
+    elif report.skipped:
+        classification = "PRODUCT_ASSERTION"
+        reason_code = "PYTEST_NODE_SKIPPED"
+    else:
+        classification, reason_code = _failure_classification(call)
+    record = {
+        "classification": classification,
+        "node_id": f"{item.module.__name__}::{item.name}",
+        "passed": bool(report.passed),
+        "reason_code": reason_code,
+    }
+    previous = _RECORDS.get(report.nodeid)
+    _RECORDS[report.nodeid] = record if previous is None else _merge(previous, record)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    del session, exitstatus
+    path = Path(os.environ[DIAGNOSTIC_ENV])
+    payload = {
+        "schema_version": 1,
+        "nodes": sorted(_RECORDS.values(), key=lambda item: str(item["node_id"])),
+    }
+    path.write_text(
+        json.dumps(
+            payload,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ) + "\\n",
+        encoding="utf-8",
+        newline="\\n",
+    )
+'''
 
 
 def _parse_collected_node_ids(
@@ -1652,9 +1743,33 @@ def _collect_and_run_r07_pytest(
         expected_sources,
         expected_case_counts,
     )
+    diagnostics_path = temp_root / PYTEST_DIAGNOSTIC_FILENAME
+    plugin_path = temp_root / PYTEST_DIAGNOSTIC_PLUGIN_FILENAME
+    try:
+        temp_root.mkdir(parents=True, exist_ok=True)
+        plugin_path.write_text(
+            _pytest_diagnostic_plugin_source(),
+            encoding="utf-8",
+            newline="\n",
+        )
+    except OSError as exc:
+        raise PublicContractError(
+            "the structured pytest diagnostic plugin could not be prepared",
+            failure_classification="ENVIRONMENT",
+            environment_diagnostic=_environment_diagnostic(
+                stage="r07_public_pytest_diagnostic_plugin",
+                command_ordinal=2,
+                return_code=None,
+                stderr=b"",
+                safe_error_code="PYTEST_DIAGNOSTIC_PLUGIN_WRITE_FAILED",
+                path_lengths=path_lengths,
+            ),
+        ) from exc
     result = _run_r07_subprocess(
         [
             *common,
+            "-p",
+            plugin_path.stem,
             "--basetemp",
             str(temp_root / "pytest-run"),
             "--junitxml",
@@ -1666,6 +1781,10 @@ def _collect_and_run_r07_pytest(
         safe_error_code="PYTEST_EXECUTION_LAUNCH_FAILED",
         path_lengths=path_lengths,
         timeout=R07_EXECUTION_TIMEOUT_SECONDS,
+        environment_overrides={
+            PYTEST_DIAGNOSTIC_ENV: str(diagnostics_path),
+            "PYTHONPATH": str(temp_root),
+        },
     )
     return result, collected
 
@@ -1675,6 +1794,37 @@ def _regression_diagnostic_result(
     *,
     task_id: str,
 ) -> dict[str, Any]:
+    diagnostics_path = junit_path.with_name(PYTEST_DIAGNOSTIC_FILENAME)
+    try:
+        structured = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+        structured_nodes = structured["nodes"]
+        if structured.get("schema_version") != 1 or not isinstance(structured_nodes, list):
+            raise ValueError("invalid structured pytest diagnostic")
+        by_identity = {
+            str(node["node_id"]): node
+            for node in structured_nodes
+            if isinstance(node, dict)
+            and set(node) == {"classification", "node_id", "passed", "reason_code"}
+        }
+        if len(by_identity) != len(structured_nodes):
+            raise ValueError("duplicate or invalid structured pytest diagnostic")
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return {
+            "schema_version": 1,
+            "task_id": task_id,
+            "classification": "UNKNOWN",
+            "comparison_valid": False,
+            "product_failure_present": False,
+            "environment_failure_present": False,
+            "nodes": [
+                {
+                    "node_id": f"{task_id}::diagnostic",
+                    "classification": "UNKNOWN",
+                    "passed": False,
+                    "reason_code": "STRUCTURED_DIAGNOSTIC_UNAVAILABLE",
+                }
+            ],
+        }
     try:
         root = ET.parse(junit_path).getroot()
     except (OSError, ET.ParseError):
@@ -1695,9 +1845,12 @@ def _regression_diagnostic_result(
             ],
         }
     nodes: list[dict[str, Any]] = []
+    observed_identities: set[str] = set()
     for case in root.iter("testcase"):
         name = str(case.attrib.get("name", "unknown"))
         class_name = str(case.attrib.get("classname", "unknown"))
+        identity = f"{class_name}::{name}"
+        observed_identities.add(identity)
         failure = next(
             (
                 child
@@ -1706,18 +1859,60 @@ def _regression_diagnostic_result(
             ),
             None,
         )
+        structured_node = by_identity.get(identity)
+        if (
+            structured_node is None
+            or bool(structured_node["passed"]) != (failure is None)
+            or structured_node["classification"]
+            not in {
+                None,
+                "PRODUCT_ASSERTION",
+                "ENVIRONMENT",
+                "MIXED_PRODUCT_AND_ENVIRONMENT",
+            }
+            or not isinstance(structured_node["reason_code"], str)
+        ):
+            return {
+                "schema_version": 1,
+                "task_id": task_id,
+                "classification": "UNKNOWN",
+                "comparison_valid": False,
+                "product_failure_present": False,
+                "environment_failure_present": False,
+                "nodes": [
+                    {
+                        "node_id": f"{task_id}::diagnostic",
+                        "classification": "UNKNOWN",
+                        "passed": False,
+                        "reason_code": "STRUCTURED_DIAGNOSTIC_MISMATCH",
+                    }
+                ],
+            }
         nodes.append(
             {
-                "node_id": f"{task_id}::{class_name}::{name}",
-                "classification": (
-                    "PRODUCT_ASSERTION" if failure is not None else None
-                ),
-                "passed": failure is None,
-                "reason_code": (
-                    "PYTEST_NODE_FAILED" if failure is not None else "PASSED"
-                ),
+                "node_id": f"{task_id}::{identity}",
+                "classification": structured_node["classification"],
+                "passed": structured_node["passed"],
+                "reason_code": structured_node["reason_code"],
             }
         )
+    if observed_identities != set(by_identity):
+        return {
+            "schema_version": 1,
+            "task_id": task_id,
+            "classification": "UNKNOWN",
+            "comparison_valid": False,
+            "product_failure_present": False,
+            "environment_failure_present": False,
+            "nodes": [
+                {
+                    "node_id": f"{task_id}::diagnostic",
+                    "classification": "UNKNOWN",
+                    "passed": False,
+                    "reason_code": "STRUCTURED_DIAGNOSTIC_NODE_SET_MISMATCH",
+                }
+            ],
+        }
     if not nodes:
         return {
             "schema_version": 1,
@@ -1737,16 +1932,32 @@ def _regression_diagnostic_result(
         }
     product_failure = any(
         not node["passed"]
-        and node["classification"] == "PRODUCT_ASSERTION"
+        and node["classification"]
+        in {"PRODUCT_ASSERTION", "MIXED_PRODUCT_AND_ENVIRONMENT"}
         for node in nodes
+    )
+    environment_failure = any(
+        not node["passed"]
+        and node["classification"]
+        in {"ENVIRONMENT", "MIXED_PRODUCT_AND_ENVIRONMENT"}
+        for node in nodes
+    )
+    classification = (
+        "MIXED_PRODUCT_AND_ENVIRONMENT"
+        if product_failure and environment_failure
+        else "PRODUCT_ASSERTION"
+        if product_failure
+        else "ENVIRONMENT"
+        if environment_failure
+        else None
     )
     return {
         "schema_version": 1,
         "task_id": task_id,
-        "classification": "PRODUCT_ASSERTION" if product_failure else None,
+        "classification": classification,
         "comparison_valid": True,
         "product_failure_present": product_failure,
-        "environment_failure_present": False,
+        "environment_failure_present": environment_failure,
         "nodes": nodes,
     }
 
@@ -1759,10 +1970,20 @@ def _require_r07_pytest_success(
 ) -> dict[str, Any]:
     diagnostic = _regression_diagnostic_result(junit_path, task_id=task_id)
     if result.returncode != 0:
+        failure_classification = str(diagnostic["classification"] or "UNKNOWN")
         raise PublicContractError(
             f"the public {task_id} routing regressions failed",
             public_feedback=_public_pytest_failure_feedback(result),
-            failure_classification=str(diagnostic["classification"] or "UNKNOWN"),
+            failure_classification=failure_classification,
+            environment_diagnostic=(
+                _default_environment_diagnostic(
+                    task_id,
+                    "PYTEST_NODE_ENVIRONMENT_FAILURE",
+                )
+                if failure_classification
+                in {"ENVIRONMENT", "MIXED_PRODUCT_AND_ENVIRONMENT"}
+                else None
+            ),
             diagnostic_result=diagnostic,
         )
     return diagnostic
