@@ -3135,3 +3135,23 @@ qualification→candidate 순서다. acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 q21 projection과 새 reference chain에 직접 결합한 Task Pack q2를 model-free로
 봉인하는 것이다. candidate, acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R Worker Task Pack q2 봉인
+
+- 작업일: 2026-09-01. q21과 새 reference chain에 대응하는 Task Pack q2를 source
+  `d063ddcac0b9dfedb57e98fecb81cd00184b84f6`에서 model-free 실행했다.
+- qualification ID는 `profile-r-task-pack-q2`다. positive transition 13/13, cumulative public
+  Checks 104/104, negative mutation 13/13 거부와 Worker information boundary를 통과했다.
+- Worker manifest file SHA는 `2763fa89...c12c`, tree aggregate는 `d071f4ad...2545`,
+  reference chain file/seal은 `5f834e78...c209` / `b75403dc...675a`다.
+- q2 qualification file/seal은 `487f7691...64f9` / `61181ffa...2c11`, budget file/seal은
+  `3e2dbd5c...146d` / `0a1f7737...f60b`, artifact manifest seal은
+  `fe613160...c807`이다.
+- budget은 SS1/B1 공통 Task당 2, base 13, Cell 최대 15, retry/resume 2, reserve transfer
+  forbidden이다. model, SDK thread/turn과 Docker workload는 0이다.
+- 첫 CLI는 PYTHONPATH 부재로 import 전에 종료돼 Evidence 0이었고 source 경로를 명시한 본
+  실행만 q2 근거로 사용했다. 임시 `C:\q2ref`, `C:\q2t`는 안전하게 삭제했다.
+- q1 artifact는 수정하지 않았고 q2까지 포함한 artifact 회귀는 11 passed다.
+
+다음 관문은 q21 qualification v18과 q2 qualification/budget의 exact file SHA·seal을 직접
+결합한 새 Phase E candidate다. acceptance와 Live는 계속 `NO-GO`다.
