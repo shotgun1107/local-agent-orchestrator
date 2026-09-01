@@ -3117,3 +3117,21 @@ qualification→candidate 순서다. acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 교정된 Judge source를 commit한 뒤 fresh q21 Docker qualification을 실행하는
 것이다. q21 전에는 Task Pack q2와 candidate를 만들지 않으며 acceptance와 Live는 `NO-GO`다.
+
+## Profile R Docker Judge q21 봉인
+
+- 작업일: 2026-09-01. q20 실패를 교정한 clean source
+  `8d4627f75eca3233203ad906d2a19f1255591ee7`, tree
+  `c1e0bc8e88eea883b75cee6f3a02f91d2ef13e30`에서 fresh q21 14-cell matrix를 실행했다.
+- reference 13/13 pass, 13개 negative mutation은 각 target property fail이며 전체 expectation
+  `14/14`, prerequisite blocking 0, model turn 0이다.
+- raw는 `C:\q21\profile-r-docker-matrix-q21-company-r01-r13`, projection은 qualification
+  v18이다. raw file_count 72, seal `ba10a6e8...f7c9`, projection file SHA
+  `27d49bf2...d554`, residual container 0이다.
+- independent raw verifier와 path-free projection exact recomputation이 통과했다. q20은
+  `CHALLENGE_NOT_READY` 역사 Evidence로 그대로 보존한다.
+- Task Pack qualifier는 기존 q1 기본동작을 유지하면서 명시적 versioned
+  `profile-r-task-pack-q2` ID를 받을 수 있도록 최소 확장했고 회귀 10/10을 통과했다.
+
+다음 관문은 q21 projection과 새 reference chain에 직접 결합한 Task Pack q2를 model-free로
+봉인하는 것이다. candidate, acceptance와 Live는 계속 `NO-GO`다.

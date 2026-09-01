@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -59,7 +60,13 @@ def _worker_manifest_exact(worker_root: Path, manifest: dict[str, Any]) -> None:
         raise RuntimeError("Worker file set differs from manifest")
 
 
-def qualify(repository: Path) -> dict[str, object]:
+def qualify(
+    repository: Path,
+    *,
+    qualification_id: str = "profile-r-task-pack-q1",
+) -> dict[str, object]:
+    if re.fullmatch(r"profile-r-task-pack-q[1-9][0-9]*", qualification_id) is None:
+        raise RuntimeError("Task Pack qualification ID is invalid")
     root = repository / PROFILE_RELATIVE
     overlay = root / "worker-public-overlay"
     worker = root / "workspace"
@@ -80,7 +87,7 @@ def qualify(repository: Path) -> dict[str, object]:
         "schema_version": 1,
         "profile": "R",
         "snapshot_id": "realistic-compat-migration-001",
-        "qualification_id": "profile-r-task-pack-q1",
+        "qualification_id": qualification_id,
         "status": "STRUCTURE_READY",
         "model_turns": 0,
         "task_ids": list(PROFILE_R_TASK_IDS),
@@ -200,11 +207,12 @@ def _run_public_check(
 def qualify_full(
     repository: Path,
     *,
+    qualification_id: str = "profile-r-task-pack-q1",
     reference_repository: Path,
     reference_chain_path: Path,
     negative_mutations: Path,
 ) -> dict[str, object]:
-    structure = qualify(repository)
+    structure = qualify(repository, qualification_id=qualification_id)
     chain_bytes = reference_chain_path.read_bytes()
     chain = _load_json(reference_chain_path)
     expected_self = str(chain.get("seal_sha256", ""))
@@ -231,7 +239,7 @@ def qualify_full(
     )
     if recomputed_chain != chain:
         raise RuntimeError("reference chain differs from its repository")
-    with tempfile.TemporaryDirectory(prefix="profile-r-task-pack-q1-") as raw:
+    with tempfile.TemporaryDirectory(prefix=f"{qualification_id}-") as raw:
         temporary = Path(raw)
         worker = temporary / "worker"
         shutil.copytree(root / "workspace", worker)
@@ -361,6 +369,10 @@ def main() -> int:
     parser.add_argument("--reference-repository", type=Path)
     parser.add_argument("--reference-chain-seal", type=Path)
     parser.add_argument("--negative-mutations", type=Path)
+    parser.add_argument(
+        "--qualification-id",
+        default="profile-r-task-pack-q1",
+    )
     args = parser.parse_args()
     full_values = (
         args.reference_repository,
@@ -374,12 +386,16 @@ def main() -> int:
     if all(value is not None for value in full_values):
         result = qualify_full(
             args.repository.resolve(strict=True),
+            qualification_id=args.qualification_id,
             reference_repository=args.reference_repository.resolve(strict=True),
             reference_chain_path=args.reference_chain_seal.resolve(strict=True),
             negative_mutations=args.negative_mutations.resolve(strict=True),
         )
     else:
-        result = qualify(args.repository.resolve(strict=True))
+        result = qualify(
+            args.repository.resolve(strict=True),
+            qualification_id=args.qualification_id,
+        )
     payload = json.dumps(
         result, ensure_ascii=False, sort_keys=True, indent=2
     ) + "\n"

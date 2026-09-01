@@ -32,7 +32,7 @@ def build_budget(task_pack_qualification_path: Path) -> dict[str, object]:
         or qualification.get("task_ids") != list(PROFILE_R_TASK_IDS)
         or not isinstance(qualification.get("seal_sha256"), str)
     ):
-        raise RuntimeError("Task Pack q1 is not ready for budget sealing")
+        raise RuntimeError("Task Pack qualification is not ready for budget sealing")
     payload: dict[str, object] = {
         "schema_version": 1,
         "profile": "R",
