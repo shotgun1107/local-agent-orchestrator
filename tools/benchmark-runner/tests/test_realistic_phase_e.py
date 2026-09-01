@@ -992,3 +992,63 @@ def test_checked_in_profile_r_p1_hardened_v18_candidate_verifies() -> None:
     assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
         "59651c8bccba8b4e5d42fa68aa2d5a6658d6c5dd4aa2e5ea78879ac79a69c2dd"
     )
+
+
+def test_checked_in_profile_r_q21_q2_v19_candidate_verifies() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v19"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads(
+        (candidate / "source-bindings.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r = bindings["profiles"][0]
+
+    assert seal.schema_version == 3
+    assert seal.source_commit == "e3f59b125e89a473b2e68ec18dbb0f099cded67e"
+    assert seal.experiment_id == "exp_20260901_2c5e0215_1"
+    assert seal.plan_fingerprint == (
+        "2c5e02150a577c5066de019ea51e45871c562ec9ceb19966708151248aeb1961"
+    )
+    assert seal.seal_sha256 == (
+        "dfb6b4a878630c5ebd70c212065a3af64d55d3e3bf7b919c726c163f8485f869"
+    )
+    assert seal.files_manifest_sha256 == (
+        "5f586a9d711073bcecefd5da9c8fab0869dbe2673f3b07a85817919b9ffd72c8"
+    )
+    assert seal.planned_initial_model_turns == 42
+    assert seal.planned_model_turn_ceiling == 50
+    assert seal.actual_model_turns == 0
+    assert bindings["source_tree"] == "ca7d83a376d35a6bc29482a1590f4acbf72ec685"
+    assert bindings["bindings_sha256"] == (
+        "8fe908ed19b2f780bbd412504cf0e954f03eab8dbd5c4d26c04e01d7b628c2a2"
+    )
+    assert profile_r["task_count"] == 13
+    assert profile_r["qualification_sha256"] == (
+        "27d49bf2cfb218dce77270d6f0a943f846023000adccf9db3372e3883c23d554"
+    )
+    assert profile_r["task_pack_qualification_sha256"] == (
+        "487f7691d4cce64db8d7b997164ca45179df3186e0c4ed7eed99db5c8c2964f9"
+    )
+    assert profile_r["task_pack_qualification_seal_sha256"] == (
+        "61181ffa0867c67b7d087059f777d5838f5c61a3d6250d45422c04d945312c11"
+    )
+    assert profile_r["task_budget_sha256"] == (
+        "3e2dbd5c8bdc040c5b57d1aaac3dd9473d929b83f35f4e7bc4c09b91c94c146d"
+    )
+    assert profile_r["task_budget_seal_sha256"] == (
+        "0a1f77373b5db871c3a1967834fac5985ce38d6e8cb2511a5165cafb638df60b"
+    )
+    assert plan["environment_fingerprint"][
+        "profile_r_task_pack_qualification_seal_sha256"
+    ] == profile_r["task_pack_qualification_seal_sha256"]
+    assert plan["environment_fingerprint"][
+        "profile_r_task_budget_seal_sha256"
+    ] == profile_r["task_budget_seal_sha256"]
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "7937338cc885f5e3693fe30422c39068a5c22c0d0a423e20676b90d1abe597ce"
+    )
