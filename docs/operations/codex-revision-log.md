@@ -3196,3 +3196,24 @@ readiness, Environment Closure와 Live는 계속 `NO-GO`다.
 failed preflight는 성공으로 재분류하지 않는다. q21/q2/candidate v19는 새 Worker 성공 근거로
 재사용하지 않으며 다음 관문은 새 reference chain→Judge qualification→Task Pack
 qualification→candidate다. official acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R reference q3와 pytest packaged identity 교정
+
+- 작업일: 2026-09-01~2026-09-02. pytest 예외 타입 구조화 뒤 첫 Judge source bundle 재생성에서
+  R11 known-bad의 hook identity `test_routing_s2::...`와 JUnit identity
+  `tests.test_routing_s2::...`가 달라 `UNKNOWN`이 됐다. builder는
+  `CHALLENGE_NOT_READY`로 멈췄고 q22는 시작하지 않았다.
+- hook과 JUnit을 file stem 기준으로 정규화하고 packaged test 회귀를 추가했다. 실제 R11
+  known-bad는 public `PRODUCT_ASSERTION`, comparison valid, hidden R-P11 fail로 격리됐다.
+- fix source는 `bf5322ba97d87dd95ead9f6b672f553f261bdfda`, tree
+  `52f10b6ba781dec95de557f5e86cd93f872fae96`다. Worker aggregate는
+  `01ef36e3...b226`, checker SHA는 `0a81f123...b8c1`이다.
+- 새 reference는 14 commit, base/final tree `3248bf31...14b4` / `61c380d7...f873`,
+  chain seal `19cf0754...3428`이며 clean, unreachable object 0, bundle complete를 통과했다.
+- Judge source bundle은 47파일, payload aggregate `24445107...5cac`, 상태
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다. 관련 회귀는 69 passed와 32 passed다.
+- `DEV-20260902-001`로 원인과 해결을 보존했다. model, SDK thread/turn과 Docker workload는
+  모두 0이다.
+
+다음 관문은 clean source를 고정한 fresh q22 Docker Judge qualification이다. q21/q2/v19는
+역사 Evidence로만 보존하며 Task Pack q3, 새 candidate, acceptance와 Live는 `NO-GO`다.
