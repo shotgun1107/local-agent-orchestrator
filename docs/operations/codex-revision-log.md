@@ -3051,3 +3051,29 @@ Environment Closure와 Live는 계속 `NO-GO`다.
 
 다음 관문은 v18 exact-candidate acceptance 1회차다. acceptance 2회와 readiness,
 Environment Closure 전에는 실제 SS1/B1을 실행하지 않는다.
+
+## Profile R R01~R13 exact-candidate acceptance v10 run 1
+
+- 작업일: 2026-09-01. acceptance harness를 candidate v18과 외부 Cell anchor 4파일에 맞춘
+  commit `4cb6810d3a17e122d969ba624ac4533af988d037`, tree
+  `442749208b93fcd9c1170ce1fcc5b793cbe1aedd`에서 parameter `[1]`만 model-free 실행했다.
+- official root `C:\pf-v18-acceptance-company-official\acceptance-1`은 exact 14파일이며
+  manifest 12/12 mismatch 0, JUnit 1/0/0/0, `1 passed in 195.29s`다.
+- SS1 Cell 1과 B1 Cell 2는 SEALED, Cell 3·4는 PLANNED다. public contracts 13/13,
+  cumulative Checks 104/104, R11 7/7, R12 5/5, path growth margin 32다.
+- SS1/B1의 scope·Evidence hash는 true이고 turn-start attempt/receipt는 각각 13/13,
+  candidate ceiling 15, actual model turn 0, automatic continuation false다.
+- 외부 initial/execution/SS1/B1 anchor hash chain을 확인했다. attestation SHA는
+  `835f3241...6292`, files manifest file SHA는 `ba6a1dba...af65`, JUnit SHA는
+  `d2b825fd...162`다.
+- 공식 basetemp `C:\pfa18o-1`은 관련 process 0 확인 뒤 삭제했고 official Evidence는
+  보존했다. model, SDK thread/turn, Docker workload와 Live state 변경은 0이다.
+- preflight에서 anchor root 이름 불일치와 짧은 Check TEMP 식별자 격리 위험을 공식 실행 전
+  교정했다. 12자리 식별자 preflight와 공식 run 1이 연속 통과했다.
+- 같은 preflight 실패 경로에서 non-ENVIRONMENT PublicContractError가 구조화 진단을 출력한 뒤
+  미할당 `diagnostic`을 읽는 결함을 확인해 `DEV-20260901-002`를 open으로 등록했다.
+
+acceptance run 1의 양성 Evidence는 통과로 보존한다. 그러나 public checker 실패 경로를 고치면
+Worker bytes와 source binding이 바뀌므로 v18 acceptance run 2와 readiness는 중단한다. 다음
+관문은 incident 수정·회귀검증 뒤 필요한 qualification과 새 candidate identity를 만드는 것이다.
+Environment Closure와 Live는 계속 `NO-GO`다.

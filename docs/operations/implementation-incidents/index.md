@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 63건
+- 전체: 64건
 - 해결: 61건
 - 조사 중: 2건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -76,6 +76,7 @@
 | DEV-20260825-001 | resolved | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
 | DEV-20260827-001 | resolved | phase-f-profile-r-ss1 | integration | Profile R 15-turn 완료 결과를 Phase F의 과거 10-turn 상한이 거부함 |
 | DEV-20260901-001 | resolved | phase-f-profile-r-controller-hardening | integration | Profile R turn-budget 수정이 Worker 호출·Evidence·candidate snapshot·봉인 anchor를 하나의 계약으로 묶지 않음 |
+| DEV-20260901-002 | open | phase-f-profile-r-exact-candidate-acceptance-v10 | implementation | Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4152,3 +4153,62 @@ Phase E verifier가 candidate 전 파일을 한 번만 읽은 immutable Verified
 - 출처: docs/operations/implementation-incidents/entries/DEV-20260827-001.json
 - 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py
+
+## DEV-20260901-002 — Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음
+
+- 상태: `open`
+- 단계: `phase-f-profile-r-exact-candidate-acceptance-v10`
+- 분류: `implementation`
+- 발견: 2026-09-01T04:17:32Z / model-free exact-candidate acceptance preflight
+- 해결: 미해결
+
+### 증상
+
+R11 public contract가 PRODUCT_ASSERTION 진단을 정상 출력한 뒤 UnboundLocalError를 추가로 발생시켜 실패 경로의 환경 진단과 Worker feedback 계약을 끝까지 수행하지 못했다.
+
+### 재현
+
+- R11 nested pytest node 하나를 실패시키고 check_profile_r.py R11을 실행하면 CHECK_DIAGNOSTIC_RESULT 출력 뒤 local variable 'diagnostic' referenced before assignment traceback이 발생한다.
+- 같은 보존 Worker에서 실패 원인이 사라진 뒤 R11을 fresh TEMP 두 곳에서 직접 다시 실행하면 7 tests가 모두 통과하므로 양성 경로에서는 해당 지역변수 오류가 드러나지 않는다.
+
+### 증거
+
+- `direct-observation`: acceptance preflight r2에서 R11 node 1개가 실패했고 public checker stdout에는 구조화된 제품 진단이, stderr에는 UnboundLocalError traceback이 함께 기록됐다.
+- `source-inspection`: check_profile_r.py main은 ENVIRONMENT 분기에서만 diagnostic을 할당하지만 diagnostic_result가 있는 모든 PublicContractError에서 diagnostic을 직렬화한다.
+- `reproducible-test`: 12자리 Check TEMP 식별자를 사용한 preflight r3과 공식 acceptance run 1의 양성 경로는 각각 통과했지만 제품 실패 분기 자체를 교정하거나 회귀검증하지는 않았다.
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 제품 assertion 실패 시 원래 구조화 진단 뒤 2차 traceback이 추가되어 failure classification과 Worker feedback의 완전성을 해칠 수 있다.
+- 결함이 candidate v18 Worker-visible bytes에 포함되어 있어 수정 후 기존 v18 acceptance chain을 이어갈 수 없다.
+
+### 추적 정보
+
+- 관련 커밋: 4cb6810d3a17e122d969ba624ac4533af988d037
+- 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v10-run1-result.md
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py

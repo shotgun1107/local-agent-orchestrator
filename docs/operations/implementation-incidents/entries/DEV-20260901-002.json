@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260901-002",
+  "title": "Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음",
+  "status": "open",
+  "stage": "phase-f-profile-r-exact-candidate-acceptance-v10",
+  "category": "implementation",
+  "discovered_at": "2026-09-01T04:17:32Z",
+  "resolved_at": null,
+  "discovered_by": "model-free exact-candidate acceptance preflight",
+  "symptom": "R11 public contract가 PRODUCT_ASSERTION 진단을 정상 출력한 뒤 UnboundLocalError를 추가로 발생시켜 실패 경로의 환경 진단과 Worker feedback 계약을 끝까지 수행하지 못했다.",
+  "reproduction": [
+    "R11 nested pytest node 하나를 실패시키고 check_profile_r.py R11을 실행하면 CHECK_DIAGNOSTIC_RESULT 출력 뒤 local variable 'diagnostic' referenced before assignment traceback이 발생한다.",
+    "같은 보존 Worker에서 실패 원인이 사라진 뒤 R11을 fresh TEMP 두 곳에서 직접 다시 실행하면 7 tests가 모두 통과하므로 양성 경로에서는 해당 지역변수 오류가 드러나지 않는다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "acceptance preflight r2에서 R11 node 1개가 실패했고 public checker stdout에는 구조화된 제품 진단이, stderr에는 UnboundLocalError traceback이 함께 기록됐다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "check_profile_r.py main은 ENVIRONMENT 분기에서만 diagnostic을 할당하지만 diagnostic_result가 있는 모든 PublicContractError에서 diagnostic을 직렬화한다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "12자리 Check TEMP 식별자를 사용한 preflight r3과 공식 acceptance run 1의 양성 경로는 각각 통과했지만 제품 실패 분기 자체를 교정하거나 회귀검증하지는 않았다."
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [
+    "제품 assertion 실패 시 원래 구조화 진단 뒤 2차 traceback이 추가되어 failure classification과 Worker feedback의 완전성을 해칠 수 있다.",
+    "결함이 candidate v18 Worker-visible bytes에 포함되어 있어 수정 후 기존 v18 acceptance chain을 이어갈 수 없다."
+  ],
+  "related_commits": [
+    "4cb6810d3a17e122d969ba624ac4533af988d037"
+  ],
+  "source_references": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v10-run1-result.md",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ]
+}
