@@ -35,12 +35,13 @@ from benchmark_runner.contract import (
     VariantMetrics,
     utc_now,
 )
-from benchmark_runner.realistic_phase_e import PhaseEStageManifest
 from benchmark_runner.realistic_phase_f import (
     PhaseFBackendResult,
     PhaseFDispatchRequest,
+    PhaseFModelTurnAccounting,
     PhaseFRuntimeMode,
     load_verified_phase_f_candidate,
+    phase_f_backend_result_matches_request,
     phase_f_cell_model_turn_ceiling,
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
@@ -198,9 +199,18 @@ class PhaseFCellSeal(StrictModel):
     schema_version: Literal[1] = 1
     kind: Literal["phase_f_realistic_cell_seal"] = "phase_f_realistic_cell_seal"
     experiment_id: str
+    plan_fingerprint: Sha256
+    candidate_seal_sha256: Sha256
+    candidate_snapshot_sha256: Sha256
+    execution_ordinal: int = Field(ge=1, le=4)
     cell_id: str
+    fixture_id: str
+    variant_id: Literal["ss1", "b1"]
     request_sha256: Sha256
     runtime_mode: PhaseFRuntimeMode
+    model_turn_ceiling: int = Field(ge=1)
+    actual_model_turns: int = Field(ge=0)
+    adapter_evidence_path: str = Field(min_length=1)
     worker_artifact_sha256: Sha256
     judge_observation_sha256: Sha256
     measurement_sha256: Sha256
@@ -274,6 +284,121 @@ def _evidence_ref(cell_root: Path, path: Path) -> EvidenceRef:
         size=path.stat().st_size,
         sha256=sha256_file(path),
     )
+
+
+def _strict_nonnegative_int(value: object, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise PhaseFFinalizationError(f"Phase F {label} is invalid")
+    return value
+
+
+def _verify_adapter_turn_evidence(
+    *,
+    request: PhaseFDispatchRequest,
+    expected_actual_model_turns: int,
+    adapter_payload: Mapping[str, object],
+) -> tuple[PhaseFModelTurnAccounting, int]:
+    """Cross-check every turn count and receipt before Judge execution."""
+
+    expected_identity = (
+        request.experiment_id,
+        request.cell_id,
+        request.request_sha256,
+        request.fixture_id,
+        request.variant_id,
+        request.runtime_mode.value,
+    )
+    actual_identity = (
+        adapter_payload.get("experiment_id"),
+        adapter_payload.get("cell_id"),
+        adapter_payload.get("request_sha256"),
+        adapter_payload.get("fixture_id"),
+        adapter_payload.get("variant_id"),
+        adapter_payload.get("runtime_mode"),
+    )
+    if actual_identity != expected_identity:
+        raise PhaseFFinalizationError("Phase F adapter Evidence identity differs")
+
+    try:
+        accounting = PhaseFModelTurnAccounting.model_validate(
+            adapter_payload.get("model_turn_accounting")
+        )
+    except Exception as exc:
+        raise PhaseFFinalizationError(
+            "Phase F model turn accounting is invalid"
+        ) from exc
+    top_level_actual = _strict_nonnegative_int(
+        adapter_payload.get("actual_model_turns"),
+        "adapter actual model turn count",
+    )
+    raw = adapter_payload.get("adapter_raw_payload")
+    metrics = adapter_payload.get("adapter_normalized_metrics")
+    if not isinstance(raw, dict) or not isinstance(metrics, dict):
+        raise PhaseFFinalizationError("Phase F adapter Evidence shape differs")
+    normalized_turns = _strict_nonnegative_int(
+        metrics.get("turn_count"),
+        "normalized turn count",
+    )
+    boundary_records = raw.get("boundary_records")
+    if not isinstance(boundary_records, list):
+        raise PhaseFFinalizationError("Phase F boundary records are unavailable")
+
+    logical_counts = [
+        normalized_turns,
+        len(boundary_records),
+        accounting.turn_start_attempts,
+    ]
+    raw_actual_model_turns: int | None = None
+    if request.variant_id == "ss1":
+        turns = raw.get("turns")
+        if not isinstance(turns, list):
+            raise PhaseFFinalizationError("Phase F SS1 turn records are unavailable")
+        logical_counts.append(len(turns))
+        raw_actual_model_turns = _strict_nonnegative_int(
+            raw.get("actual_model_turns"),
+            "SS1 raw actual model turn count",
+        )
+    else:
+        report = raw.get("report")
+        if not isinstance(report, dict) or not isinstance(report.get("metrics"), dict):
+            raise PhaseFFinalizationError("Phase F B1 ledger report is unavailable")
+        logical_counts.append(
+            _strict_nonnegative_int(
+                report["metrics"].get("turns"),
+                "B1 ledger turn count",
+            )
+        )
+
+    if len(set(logical_counts)) != 1:
+        raise PhaseFFinalizationError("Phase F adapter turn counts differ before Judge")
+    logical_turn_count = logical_counts[0]
+    if (
+        accounting.runtime_mode is not request.runtime_mode
+        or accounting.model_turn_ceiling != request.model_turn_ceiling
+        or accounting.actual_model_turns != expected_actual_model_turns
+        or accounting.runtime_reported_model_turns != expected_actual_model_turns
+        or top_level_actual != expected_actual_model_turns
+        or (
+            raw_actual_model_turns is not None
+            and raw_actual_model_turns != expected_actual_model_turns
+        )
+    ):
+        raise PhaseFFinalizationError("Phase F authoritative turn counts differ before Judge")
+    expected_receipt_status = (
+        "simulated"
+        if request.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE
+        else "accepted"
+    )
+    if any(item.status != expected_receipt_status for item in accounting.receipts):
+        raise PhaseFFinalizationError("Phase F turn acceptance is uncertain before Judge")
+    if request.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT:
+        if logical_turn_count != expected_actual_model_turns:
+            raise PhaseFFinalizationError(
+                "Phase F live turn records differ from actual model turns"
+            )
+    elif expected_actual_model_turns != 0:
+        raise PhaseFFinalizationError("Phase F model-free result consumed model turns")
+    return accounting, logical_turn_count
 
 
 def _measurement(
@@ -500,28 +625,44 @@ class ProfileRPhaseFCellFinalizerBackend:
     def _plan(
         self,
         request: PhaseFDispatchRequest,
-    ) -> tuple[ExecutionPlan, PhaseEStageManifest]:
-        _seal, plan, _plan_bytes, stage = load_verified_phase_f_candidate(
+    ):
+        snapshot = load_verified_phase_f_candidate(
             self.repository,
             self.candidate_root,
         )
+        plan = snapshot.plan
+        stage = snapshot.stage
         planned = next((item for item in plan.cells if item.cell_id == request.cell_id), None)
+        turn_ceiling = (
+            None
+            if planned is None
+            else phase_f_cell_model_turn_ceiling(stage=stage, cell=planned)
+        )
         if (
             planned is None
             or plan.plan_fingerprint != request.plan_fingerprint
+            or snapshot.seal.seal_sha256 != request.candidate_seal_sha256
+            or snapshot.snapshot_sha256 != request.candidate_snapshot_sha256
+            or turn_ceiling != request.model_turn_ceiling
             or planned.execution_ordinal != request.execution_ordinal
             or planned.fixture_id != request.fixture_id
             or planned.variant_id != request.variant_id
         ):
             raise PhaseFFinalizationError("Phase F finalizer Plan identity differs")
-        return plan, stage
+        return snapshot
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
-        plan, stage = self._plan(request)
+        snapshot = self._plan(request)
+        plan = snapshot.plan
+        stage = snapshot.stage
         total_started = time.monotonic()
         worker_started = time.monotonic()
         worker = self.worker_backend.run_one_cell(request)
         worker_seconds = time.monotonic() - worker_started
+        if not phase_f_backend_result_matches_request(request, worker):
+            raise PhaseFFinalizationError(
+                "Phase F worker result identity differs before Judge"
+            )
         planned_cell = next(item for item in plan.cells if item.cell_id == request.cell_id)
         turn_ceiling = phase_f_cell_model_turn_ceiling(
             stage=stage,
@@ -541,6 +682,11 @@ class ProfileRPhaseFCellFinalizerBackend:
         adapter_payload = json.loads(adapter_path.read_text(encoding="utf-8"))
         if not isinstance(adapter_payload, dict):
             raise PhaseFFinalizationError("Phase F adapter Evidence is invalid")
+        _verify_adapter_turn_evidence(
+            request=request,
+            expected_actual_model_turns=worker.actual_model_turns,
+            adapter_payload=adapter_payload,
+        )
         final_root = cell_root / PHASE_F_FINAL_DIRECTORY
         judge_root = final_root / PHASE_F_JUDGE_DIRECTORY
         observation = self.judge.run(
@@ -574,9 +720,18 @@ class ProfileRPhaseFCellFinalizerBackend:
             "schema_version": 1,
             "kind": "phase_f_realistic_cell_seal",
             "experiment_id": request.experiment_id,
+            "plan_fingerprint": request.plan_fingerprint,
+            "candidate_seal_sha256": request.candidate_seal_sha256,
+            "candidate_snapshot_sha256": request.candidate_snapshot_sha256,
+            "execution_ordinal": request.execution_ordinal,
             "cell_id": request.cell_id,
+            "fixture_id": request.fixture_id,
+            "variant_id": request.variant_id,
             "request_sha256": request.request_sha256,
             "runtime_mode": request.runtime_mode.value,
+            "model_turn_ceiling": request.model_turn_ceiling,
+            "actual_model_turns": worker.actual_model_turns,
+            "adapter_evidence_path": self.worker_backend.evidence_filename,
             "worker_artifact_sha256": worker.sealed_artifact_sha256,
             "judge_observation_sha256": observation.observation_sha256,
             "measurement_sha256": sha256_bytes(measurement_bytes),
@@ -602,6 +757,7 @@ class ProfileRPhaseFCellFinalizerBackend:
                     "judge_check_success": observation.check_success,
                     "measurement_sha256": sha256_bytes(measurement_bytes),
                     "final_cell_sealed": True,
+                    "finalization_cell_root": str(cell_root.resolve()),
                     "automatic_continuation": False,
                 },
             }
@@ -631,13 +787,51 @@ def verify_phase_f_cell_finalization(
     if sha256_file(measurement_path) != seal.measurement_sha256:
         raise PhaseFFinalizationError("Phase F Measurement hash differs")
     measurement = Measurement.model_validate_json(measurement_path.read_bytes())
+    request = PhaseFDispatchRequest(
+        experiment_id=seal.experiment_id,
+        plan_fingerprint=seal.plan_fingerprint,
+        candidate_seal_sha256=seal.candidate_seal_sha256,
+        candidate_snapshot_sha256=seal.candidate_snapshot_sha256,
+        model_turn_ceiling=seal.model_turn_ceiling,
+        execution_ordinal=seal.execution_ordinal,
+        cell_id=seal.cell_id,
+        fixture_id=seal.fixture_id,
+        variant_id=seal.variant_id,
+        runtime_mode=seal.runtime_mode,
+        automatic_continuation=False,
+        request_sha256=seal.request_sha256,
+    )
+    adapter_path = (cell_root / seal.adapter_evidence_path).resolve()
+    if not adapter_path.is_relative_to(cell_root) or not adapter_path.is_file():
+        raise PhaseFFinalizationError("Phase F sealed adapter Evidence is unavailable")
+    adapter_ref = next(
+        (item for item in seal.files if item.path == seal.adapter_evidence_path),
+        None,
+    )
+    if adapter_ref is None or adapter_ref.sha256 != seal.worker_artifact_sha256:
+        raise PhaseFFinalizationError("Phase F sealed adapter identity differs")
+    adapter_payload = json.loads(adapter_path.read_text(encoding="utf-8"))
+    if not isinstance(adapter_payload, dict):
+        raise PhaseFFinalizationError("Phase F sealed adapter Evidence is invalid")
+    _accounting, logical_turn_count = _verify_adapter_turn_evidence(
+        request=request,
+        expected_actual_model_turns=seal.actual_model_turns,
+        adapter_payload=adapter_payload,
+    )
+    measurement_turn_count = measurement.resource.turn_count.value
     if (
         measurement.identity.cell_id != seal.cell_id
         or measurement.identity.experiment_id != seal.experiment_id
+        or measurement.identity.execution_ordinal != seal.execution_ordinal
+        or measurement.identity.fixture_id != seal.fixture_id
+        or measurement.identity.variant_id != seal.variant_id
         or measurement.provenance.variant_artifact_sha256
         != seal.worker_artifact_sha256
         or measurement.variant_metrics.values.get("judge_observation_sha256")
         != seal.judge_observation_sha256
+        or measurement.variant_metrics.values.get("actual_model_turns")
+        != seal.actual_model_turns
+        or measurement_turn_count != logical_turn_count
     ):
         raise PhaseFFinalizationError("Phase F Measurement identity differs from seal")
     return measurement

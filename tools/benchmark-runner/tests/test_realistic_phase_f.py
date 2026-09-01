@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -8,7 +9,9 @@ import benchmark_runner.realistic_phase_f as phase_f_module
 
 from benchmark_runner.realistic_phase_f import (
     PHASE_F_CELLS_DIRECTORY,
+    PHASE_F_BACKEND_RESULT_FILENAME,
     PHASE_F_CLAIM_FILENAME,
+    PHASE_F_STATE_FILENAME,
     PhaseFBackendResult,
     PhaseFCellLifecycle,
     PhaseFControllerError,
@@ -18,6 +21,7 @@ from benchmark_runner.realistic_phase_f import (
     phase_f_status,
     run_next_phase_f_cell,
 )
+from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.runner import sha256_bytes
 
 
@@ -47,6 +51,9 @@ class FakePhaseFBackend:
         return PhaseFBackendResult(
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
+            candidate_seal_sha256=request.candidate_seal_sha256,
+            candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+            model_turn_ceiling=request.model_turn_ceiling,
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,
@@ -87,6 +94,9 @@ class FixedLiveTurnsBackend:
         return PhaseFBackendResult(
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
+            candidate_seal_sha256=request.candidate_seal_sha256,
+            candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+            model_turn_ceiling=request.model_turn_ceiling,
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,
@@ -195,6 +205,49 @@ def test_redesigned_profile_r_accepts_candidate_ceiling_fifteen(
     assert status["automatic_continuation"] is False
 
 
+def test_result_and_state_rehash_cannot_bypass_external_cell_anchor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment_dir = _initialize(tmp_path, monkeypatch)
+    backend = FakePhaseFBackend()
+    run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+
+    result_path = next(
+        experiment_dir.joinpath(PHASE_F_CELLS_DIRECTORY).glob(
+            f"*/{PHASE_F_BACKEND_RESULT_FILENAME}"
+        )
+    )
+    result_payload = json.loads(result_path.read_text(encoding="utf-8"))
+    result_payload["outcome_state"] = "tampered_but_rehashed"
+    result_bytes = canonical_json_bytes(result_payload)
+    result_path.write_bytes(result_bytes)
+
+    state_path = experiment_dir / PHASE_F_STATE_FILENAME
+    state_payload = json.loads(state_path.read_text(encoding="utf-8"))
+    state_payload["cells"][0]["backend_result_sha256"] = sha256_bytes(result_bytes)
+    state_values = {
+        key: value for key, value in state_payload.items() if key != "state_sha256"
+    }
+    state_payload["state_sha256"] = canonical_sha256(state_values)
+    state_path.write_bytes(canonical_json_bytes(state_payload))
+
+    with pytest.raises(PhaseFControllerError, match="Cell anchor differs"):
+        phase_f_status(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+        )
+
+
 def test_redesigned_profile_r_rejects_turn_sixteen_and_stops(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -261,31 +314,32 @@ def test_legacy_profile_r_still_rejects_turn_eleven(
         )
 
 
-def test_candidate_budget_file_change_during_verification_is_rejected(
+def test_verified_candidate_snapshot_is_used_after_candidate_path_changes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     candidate = tmp_path / "candidate"
     shutil.copytree(CANDIDATE_V17_ROOT, candidate)
-    original_verify = phase_f_module.verify_phase_e_candidate
+    original_verify = phase_f_module.verify_phase_e_candidate_snapshot
+    captured = []
 
     def verify_then_mutate(repository: Path, candidate_root: Path):
-        seal = original_verify(repository, candidate_root)
+        snapshot = original_verify(repository, candidate_root)
+        captured.append(snapshot)
         stage_path = candidate_root / "stage-manifest.json"
-        stage_path.write_bytes(stage_path.read_bytes() + b" ")
-        return seal
+        stage_path.write_bytes(b"invalid after verified snapshot")
+        return snapshot
 
     monkeypatch.setattr(
         phase_f_module,
-        "verify_phase_e_candidate",
+        "verify_phase_e_candidate_snapshot",
         verify_then_mutate,
     )
+    loaded = phase_f_module.load_verified_phase_f_candidate(REPOSITORY, candidate)
 
-    with pytest.raises(
-        PhaseFControllerError,
-        match="candidate changed during verification",
-    ):
-        phase_f_module.load_verified_phase_f_candidate(REPOSITORY, candidate)
+    assert loaded is captured[0]
+    assert loaded.stage.budget.total_turn_ceiling_per_variant == 15
+    assert loaded.file_bytes("stage-manifest.json") != b"invalid after verified snapshot"
 
 
 def test_wrong_expected_ordinal_is_rejected_before_fake_backend(

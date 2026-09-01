@@ -179,3 +179,40 @@ budget이 없는 경우 candidate의 공통 Cell 상한을 적용한다.
 감사자는 코드 수정이 최소·정확·fail-closed인지와 누락된 시험을 판정한다. 기존 실패 state를
 수정하거나 기존 SS1 결과를 성공으로 재분류하는 제안은 허용하지 않는다. 새 Live 실행은
 이 감사와 새 candidate 검증 이후의 별도 사용자 승인 사항이다.
+
+## 12. 2026-09-01 적대적 감사 후속 교정
+
+외부 감사 판정은 `FIX_REQUIRED`, P0 0건, P1 5건, P2 1건이었다. §7의 최초 수정은
+정상 15-turn 결과를 저장하지 못한 직접 버그는 해결했지만 다음 교차 계약을 닫지 못했다.
+감사 원문은
+`docs/reviews/benchmark-runner/chatgpt-pro-adversarial-audit-profile-r-controller-turn-budget-v1.md`에
+보존한다.
+
+1. Worker result와 Adapter·raw·normalized·turn·boundary·ledger count의 Judge 전 일치.
+2. candidate 검증 중 A→B→A 교체 뒤 검증하지 않은 bytes를 사용하는 ABA 방어.
+3. candidate Cell ceiling을 SS1/B1의 각 호출 직전에 집행하는 선제 차단.
+4. Worker가 반환한 전체 Cell identity를 Judge 전에 확인하는 경계.
+5. state와 backend-result 동시 재해시를 execution root 밖 anchor로 검출하는 경계.
+
+후속 구현은 candidate 전체 파일을 한 번 읽은 `VerifiedPhaseECandidateSnapshot`을 Controller와
+Finalizer에 직접 전달한다. dispatch request와 backend result에는 snapshot SHA와 Cell별
+ceiling을 결합했다. SS1/B1 wrapper는 turn-start request를 내기 전에 ceiling을 검사하고,
+accepted·simulated·start-outcome-unknown receipt를 구조화해 Adapter Evidence에 기록한다.
+Finalizer는 Worker 전체 identity와 모든 count를 교차검증한 뒤에만 Judge를 호출한다.
+
+Cell seal은 candidate snapshot, ceiling, authoritative count와 Adapter path를 포함한다.
+재로딩은 Adapter·Measurement·Cell seal을 다시 검증하며, state root와 별도의 anchor root에
+초기 state 및 Cell별 hash chain을 write-once로 기록한다. one-Cell 반환값은 anchor self-hash와
+file SHA를 함께 반환하므로 운영자가 mutable execution root와 분리해 보존할 수 있다.
+
+현재 model-free 결과는 Controller·Finalizer `24 passed / 1 Docker opt-in skipped`, B1·Finalizer
+`8 passed / 1 Docker opt-in skipped`, 신규 P1 핵심 6개와 count mismatch matrix 6개 pass다.
+SS1 단독·실패 봉인 연결은 2 pass이며 Windows process inventory가 없는 sandbox 항목 2개는
+skip이다. Phase E·Controller 44개 중 43개는 pass했고, 남은 candidate 생성 시험 1개는
+변경 중인 Git tree가 clean하지 않아 의도된 사전조건에서 중단됐다.
+
+따라서 P1 source 교정은 완료됐지만 새 candidate 생성은 아직 `NO-GO`다. 다음 관문은 source를
+commit으로 고정한 뒤 clean tree에서 전체 model-free 회귀를 다시 통과시키는 것이다. 이후에만
+새 candidate→acceptance 2회→readiness를 진행한다. 기존 v17 state와 결과는 수정·재사용하지
+않는다. P2인 임의 Cell 수·B2/B3 범용 topology 분리는 기존 버그 수정과 B1 검증 뒤 별도 작업으로
+남긴다.

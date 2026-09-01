@@ -27,7 +27,10 @@ from benchmark_runner.contract import present_api_key_environment_names
 from benchmark_runner.realistic_phase_f import (
     PhaseFBackendResult,
     PhaseFDispatchRequest,
+    PhaseFModelTurnAccounting,
+    PhaseFModelTurnReceipt,
     PhaseFRuntimeMode,
+    phase_f_model_turn_receipt,
 )
 from benchmark_runner.realistic_routing import (
     BoundaryAccessObservation,
@@ -445,15 +448,44 @@ class _TurnWorkspaceRecord:
 
 
 class _WorkspaceTrackingRuntime:
-    def __init__(self, workspace: Path, delegate: SdkRuntime) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        delegate: SdkRuntime,
+        *,
+        runtime_mode: PhaseFRuntimeMode,
+        model_turn_ceiling: int,
+    ) -> None:
         self.workspace = workspace
         self.delegate = delegate
+        self.runtime_mode = runtime_mode
+        self.model_turn_ceiling = model_turn_ceiling
         self.records: list[_TurnWorkspaceRecord] = []
+        self._turn_start_attempts = 0
+        self._receipts: list[PhaseFModelTurnReceipt] = []
 
     @property
-    def actual_model_turns(self) -> int | None:
+    def actual_model_turns(self) -> int:
+        if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
+            return 0
+        return self._turn_start_attempts
+
+    @property
+    def runtime_reported_model_turns(self) -> int:
         value = getattr(self.delegate, "actual_model_turns", None)
-        return value if isinstance(value, int) and not isinstance(value, bool) else None
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise PhaseFSS1BackendError("Phase F runtime did not report model turns")
+        return value
+
+    def model_turn_accounting(self) -> PhaseFModelTurnAccounting:
+        return PhaseFModelTurnAccounting(
+            runtime_mode=self.runtime_mode,
+            model_turn_ceiling=self.model_turn_ceiling,
+            turn_start_attempts=self._turn_start_attempts,
+            actual_model_turns=self.actual_model_turns,
+            runtime_reported_model_turns=self.runtime_reported_model_turns,
+            receipts=list(self._receipts),
+        )
 
     def preflight(self) -> None:
         self.delegate.preflight()
@@ -469,12 +501,41 @@ class _WorkspaceTrackingRuntime:
         prompt: str,
         output_schema: dict[str, Any],
     ) -> SdkTurnResult:
+        if self._turn_start_attempts >= self.model_turn_ceiling:
+            raise PhaseFSS1BackendError(
+                "Phase F SS1 model turn ceiling reached before dispatch"
+            )
+        self._turn_start_attempts += 1
+        ordinal = self._turn_start_attempts
         before = _file_state(self.workspace)
-        result = self.delegate.run_turn(
-            thread,
-            task_id=task_id,
-            prompt=prompt,
-            output_schema=output_schema,
+        try:
+            result = self.delegate.run_turn(
+                thread,
+                task_id=task_id,
+                prompt=prompt,
+                output_schema=output_schema,
+            )
+        except Exception:
+            self._receipts.append(
+                phase_f_model_turn_receipt(
+                    ordinal=ordinal,
+                    task_id=task_id,
+                    status="start_outcome_unknown",
+                    turn_id=None,
+                )
+            )
+            raise
+        self._receipts.append(
+            phase_f_model_turn_receipt(
+                ordinal=ordinal,
+                task_id=task_id,
+                status=(
+                    "simulated"
+                    if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE
+                    else "accepted"
+                ),
+                turn_id=f"{thread.id}:{task_id}:{ordinal}",
+            )
         )
         after = _file_state(self.workspace)
         self.records.append(_TurnWorkspaceRecord(task_id, before, after))
@@ -681,7 +742,12 @@ class ProfileRPhaseFSS1Backend:
         tasks = build_profile_r_ss1_tasks(workspace)
         forbidden_fragments = _forbidden_prompt_fragments(self.repository)
         delegate = self.runtime_factory(workspace)
-        tracking_runtime = _WorkspaceTrackingRuntime(workspace, delegate)
+        tracking_runtime = _WorkspaceTrackingRuntime(
+            workspace,
+            delegate,
+            runtime_mode=self.runtime_mode,
+            model_turn_ceiling=request.model_turn_ceiling,
+        )
         observer = _ProfileRObserver(
             workspace,
             tracking_runtime,
@@ -705,11 +771,8 @@ class ProfileRPhaseFSS1Backend:
             )
         )
         evidence = adapter.run(CellContext(request.experiment_id, request.cell_id))
-        actual_model_turns = tracking_runtime.actual_model_turns
-        if actual_model_turns is None:
-            raise PhaseFSS1BackendError("Phase F runtime did not report model turns")
-        if self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE:
-            actual_model_turns = 0
+        turn_accounting = tracking_runtime.model_turn_accounting()
+        actual_model_turns = turn_accounting.actual_model_turns
         turns = evidence.raw_payload.get("turns")
         if not isinstance(turns, list):
             raise PhaseFSS1BackendError("SS1 adapter turn Evidence is unavailable")
@@ -754,6 +817,7 @@ class ProfileRPhaseFSS1Backend:
             "task_template_sha256": [canonical_sha256(task) for task in tasks],
             "dispatched_task_semantics_sha256": dispatched_task_semantics,
             "actual_model_turns": actual_model_turns,
+            "model_turn_accounting": turn_accounting.model_dump(mode="json"),
             "adapter_outcome_state": str(evidence.outcome_state),
             "adapter_failure_kind": evidence.failure_kind,
             "adapter_attempt_count": evidence.attempt_count,
@@ -768,6 +832,9 @@ class ProfileRPhaseFSS1Backend:
         return PhaseFBackendResult(
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
+            candidate_seal_sha256=request.candidate_seal_sha256,
+            candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+            model_turn_ceiling=request.model_turn_ceiling,
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,

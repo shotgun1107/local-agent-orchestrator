@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -18,16 +19,16 @@ if str(B1_SOURCE) not in sys.path:
 
 from orchestrator.runtime import FakeRuntime
 
-from benchmark_runner.contract import ExecutionPlan
-from benchmark_runner.realistic_phase_e import verify_phase_e_candidate
 from benchmark_runner.realistic_phase_f import (
-    PHASE_F_PLAN_FILENAME,
     PhaseFRuntimeMode,
     _request_for,
+    load_verified_phase_f_candidate,
 )
 from benchmark_runner.realistic_phase_f_b1 import (
     PHASE_F_B1_EVIDENCE_FILENAME,
     ProfileRPhaseFB1Backend,
+    PhaseFB1BackendError,
+    _BudgetedB1Runtime,
     _b1_adapter_outcome,
 )
 from benchmark_runner.realistic_phase_f_finalize import (
@@ -82,14 +83,12 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
 ) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("CODEX_API_KEY", raising=False)
-    plan = ExecutionPlan.model_validate_json(
-        (CANDIDATE_ROOT / PHASE_F_PLAN_FILENAME).read_bytes()
-    )
-    candidate_seal = verify_phase_e_candidate(REPOSITORY, CANDIDATE_ROOT)
+    snapshot = load_verified_phase_f_candidate(REPOSITORY, CANDIDATE_ROOT)
+    plan = snapshot.plan
     planned = next(item for item in plan.cells if item.execution_ordinal == 2)
     request = _request_for(
         plan=plan,
-        seal=candidate_seal,
+        snapshot=snapshot,
         cell=planned,
         runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
     )
@@ -165,3 +164,45 @@ def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(
     assert not (artifact_root / plan.cells[2].cell_id).exists()
     shutil.rmtree(check_temp_root)
     assert not check_temp_root.exists()
+
+
+def test_b1_budget_wrapper_blocks_eleventh_turn_before_delegate_call() -> None:
+    class CountingRuntime:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        @property
+        def actual_model_turns(self) -> int:
+            return self.calls
+
+        def start_turn(self, session_handle, task_envelope):
+            self.calls += 1
+            from orchestrator.runtime import TurnHandle
+
+            return TurnHandle(
+                id=f"turn-{self.calls}",
+                session=session_handle,
+                raw=None,
+                turn_no=self.calls,
+            )
+
+    delegate = CountingRuntime()
+    runtime = _BudgetedB1Runtime(
+        delegate,  # type: ignore[arg-type]
+        runtime_mode=PhaseFRuntimeMode.LIVE_CHATGPT,
+        model_turn_ceiling=10,
+    )
+    envelope = SimpleNamespace(task_id="R01")
+    session = SimpleNamespace(envelope=envelope)
+
+    for _ in range(10):
+        runtime.start_turn(session, envelope)  # type: ignore[arg-type]
+
+    with pytest.raises(PhaseFB1BackendError, match="ceiling reached before dispatch"):
+        runtime.start_turn(session, envelope)  # type: ignore[arg-type]
+
+    assert delegate.calls == 10
+    accounting = runtime.model_turn_accounting()
+    assert accounting.actual_model_turns == 10
+    assert accounting.turn_start_attempts == 10
+    assert len(accounting.receipts) == 10

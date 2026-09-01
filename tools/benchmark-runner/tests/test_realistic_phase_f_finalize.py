@@ -15,8 +15,12 @@ from benchmark_runner.realistic_phase_f import (
     PHASE_F_CLAIM_FILENAME,
     PhaseFBackendResult,
     PhaseFCellLifecycle,
+    PhaseFDispatchRequest,
     PhaseFRuntimeMode,
+    _request_for,
     initialize_phase_f_execution,
+    load_verified_phase_f_candidate,
+    phase_f_model_turn_receipt,
     phase_f_status,
     run_next_phase_f_cell,
 )
@@ -29,6 +33,7 @@ from benchmark_runner.realistic_phase_f_finalize import (
     FakePhaseFJudgePort,
     PhaseFFinalizationError,
     ProfileRPhaseFCellFinalizerBackend,
+    _verify_adapter_turn_evidence,
     verify_phase_f_cell_finalization,
 )
 from benchmark_runner.realistic_phase_f_docker import PhaseFDockerJudgePort
@@ -37,6 +42,7 @@ from benchmark_runner.realistic_phase_f_ss1 import (
     ModelFreeClearBoundaryTelemetry,
     ProfileRPhaseFSS1Backend,
 )
+from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript
 from benchmark_runner.runner import sha256_bytes, sha256_file
 
@@ -252,6 +258,9 @@ def test_over_budget_worker_result_is_rejected_before_judge(
             return PhaseFBackendResult(
                 experiment_id=request.experiment_id,
                 plan_fingerprint=request.plan_fingerprint,
+                candidate_seal_sha256=request.candidate_seal_sha256,
+                candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+                model_turn_ceiling=request.model_turn_ceiling,
                 execution_ordinal=request.execution_ordinal,
                 cell_id=request.cell_id,
                 fixture_id=request.fixture_id,
@@ -295,6 +304,248 @@ def test_over_budget_worker_result_is_rejected_before_judge(
     assert status["stopped"] is True
     assert status["cells"][0]["lifecycle"] == PhaseFCellLifecycle.FAILED.value
     assert status["cells"][0]["failure_type"] == "PhaseFFinalizationError"
+
+
+def test_evidence_sixteen_result_fifteen_is_rejected_before_judge(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        state_root=tmp_path / "state",
+    )
+
+    class MismatchedCountWorker:
+        runtime_mode = PhaseFRuntimeMode.LIVE_CHATGPT
+        artifact_root = tmp_path / "backend"
+        evidence_filename = "mismatched-adapter-evidence.json"
+
+        def run_one_cell(self, request):
+            cell_root = self.artifact_root / request.cell_id
+            (cell_root / "workspace").mkdir(parents=True)
+            receipts = [
+                phase_f_model_turn_receipt(
+                    ordinal=ordinal,
+                    task_id=f"R{min(ordinal, 13):02d}",
+                    status="accepted",
+                    turn_id=f"turn-{ordinal}",
+                ).model_dump(mode="json")
+                for ordinal in range(1, 17)
+            ]
+            payload = {
+                "schema_version": 1,
+                "kind": "phase_f_profile_r_ss1_adapter_evidence",
+                "experiment_id": request.experiment_id,
+                "cell_id": request.cell_id,
+                "request_sha256": request.request_sha256,
+                "fixture_id": request.fixture_id,
+                "variant_id": request.variant_id,
+                "runtime_mode": request.runtime_mode.value,
+                "worker_tree_final_sha256": "a" * 64,
+                "actual_model_turns": 16,
+                "model_turn_accounting": {
+                    "schema_version": 1,
+                    "basis": "turn_start_requests_issued",
+                    "runtime_mode": request.runtime_mode.value,
+                    "model_turn_ceiling": request.model_turn_ceiling,
+                    "turn_start_attempts": 16,
+                    "actual_model_turns": 16,
+                    "runtime_reported_model_turns": 16,
+                    "receipts": receipts,
+                },
+                "adapter_outcome_state": "completed",
+                "adapter_failure_kind": None,
+                "adapter_attempt_count": 1,
+                "adapter_raw_payload": {
+                    "actual_model_turns": 16,
+                    "turns": [{} for _ in range(16)],
+                    "boundary_records": [{} for _ in range(16)],
+                },
+                "adapter_normalized_metrics": {
+                    "turn_count": 16,
+                    "session_count": 1,
+                },
+            }
+            evidence_bytes = canonical_json_bytes(payload)
+            (cell_root / self.evidence_filename).write_bytes(evidence_bytes)
+            return PhaseFBackendResult(
+                experiment_id=request.experiment_id,
+                plan_fingerprint=request.plan_fingerprint,
+                candidate_seal_sha256=request.candidate_seal_sha256,
+                candidate_snapshot_sha256=request.candidate_snapshot_sha256,
+                model_turn_ceiling=request.model_turn_ceiling,
+                execution_ordinal=request.execution_ordinal,
+                cell_id=request.cell_id,
+                fixture_id=request.fixture_id,
+                variant_id=request.variant_id,
+                runtime_mode=request.runtime_mode,
+                request_sha256=request.request_sha256,
+                outcome_state="completed",
+                actual_model_turns=15,
+                sealed_artifact_sha256=sha256_bytes(evidence_bytes),
+                public_summary={},
+            )
+
+    judge = FakePhaseFJudgePort(check_success=True)
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=MismatchedCountWorker(),
+        judge=judge,
+    )
+
+    with pytest.raises(PhaseFFinalizationError, match="turn accounting is invalid"):
+        run_next_phase_f_cell(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            experiment_dir=experiment_dir,
+            backend=backend,
+            expected_execution_ordinal=1,
+            confirm_cell_dispatch=True,
+            confirm_model_usage=True,
+        )
+
+    assert judge.calls == []
+
+
+def test_worker_identity_mismatch_is_rejected_before_judge(tmp_path: Path) -> None:
+    snapshot = load_verified_phase_f_candidate(REPOSITORY, CANDIDATE_ROOT)
+    planned = next(item for item in snapshot.plan.cells if item.execution_ordinal == 1)
+    request = _request_for(
+        plan=snapshot.plan,
+        snapshot=snapshot,
+        cell=planned,
+        runtime_mode=PhaseFRuntimeMode.LIVE_CHATGPT,
+    )
+
+    class WrongIdentityWorker:
+        runtime_mode = PhaseFRuntimeMode.LIVE_CHATGPT
+        artifact_root = tmp_path / "backend"
+        evidence_filename = "unused.json"
+
+        @staticmethod
+        def run_one_cell(value):
+            return PhaseFBackendResult(
+                experiment_id=value.experiment_id,
+                plan_fingerprint=value.plan_fingerprint,
+                candidate_seal_sha256=value.candidate_seal_sha256,
+                candidate_snapshot_sha256=value.candidate_snapshot_sha256,
+                model_turn_ceiling=value.model_turn_ceiling,
+                execution_ordinal=value.execution_ordinal,
+                cell_id=value.cell_id,
+                fixture_id="wrong-fixture",
+                variant_id=value.variant_id,
+                runtime_mode=value.runtime_mode,
+                request_sha256=value.request_sha256,
+                outcome_state="completed",
+                actual_model_turns=1,
+                sealed_artifact_sha256="0" * 64,
+                public_summary={},
+            )
+
+    judge = FakePhaseFJudgePort(check_success=True)
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=WrongIdentityWorker(),
+        judge=judge,
+    )
+
+    with pytest.raises(PhaseFFinalizationError, match="identity differs before Judge"):
+        backend.run_one_cell(request)
+
+    assert judge.calls == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("top_actual", 2),
+        ("raw_actual", 2),
+        ("normalized_turns", 2),
+        ("turn_record_count", 2),
+        ("boundary_record_count", 0),
+        ("runtime_reported", 0),
+    ],
+)
+def test_turn_count_mismatch_matrix_is_rejected_before_judge_boundary(
+    field: str,
+    value: int,
+) -> None:
+    request_values = {
+        "schema_version": 1,
+        "kind": "realistic_phase_f_cell_dispatch",
+        "experiment_id": "exp_turn_matrix",
+        "plan_fingerprint": "1" * 64,
+        "candidate_seal_sha256": "2" * 64,
+        "candidate_snapshot_sha256": "3" * 64,
+        "model_turn_ceiling": 15,
+        "execution_ordinal": 1,
+        "cell_id": "cell-turn-matrix",
+        "fixture_id": "realistic-compat-migration-001",
+        "variant_id": "ss1",
+        "runtime_mode": "live_chatgpt",
+        "automatic_continuation": False,
+    }
+    request = PhaseFDispatchRequest(
+        **request_values,
+        request_sha256=canonical_sha256(request_values),
+    )
+    receipt = phase_f_model_turn_receipt(
+        ordinal=1,
+        task_id="R01",
+        status="accepted",
+        turn_id="turn-1",
+    ).model_dump(mode="json")
+    payload = {
+        "experiment_id": request.experiment_id,
+        "cell_id": request.cell_id,
+        "request_sha256": request.request_sha256,
+        "fixture_id": request.fixture_id,
+        "variant_id": request.variant_id,
+        "runtime_mode": request.runtime_mode.value,
+        "actual_model_turns": 1,
+        "model_turn_accounting": {
+            "schema_version": 1,
+            "basis": "turn_start_requests_issued",
+            "runtime_mode": request.runtime_mode.value,
+            "model_turn_ceiling": request.model_turn_ceiling,
+            "turn_start_attempts": 1,
+            "actual_model_turns": 1,
+            "runtime_reported_model_turns": 1,
+            "receipts": [receipt],
+        },
+        "adapter_raw_payload": {
+            "actual_model_turns": 1,
+            "turns": [{}],
+            "boundary_records": [{}],
+        },
+        "adapter_normalized_metrics": {"turn_count": 1},
+    }
+    if field == "top_actual":
+        payload["actual_model_turns"] = value
+    elif field == "raw_actual":
+        payload["adapter_raw_payload"]["actual_model_turns"] = value
+    elif field == "normalized_turns":
+        payload["adapter_normalized_metrics"]["turn_count"] = value
+    elif field == "turn_record_count":
+        payload["adapter_raw_payload"]["turns"] = [{} for _ in range(value)]
+    elif field == "boundary_record_count":
+        payload["adapter_raw_payload"]["boundary_records"] = [
+            {} for _ in range(value)
+        ]
+    else:
+        payload["model_turn_accounting"]["runtime_reported_model_turns"] = value
+
+    with pytest.raises(PhaseFFinalizationError):
+        _verify_adapter_turn_evidence(
+            request=request,
+            expected_actual_model_turns=1,
+            adapter_payload=payload,
+        )
 
 
 def test_final_seal_verifier_rejects_judge_file_tamper(

@@ -3003,3 +3003,31 @@ Environment Closure와 Live는 계속 `NO-GO`다.
 `DEV-20260825-001`은 R01~R13 재설계부터 readiness까지 검증돼 resolved로 닫았다. 다음
 관문은 AGENTS.md 형식의 별도 Environment Closure 턴이다. GO가 나와도 그 턴에서는
 실행하지 않고 사용자에게 제어권을 돌려준다.
+
+## Profile R Controller turn-accounting P1 교정
+
+- 작업일: 2026-09-01. candidate v17 SS1의 직접 `15 vs 10` DTO 버그 수정에 대한 외부
+  적대적 감사가 `FIX_REQUIRED`, P0 0, P1 5, P2 1을 반환했다. 원문은
+  `docs/reviews/benchmark-runner/chatgpt-pro-adversarial-audit-profile-r-controller-turn-budget-v1.md`에
+  보존했다.
+- Phase E candidate verifier는 전체 candidate file set을 한 번 읽은 immutable
+  `VerifiedPhaseECandidateSnapshot`을 반환하고 Controller와 Finalizer는 검증된 bytes와
+  파싱 객체만 사용한다. dispatch request와 backend result는 candidate snapshot SHA와
+  Cell별 model-turn ceiling을 직접 포함한다.
+- SS1과 B1은 공통 turn-start accounting으로 각 호출 직전에 ceiling을 검사한다. issued
+  start request와 accepted·simulated·unknown receipt, runtime reported count를 Adapter
+  Evidence에 남기며 B1의 고정 `max_turns_override=15`는 제거했다.
+- Finalizer는 Worker 전체 identity와 Adapter top/raw/normalized/ledger/turn/boundary/receipt
+  count를 Judge 전에 교차검증한다. Cell seal과 Measurement 재검증도 같은 authoritative
+  count를 사용한다.
+- state root 밖 별도 anchor root에 초기 state와 Cell별 backend-result/final-seal hash chain을
+  write-once로 기록한다. one-Cell 반환값은 anchor self-hash와 file SHA를 함께 반환한다.
+  Live 전에는 anchor 경로·ACL과 반환 SHA의 별도 보존 절차를 Environment Closure에서 확인해야
+  한다.
+- 신규 P1 핵심 6개와 mismatch matrix 6개, Controller·Finalizer 24개, B1·Finalizer 8개가
+  model-free로 통과했다. SS1 단독·실패 봉인 연결 2개도 통과했고 Windows process inventory
+  의존 2개와 Docker opt-in은 skip이다. Phase E·Controller 44개 중 43개는 통과했고 clean
+  source를 요구하는 candidate 생성 1개는 현재 uncommitted 변경 때문에 사전조건에서 중단됐다.
+- 새 candidate, acceptance, readiness와 Live는 생성·실행하지 않았다. 다음 관문은 source
+  commit 후 clean tree 전체 model-free 회귀다. 기존 v17 state는 재사용하지 않으며 generic
+  B2/B3 topology P2는 B1 검증 뒤 별도 작업으로 남긴다.
