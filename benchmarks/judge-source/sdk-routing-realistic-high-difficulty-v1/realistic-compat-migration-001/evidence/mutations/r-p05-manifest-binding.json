@@ -4,7 +4,7 @@
   "cell_id": "r-p05-manifest-binding",
   "checker_run_status": "completed",
   "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
-  "envelope_sha256": "b0449721f6e7e66f20bb576e4a942c28f461504454ccc95d4e999e461f2b6ee8",
+  "envelope_sha256": "59e971a67899e9879f487d04bd081907b86f2c14506e4aacb68d09424a213b8c",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "0869810eec8e237702c9bb1f59d08f69cb54864c4bc4003e3c88e2feb8a942da",
-  "workspace_before_sha256": "0869810eec8e237702c9bb1f59d08f69cb54864c4bc4003e3c88e2feb8a942da",
+  "workspace_after_sha256": "bc6f7f8d4494485aacb1419eff7350f3c499c137a82df15e82292e64bfd97cd7",
+  "workspace_before_sha256": "bc6f7f8d4494485aacb1419eff7350f3c499c137a82df15e82292e64bfd97cd7",
   "workspace_mutated": false
 }

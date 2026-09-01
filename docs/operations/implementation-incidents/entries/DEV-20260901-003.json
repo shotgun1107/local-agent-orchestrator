@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260901-003",
+  "title": "Profile R reference chain 교체 후 protected Judge workspace Evidence를 재생성하지 않음",
+  "status": "resolved",
+  "stage": "profile-r-docker-judge-q20",
+  "category": "integration",
+  "discovered_at": "2026-09-01T06:04:02Z",
+  "resolved_at": "2026-09-01T06:15:33Z",
+  "discovered_by": "q20 model-free Docker Judge matrix",
+  "symptom": "reference와 13개 negative mutation의 Judge property 결과는 모두 기대와 같았지만 14개 셀 전부 WORKSPACE_BEFORE_MISMATCH와 WORKSPACE_AFTER_MISMATCH로 qualification expectation을 충족하지 못했다.",
+  "reproduction": [
+    "public checker를 교정하고 Worker snapshot과 reference chain을 재생성한 source af7f50055a07b1c31b4aa4c972d2c9f3f3d912fb에서 q20 14-cell Docker matrix를 실행한다.",
+    "reference Cell의 protected expected workspace 45e695c72b16805776d684aa07ef2e748c5482ef0bd8515c3957919808f091b8와 실제 workspace 744f5ede0695562221bf560577d82e804564aa77e38339076dd18fd101f7693e가 다르고 모든 Cell이 같은 두 mismatch code를 기록한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "q20 sealed result는 CHALLENGE_NOT_READY, expectation match 0/14, file_count 72, seal f55996ab8df68fd3e6d57ef4bf2b567a3005fa0d043e7269a0ae084cc12685ba다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "reference는 13 property pass이고 13개 mutation도 각 target property fail이라 Judge 판정 오류가 아니라 workspace identity Evidence 불일치로 격리됐다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "Docker matrix plan은 judge-source evidence/reference.json과 evidence/mutations/*.json의 workspace_after_sha256을 expected identity로 사용한다. reference chain 재생성 단계는 이 protected evidence를 갱신하지 않았다."
+    }
+  ],
+  "root_cause": "Worker baseline 변경의 의존 범위를 reference repository까지만 갱신하고, 같은 baseline에서 파생되는 protected Judge reference/mutation Evidence와 bundle manifest를 재생성하지 않았다. Docker 실행 전 현재 Worker workspace와 protected expected workspace 14개를 대조하는 preflight도 없었다.",
+  "considered_options": [
+    {
+      "option": "q20 결과에서 workspace mismatch만 무시하거나 expected hash를 raw 결과로 소급 변경",
+      "decision": "rejected",
+      "reason": "sealed expectation을 실행 뒤 바꾸면 qualification의 사전등록성과 fail-closed 계약을 훼손한다"
+    },
+    {
+      "option": "q20을 실패 Evidence로 보존하고 Judge source bundle 전체를 새 baseline에서 재생성한 뒤 새 q21 사용",
+      "decision": "adopted",
+      "reason": "reference·mutation·public contract·정보 경계를 함께 재검증하고 새 source identity에서 독립 qualification할 수 있다"
+    }
+  ],
+  "resolution": "build_profile_r_judge_bundle.py를 새 Worker baseline에서 model-free 실행해 reference, pristine, 13개 mutation, public negative matrix와 bundle manifest를 재생성했다. 재생성된 protected workspace hash 14개를 q20의 실제 Docker 관측값과 대조해 14/14 exact 일치를 확인했다.",
+  "affected_files": [
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/bundle-manifest.json",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/reference.json",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/mutations"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py",
+    "tools/benchmark-runner/tests/test_realistic_docker_judge_matrix.py",
+    "tools/benchmark-runner/tests/test_profile_r_redesign.py"
+  ],
+  "verification": [
+    "Judge source bundle PROFILE_R_SOURCE_BUNDLE_VERIFIED, file_count 47, payload aggregate ee01f8c515e62b34c14441087ee07fdddc2c0ff38546324ae64dc7ddc49463ff",
+    "q20 actual workspace와 regenerated protected expected workspace 14/14 exact 일치",
+    "관련 model-free 회귀 36 passed in 24.69s",
+    "q20 residual Profile R container 0, actual model turn 0"
+  ],
+  "remaining_risks": [
+    "교정된 Judge source는 아직 fresh q21 Docker qualification을 통과하지 않았다.",
+    "q21 통과 전 Task Pack q2, candidate, acceptance와 Live는 NO-GO다."
+  ],
+  "related_commits": [
+    "af7f50055a07b1c31b4aa4c972d2c9f3f3d912fb"
+  ],
+  "source_references": [
+    "benchmarks/artifacts/profile-r-docker-judge-qualification-v17/qualification.json",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q20-company-result.md",
+    "tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py"
+  ]
+}
