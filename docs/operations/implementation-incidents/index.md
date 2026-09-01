@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 64건
-- 해결: 61건
+- 해결: 62건
 - 조사 중: 2건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -76,7 +76,7 @@
 | DEV-20260825-001 | resolved | phase-f-profile-r-b1 | test | Profile R R07 공개 회귀가 Worker 저장소에 없는 frozen commit을 요구함 |
 | DEV-20260827-001 | resolved | phase-f-profile-r-ss1 | integration | Profile R 15-turn 완료 결과를 Phase F의 과거 10-turn 상한이 거부함 |
 | DEV-20260901-001 | resolved | phase-f-profile-r-controller-hardening | integration | Profile R turn-budget 수정이 Worker 호출·Evidence·candidate snapshot·봉인 anchor를 하나의 계약으로 묶지 않음 |
-| DEV-20260901-002 | open | phase-f-profile-r-exact-candidate-acceptance-v10 | implementation | Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음 |
+| DEV-20260901-002 | resolved | phase-f-profile-r-exact-candidate-acceptance-v10 | implementation | Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4156,11 +4156,11 @@ Phase E verifier가 candidate 전 파일을 한 번만 읽은 immutable Verified
 
 ## DEV-20260901-002 — Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-exact-candidate-acceptance-v10`
 - 분류: `implementation`
 - 발견: 2026-09-01T04:17:32Z / model-free exact-candidate acceptance preflight
-- 해결: 미해결
+- 해결: 2026-09-01T04:43:00Z
 
 ### 증상
 
@@ -4179,36 +4179,45 @@ R11 public contract가 PRODUCT_ASSERTION 진단을 정상 출력한 뒤 UnboundL
 
 ### 근본 원인
 
-미확인
+PublicContractError 처리기가 environment diagnostic의 생성과 출력을 diagnostic_result 출력 블록 안에 잘못 중첩했다. 그 결과 제품 실패에서는 할당되지 않은 diagnostic을 읽었고, diagnostic_result가 없는 순수 환경 실패에서는 필요한 환경 진단을 출력하지 않았다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` diagnostic 변수를 except 블록 시작에서 빈 값으로 초기화 — 제품 실패에 가짜 환경 진단을 붙이거나 순수 환경 실패의 진단 누락을 그대로 둘 수 있다
+- `adopted` 구조화 제품 진단과 환경 진단의 출력 조건을 독립시키고 혼합 실패만 두 기록을 함께 출력 — PRODUCT_ASSERTION, ENVIRONMENT, MIXED_PRODUCT_AND_ENVIRONMENT의 의미와 B1 진단 parser 계약을 정확히 보존한다
 
 ### 채택한 해결
 
-미해결
+diagnostic_result는 존재할 때 failure class와 독립적으로 한 번 출력한다. environment diagnostic은 failure class가 ENVIRONMENT 또는 MIXED_PRODUCT_AND_ENVIRONMENT일 때만 별도 생성·출력한다. Worker public overlay와 생성된 workspace를 같은 bytes로 맞추고 snapshot manifest를 builder 결과와 exact 일치시켰다. 제품·환경·혼합 실패의 출력 순서와 marker 집합을 전용 회귀로 고정했다.
 
 ### 수정 파일
 
-- 기록 없음
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
 
 ### 회귀시험
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_public_check_main_separates_structured_failure_diagnostics
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_environment_marker_hashes_stderr_without_leaking_it
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_executes_and_rejects_an_assert_false_regression
 
 ### 검증 결과
 
-- 기록 없음
+- 제품·환경·혼합 전용 회귀와 public checker compile 3 passed
+- public checker 전체, R07 적대적 검사, B1 verify와 Phase F B1 경계 69 passed in 24.71s on clean commit c5f9a02459ef67d763dc8be47c7a9f15ebd96db3
+- Worker snapshot builder 임시 재생성 결과가 checked-in workspace와 manifest에 byte-for-byte 일치하고 file_count 130, aggregate d071f4ad25bb21243621306145f8e78b801d14cfbcbe43d7c467ad21ea732545로 확인됨
+- git diff --check 통과
 
 ### 남은 위험
 
-- 제품 assertion 실패 시 원래 구조화 진단 뒤 2차 traceback이 추가되어 failure classification과 Worker feedback의 완전성을 해칠 수 있다.
-- 결함이 candidate v18 Worker-visible bytes에 포함되어 있어 수정 후 기존 v18 acceptance chain을 이어갈 수 없다.
+- Worker baseline tree와 public Check bytes가 바뀌었으므로 기존 q19, Task Pack q1, candidate v18과 acceptance run 1은 새 성공 근거로 재사용할 수 없다.
+- 새 reference chain, Judge qualification, Task Pack qualification과 candidate가 봉인될 때까지 acceptance와 Live는 NO-GO다.
 
 ### 추적 정보
 
-- 관련 커밋: 4cb6810d3a17e122d969ba624ac4533af988d037
+- 관련 커밋: 4cb6810d3a17e122d969ba624ac4533af988d037, c5f9a02459ef67d763dc8be47c7a9f15ebd96db3
 - 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v10-run1-result.md
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py

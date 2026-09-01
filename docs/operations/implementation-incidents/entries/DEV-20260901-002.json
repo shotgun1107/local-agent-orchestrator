@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260901-002",
   "title": "Profile R public checker가 제품 실패 진단 뒤 미할당 환경 진단 변수를 읽음",
-  "status": "open",
+  "status": "resolved",
   "stage": "phase-f-profile-r-exact-candidate-acceptance-v10",
   "category": "implementation",
   "discovered_at": "2026-09-01T04:17:32Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-01T04:43:00Z",
   "discovered_by": "model-free exact-candidate acceptance preflight",
   "symptom": "R11 public contract가 PRODUCT_ASSERTION 진단을 정상 출력한 뒤 UnboundLocalError를 추가로 발생시켜 실패 경로의 환경 진단과 Worker feedback 계약을 끝까지 수행하지 못했다.",
   "reproduction": [
@@ -28,22 +28,48 @@
       "detail": "12자리 Check TEMP 식별자를 사용한 preflight r3과 공식 acceptance run 1의 양성 경로는 각각 통과했지만 제품 실패 분기 자체를 교정하거나 회귀검증하지는 않았다."
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
+  "root_cause": "PublicContractError 처리기가 environment diagnostic의 생성과 출력을 diagnostic_result 출력 블록 안에 잘못 중첩했다. 그 결과 제품 실패에서는 할당되지 않은 diagnostic을 읽었고, diagnostic_result가 없는 순수 환경 실패에서는 필요한 환경 진단을 출력하지 않았다.",
+  "considered_options": [
+    {
+      "option": "diagnostic 변수를 except 블록 시작에서 빈 값으로 초기화",
+      "decision": "rejected",
+      "reason": "제품 실패에 가짜 환경 진단을 붙이거나 순수 환경 실패의 진단 누락을 그대로 둘 수 있다"
+    },
+    {
+      "option": "구조화 제품 진단과 환경 진단의 출력 조건을 독립시키고 혼합 실패만 두 기록을 함께 출력",
+      "decision": "adopted",
+      "reason": "PRODUCT_ASSERTION, ENVIRONMENT, MIXED_PRODUCT_AND_ENVIRONMENT의 의미와 B1 진단 parser 계약을 정확히 보존한다"
+    }
+  ],
+  "resolution": "diagnostic_result는 존재할 때 failure class와 독립적으로 한 번 출력한다. environment diagnostic은 failure class가 ENVIRONMENT 또는 MIXED_PRODUCT_AND_ENVIRONMENT일 때만 별도 생성·출력한다. Worker public overlay와 생성된 workspace를 같은 bytes로 맞추고 snapshot manifest를 builder 결과와 exact 일치시켰다. 제품·환경·혼합 실패의 출력 순서와 marker 집합을 전용 회귀로 고정했다.",
+  "affected_files": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_public_check_main_separates_structured_failure_diagnostics",
+    "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_environment_marker_hashes_stderr_without_leaking_it",
+    "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py::test_r07_executes_and_rejects_an_assert_false_regression"
+  ],
+  "verification": [
+    "제품·환경·혼합 전용 회귀와 public checker compile 3 passed",
+    "public checker 전체, R07 적대적 검사, B1 verify와 Phase F B1 경계 69 passed in 24.71s on clean commit c5f9a02459ef67d763dc8be47c7a9f15ebd96db3",
+    "Worker snapshot builder 임시 재생성 결과가 checked-in workspace와 manifest에 byte-for-byte 일치하고 file_count 130, aggregate d071f4ad25bb21243621306145f8e78b801d14cfbcbe43d7c467ad21ea732545로 확인됨",
+    "git diff --check 통과"
+  ],
   "remaining_risks": [
-    "제품 assertion 실패 시 원래 구조화 진단 뒤 2차 traceback이 추가되어 failure classification과 Worker feedback의 완전성을 해칠 수 있다.",
-    "결함이 candidate v18 Worker-visible bytes에 포함되어 있어 수정 후 기존 v18 acceptance chain을 이어갈 수 없다."
+    "Worker baseline tree와 public Check bytes가 바뀌었으므로 기존 q19, Task Pack q1, candidate v18과 acceptance run 1은 새 성공 근거로 재사용할 수 없다.",
+    "새 reference chain, Judge qualification, Task Pack qualification과 candidate가 봉인될 때까지 acceptance와 Live는 NO-GO다."
   ],
   "related_commits": [
-    "4cb6810d3a17e122d969ba624ac4533af988d037"
+    "4cb6810d3a17e122d969ba624ac4533af988d037",
+    "c5f9a02459ef67d763dc8be47c7a9f15ebd96db3"
   ],
   "source_references": [
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/workspace/benchmark_checks/check_profile_r.py",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v10-run1-result.md",
-    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py"
   ]
 }
