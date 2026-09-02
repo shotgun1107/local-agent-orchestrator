@@ -3276,3 +3276,23 @@ candidate, acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 candidate v20 independent model-free acceptance run 1이다. acceptance 2와
 readiness, Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v20 preflight와 Windows atomic replace 교정
+
+- 작업일: 2026-09-02. 첫 v20 preflight는 SS1/B1 model-free 실행 뒤 exact command Evidence
+  환경변수 누락으로 export 직전에 실패했다. 사용자 승인 뒤 새 경로에서 다시 실행했다.
+- 두 번째 preflight는 B1 R13 누적 r11_contract에서 runner.atomic_write의 os.replace가
+  WinError 5를 반환했다. report는 checks 100 pass/1 fail/101 records이며 checker는 정확히
+  ENVIRONMENT, product failure false로 분류했고 제품 retry는 없었다.
+- 이는 open 사건 `DEV-20260807-001`의 동일 경로 재발이다. Windows에서만 10ms×20회 bounded
+  retry를 적용하고 같은 temp·fsync·same-directory replace·cleanup을 유지했다. 지속 실패는
+  최종 PermissionError로 남는다.
+- Profile R Worker에는 runner.py 하나만 명시적 public infrastructure override로 결합했다.
+  source `b74239e15744d63a4ef774bfa56cdee789b0d045`, tree
+  `776e961efbfc350425941d69ff4a0be696c6c97a`, Worker aggregate
+  `01bc5a54...76e7`이다.
+- 재시도 성공·budget 소진·원본 보존·cleanup·Worker boundary 4 passed와 Runner/S1/S2 관련
+  40 passed를 확인했다. 두 실패 preflight와 candidate v20은 성공 근거로 재사용하지 않는다.
+
+다음 관문은 새 reference chain→Judge qualification→Task Pack qualification→candidate다.
+official acceptance, readiness, Environment Closure와 Live는 계속 `NO-GO`다.

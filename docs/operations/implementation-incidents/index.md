@@ -6,8 +6,8 @@
 ## 요약
 
 - 전체: 67건
-- 해결: 65건
-- 조사 중: 2건
+- 해결: 66건
+- 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -48,7 +48,7 @@
 | DEV-20260806-010 | resolved | benchmark-runner-f1 | design | F1 B0 wall-clock에 사용자 주의 지연 혼입 |
 | DEV-20260806-011 | resolved | benchmark-runner-track-a | integration | 중첩 codex exec가 부모 읽기 전용 권한 프로필 상속 |
 | DEV-20260806-012 | investigating | benchmark-runner-track-a | integration | standalone codex exec가 workspace 내부 patch를 외부 쓰기로 오판 |
-| DEV-20260807-001 | investigating | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 간헐적 접근 거부 |
+| DEV-20260807-001 | resolved | sdk-controlled-comparison | tooling | SDK Runtime 전체 회귀 중 Windows os.replace 간헐적 접근 거부 |
 | DEV-20260807-002 | resolved | sdk-controlled-pilot | integration | SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김 |
 | DEV-20260807-003 | resolved | sdk-routing-suite-v1 | test | 라우팅 스위트 초안이 단일 pair 교정을 route 판단으로 확대함 |
 | DEV-20260807-004 | resolved | sdk-routing-suite-v1 | implementation | S1 status loader가 ExecutionPlan track 직접 필드를 가정함 |
@@ -2122,11 +2122,11 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 
 ## DEV-20260807-001 — SDK Runtime 전체 회귀 중 Windows os.replace 간헐적 접근 거부
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `sdk-controlled-comparison`
 - 분류: `tooling`
 - 발견: 2026-08-07T00:20:30Z / Benchmark Runner 183개 전체 회귀
-- 해결: 미해결
+- 해결: 2026-09-02T01:06:48Z
 
 ### 증상
 
@@ -2142,30 +2142,40 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 - `direct-observation`: 같은 단일 시험을 새 basetemp에서 즉시 재실행해 1 passed, Runner 전체를 독립 실행해 183 passed를 확인했다
 - `direct-observation`: S1 8-Cell 확장 뒤 전체 회귀에서 cell_s1_sequential-code-change_1_c2의 PREPARED 상태 저장 중 같은 WinError 5가 다시 발생해 191 passed, 1 failed가 됐다
 - `direct-observation`: 새 basetemp에서 해당 8-Cell 시험은 1 passed, Runner 전체는 192 passed로 즉시 재검증됐다
+- `direct-observation`: candidate v19 preflight의 R12와 candidate v20 preflight의 R11이 각각 runner.atomic_write os.replace에서 WinError 5를 반환했다
+- `source-inspection`: Judge process record에는 Windows PermissionError 한정 10ms×20회 bounded retry가 있었지만 일반 Runner atomic_write에는 단일 os.replace만 있었다
+- `reproducible-test`: 첫 두 replace가 PermissionError인 경우 성공하고 20회 모두 실패하면 원본을 보존한 채 최종 PermissionError를 전파하는 단위시험을 추가했다
 
 ### 근본 원인
 
-미확인. 서로 다른 Cell과 상태 전이에서 두 차례 발생했으므로 단발성으로 볼 수 없지만, 두 경우 모두 새 basetemp의 단일 시험과 독립 전체 회귀에서는 즉시 통과했다. Windows 외부 프로세스의 순간 파일 점유 또는 파일시스템 필터 가능성은 있으나 점유 주체를 직접 관측하지 못했다
+같은 디렉터리 임시 파일을 fsync한 뒤 os.replace하는 원자성은 지켰지만 Windows에서 짧게 발생하는 destination 공유 잠금을 일반 Runner atomic_write가 한 번의 replace 실패로 영구 오류 처리했다. 점유 주체 자체는 직접 관측하지 못했지만 서로 다른 날짜와 Cell에서 동일 WinError 5가 반복됐고 Judge의 동일 원자 교체 경로에는 이미 bounded retry가 필요했다.
 
 ### 검토한 해결안
 
 - `rejected` atomic_write에 PermissionError 자동 재시도를 즉시 추가 — 단 한 번의 비재현 환경 실패만으로 동시성 또는 권한 결함을 가리면 원인을 숨길 수 있다
 - `adopted` 새 basetemp에서 단일 실패 시험과 전체 Runner 회귀를 독립 재실행 — 코드 결함과 병렬 실행 환경의 일시적 간섭을 구분하면서 원래 실패 기록도 보존한다
-- `deferred` 두 번째 관측만으로 atomic_write에 즉시 재시도를 추가 — 재발은 확인됐지만 점유 주체와 지속시간을 모르는 상태에서 재시도를 넣으면 실제 동시 writer 결함을 숨길 수 있어 별도 revision의 계측과 정책 결정이 필요하다
+- `adopted` 두 번째 관측만으로 atomic_write에 즉시 재시도를 추가 — candidate v19와 v20에서도 같은 원자 교체가 반복 실패해 단발성 가설이 기각됐고, Windows 한정 200ms budget 뒤에는 원래 오류를 그대로 전파해 지속 권한 오류와 동시 writer 결함을 숨기지 않는다
 
 ### 채택한 해결
 
-미해결
+Runner atomic_write에 Windows PermissionError 한정 10ms 간격 최대 20회 bounded retry를 추가했다. 같은 임시 파일, fsync, same-directory os.replace와 최종 cleanup을 유지하고 200ms를 넘는 지속 실패는 그대로 예외로 전파한다. Profile R Worker snapshot에는 runner.py 하나만 명시적 public infrastructure override로 결합했다.
 
 ### 수정 파일
 
-- 기록 없음
+- tools/benchmark-runner/src/benchmark_runner/runner.py
+- tools/benchmark-runner/tests/test_runner.py
+- tools/benchmark-runner/scripts/build_profile_r_worker_snapshot.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-source-allowlist.json
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/tools/benchmark-runner/src/benchmark_runner/runner.py
 
 ### 회귀시험
 
 - tools/benchmark-runner/tests/test_sdk_cells.py::test_nine_failure_cells_share_one_plan_and_all_seal
 - tools/benchmark-runner/tests/test_routing_suite.py::test_all_eight_model_free_cells_seal_export_and_detect_tampering
 - tools/benchmark-runner/tests 전체
+- tools/benchmark-runner/tests/test_runner.py::test_atomic_write_retries_transient_windows_permission_error
+- tools/benchmark-runner/tests/test_runner.py::test_atomic_write_preserves_failure_after_windows_retry_budget
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_literals
 
 ### 검증 결과
 
@@ -2173,16 +2183,22 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 - 병렬 B1 실행과 분리한 Benchmark Runner 전체 회귀 183 passed
 - 두 번째 관측 뒤 새 basetemp에서 S1 8-Cell 시험 1 passed
 - 두 번째 관측 뒤 독립 Benchmark Runner 전체 회귀 192 passed
+- atomic retry와 Worker boundary targeted regression 4 passed
+- Runner, SDK Cell, S2, S1 관련 회귀 40 passed
+- Worker deterministic builder exact byte equality, aggregate 01bc5a541ed3722e598992904f8e43f2dd2a5670fb886a08eaf9019afbf276e7
+- actual model turn, SDK thread/start, turn/start and Docker workload count 0
 
 ### 남은 위험
 
-- Windows 외부 파일 점유를 계측하지 않아 원인이 미확인이다
-- 제한된 원자 쓰기 재시도는 동시 writer를 숨기지 않는 조건과 함께 별도 revision에서 설계해야 한다
+- Windows 외부 점유 주체 자체는 직접 계측하지 못했다
+- 200ms를 넘는 지속 권한 오류는 의도대로 environment failure로 남는다
+- 새 Worker bytes는 reference, Judge, Task Pack과 candidate를 다시 봉인해야 한다
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: b74239e15744d63a4ef774bfa56cdee789b0d045
 - 출처: docs/operations/codex-revision-log.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v12-preflight-result.md
 
 ## DEV-20260807-002 — SDK pilot preflight에서 관리형 sandbox가 ChatGPT 인증을 숨김
 
