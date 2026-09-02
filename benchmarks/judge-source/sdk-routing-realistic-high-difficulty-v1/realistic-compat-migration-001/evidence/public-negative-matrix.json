@@ -301,7 +301,7 @@
         "contract_rejected": true,
         "return_code": 1,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "9a7db12dbc1fc4a1fd3adf93f21d8f11e38e79652a146c1af43a0e14ce53d3ed",
+        "stdout_sha256": "a39cd67ff534e96569d8ef37e1986131a914337ac41043ee037722e2edf033f5",
         "task_id": "R11"
       },
       "statuses": {
