@@ -3416,3 +3416,18 @@ readiness, Environment Closure와 Live는 `NO-GO`다.
 
 다음 관문은 별도 승인 뒤 새 경로에서 전용 Python으로 수행하는 candidate v21 model-free
 preflight다. official acceptance, readiness, Environment Closure와 Live는 `NO-GO`다.
+
+## Profile R candidate v21 acceptance v13 preflight r2 통과
+
+- 작업일: 2026-09-02. 사용자 재승인 뒤 기존 실패 경로를 보존하고 전용 test Python,
+  `C:\pfa21p-2`와 `C:\pf-v21-acceptance-preflight-2`에서 harness를 다시 실행했다.
+- 전용 Python SHA-256은 봉인된 benchmark Python identity `0b471133...14`와 같고 dependency
+  isolated import probe를 통과했다.
+- 결과는 `10 passed in 421.06s`다. 두 변형 모두 SS1/B1만 `SEALED`, Cell 3·4 `PLANNED`,
+  public contract 13/13, 누적 Check 104/104, actual model turn 0이다.
+- 두 Evidence manifest는 각각 12/12 exact hash가 일치하고 external temp, child process와
+  active lock residue는 모두 0이다.
+- 실패 v13 preflight는 수정·재분류하지 않았고 `DEV-20260902-003`만 해결 상태로 전환했다.
+
+다음 관문은 independent official acceptance run 1이다. run 2, readiness, Environment Closure와
+Live는 `NO-GO`다.
