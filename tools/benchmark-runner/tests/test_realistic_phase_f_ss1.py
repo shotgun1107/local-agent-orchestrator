@@ -75,7 +75,7 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v20"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v21"
 )
 REFERENCE_PATCH = (
     REPOSITORY
