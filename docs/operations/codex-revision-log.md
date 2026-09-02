@@ -3255,3 +3255,24 @@ candidate, acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 q22 qualification v19와 q3 qualification/budget의 exact file SHA·seal을 직접
 결합한 새 Phase E candidate다. acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R q22·q3 Phase E candidate v20
+
+- 작업일: 2026-09-02. stage를 q22 qualification v19와 Task Pack q3/budget으로 전환한 source
+  `df5c6648b3ecbf10d243484b033c7827587b3600`, tree
+  `a8ecfa70f4b97d68e7067a8a72ab82edda2214ae`를 원격에 고정했다.
+- stage와 Phase E/Profile R 자격 회귀는 clean tree에서 47 passed다.
+- candidate v20은 experiment `exp_20260902_16d616c2_1`, Plan
+  `16d616c2...14d2`, bindings `4707cb18...473d`, seal `1745413d...97a7`, seal file
+  `bfbd5e49...5176`, files manifest `bf0a62ff...a224`다.
+- q22 file/seal `b4e0753d...c40f` / `553d5327...d397`, q3 file/seal
+  `601a699e...b992` / `72455822...c62`, budget file/seal `43ef9edd...d39f` /
+  `5cb10ca6...0c2d`, Docker environment `e6c5e425...8822`를 bindings와 Plan에 직접 결합했다.
+- 첫 생성은 ChatGPT login 부재로 output 생성 전에 중단됐다. 공식 browser login 완료 뒤
+  SDK 0-turn preflight가 ChatGPT account, SDK 0.144.4와 `gpt-5.6-sol` visibility를 확인했다.
+  API-key 환경 이름, SDK thread/start, turn/start와 model turn은 0이다.
+- 생성기 내부 verifier, 별도 process verifier와 checked-in v20 회귀가 통과했다. q21/q2,
+  v19 candidate와 실패 preflight는 수정하지 않았다.
+
+다음 관문은 candidate v20 independent model-free acceptance run 1이다. acceptance 2와
+readiness, Environment Closure와 Live는 계속 `NO-GO`다.
