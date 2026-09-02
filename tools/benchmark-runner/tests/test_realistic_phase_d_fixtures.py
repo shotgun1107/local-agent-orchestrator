@@ -250,9 +250,13 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
     assert manifest["status"] == "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE"
     assert manifest["challenge_ready"] is False
     overlay_files = _workspace_files(PUBLIC_OVERLAY_ROOT)
+    override_paths = allowlist["overlay_override_paths"]
     assert manifest["base_file_count"] == allowlist["expected_file_count"] == 115
     assert manifest["public_overlay_file_count"] == len(overlay_files)
-    assert manifest["file_count"] == len(files) == allowlist["expected_file_count"] + len(overlay_files)
+    assert manifest["public_overlay_override_paths"] == override_paths
+    assert manifest["file_count"] == len(files) == (
+        allowlist["expected_file_count"] + len(overlay_files) - len(override_paths)
+    )
     assert relative_paths == [record["path"] for record in manifest["files"]]
     for path, record in zip(files, manifest["files"], strict=True):
         payload = path.read_bytes()
@@ -272,6 +276,12 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
             assert literal.encode("utf-8") not in payload
         for pattern in mapping["forbidden_worker_regexes"]:
             assert re.search(pattern.encode("ascii"), payload) is None
+    runner_record = next(
+        record
+        for record in manifest["files"]
+        if record["path"] == "tools/benchmark-runner/src/benchmark_runner/runner.py"
+    )
+    assert runner_record["provenance"] == "public_requirement"
 
 
 def test_profile_r_judge_builder_rejects_extra_worker_cache_before_derivation(

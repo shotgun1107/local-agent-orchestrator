@@ -5,14 +5,76 @@ from pathlib import Path
 
 import pytest
 
+import benchmark_runner.runner as runner_module
 from benchmark_runner.contract import CellLifecycleState, CellStateRecord, Measurement
-from benchmark_runner.runner import IntegrityError, run_r0_fake_cell, verify_sealed_cell
+from benchmark_runner.runner import (
+    WINDOWS_ATOMIC_REPLACE_ATTEMPTS,
+    IntegrityError,
+    atomic_write,
+    run_r0_fake_cell,
+    verify_sealed_cell,
+)
 
 FROZEN_TIME = datetime(2026, 8, 5, tzinfo=timezone.utc)
 
 
 def _cell_dir(measurement_path: str) -> Path:
     return Path(measurement_path).parents[1]
+
+
+def test_atomic_write_retries_transient_windows_permission_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "state.json"
+    original_replace = runner_module.os.replace
+    attempts = 0
+    delays: list[float] = []
+
+    def transient_replace(source: Path, destination: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise PermissionError(5, "transient Windows sharing lock")
+        original_replace(source, destination)
+
+    monkeypatch.setattr(runner_module.os, "name", "nt")
+    monkeypatch.setattr(runner_module.os, "replace", transient_replace)
+    monkeypatch.setattr(runner_module.time, "sleep", delays.append)
+
+    atomic_write(target, b'{"state":"SEALED"}')
+
+    assert attempts == 3
+    assert delays == [0.01, 0.01]
+    assert target.read_bytes() == b'{"state":"SEALED"}'
+    assert list(tmp_path.glob(".*.tmp")) == []
+
+
+def test_atomic_write_preserves_failure_after_windows_retry_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "state.json"
+    target.write_bytes(b"original")
+    attempts = 0
+    delays: list[float] = []
+
+    def persistent_replace(_source: Path, _destination: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        raise PermissionError(5, "persistent Windows access denial")
+
+    monkeypatch.setattr(runner_module.os, "name", "nt")
+    monkeypatch.setattr(runner_module.os, "replace", persistent_replace)
+    monkeypatch.setattr(runner_module.time, "sleep", delays.append)
+
+    with pytest.raises(PermissionError, match="persistent Windows access denial"):
+        atomic_write(target, b"replacement")
+
+    assert attempts == WINDOWS_ATOMIC_REPLACE_ATTEMPTS
+    assert delays == [0.01] * (WINDOWS_ATOMIC_REPLACE_ATTEMPTS - 1)
+    assert target.read_bytes() == b"original"
+    assert list(tmp_path.glob(".*.tmp")) == []
 
 
 def test_completed_fake_cell_reaches_sealed_with_valid_hashes(tmp_path: Path) -> None:

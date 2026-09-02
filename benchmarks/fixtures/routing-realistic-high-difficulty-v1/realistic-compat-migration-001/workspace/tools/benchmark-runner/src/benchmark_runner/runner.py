@@ -182,6 +182,10 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+WINDOWS_ATOMIC_REPLACE_ATTEMPTS = 20
+WINDOWS_ATOMIC_REPLACE_DELAY_SECONDS = 0.01
+
+
 def atomic_write(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
@@ -190,7 +194,14 @@ def atomic_write(path: Path, data: bytes) -> None:
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        for attempt in range(WINDOWS_ATOMIC_REPLACE_ATTEMPTS):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError:
+                if os.name != "nt" or attempt == WINDOWS_ATOMIC_REPLACE_ATTEMPTS - 1:
+                    raise
+                time.sleep(WINDOWS_ATOMIC_REPLACE_DELAY_SECONDS)
     finally:
         if temporary.exists():
             temporary.unlink()

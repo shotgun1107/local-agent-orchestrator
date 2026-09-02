@@ -16,5 +16,8 @@
     "tools/benchmark-runner"
   ],
   "expected_file_count": 115,
+  "overlay_override_paths": [
+    "tools/benchmark-runner/src/benchmark_runner/runner.py"
+  ],
   "scope_note": "Base S1 public implementation, fixtures, manifests, tests, schemas, scripts, operator README, and the B1 public source/Schema dependency used by routing regressions."
 }
