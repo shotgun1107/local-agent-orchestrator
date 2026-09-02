@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 69건
-- 해결: 67건
+- 해결: 68건
 - 조사 중: 1건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -81,7 +81,7 @@
 | DEV-20260901-004 | resolved | phase-f-profile-r-candidate-v19-acceptance-preflight | integration | Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함 |
 | DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
 | DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
-| DEV-20260902-003 | open | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
+| DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4517,11 +4517,11 @@ Worker snapshot builder가 public overlay를 UTF-8로 decode하고 CRLF를 LF로
 
 ## DEV-20260902-003 — acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `profile-r-acceptance-v13-preflight`
 - 분류: `test`
 - 발견: 2026-09-02T02:15:00Z / Profile R candidate v21 model-free acceptance preflight
-- 해결: 미해결
+- 해결: 2026-09-02T02:34:28Z
 
 ### 증상
 
@@ -4550,7 +4550,7 @@ preflight를 실행한 ambient Python에는 benchmark-runner dependency가 설�
 
 ### 채택한 해결
 
-전용 v21 test Python에 benchmark-runner dev dependency를 설치했고 격리 import와 executable identity를 확인했다. 실패 preflight는 보존하며 새 경로 재실행 전 사용자 승인을 다시 받는다.
+전용 v21 test Python에 benchmark-runner dev dependency를 설치하고 격리 import와 executable identity를 확인했다. 사용자 재승인 뒤 이전 실패 경로를 보존한 채 새 경로에서 harness 전체를 실행해 두 acceptance 변형을 모두 통과시켰다.
 
 ### 수정 파일
 
@@ -4559,23 +4559,25 @@ preflight를 실행한 ambient Python에는 benchmark-runner dependency가 설�
 ### 회귀시험
 
 - dedicated test Python isolated dependency import probe
-- fresh candidate v21 model-free acceptance preflight pending explicit approval
+- fresh candidate v21 model-free acceptance preflight with two independent variants
 
 ### 검증 결과
 
 - jsonschema 4.26.0 import PASS under python -I
 - pytest 8.4.2 import PASS under python -I
 - test Python executable SHA-256 0b471133e110cfb53a061cad528ce8e517d7b9ac41a0a396c39ad795a487fc14
+- fresh path preflight 10 passed in 421.06s
+- both Evidence manifests 12/12 exact hash match and residual process/temp/lock count 0
 - actual model turn, SDK thread/start, turn/start and Docker workload count 0
 
 ### 남은 위험
 
-- 새 전용 Python으로 candidate v21 preflight를 아직 다시 실행하지 않았다.
 - acceptance run 1과 run 2, readiness, Environment Closure와 Live는 NO-GO다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 748923773c79803729b725b888483ecd9c87b22d
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v13-preflight-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v13-preflight-r2-result.md
 - 출처: stages/b1-sequential/src/orchestrator/verify.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
