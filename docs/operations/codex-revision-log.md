@@ -3334,3 +3334,18 @@ candidate, acceptance와 Live는 `NO-GO`다.
 q23은 재실행·재분류하지 않는다. q4 reference/source와 q23은 역사 Evidence로 보존한다.
 다음 관문은 canonical LF Worker의 새 reference chain과 Judge source bundle이다. Task Pack,
 candidate, acceptance와 Live는 `NO-GO`다.
+
+## Profile R canonical LF reference q5와 Judge source bundle
+
+- 작업일: 2026-09-02. canonical LF Worker에서 reference를 다시 만들었고 q4 chain/seal/bundle과
+  byte-identical임을 확인해 reference identity는 그대로 재사용했다.
+- Worker manifest file SHA는 `6e8701bf...a18`, aggregate는 `41c1b97b...1652`, runner는
+  CR 0, SHA `e59cdbb4...13d6`다.
+- Judge source bundle만 commit `4f0a993a4f834a6002e5b967a856a6d86df3ed05`에서 다시
+  생성했다. manifest file SHA `94043d66...5175`, payload aggregate
+  `6180174d...29db`, 상태 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다.
+- expected reference workspace는 `f1e35d60...0c102`로 q23 Docker actual과 exact 일치한다.
+  관련 회귀 33 passed, model·SDK thread/turn·Docker workload 0이다.
+
+다음 관문은 clean source의 fresh q24 Docker Judge qualification이다. q23은 재실행하지 않으며
+Task Pack, candidate, acceptance와 Live는 `NO-GO`다.
