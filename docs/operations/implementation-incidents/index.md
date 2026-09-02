@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 69건
+- 전체: 71건
 - 해결: 68건
-- 조사 중: 1건
+- 조사 중: 3건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -82,6 +82,8 @@
 | DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
 | DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
 | DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
+| DEV-20260902-004 | investigating | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
+| DEV-20260902-005 | investigating | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4581,3 +4583,153 @@ preflight를 실행한 ambient Python에는 benchmark-runner dependency가 설�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v13-preflight-r2-result.md
 - 출처: stages/b1-sequential/src/orchestrator/verify.py
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+
+## DEV-20260902-004 — Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함
+
+- 상태: `investigating`
+- 단계: `phase-f-profile-r-v21-b1`
+- 분류: `implementation`
+- 발견: 2026-09-02T06:45:16Z / Profile R v21 B1 Cell 2 live와 post-run source inspection
+- 해결: 미해결
+
+### 증상
+
+B1 R10 첫 turn이 900초에 interrupted된 뒤 Task가 즉시 최종 FAILED가 됐고 R11~R13은 PENDING으로 남았다. R03 retry 한 번만 사용해 Variant reserve가 남아 있었고 R10 자체도 per-task maximum 2였지만 두 번째 Attempt는 만들어지지 않았다.
+
+### 재현
+
+- 남은 Variant retry budget과 max_attempts_per_task=2가 있는 model-free B1 Run에서 첫 Attempt runtime이 terminal_status=CANCELLED를 반환하게 한다.
+- scheduler가 _finish_or_retry를 거치지 않고 FailureKind.TIMEOUT으로 Attempt와 Task를 최종 FAILED 처리하는지 확인한다.
+- 의존하는 후속 Task가 모두 PENDING으로 남고 Run이 FAILED로 끝나는지 확인한다.
+
+### 증거
+
+- `direct-observation`: v21 B1 R10 terminal Evidence는 duration_ms 900008, status interrupted이며 R10 FAILED 뒤 R11~R13은 PENDING이다.
+- `direct-observation`: v21 B1은 model turns 11, retry 1, resume 0이다. 봉인 budget은 Cell 최대 15, retry/resume 최대 2, 모든 Task per-task maximum 2다.
+- `source-inspection`: schedule.py의 TerminalStatus.CANCELLED 분기는 ledger.finish_attempt(... FAILED, TIMEOUT)를 직접 호출하고 return하므로 retryable 판정과 _finish_or_retry를 우회한다.
+- `reproducible-test`: 기존 integration parameter timeout_interrupt_supported-FAILED-FAILED 하나를 model-free로 실행해 현재 timeout 최종 실패 동작을 1 passed in 1.54s로 재현했다.
+
+### 근본 원인
+
+B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무조건 최종 실패로 처리한다. 이 경로는 남은 Task/Variant budget과 max_attempts_per_task를 검사하는 공통 retry 결정 함수를 호출하지 않는다.
+
+### 검토한 해결안
+
+- `rejected` R10의 900초 timeout만 크게 늘린다 — 느린 한 Task의 직접 증상만 늦추고 timeout이 봉인 retry 계약을 우회하는 상태기계 결함을 남긴다
+- `rejected` 모든 timeout을 무조건 자동 재시도한다 — terminal 불명확·반복 hang·예산 고갈을 구분하지 못하고 중복 실행 위험을 만든다
+- `adopted` timeout을 structured failure로 분류하고 terminal 확정성·남은 Task/Variant budget·Attempt 상한으로 retry/resume/최종 실패를 결정한다 — 기존 fail-closed 안전선을 유지하면서 봉인된 retry 계약을 실제 상태 전이에 연결한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- stages/b1-sequential/tests/unit/test_schedule.py
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py
+
+### 회귀시험
+
+- model-free confirmed timeout with one remaining retry creates exactly one fresh Attempt
+- exhausted timeout budget closes the Task once and leaves no active Session or process
+- terminal unknown remains fail-closed and is never retried automatically
+- R10 timeout handling cannot dispatch R11 before R10 succeeds
+
+### 검증 결과
+
+- sealed v21 B1 Evidence and source inspection reproduced the control-flow mismatch without a new model turn
+- existing model-free timeout regression reproduced Task/Attempt final FAILED for interrupt-confirmed timeout: 1 passed in 1.54s
+- Cell 3 remained PLANNED and unclaimed; automatic continuation, residual container and live process were 0
+
+### 남은 위험
+
+- retryable timeout의 exact terminal 조건과 fresh retry 대 same-thread resume 선택이 아직 구현·검증되지 않았다.
+- per-turn 900초와 Cell model-active/wall-clock ceiling의 결합 규칙을 새 candidate 전에 다시 봉인해야 한다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
+- 출처: benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json
+- 출처: stages/b1-sequential/src/orchestrator/schedule.py
+- 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+
+## DEV-20260902-005 — Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음
+
+- 상태: `investigating`
+- 단계: `phase-f-profile-r-v21-first-pair`
+- 분류: `test`
+- 발견: 2026-09-02T08:04:37Z / Profile R v21 SS1/B1 sealed Judge result comparison
+- 해결: 미해결
+
+### 증상
+
+B1은 R03, R04와 R07을 cumulative public Check까지 성공 처리했지만 final hidden Judge는 대응 property R-P03, R-P04와 R-P07을 실패시켰다. SS1도 이 세 property를 포함한 동일한 6-property 묶음을 실패했다.
+
+### 재현
+
+- 보존된 v21 B1 workspace와 Task report에서 R03, R04와 R07의 SUCCEEDED 상태 및 public Check 통과를 확인한다.
+- 같은 B1 workspace의 봉인된 final Judge result에서 R-P03 CONFIG_FIXTURE_SEMANTICS_FAILED, R-P04 INCIDENT_FIXTURE_SEMANTICS_FAILED와 R-P07 RESERVE_REUSED_OR_MISCOUNTED를 확인한다.
+- 보존된 SS1 final Judge result의 공통 실패 집합과 대조해 우연한 단일 B1 중단만으로 설명되지 않는 간극을 분리한다.
+
+### 증거
+
+- `direct-observation`: B1 report는 R01~R09를 SUCCEEDED로 기록하고 R03만 첫 Check 실패 뒤 retry 성공했다. final hidden Judge는 R-P03, R-P04와 R-P07을 fail로 기록했다.
+- `direct-observation`: SS1은 R-P03, R-P04, R-P07, R-P10, R-P11와 R-P13을 실패했고 B1은 이 여섯 개와 R-P12를 실패했다.
+- `source-inspection`: Task Pack q4는 reference positive와 13개 전용 known-bad mutation을 통과했지만 실제 live 산출물의 의미 오류 유형 전체를 열거하거나 증명하는 계약은 아니다.
+- `reproducible-test`: 원본과 373/373 파일 SHA-256이 같은 복사본에서 R03, R04와 R07 public contract는 모두 exit 0이었고 전체 hidden checker는 대응 세 property를 동일 reason code로 실패시켰으며 workspace_mutated=false였다.
+- `source-inspection`: R03 hidden은 공개 fixture의 parse_config/serialize_config/structured CLI와 다른 parse/serialize/plain output을 요구하고, R04 hidden은 공개 evidence_ids 대신 단일 evidence_id를 읽으며, R07 hidden은 공개 checker에 없는 keyword signature와 상충하는 C2 non-zero 처리 의미를 요구한다.
+
+### 근본 원인
+
+R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope에서 만들게 하고 top-level public checker가 Worker가 작성한 tests를 신뢰했다. hidden Judge는 reference가 선택한 공개되지 않은 API·필드·정책 의미를 별도로 고정했다. R07도 public checker가 hidden의 추가 signature·C2 처리 사례를 공개하지 않았다. q24/q4는 reference positive와 reference-relative known-bad mutation만 검사해 이 alternative-contract 간극을 탐지하지 못했다.
+
+### 검토한 해결안
+
+- `rejected` live 실패에 맞춰 hidden Judge 조건을 완화한다 — 제품 의미 실패를 숨기고 기존 qualification과 비교 계약을 사후 변경한다
+- `rejected` hidden reference나 정답 데이터를 public Check에 복사한다 — Worker 정보 경계를 깨고 실제 문제 해결이 아니라 답안 노출을 만든다
+- `adopted` live workspace의 최소 실패 입력과 behavior를 추출해 공개 정보만 사용하는 회귀·mutation을 추가하고 Task 문구와 public invariant를 함께 재검토한다 — hidden 답안을 노출하지 않으면서 실제 qualification 사각지대를 재현할 수 있다
+- `adopted` normative public spec과 독립 behavior probe를 Worker write scope 밖에 고정하고 hidden은 같은 API의 추가 입력만 검사한다 — Worker가 자기 계약과 시험을 함께 작성하는 순환을 제거하고 public/hidden 의미를 사전에 하나로 고정한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py
+- tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py
+- tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
+
+### 회귀시험
+
+- v21-derived config fixture semantic failure is rejected by r03_contract without hidden bytes
+- v21-derived incident dependency failure is rejected by r04_contract without hidden bytes
+- v21-derived reserve reuse or miscount is rejected by r07_contract without hidden bytes
+- each new public mutation fails only its owning contract where practical and all 13 hidden properties still execute independently
+
+### 검증 결과
+
+- sealed SS1/B1 v21 Evidence established the common hidden failure cluster without re-running either Cell
+- byte-identical diagnostic copy에서 R03/R04/R07 public exit 0과 hidden fail을 model-free로 동시에 재현했고 검사 전후 원본 대비 file mismatch는 0이었다
+- minimal probes confirmed R03 public names exist while hidden names do not, R04 plural evidence_ids exist while hidden singular key does not, and R07 hidden keyword call raises TypeError
+- existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap
+
+### 남은 위험
+
+- 새 공개 계약의 exact bytes와 R07 일반화 cap 식은 구현 전에 별도 revision으로 동결해야 한다.
+- 실제 실패를 public Check에 추가할 때 hidden reference solution 정보가 Worker snapshot으로 새지 않도록 별도 information-boundary 검증이 필요하다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md
+- 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py

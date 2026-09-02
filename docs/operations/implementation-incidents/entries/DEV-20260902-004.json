@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260902-004",
+  "title": "Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함",
+  "status": "investigating",
+  "stage": "phase-f-profile-r-v21-b1",
+  "category": "implementation",
+  "discovered_at": "2026-09-02T06:45:16Z",
+  "resolved_at": null,
+  "discovered_by": "Profile R v21 B1 Cell 2 live와 post-run source inspection",
+  "symptom": "B1 R10 첫 turn이 900초에 interrupted된 뒤 Task가 즉시 최종 FAILED가 됐고 R11~R13은 PENDING으로 남았다. R03 retry 한 번만 사용해 Variant reserve가 남아 있었고 R10 자체도 per-task maximum 2였지만 두 번째 Attempt는 만들어지지 않았다.",
+  "reproduction": [
+    "남은 Variant retry budget과 max_attempts_per_task=2가 있는 model-free B1 Run에서 첫 Attempt runtime이 terminal_status=CANCELLED를 반환하게 한다.",
+    "scheduler가 _finish_or_retry를 거치지 않고 FailureKind.TIMEOUT으로 Attempt와 Task를 최종 FAILED 처리하는지 확인한다.",
+    "의존하는 후속 Task가 모두 PENDING으로 남고 Run이 FAILED로 끝나는지 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "v21 B1 R10 terminal Evidence는 duration_ms 900008, status interrupted이며 R10 FAILED 뒤 R11~R13은 PENDING이다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "v21 B1은 model turns 11, retry 1, resume 0이다. 봉인 budget은 Cell 최대 15, retry/resume 최대 2, 모든 Task per-task maximum 2다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "schedule.py의 TerminalStatus.CANCELLED 분기는 ledger.finish_attempt(... FAILED, TIMEOUT)를 직접 호출하고 return하므로 retryable 판정과 _finish_or_retry를 우회한다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "기존 integration parameter timeout_interrupt_supported-FAILED-FAILED 하나를 model-free로 실행해 현재 timeout 최종 실패 동작을 1 passed in 1.54s로 재현했다."
+    }
+  ],
+  "root_cause": "B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무조건 최종 실패로 처리한다. 이 경로는 남은 Task/Variant budget과 max_attempts_per_task를 검사하는 공통 retry 결정 함수를 호출하지 않는다.",
+  "considered_options": [
+    {
+      "option": "R10의 900초 timeout만 크게 늘린다",
+      "decision": "rejected",
+      "reason": "느린 한 Task의 직접 증상만 늦추고 timeout이 봉인 retry 계약을 우회하는 상태기계 결함을 남긴다"
+    },
+    {
+      "option": "모든 timeout을 무조건 자동 재시도한다",
+      "decision": "rejected",
+      "reason": "terminal 불명확·반복 hang·예산 고갈을 구분하지 못하고 중복 실행 위험을 만든다"
+    },
+    {
+      "option": "timeout을 structured failure로 분류하고 terminal 확정성·남은 Task/Variant budget·Attempt 상한으로 retry/resume/최종 실패를 결정한다",
+      "decision": "adopted",
+      "reason": "기존 fail-closed 안전선을 유지하면서 봉인된 retry 계약을 실제 상태 전이에 연결한다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
+    "stages/b1-sequential/tests/unit/test_schedule.py",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py"
+  ],
+  "regression_tests": [
+    "model-free confirmed timeout with one remaining retry creates exactly one fresh Attempt",
+    "exhausted timeout budget closes the Task once and leaves no active Session or process",
+    "terminal unknown remains fail-closed and is never retried automatically",
+    "R10 timeout handling cannot dispatch R11 before R10 succeeds"
+  ],
+  "verification": [
+    "sealed v21 B1 Evidence and source inspection reproduced the control-flow mismatch without a new model turn",
+    "existing model-free timeout regression reproduced Task/Attempt final FAILED for interrupt-confirmed timeout: 1 passed in 1.54s",
+    "Cell 3 remained PLANNED and unclaimed; automatic continuation, residual container and live process were 0"
+  ],
+  "remaining_risks": [
+    "retryable timeout의 exact terminal 조건과 fresh retry 대 same-thread resume 선택이 아직 구현·검증되지 않았다.",
+    "per-turn 900초와 Cell model-active/wall-clock ceiling의 결합 규칙을 새 candidate 전에 다시 봉인해야 한다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",
+    "benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py"
+  ]
+}
