@@ -3431,3 +3431,17 @@ preflight다. official acceptance, readiness, Environment Closure와 Live는 `NO
 
 다음 관문은 independent official acceptance run 1이다. run 2, readiness, Environment Closure와
 Live는 `NO-GO`다.
+
+## Profile R candidate v21 official acceptance v14 run 1 통과
+
+- 작업일: 2026-09-02. source `f3b21a9cea1c76060f93b0d48707ac128680d63c`, tree
+  `fade031f2bafb0a66e0ea8632f507ede0da4118c`에서 fresh parameter `[1]`만 실행했다.
+- 결과는 `1 passed in 178.12s`, official root 14 files, manifest 12/12 exact match다.
+- SS1/B1만 `SEALED`, Cell 3·4 `PLANNED`, public contract 13/13, 누적 Check 104/104,
+  actual model turn 0이다.
+- attestation/file manifest/JUnit SHA-256은 `ee4fcaf6...11cd` / `e84ed836...30e8` /
+  `0c3d94cc...5a30`이다.
+- Check TEMP, child process, lock residue는 0이고 basetemp와 official Evidence는 보존했다.
+
+다음 관문은 별도 승인과 fresh 경로의 independent official acceptance run 2다. readiness,
+Environment Closure와 Live는 `NO-GO`다.
