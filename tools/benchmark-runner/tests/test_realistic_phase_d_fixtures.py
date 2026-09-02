@@ -254,6 +254,7 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
     assert manifest["base_file_count"] == allowlist["expected_file_count"] == 115
     assert manifest["public_overlay_file_count"] == len(overlay_files)
     assert manifest["public_overlay_override_paths"] == override_paths
+    assert manifest["public_overlay_text_normalization"] == "utf8_lf"
     assert manifest["file_count"] == len(files) == (
         allowlist["expected_file_count"] + len(overlay_files) - len(override_paths)
     )
@@ -282,6 +283,9 @@ def test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_liter
         if record["path"] == "tools/benchmark-runner/src/benchmark_runner/runner.py"
     )
     assert runner_record["provenance"] == "public_requirement"
+    assert b"\r" not in (
+        WORKER_ROOT / "tools/benchmark-runner/src/benchmark_runner/runner.py"
+    ).read_bytes()
 
 
 def test_profile_r_judge_builder_rejects_extra_worker_cache_before_derivation(
