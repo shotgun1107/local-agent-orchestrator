@@ -146,6 +146,19 @@ def _apply_mapping(source: bytes, replacements: list[dict[str, str]]) -> tuple[b
     return result, applied
 
 
+def _canonical_public_requirement(payload: bytes, path: str) -> bytes:
+    if b"\x00" in payload:
+        raise RuntimeError(f"binary public overlay file is forbidden: {path}")
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise RuntimeError(f"non-UTF8 public overlay file is forbidden: {path}") from exc
+    text = text.replace("\r\n", "\n")
+    if "\r" in text:
+        raise RuntimeError(f"bare CR in public overlay file is forbidden: {path}")
+    return text.encode("utf-8")
+
+
 def _tree_aggregate(records: list[dict[str, object]]) -> str:
     payload = bytearray()
     for record in records:
@@ -208,7 +221,10 @@ def build_snapshot(
         for entry in entries:
             path = str(entry["path"])
             if entry["object_id"] is None:
-                source = (repository / str(entry["source_path"])).read_bytes()
+                source = _canonical_public_requirement(
+                    (repository / str(entry["source_path"])).read_bytes(),
+                    path,
+                )
                 worker, applied = source, []
                 provenance = "public_requirement"
             else:
@@ -269,6 +285,7 @@ def build_snapshot(
             "base_file_count": len(base_entries),
             "public_overlay_file_count": len(overlay_entries),
             "public_overlay_override_paths": sorted(override_paths),
+            "public_overlay_text_normalization": "utf8_lf",
             "source_total_bytes": sum(int(item["source_size"]) for item in file_records),
             "worker_total_bytes": sum(int(item["worker_size"]) for item in file_records),
             "worker_tree_aggregate_sha256": _tree_aggregate(file_records),

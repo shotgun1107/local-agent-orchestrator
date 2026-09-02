@@ -1196,10 +1196,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/tools/benchmark-runner/src/benchmark_runner/runner.py",
-      "source_sha256": "fe413bd8d6640eea59c45e44b651ae2f0f22481d27bf20e05239014b20c97927",
-      "source_size": 191058,
-      "worker_sha256": "fe413bd8d6640eea59c45e44b651ae2f0f22481d27bf20e05239014b20c97927",
-      "worker_size": 191058
+      "source_sha256": "e59cdbb442739d92f93702cf76062091df4961eae1c80ab2bd29b00e67b913d6",
+      "source_size": 186362,
+      "worker_sha256": "e59cdbb442739d92f93702cf76062091df4961eae1c80ab2bd29b00e67b913d6",
+      "worker_size": 186362
     },
     {
       "mapping_ids": [],
@@ -1629,14 +1629,15 @@
   "public_overlay_override_paths": [
     "tools/benchmark-runner/src/benchmark_runner/runner.py"
   ],
+  "public_overlay_text_normalization": "utf8_lf",
   "schema_version": 1,
   "snapshot_id": "realistic-compat-migration-001",
   "source_allowlist_sha256": "028d0d3c7691980705315b781ebfcc0343d2e0bfb4466a275cf43414f2665aaf",
   "source_authority": "git_object_database",
   "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
-  "source_total_bytes": 1263650,
+  "source_total_bytes": 1258954,
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
-  "worker_total_bytes": 1263635,
-  "worker_tree_aggregate_sha256": "01bc5a541ed3722e598992904f8e43f2dd2a5670fb886a08eaf9019afbf276e7"
+  "worker_total_bytes": 1258939,
+  "worker_tree_aggregate_sha256": "41c1b97b9b1546a814ec16cf0c4e339ddf9555f299b8ea4094d64edeb4cd1652"
 }
