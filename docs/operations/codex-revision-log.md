@@ -3381,3 +3381,21 @@ q4다. candidate, acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 q24 qualification v21과 q4 qualification/budget을 직접 결합한 새 Phase E
 candidate다. acceptance와 Live는 `NO-GO`다.
+
+## Profile R q24·q4 Phase E candidate v21
+
+- 작업일: 2026-09-02. stage를 q24 qualification v21과 Task Pack q4/budget으로 전환한
+  source `d229827fae3addd1e42487a27e4068d47620be71`, tree
+  `bd456ceff9ff857940a55d2b83ddcf7b51f54a73`에서 candidate를 생성했다.
+- stage와 Phase E/Profile R 자격 회귀는 clean tree에서 50 passed다.
+- candidate v21은 experiment `exp_20260902_697bf1d0_1`, Plan `697bf1d0...5712`,
+  bindings `5c977030...d1c9`, seal `8e8a8149...79a7`, seal file `342df792...1357`,
+  files manifest `71441c26...9aa3`다.
+- q24 file/seal `2c93d102...dec3` / `d61d6dd8...36bd`, q4 file/seal
+  `6dad9908...9c66` / `2a61a30b...b027`, budget file/seal `a0872bb1...3794` /
+  `2f1eeb6c...c39d`, Docker environment `0bd6b3d8...191c0`를 직접 결합했다.
+- SDK 0-turn preflight는 ChatGPT account, SDK 0.144.4와 `gpt-5.6-sol` visibility를 확인했다.
+  API-key 환경 이름, SDK thread/start, turn/start와 model turn은 0이다.
+
+다음 관문은 candidate v21 independent model-free acceptance run 1이다. acceptance 2와
+readiness, Environment Closure와 Live는 `NO-GO`다.
