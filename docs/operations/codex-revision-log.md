@@ -3349,3 +3349,18 @@ candidate, acceptance와 Live는 `NO-GO`다.
 
 다음 관문은 clean source의 fresh q24 Docker Judge qualification이다. q23은 재실행하지 않으며
 Task Pack, candidate, acceptance와 Live는 `NO-GO`다.
+
+## Profile R Docker Judge q24 봉인
+
+- 작업일: 2026-09-02. canonical LF Judge source commit
+  `3a5bb87b54b09341125e9fbe15df248774595886`에서 fresh q24를 실행했다.
+- reference 13/13 pass, 13개 negative mutation은 각 target property fail이며 expectation
+  `14/14`, prerequisite blocking 0, model turn 0이다.
+- raw는 `C:\q24\profile-r-docker-matrix-q24-company-r01-r13`, projection은 qualification
+  v21다. raw file_count 72, seal `d61d6dd8...36bd`, projection file SHA
+  `2c93d102...dec3`, residual container 0이다.
+- independent raw verifier와 path-free projection exact recomputation, artifact 회귀 7개가
+  통과했다. q23은 실패 역사 Evidence로 그대로 보존한다.
+
+다음 관문은 q24 qualification v21과 canonical reference chain에 결합한 model-free Task Pack
+q4다. candidate, acceptance와 Live는 계속 `NO-GO`다.
