@@ -3313,3 +3313,24 @@ official acceptance, readiness, Environment Closure와 Live는 계속 `NO-GO`다
 
 다음 관문은 clean source의 fresh q23 Docker Judge qualification이다. Task Pack q4,
 candidate, acceptance와 Live는 `NO-GO`다.
+
+## Profile R Docker Judge q23 실패와 overlay LF 교정
+
+- 작업일: 2026-09-02. source `898ba253742f83c6c498677dc21aa6877a14feef`에서 q23을
+  실행했다. functional reference와 13개 mutation 결과는 모두 맞았지만 workspace before/after
+  mismatch로 expectation 0/14, `CHALLENGE_NOT_READY`가 됐다.
+- source bundle expected workspace는 `ef8ce372...06d28`, Docker actual은
+  `f1e35d60...0c102`였다. local public runner override는 CRLF 4,696개/191,058 bytes,
+  committed Docker Worker는 CR 0/186,362 bytes였다.
+- Worker builder가 public overlay를 raw working-tree bytes로 봉인한 것이 원인이다.
+  `DEV-20260902-002`로 등록하고 overlay를 UTF-8 LF로 canonicalize하며 binary, non-UTF8와
+  bare CR을 거부하도록 교정했다.
+- fix source는 `d525c060fc588da18315613ac96d7ca4b5956c43`, tree
+  `46b06dcb70ec202b12936d27ef995089b61e45fc`, 새 Worker aggregate는
+  `41c1b97b...1652`, runner SHA는 `e59cdbb4...13d6`다. builder exact-byte 회귀 2 passed다.
+- q23 raw는 `C:\q23\profile-r-docker-matrix-q23-company-r01-r13`, seal
+  `b96caa70...7fa3`, file_count 72, residual container와 model turn은 0이다.
+
+q23은 재실행·재분류하지 않는다. q4 reference/source와 q23은 역사 Evidence로 보존한다.
+다음 관문은 canonical LF Worker의 새 reference chain과 Judge source bundle이다. Task Pack,
+candidate, acceptance와 Live는 `NO-GO`다.

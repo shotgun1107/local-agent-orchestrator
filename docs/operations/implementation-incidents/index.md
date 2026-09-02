@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 67건
-- 해결: 66건
+- 전체: 68건
+- 해결: 67건
 - 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -80,6 +80,7 @@
 | DEV-20260901-003 | resolved | profile-r-docker-judge-q20 | integration | Profile R reference chain 교체 후 protected Judge workspace Evidence를 재생성하지 않음 |
 | DEV-20260901-004 | resolved | phase-f-profile-r-candidate-v19-acceptance-preflight | integration | Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함 |
 | DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
+| DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4445,3 +4446,70 @@ hook node identity를 item.path.stem으로 만들고 JUnit classname은 마지�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-reference-q3-source-bundle-company-result.md
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/evidence/public-negative-matrix.json
 - 출처: tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
+
+## DEV-20260902-002 — Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함
+
+- 상태: `resolved`
+- 단계: `profile-r-docker-judge-q23`
+- 분류: `integration`
+- 발견: 2026-09-02T01:28:34Z / Profile R Docker Judge q23
+- 해결: 2026-09-02T01:33:26Z
+
+### 증상
+
+reference와 13개 mutation의 functional 결과는 모두 기대와 같았지만 14개 Cell이 모두 workspace before/after mismatch여서 CHALLENGE_NOT_READY가 됐다.
+
+### 재현
+
+- Windows working tree의 public runner.py override로 Worker와 Judge source bundle을 생성한다.
+- 생성물을 commit한 뒤 clean source에서 q23 Docker matrix를 실행한다.
+- source bundle expected workspace와 Docker Worker actual workspace hash를 비교한다.
+
+### 증거
+
+- `direct-observation`: q23 raw verifier는 통과했지만 expectation match는 0/14였고 모든 mismatch code가 WORKSPACE_BEFORE_MISMATCH와 WORKSPACE_AFTER_MISMATCH였다.
+- `source-inspection`: local overlay runner.py는 CRLF 4696개, 191058 bytes, Docker Worker는 CR 0, 186362 bytes였다.
+- `reproducible-test`: 교정 builder를 두 번 실행한 결과와 checked-in Worker가 byte-identical이고 runner.py CR count 0임을 확인했다.
+
+### 근본 원인
+
+Worker snapshot builder가 public overlay 파일을 working-tree raw bytes로 읽어 manifest와 workspace를 만들었다. Git은 text 파일을 LF blob으로 저장하므로 Windows CRLF working tree에서 만든 Judge expected workspace와 clean commit에서 준비한 Docker Worker bytes가 달라졌다.
+
+### 검토한 해결안
+
+- `rejected` q23 expected workspace hash만 actual 값으로 교체 — 원인을 숨기고 다음 Windows checkout에서 같은 drift가 재발한다
+- `adopted` public overlay를 builder 경계에서 UTF-8 LF로 canonicalize — OS checkout 설정과 무관하게 Worker, manifest, reference와 Docker workspace가 같은 bytes를 사용한다
+
+### 채택한 해결
+
+Worker snapshot builder가 public overlay를 UTF-8로 decode하고 CRLF를 LF로 변환하며 binary, non-UTF8와 bare CR을 거부하도록 했다. manifest에 utf8_lf normalization identity를 기록하고 canonical Worker runner를 CR 0 bytes로 재생성했다.
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/build_profile_r_worker_snapshot.py
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-snapshot-manifest.json
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_worker_snapshot_matches_manifest_and_excludes_sensitive_literals
+- tools/benchmark-runner/tests/test_realistic_phase_d_fixtures.py::test_profile_r_worker_snapshot_rebuild_is_byte_identical
+
+### 검증 결과
+
+- Worker snapshot regressions 2 passed
+- generated and checked-in Worker exact byte equality
+- runner.py UTF-8 LF, CR count 0, SHA-256 e59cdbb442739d92f93702cf76062091df4961eae1c80ab2bd29b00e67b913d6
+- Worker aggregate 41c1b97b9b1546a814ec16cf0c4e339ddf9555f299b8ea4094d64edeb4cd1652
+- actual model turn, SDK thread/start, turn/start count 0
+
+### 남은 위험
+
+- 새 canonical Worker bytes로 reference, Judge, Task Pack과 candidate를 다시 봉인해야 한다.
+- 새 Docker qualification 전까지 q23은 성공 근거가 아니다.
+
+### 추적 정보
+
+- 관련 커밋: d525c060fc588da18315613ac96d7ca4b5956c43
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q23-company-result.md
+- 출처: tools/benchmark-runner/scripts/build_profile_r_worker_snapshot.py
