@@ -3460,3 +3460,24 @@ Environment Closure와 Live는 `NO-GO`다.
 
 다음 관문은 두 official Evidence와 candidate chain을 직접 결합하는 readiness package다.
 Environment Closure와 Live는 `NO-GO`다.
+
+## Profile R R01~R13 Live readiness v10 package
+
+- 작업일: 2026-09-02. package record commit/tree
+  `8348be1203d083096741845ce9819f9456059332` /
+  `275520ef10492d1ad857db8db8745710f80b340c`에서 q24·q4·reference·candidate v21과
+  official acceptance 2회를 직접 결합했다.
+- r1은 official JUnit 위치 오인으로 587파일에서 seal 전에 중단됐다. seal·manifest·ZIP은
+  없고 partial root는 수정·삭제하지 않았다.
+- r2는 package 622파일, manifest 621, payload 620, aggregate `d7b84bd0...94c2`,
+  readiness seal `13e885ef...3a16`, seal file `015afa66...75e0`로 봉인됐다.
+- deterministic ZIP은 3,311,666 bytes, SHA `197eadb3...7717`, 622 entries다.
+  duplicate·directory·unsafe path·CRC failure는 0이다.
+- 원본과 새 해제본 verifier가 같은 manifest count, payload aggregate와 seal을 반환했다.
+  actual credential finding 0, known-fake marker 5, model turn과 Docker workload 0이다.
+- Docker daemon은 현재 꺼져 있어 current runtime은 미검증으로 남겼다. seal은
+  `environment_closure_required=true`, `current_docker_runtime_verified=false`,
+  `live_authorized=false`다.
+
+다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
+제어권을 돌려준다.
