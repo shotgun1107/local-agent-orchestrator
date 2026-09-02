@@ -3364,3 +3364,20 @@ Task Pack, candidate, acceptance와 Live는 `NO-GO`다.
 
 다음 관문은 q24 qualification v21과 canonical reference chain에 결합한 model-free Task Pack
 q4다. candidate, acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R Worker Task Pack q4 봉인
+
+- 작업일: 2026-09-02. q24와 canonical LF Worker에 대응하는 Task Pack q4를 source
+  `f043213da708fee0f9514696cd0723394ff4527b`에서 model-free 실행했다.
+- qualification ID는 `profile-r-task-pack-q4`다. positive transition 13/13, cumulative
+  public Checks 104/104, negative mutation 13/13 거부와 information boundary를 통과했다.
+- Worker manifest file/aggregate는 `6e8701bf...a18` / `41c1b97b...1652`, reference chain
+  file/seal은 `4c557cd0...636f` / `e1e2bdf6...453a`다.
+- q4 qualification file/seal은 `6dad9908...9c66` / `2a61a30b...b027`, budget file/seal은
+  `a0872bb1...3794` / `2f1eeb6c...c39d`, artifact manifest seal은
+  `6d5fea2a...4bf9`다.
+- budget은 SS1/B1 공통 Task당 2, base 13, Cell 최대 15, retry/resume 2, reserve transfer
+  forbidden이다. self-seal 회귀 13 passed, model·SDK thread/turn·Docker workload 0이다.
+
+다음 관문은 q24 qualification v21과 q4 qualification/budget을 직접 결합한 새 Phase E
+candidate다. acceptance와 Live는 `NO-GO`다.
