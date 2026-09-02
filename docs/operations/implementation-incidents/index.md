@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 68건
+- 전체: 69건
 - 해결: 67건
 - 조사 중: 1건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -81,6 +81,7 @@
 | DEV-20260901-004 | resolved | phase-f-profile-r-candidate-v19-acceptance-preflight | integration | Profile R public checker가 pytest 내부 PermissionError를 제품 실패로 분류함 |
 | DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
 | DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
+| DEV-20260902-003 | open | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4513,3 +4514,68 @@ Worker snapshot builder가 public overlay를 UTF-8로 decode하고 CRLF를 LF로
 - 관련 커밋: d525c060fc588da18315613ac96d7ca4b5956c43
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q23-company-result.md
 - 출처: tools/benchmark-runner/scripts/build_profile_r_worker_snapshot.py
+
+## DEV-20260902-003 — acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨
+
+- 상태: `open`
+- 단계: `profile-r-acceptance-v13-preflight`
+- 분류: `test`
+- 발견: 2026-09-02T02:15:00Z / Profile R candidate v21 model-free acceptance preflight
+- 해결: 미해결
+
+### 증상
+
+두 acceptance 변형 모두 SS1 완료 뒤 B1 R01 public Check에서 jsonschema import 오류로 중단해 pytest 8 passed, 2 failed가 됐다.
+
+### 재현
+
+- pytest와 project dependency를 ambient Python 밖의 임시 PYTHONPATH에만 둔다.
+- candidate v21 acceptance harness를 ambient Python으로 실행한다.
+- B1의 deterministic Check 환경이 PYTHONPATH를 제거한 뒤 같은 sys.executable로 R01 contract를 실행한다.
+
+### 증거
+
+- `direct-observation`: 두 B1 Evidence 모두 adapter_outcome_state infrastructure_error, adapter_failure_kind check_unknown, checks 0 passed/1 failed/1 record이며 R01 stderr는 jsonschema ModuleNotFoundError다.
+- `source-inspection`: build_check_environment는 minimal process environment를 만들고 ambient PYTHONPATH를 복사하지 않으며 bare python Check를 sys.executable로 고정한다.
+- `reproducible-test`: 새 전용 Python은 -I 격리 모드에서 jsonschema, pydantic, PyYAML와 pytest import를 통과했고 executable SHA-256이 봉인된 benchmark Python identity와 일치한다.
+
+### 근본 원인
+
+preflight를 실행한 ambient Python에는 benchmark-runner dependency가 설치되지 않았고 pytest만 임시 PYTHONPATH로 공급했다. B1 Check는 의도적으로 PYTHONPATH를 상속하지 않으므로 R01 checker가 jsonschema를 import할 수 없었다.
+
+### 검토한 해결안
+
+- `rejected` Check 환경에 ambient PYTHONPATH를 전달 — secret-free deterministic Check 경계와 interpreter dependency identity를 약화한다
+- `adopted` 프로젝트 dependency를 설치한 전용 Python으로 전체 pytest와 child Check를 실행 — sys.executable 하나에 실행기와 Check dependency를 함께 고정하고 기존 격리 경계를 유지한다
+
+### 채택한 해결
+
+전용 v21 test Python에 benchmark-runner dev dependency를 설치했고 격리 import와 executable identity를 확인했다. 실패 preflight는 보존하며 새 경로 재실행 전 사용자 승인을 다시 받는다.
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- dedicated test Python isolated dependency import probe
+- fresh candidate v21 model-free acceptance preflight pending explicit approval
+
+### 검증 결과
+
+- jsonschema 4.26.0 import PASS under python -I
+- pytest 8.4.2 import PASS under python -I
+- test Python executable SHA-256 0b471133e110cfb53a061cad528ce8e517d7b9ac41a0a396c39ad795a487fc14
+- actual model turn, SDK thread/start, turn/start and Docker workload count 0
+
+### 남은 위험
+
+- 새 전용 Python으로 candidate v21 preflight를 아직 다시 실행하지 않았다.
+- acceptance run 1과 run 2, readiness, Environment Closure와 Live는 NO-GO다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v13-preflight-result.md
+- 출처: stages/b1-sequential/src/orchestrator/verify.py
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py

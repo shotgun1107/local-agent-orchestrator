@@ -3399,3 +3399,20 @@ candidate다. acceptance와 Live는 `NO-GO`다.
 
 다음 관문은 candidate v21 independent model-free acceptance run 1이다. acceptance 2와
 readiness, Environment Closure와 Live는 `NO-GO`다.
+
+## Profile R candidate v21 acceptance v13 preflight 환경 실패
+
+- 작업일: 2026-09-02. source `bee7c6635e6dcfad141eb0eb710e49bb50154651`에서
+  candidate v21 model-free acceptance preflight를 새 `C:\pfa21p-1` 경로로 실행했다.
+- 결과는 8 passed, 2 failed다. 두 변형 모두 SS1 뒤 B1 R01 Check가 `jsonschema`
+  `ModuleNotFoundError`로 중단했고 B1은 `infrastructure_error / check_unknown`, checks
+  `0 / 1 / 1`을 기록했다.
+- ambient Python에는 dependency가 없고 pytest만 임시 `PYTHONPATH`로 공급됐지만 B1 Check는
+  deterministic 경계를 위해 `PYTHONPATH`를 상속하지 않는 것이 직접 원인이다.
+- 프로젝트 밖 전용 test Python에 declared dependency를 설치했다. `-I` import probe가
+  통과했고 executable SHA-256은 기존 봉인 identity `0b471133...14`와 같다.
+- 실패 경로와 JUnit은 보존하고 official Evidence는 생성하지 않았다. actual model turn,
+  SDK thread/start, turn/start와 Docker workload는 0이다.
+
+다음 관문은 별도 승인 뒤 새 경로에서 전용 Python으로 수행하는 candidate v21 model-free
+preflight다. official acceptance, readiness, Environment Closure와 Live는 `NO-GO`다.
