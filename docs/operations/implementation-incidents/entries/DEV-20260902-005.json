@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260902-005",
+  "title": "Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음",
+  "status": "investigating",
+  "stage": "phase-f-profile-r-v21-first-pair",
+  "category": "test",
+  "discovered_at": "2026-09-02T08:04:37Z",
+  "resolved_at": null,
+  "discovered_by": "Profile R v21 SS1/B1 sealed Judge result comparison",
+  "symptom": "B1은 R03, R04와 R07을 cumulative public Check까지 성공 처리했지만 final hidden Judge는 대응 property R-P03, R-P04와 R-P07을 실패시켰다. SS1도 이 세 property를 포함한 동일한 6-property 묶음을 실패했다.",
+  "reproduction": [
+    "보존된 v21 B1 workspace와 Task report에서 R03, R04와 R07의 SUCCEEDED 상태 및 public Check 통과를 확인한다.",
+    "같은 B1 workspace의 봉인된 final Judge result에서 R-P03 CONFIG_FIXTURE_SEMANTICS_FAILED, R-P04 INCIDENT_FIXTURE_SEMANTICS_FAILED와 R-P07 RESERVE_REUSED_OR_MISCOUNTED를 확인한다.",
+    "보존된 SS1 final Judge result의 공통 실패 집합과 대조해 우연한 단일 B1 중단만으로 설명되지 않는 간극을 분리한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "B1 report는 R01~R09를 SUCCEEDED로 기록하고 R03만 첫 Check 실패 뒤 retry 성공했다. final hidden Judge는 R-P03, R-P04와 R-P07을 fail로 기록했다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "SS1은 R-P03, R-P04, R-P07, R-P10, R-P11와 R-P13을 실패했고 B1은 이 여섯 개와 R-P12를 실패했다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "Task Pack q4는 reference positive와 13개 전용 known-bad mutation을 통과했지만 실제 live 산출물의 의미 오류 유형 전체를 열거하거나 증명하는 계약은 아니다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "원본과 373/373 파일 SHA-256이 같은 복사본에서 R03, R04와 R07 public contract는 모두 exit 0이었고 전체 hidden checker는 대응 세 property를 동일 reason code로 실패시켰으며 workspace_mutated=false였다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "R03 hidden은 공개 fixture의 parse_config/serialize_config/structured CLI와 다른 parse/serialize/plain output을 요구하고, R04 hidden은 공개 evidence_ids 대신 단일 evidence_id를 읽으며, R07 hidden은 공개 checker에 없는 keyword signature와 상충하는 C2 non-zero 처리 의미를 요구한다."
+    }
+  ],
+  "root_cause": "R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope에서 만들게 하고 top-level public checker가 Worker가 작성한 tests를 신뢰했다. hidden Judge는 reference가 선택한 공개되지 않은 API·필드·정책 의미를 별도로 고정했다. R07도 public checker가 hidden의 추가 signature·C2 처리 사례를 공개하지 않았다. q24/q4는 reference positive와 reference-relative known-bad mutation만 검사해 이 alternative-contract 간극을 탐지하지 못했다.",
+  "considered_options": [
+    {
+      "option": "live 실패에 맞춰 hidden Judge 조건을 완화한다",
+      "decision": "rejected",
+      "reason": "제품 의미 실패를 숨기고 기존 qualification과 비교 계약을 사후 변경한다"
+    },
+    {
+      "option": "hidden reference나 정답 데이터를 public Check에 복사한다",
+      "decision": "rejected",
+      "reason": "Worker 정보 경계를 깨고 실제 문제 해결이 아니라 답안 노출을 만든다"
+    },
+    {
+      "option": "live workspace의 최소 실패 입력과 behavior를 추출해 공개 정보만 사용하는 회귀·mutation을 추가하고 Task 문구와 public invariant를 함께 재검토한다",
+      "decision": "adopted",
+      "reason": "hidden 답안을 노출하지 않으면서 실제 qualification 사각지대를 재현할 수 있다"
+    },
+    {
+      "option": "normative public spec과 독립 behavior probe를 Worker write scope 밖에 고정하고 hidden은 같은 API의 추가 입력만 검사한다",
+      "decision": "adopted",
+      "reason": "Worker가 자기 계약과 시험을 함께 작성하는 순환을 제거하고 public/hidden 의미를 사전에 하나로 고정한다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py",
+    "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py"
+  ],
+  "regression_tests": [
+    "v21-derived config fixture semantic failure is rejected by r03_contract without hidden bytes",
+    "v21-derived incident dependency failure is rejected by r04_contract without hidden bytes",
+    "v21-derived reserve reuse or miscount is rejected by r07_contract without hidden bytes",
+    "each new public mutation fails only its owning contract where practical and all 13 hidden properties still execute independently"
+  ],
+  "verification": [
+    "sealed SS1/B1 v21 Evidence established the common hidden failure cluster without re-running either Cell",
+    "byte-identical diagnostic copy에서 R03/R04/R07 public exit 0과 hidden fail을 model-free로 동시에 재현했고 검사 전후 원본 대비 file mismatch는 0이었다",
+    "minimal probes confirmed R03 public names exist while hidden names do not, R04 plural evidence_ids exist while hidden singular key does not, and R07 hidden keyword call raises TypeError",
+    "existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap"
+  ],
+  "remaining_risks": [
+    "새 공개 계약의 exact bytes와 R07 일반화 cap 식은 구현 전에 별도 revision으로 동결해야 한다.",
+    "실제 실패를 public Check에 추가할 때 hidden reference solution 정보가 Worker snapshot으로 새지 않도록 별도 information-boundary 검증이 필요하다."
+  ],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py"
+  ]
+}

@@ -3481,3 +3481,58 @@ Environment Closure와 Live는 `NO-GO`다.
 
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
+
+## Profile R v21 SS1→B1 첫 pair 봉인과 진단 전환
+
+- 작업일: 2026-09-02. Environment Closure와 별도 Cell 승인 뒤 experiment
+  `exp_20260902_697bf1d0_1`의 SS1 Cell 1과 B1 Cell 2를 각각 한 번 실행했다.
+- SS1은 하나의 지속 thread에서 15 turns를 사용했고 hidden property 6개 실패로
+  `SEALED / failed`가 됐다. Cell seal self/file은 `4171f69a...0147a` /
+  `7ebafe87...5ac3`다.
+- B1은 11 sessions·11 turns를 사용했다. R01~R09는 성공했고 R03은 한 번 retry했다.
+  R10은 정확히 900.008초 뒤 interrupted되어 최종 timeout 실패가 됐고 R11~R13은
+  PENDING으로 남았다. hidden property 7개 실패, Cell seal self/file은
+  `989b526a...14f6` / `47c66fdb...2cfc`다.
+- B1의 적은 turn 수는 효율이 아니라 조기 중단 결과다. R03·R04·R07은 B1 public Check를
+  통과했지만 대응 hidden property가 실패했고 SS1도 같은 세 property를 포함한 공통 6개를
+  실패했다.
+- timeout이 남은 retry 계약을 우회한 결함은 `DEV-20260902-004`, public/hidden 의미 간극은
+  `DEV-20260902-005`로 등록했다.
+- 외부 원본 root `C:\lao-phase-f-live-697bf1d0-v21-company-pair-1`은 수정하지 않았다.
+  Controller lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`, automatic continuation false,
+  residual container/process와 source 변경은 0이다.
+- Profile R v21은 순차 세션 전략 시험이며 B2 병렬 Worker·담당자 소통 효율의 증거가 아니다.
+  정식 route는 발행하지 않고 결과를 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다.
+
+다음 관문은 Cell 3·4가 아니라 두 incident의 model-free 재현과 최소 수정 범위 확정이다. 수정은
+새 qualification·candidate·acceptance 2회·readiness·Environment Closure와 fresh pair를
+요구한다. 기존 v21 Cell과 state·Measurement·seal은 재실행·수정·재봉인하지 않는다.
+
+## Profile R v21 첫 pair model-free 실패 재현과 최소 수정 범위
+
+- 작업일: 2026-09-02. 기존 v21 원본을 보존하고 B1 workspace의 byte-identical 복사본
+  `C:\prv21-public-gap-r1`을 만들었다. `-Force` 기준 373파일, missing/extra/hash mismatch 0이며
+  검사 뒤에도 exact equality를 유지했다.
+- timeout integration parameter를 model-free로 실행해 interrupt-confirmed timeout이 retry 없이
+  Task/Attempt 최종 FAILED가 되는 현재 계약을 `1 passed in 1.54s`로 재현했다. 이 경로는
+  `_finish_or_retry`를 우회하므로 봉인된 Profile R per-task/Variant reserve가 적용되지 않는다.
+- 복사본의 R03·R04·R07 public contract는 모두 exit 0이었다. 같은 복사본의 hidden checker
+  13개 전체 실행에서 세 대응 property는 Docker와 같은 reason code로 실패했고
+  `workspace_mutated=false`였다.
+- R03 hidden은 public `parse_config`/`serialize_config`와 다른 reference 전용 API를 요구했고,
+  R04 hidden은 public `evidence_ids` 대신 단일 `evidence_id`를 읽었다. R07 hidden은 public에
+  없는 keyword signature와 상충하는 C2 non-zero 처리 의미를 요구했다.
+- 직접 원인은 Worker가 normative spec·developer tests·구현을 함께 쓰는 순환과,
+  reference-specific hidden semantics를 공개 계약에 고정하지 않은 qualification 구조다.
+- 최소 수정은 SS1/B1 공통 per-turn 1800초 봉인, 안전한 confirmed timeout의 같은-thread resume,
+  R03·R04 immutable public spec/probe, R07 strict C2 invalid-input와 일반화 cap 공개 계약,
+  live-derived 세 regression/mutation 추가로 고정했다.
+- 상세 결과는
+  `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md`,
+  incident는 `DEV-20260902-004`와 `DEV-20260902-005`에 보존했다.
+- actual model turn, SDK thread/start와 Docker workload는 0이다. Cell 3·4와 기존 v21 원본은
+  건드리지 않았다.
+
+다음 관문은 위 최소 계약을 구현하는 새 source revision과 model-free regression이다. 기존 q24,
+q4와 candidate v21은 새 성공 근거로 사용하지 않는다. 새 qualification·candidate·acceptance·
+readiness 전에는 Live를 열지 않는다.

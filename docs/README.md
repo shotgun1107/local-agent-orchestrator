@@ -60,6 +60,8 @@ docs/
 - [현실 고난도 Phase F Docker Judge 포트](./experiments/sdk-routing-realistic-high-difficulty-phase-f-docker-judge-port-model-free-result.md) — 수정된 Worker W를 기존 Docker property Judge에 전달하는 model-free 포트 계약
 - [현실 고난도 Phase F live stack preflight](./experiments/sdk-routing-realistic-high-difficulty-phase-f-live-stack-preflight-result.md) — Fake Worker→실제 Docker 전체 dry-run과 실제 SDK 0-turn preflight 결과
 - [Profile R SS1→B1 회사 v8 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md) — 두 Cell은 봉인됐지만 B1 R07 환경 결함으로 비교 무효
+- [Profile R SS1→B1 회사 v21 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md) — 두 Cell의 제품 실패, B1 R10 timeout·public/hidden 검사 간극과 Cell 3·4 중단 기록
+- [Profile R v21 첫 pair model-free 실패 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md) — timeout retry 우회와 R03·R04·R07 공개/hidden 계약 불일치 재현 및 최소 수정 범위
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
 
 ### `reviews/`
