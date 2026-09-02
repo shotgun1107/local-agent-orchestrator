@@ -2,7 +2,7 @@
   "profile": "R",
   "reference_chain": {
     "R01": {
-      "commit": "8426190d0c8a5d260a8cb3a103fcbfeb750be9fa",
+      "commit": "6f93bdb114a5706f3af5e074e62efff678944263",
       "effects": [
         {
           "path": "profile-r/work/migration-ledger.json",
@@ -17,10 +17,10 @@
           "status": "M"
         }
       ],
-      "tree": "86e5194764fc1fdbf8e843cd2531763572b9e075"
+      "tree": "45c69744b9050e62e29077fcde5076213863c3e4"
     },
     "R02": {
-      "commit": "7779e21e7eb9c40d78f35e9a7d01e196fc162dec",
+      "commit": "166750ed619d45136af095f5cf739b89535a045f",
       "effects": [
         {
           "path": "benchmarks/suites/sdk-routing-v1/stage.schema.json",
@@ -53,10 +53,10 @@
           "status": "M"
         }
       ],
-      "tree": "4d5db1e8bb76cf8a4e1f48da7467ba5e1b84a645"
+      "tree": "7c03237635307ecf892ab30b671733bcaba9f4a6"
     },
     "R03": {
-      "commit": "92441a07bd01473b6179f369def174a94f147866",
+      "commit": "c043c2a724dc1e8b3b19a68547b28dcc8b281c8e",
       "effects": [
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/capabilities.yaml",
@@ -197,10 +197,10 @@
           "status": "A"
         }
       ],
-      "tree": "b16c148a4413afebf2cb5bc2406c4add2c2e9cff"
+      "tree": "7d729a93c26623f8ef19d374aa6136846a4ecf32"
     },
     "R04": {
-      "commit": "712ef10e287bb36a325c72c48eda0a82b448a899",
+      "commit": "d16c67bcaa2f3865866a6c7937874d2c3e6c268e",
       "effects": [
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml",
@@ -335,10 +335,10 @@
           "status": "A"
         }
       ],
-      "tree": "7573e93d34d7bdda5bbf0a1f9964c00ebba70d1c"
+      "tree": "48590b8dd588e59290e5c8a213478e3c83cf0f3b"
     },
     "R05": {
-      "commit": "f6262d1c3e5b6d0e6793db0cae632a0a406b74d5",
+      "commit": "3d8cc25101e9ef7f1969d5f82780cbbbdbd28fe2",
       "effects": [
         {
           "path": "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
@@ -347,10 +347,10 @@
           "status": "A"
         }
       ],
-      "tree": "94358e098619cffd0bd0df0e34f36bb0a803a358"
+      "tree": "56d285d819270352b74f937690c1e8f1fae00e51"
     },
     "R06": {
-      "commit": "91f13dea02046edc369d88b0e151211909fdb185",
+      "commit": "d6d4100b7e18bdf2af59e62aa81d0021df3798d8",
       "effects": [
         {
           "path": "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
@@ -371,10 +371,10 @@
           "status": "M"
         }
       ],
-      "tree": "6e7b0ec13986633c554fbf1229bd87179b68c757"
+      "tree": "9fffc9a3cb456072825cf1e5345d92cf4b9af422"
     },
     "R07": {
-      "commit": "b8d2c9155e40988db7b5c4ed846d07bcf3c682c5",
+      "commit": "dbd50c1ba807dfdfa43c47ce3b7f38e376848aca",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
@@ -383,10 +383,10 @@
           "status": "A"
         }
       ],
-      "tree": "b4015f3205cb38e0fda5ac8550ace2ec0cc9465c"
+      "tree": "dd7698181b9e7f4fd72a6bd5f95d3b80005ff792"
     },
     "R08": {
-      "commit": "8f5c14cb15226470e98d8aadf4bd42d84bdf4871",
+      "commit": "2a4f4e0936db3b53b0eacfc70ada2a2faec0b6bc",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/adapter.py",
@@ -407,10 +407,10 @@
           "status": "M"
         }
       ],
-      "tree": "26ad9744e36610ef48b516feaaefefe90c38d787"
+      "tree": "fd1a1421c78af42a489bc0eb1badb16b65869788"
     },
     "R09": {
-      "commit": "0eccf1e14bce421737313d08a9229de011d9e213",
+      "commit": "2ee0a7a5f33235615ea5a38b82a93923e489e7cb",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
@@ -437,10 +437,10 @@
           "status": "M"
         }
       ],
-      "tree": "1c1df9606b6e2824514c5fa67d5e18bb29aa8b8c"
+      "tree": "ebe8638594f4d7460bc59730d95218e6498559ee"
     },
     "R10": {
-      "commit": "6844e710b50443db7810010ef49059bcc1c4336b",
+      "commit": "1e25f804acddd9c1d937d963fde11ef7eea6dc4d",
       "effects": [
         {
           "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_config.py",
@@ -467,10 +467,10 @@
           "status": "M"
         }
       ],
-      "tree": "ed073963be85263834e110d0891cef79bb0661be"
+      "tree": "f48944a62b8d268f74f1575d546ddb962e2f6d88"
     },
     "R11": {
-      "commit": "6fc64a351f4eea9c002130ad517e83b45e5bac77",
+      "commit": "5e6e0fec77fdbd6d2d85de210adc20445efbea96",
       "effects": [
         {
           "path": "tools/benchmark-runner/tests/test_judge.py",
@@ -485,10 +485,10 @@
           "status": "A"
         }
       ],
-      "tree": "cc3407c0d75d993f11a1aaa38d7dac4b76f5f84e"
+      "tree": "f2e79f810cb5292b060ffaa530c7c919afc8388e"
     },
     "R12": {
-      "commit": "6776ca80243dba971b5e874de8a10eb07eba57c5",
+      "commit": "9bb5d9af02616f5e50041083c677f362eef56e55",
       "effects": [
         {
           "path": "tools/benchmark-runner/tests/test_routing_suite.py",
@@ -497,10 +497,10 @@
           "status": "M"
         }
       ],
-      "tree": "f472c45c359f545e726d74f47afb773a83d6b7a2"
+      "tree": "62a56d11159100c99aaea1bf44936601c5f15fd6"
     },
     "R13": {
-      "commit": "ebccf726869a717830d0848ae2fb8485640acdeb",
+      "commit": "6ef6a812a177c35584a75b0a70a891dcbc4b769b",
       "effects": [
         {
           "path": "profile-r/work/operator-contract.json",
@@ -515,13 +515,13 @@
           "status": "M"
         }
       ],
-      "tree": "61c380d7d4dc4978278a54b7b767e55624e8f873"
+      "tree": "6b724bf793c8a2d2cd155ebdbf96e658bf5449d3"
     },
     "base": {
-      "commit": "65bdbabf3536bbee11c9a43d3309196762648e51",
-      "tree": "3248bf31614351b01fca7f5a9a4bd85481b014b4"
+      "commit": "b5b92a2594bad0d40cad0c63c2161a9d053e81b8",
+      "tree": "180d0e2de8ae2c4cfc17077e317babf638dca5e6"
     }
   },
   "schema_version": 1,
-  "seal_sha256": "19cf0754ab53e82546760a663904c6fe6c90a756d571f7ddeab78ef2455c3428"
+  "seal_sha256": "e1e2bdf638a347e378b5812cd0f7127b60c49d3280c5723f1dbab1a5190c453a"
 }
