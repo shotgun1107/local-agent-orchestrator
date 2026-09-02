@@ -3445,3 +3445,18 @@ Live는 `NO-GO`다.
 
 다음 관문은 별도 승인과 fresh 경로의 independent official acceptance run 2다. readiness,
 Environment Closure와 Live는 `NO-GO`다.
+
+## Profile R candidate v21 official acceptance v15 run 2 통과
+
+- 작업일: 2026-09-02. source `4b88960c917f0820ba6e83ed585fa2f227906bec`, tree
+  `60ae22400f2c1dec9164fd150cc67e4a3a25839e`에서 fresh parameter `[2]`만 실행했다.
+- 결과는 `1 passed in 198.97s`, official root 14 files, manifest 12/12 exact match다.
+- SS1/B1만 `SEALED`, Cell 3·4 `PLANNED`, public contract 13/13, 누적 Check 104/104,
+  actual model turn 0이다.
+- attestation/file manifest/JUnit SHA-256은 `f2394f2a...ba29` / `3132b4a8...3f97` /
+  `ec4af091...748e`이다.
+- alternate deep R12 Git 경로도 통과했고 Check TEMP, child process, lock residue는 0이다.
+- run 1과 run 2 official Evidence 및 basetemp는 모두 보존했다.
+
+다음 관문은 두 official Evidence와 candidate chain을 직접 결합하는 readiness package다.
+Environment Closure와 Live는 `NO-GO`다.
