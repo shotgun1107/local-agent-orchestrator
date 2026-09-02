@@ -4,7 +4,7 @@
   "cell_id": "r-p12-s1-portability",
   "checker_run_status": "completed",
   "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
-  "envelope_sha256": "1610aca0ae8a5feab9240e9acc81a7fd91936fd1250ccdb1daaf1aae0bef342c",
+  "envelope_sha256": "0489082b909ba4a1c580ba226ba83b1e8e39be6a4611c2051f5debb5e75d443d",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "b55a4a15c342b37b02ce4ad0568d03b8c23b4e0979f9e870dc4211cca7d8d251",
-  "workspace_before_sha256": "b55a4a15c342b37b02ce4ad0568d03b8c23b4e0979f9e870dc4211cca7d8d251",
+  "workspace_after_sha256": "a812beea6dea6f21145a99083a786f8447f47b674b62a6a667c59e9cddf75913",
+  "workspace_before_sha256": "a812beea6dea6f21145a99083a786f8447f47b674b62a6a667c59e9cddf75913",
   "workspace_mutated": false
 }
