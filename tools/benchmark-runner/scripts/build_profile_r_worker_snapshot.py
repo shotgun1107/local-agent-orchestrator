@@ -183,11 +183,20 @@ def build_snapshot(
     overlay_entries = _overlay_entries(repository)
     base_paths = {str(item["path"]).casefold() for item in base_entries}
     overlay_paths = {str(item["path"]).casefold() for item in overlay_entries}
+    override_paths = {
+        _safe_relative_path(str(value)).as_posix().casefold()
+        for value in allowlist.get("overlay_override_paths", [])
+    }
     collisions = base_paths & overlay_paths
-    if collisions:
-        raise RuntimeError(f"public overlay collides with base snapshot: {sorted(collisions)}")
+    if collisions != override_paths:
+        raise RuntimeError(
+            "public overlay collision contract differs: "
+            f"collisions={sorted(collisions)}, overrides={sorted(override_paths)}"
+        )
     entries: list[dict[str, str | None]] = [
-        {**entry, "source_path": None} for entry in base_entries
+        {**entry, "source_path": None}
+        for entry in base_entries
+        if str(entry["path"]).casefold() not in override_paths
     ] + overlay_entries
     entries.sort(key=lambda item: str(item["path"]).encode("utf-8"))
     if output_root.exists() or manifest_path.exists():
@@ -259,6 +268,7 @@ def build_snapshot(
             "file_count": len(file_records),
             "base_file_count": len(base_entries),
             "public_overlay_file_count": len(overlay_entries),
+            "public_overlay_override_paths": sorted(override_paths),
             "source_total_bytes": sum(int(item["source_size"]) for item in file_records),
             "worker_total_bytes": sum(int(item["worker_size"]) for item in file_records),
             "worker_tree_aggregate_sha256": _tree_aggregate(file_records),
