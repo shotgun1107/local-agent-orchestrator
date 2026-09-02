@@ -3296,3 +3296,20 @@ readiness, Environment Closure와 Live는 계속 `NO-GO`다.
 
 다음 관문은 새 reference chain→Judge qualification→Task Pack qualification→candidate다.
 official acceptance, readiness, Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R reference q4와 Judge source bundle 봉인
+
+- 작업일: 2026-09-02. atomic retry source `b74239e15744d63a4ef774bfa56cdee789b0d045`에서
+  Worker snapshot, 14-commit reference와 Judge source bundle을 다시 만들고 commit
+  `eb062d3ccd2046372589782c4072432e7b749145`에 고정했다.
+- Worker aggregate는 `01bc5a54...76e7`, manifest file SHA는 `3a0594bd...ce9a`다.
+- reference base/final tree는 `180d0e2d...a5e6` / `6b724bf7...49d3`, chain seal은
+  `e1e2bdf6...453a`, bundle SHA는 `e4ddac61...000a`다.
+- Judge source bundle은 47파일, payload aggregate `6f50066f...a735`, 상태
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다. R11 known-bad public/hidden 격리와 관련 회귀
+  33 passed를 확인했다.
+- q22/q3/v20과 실패 preflight는 수정하거나 성공 근거로 재사용하지 않았다. model,
+  SDK thread/turn과 Docker workload는 0이다.
+
+다음 관문은 clean source의 fresh q23 Docker Judge qualification이다. Task Pack q4,
+candidate, acceptance와 Live는 `NO-GO`다.
