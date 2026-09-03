@@ -103,6 +103,7 @@ Task Pack과 완료시간 계약의 model-free 근거이지 새 Live 승인이�
 아니다.
 
 source commit `7185f5f823757406238c1ef2d6d3e0c0fbf3393f` 뒤 fresh q25 Docker Judge
-qualification v22도 `CHALLENGE_READY`로 완료됐다. 다음 순서는 q25와 q5를 직접 결합한 새 Phase
-E candidate, acceptance 2회와 readiness다. 그 뒤에도 별도 Environment Closure와 새 사용자
-승인 없이는 실제 SS1/B1 Cell을 실행하지 않는다.
+qualification v22도 `CHALLENGE_READY`로 완료됐다. q25와 q5를 직접 결합한 Phase E candidate
+v22도 source `a7016e9c...d5b9`에서 생성·검증됐다. 다음 순서는 independent acceptance 2회와
+readiness다. 그 뒤에도 별도 Environment Closure와 새 사용자 승인 없이는 실제 SS1/B1 Cell을
+실행하지 않는다.

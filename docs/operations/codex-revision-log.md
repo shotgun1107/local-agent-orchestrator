@@ -3605,3 +3605,22 @@ readiness 전에는 Live를 열지 않는다.
 
 다음 관문은 q25 qualification v22와 Task Pack q5 qualification/budget을 직접 결합한 새 Phase E
 candidate다. acceptance와 Live는 계속 `NO-GO`다.
+
+## Profile R q25·q5 Phase E candidate v22
+
+- 작업일: 2026-09-03. stage를 schema v4로 올리고 q25 qualification v22와 Task Pack q5/budget,
+  Cell 완료시간 9000초를 직접 결합했다. stage source commit/tree는
+  `a7016e9cb4d69f60e56fc8e74dfb74d10fa0d5b9` / `caa6014e42df6033512294dc90acc212c62ec132`다.
+- clean source Phase E·routing·deadline 회귀는 63 passed다. production Python 3.12.10과 SDK
+  0.144.4에서 ChatGPT account와 `gpt-5.6-sol` visibility를 0-turn 확인하고 candidate v22를
+  생성했다. API-key 환경 이름과 SDK thread/start·turn/start는 0이다.
+- candidate schema는 4, experiment는 `exp_20260903_d6db9848_1`, Plan은
+  `d6db9848...62fb0`이다. budget mode는 `cell_completion_deadline`, Cell deadline은 9000초이며
+  planned model turn ceiling 필드는 없다.
+- bindings는 `2f30a896...e01ce`, candidate seal/file은 `1c5a49af...64c65` /
+  `92d4ff1a...52ba`, files manifest는 `4e80feb7...c46b`다.
+- 생성기 내부 verifier, 별도 process verifier와 checked-in v22 회귀 1개가 통과했다. actual
+  model turn은 0이다.
+
+다음 관문은 candidate v22 independent model-free acceptance run 1이다. acceptance 2,
+readiness, Environment Closure와 Live는 계속 `NO-GO`다.

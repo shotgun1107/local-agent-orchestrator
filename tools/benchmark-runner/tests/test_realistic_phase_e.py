@@ -1355,3 +1355,77 @@ def test_checked_in_profile_r_q24_q4_v21_candidate_verifies() -> None:
     assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
         "342df792e9e869615affc7b364236b5489c15d4e04b0adfe474196f106961357"
     )
+
+
+def test_checked_in_profile_r_q25_q5_v22_candidate_verifies() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v22"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads(
+        (candidate / "source-bindings.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r = bindings["profiles"][0]
+
+    assert seal.schema_version == 4
+    assert seal.source_commit == "a7016e9cb4d69f60e56fc8e74dfb74d10fa0d5b9"
+    assert seal.experiment_id == "exp_20260903_d6db9848_1"
+    assert seal.plan_fingerprint == (
+        "d6db9848ea25a2a74f764fcc9d21abe4f328f6174ee6710fa402f1876f462fb0"
+    )
+    assert seal.seal_sha256 == (
+        "1c5a49af8cdf5ad989ffcdedb805bf9061fccf15fd9679f2b62ccf69b7b64c65"
+    )
+    assert seal.files_manifest_sha256 == (
+        "4e80feb7f0c8988484d46607e71aa1e2551ec2f278d27f4694207aef9eabc46b"
+    )
+    assert seal.budget_mode == "cell_completion_deadline"
+    assert seal.cell_completion_deadline_seconds == 9000
+    assert seal.planned_initial_model_turns is None
+    assert seal.planned_model_turn_ceiling is None
+    assert seal.actual_model_turns == 0
+    assert bindings["source_tree"] == "caa6014e42df6033512294dc90acc212c62ec132"
+    assert bindings["bindings_sha256"] == (
+        "2f30a8962622290b386f58ac2d77a7e0f12d529b7b8ae909ea15ea7e778e01ce"
+    )
+    assert profile_r["qualification_sha256"] == (
+        "c756c9051ecd833fedf72740d3113c3aa89876555b9bde83dea39b26a20df58e"
+    )
+    assert profile_r["qualification_seal_sha256"] == (
+        "640bf71bd9df15a8def695a00e36f84e76fc7844d4076e7e66170f61baa19b7b"
+    )
+    assert profile_r["docker_environment_sha256"] == (
+        "c5f9595d7083df347472dd02f55c1265fc474cf7b0f479e7e49fb3ae9f5001db"
+    )
+    assert profile_r["task_pack_qualification_sha256"] == (
+        "f102e3ef48b5f10f173c282a98ce0b21cacfb7a164d716124cdee357d9c13fa5"
+    )
+    assert profile_r["task_pack_qualification_seal_sha256"] == (
+        "32d4327d728288d08242b8a3779eff35b8e41b556f634a9007951e8be0b06a97"
+    )
+    assert profile_r["task_budget_sha256"] == (
+        "366c260dfb412623d02838a5cf7a78a95a71f6ba6a7ccfbbbbb7e319cb7046be"
+    )
+    assert profile_r["task_budget_seal_sha256"] == (
+        "4d5076cabe4df5553b24850d5d0fe1e5a2097fd8b6b505932d9c367c116ce758"
+    )
+    assert plan["decision_policy"] == {
+        "budget_mode": "cell_completion_deadline",
+        "cell_completion_deadline_seconds": 9000,
+        "deadline_scope": "from_cell_claim_acceptance_through_terminal_cell_seal",
+        "explicit_confirmation_per_cell": True,
+        "model": "gpt-5.6-sol",
+        "one_cell_per_invocation": True,
+        "phase_f_model_usage_approved": False,
+        "reasoning_effort": "high",
+        "route_decision_allowed": False,
+        "stage_id": "realistic-high-difficulty-initial",
+        "stop_after_first_profile_pair": True,
+    }
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "92d4ff1a44ca1e84275775d302d358d57df9ad06ec151730bacbef1998d652ba"
+    )

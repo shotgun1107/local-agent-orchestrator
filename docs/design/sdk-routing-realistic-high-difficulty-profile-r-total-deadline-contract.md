@@ -1,6 +1,6 @@
 # Profile R 전체 완료시간 단일 제한 계약
 
-- 문서 상태: `Q25_DOCKER_QUALIFIED_AWAITING_NEW_CANDIDATE`
+- 문서 상태: `CANDIDATE_V22_VERIFIED_AWAITING_ACCEPTANCE`
 - 결정일: 2026-09-03
 - 적용 대상: Profile R v21 이후 새 revision의 SS1/B1 비교
 - 적용 제외: 기존 q24·q4·candidate v21·acceptance·readiness·live v21
@@ -173,5 +173,16 @@ image digest를 사용한 reference와 13개 negative mutation이 expectation `1
 raw 독립 검증과 projection 재계산도 통과했다. qualification v22 file SHA는
 `c756c905...df58e`, raw seal은 `640bf71b...19b7b`이며 residual container와 model turn은 0이다.
 
-따라서 fresh Docker qualification 관문은 완료됐다. 아직 q25·q5를 stage에 결합한 새 candidate,
-acceptance와 readiness는 없으므로 Live는 계속 `NO-GO`다.
+따라서 fresh Docker qualification 관문은 완료됐다. q25 봉인 시점에는 q25·q5를 stage에 결합한
+새 candidate, acceptance와 readiness가 없어 Live는 `NO-GO`였다.
+
+### Phase E candidate v22
+
+schema v4 stage가 q25 qualification v22와 Task Pack q5/budget을 직접 결합했고, clean source
+`a7016e9cb4d69f60e56fc8e74dfb74d10fa0d5b9`에서 candidate v22를 만들었다. Plan은
+`d6db9848...62fb0`, candidate seal은 `1c5a49af...64c65`이며 budget mode는
+`cell_completion_deadline`, deadline은 9000초다. planned model turn ceiling 필드는 없고 actual
+model turn은 0이다.
+
+candidate 생성기 내부 검증과 별도 process verifier, checked-in v22 회귀가 통과했다. 다음 관문은
+independent model-free acceptance run 1이며 Live는 계속 `NO-GO`다.

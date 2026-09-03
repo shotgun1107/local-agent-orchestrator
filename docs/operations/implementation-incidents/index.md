@@ -4622,7 +4622,7 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 
 ### 채택한 해결
 
-새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5 model-free 검증은 완료했으며 fresh Docker qualification과 새 candidate 전까지 incident는 investigating을 유지한다.
+새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5, fresh Docker Judge q25, Phase E candidate v22 검증까지 완료했으며 독립 acceptance와 readiness 전까지 incident는 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -4657,20 +4657,21 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - deadline schema·unlimited turn accounting·deadline 이후 SS1/B1 새 dispatch 거부 회귀 10개가 통과했다.
 - Phase E/F·SS1/B1 scheduler 핵심 model-free 회귀는 136 passed, 1 skipped, 4 deselected였고 별도 B1 reference 통합은 두 경우 모두 R01~R13과 cumulative public Checks 104/104를 완료했다.
 - Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.
+- schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.
 
 ### 남은 위험
 
-- 새 Judge source를 실제 격리 Docker 경계에서 검증하는 fresh qualification은 아직 실행하지 않았다.
-- q5와 fresh Docker qualification을 직접 결합한 새 candidate·acceptance·readiness 전에는 실제 deadline mode Cell을 실행할 수 없다.
+- candidate v22의 독립 acceptance 2회와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
 - 현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다.
 
 ### 추적 정보
 
-- 관련 커밋: 7185f5f823757406238c1ef2d6d3e0c0fbf3393f
+- 관련 커밋: 7185f5f823757406238c1ef2d6d3e0c0fbf3393f, a7016e9cb4d69f60e56fc8e74dfb74d10fa0d5b9
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md
 - 출처: benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json
 - 출처: benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json
 - 출처: stages/b1-sequential/src/orchestrator/schedule.py
