@@ -49,5 +49,5 @@ API-key 환경 이름, SDK thread/start, turn/start와 model turn은 모두 0이
 통과했다.
 
 q24·q4·candidate v21과 live v21은 수정하지 않았다. candidate v22 independent model-free
-acceptance run 1은 새 경로에서 통과했다. 다음 관문은 acceptance run 2이며 readiness,
+acceptance 두 회차는 서로 다른 새 경로에서 모두 통과했다. 다음 관문은 readiness package이며
 Environment Closure와 Live는 아직 `NO-GO`다.
