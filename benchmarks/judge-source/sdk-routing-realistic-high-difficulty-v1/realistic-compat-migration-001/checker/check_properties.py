@@ -354,14 +354,17 @@ import contextlib, io, json, sys
 from pathlib import Path
 sys.path.insert(0, ".")
 from cli.config_cli import main
-from runtime.parser import parse
-from runtime.serializer import serialize
-current = json.loads(Path("inputs/current.json").read_text(encoding="utf-8"))
-assert parse(serialize(parse(current))) == current
+from runtime.parser import parse_config
+from runtime.serializer import serialize_config
+current_text = Path("inputs/current.json").read_text(encoding="utf-8")
+current = json.loads(current_text)
+serialized = serialize_config(parse_config(current_text))
+assert parse_config(serialized) == current
 stdout, stderr = io.StringIO(), io.StringIO()
-with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-    code = main(["inputs/current.json"])
-assert code == 0 and stdout.getvalue() == serialize(current) + "\n"
+with contextlib.redirect_stderr(stderr):
+    code = main(["inputs/current.json"], stdout=stdout)
+expected = json.dumps({"config": current, "ok": True}, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+assert code == 0 and stdout.getvalue() == expected
 assert stderr.getvalue() == ""
 '''
     passed = fixture.is_dir() and _run_hidden_python(root, fixture, source)
@@ -395,7 +398,12 @@ def _incident_fixture(root: Path, _catalog: dict[str, Any]) -> dict[str, object]
             set(item.get("evidence_ids", [])) <= evidence_ids
             and set(item.get("uncertainty_ids", [])) <= uncertainty_ids
             for item in [*events, *hypotheses]
-        ) and all(item["evidence_id"] in evidence_ids for item in claims)
+        ) and all(
+            bool(item.get("evidence_ids"))
+            and set(item["evidence_ids"]) <= evidence_ids
+            and "evidence_id" not in item
+            for item in claims
+        )
         report = (base / "report/final-report.md").read_text(encoding="utf-8")
         headings = [line[3:] for line in report.splitlines() if line.startswith("## ")]
         passed = (

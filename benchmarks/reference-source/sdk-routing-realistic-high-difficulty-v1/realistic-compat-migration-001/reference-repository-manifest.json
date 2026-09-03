@@ -6,23 +6,23 @@
   "format": "git_bundle_v2",
   "git_object_format": "sha1",
   "commit_count": 14,
-  "base_commit": "b5b92a2594bad0d40cad0c63c2161a9d053e81b8",
-  "final_commit": "6ef6a812a177c35584a75b0a70a891dcbc4b769b",
-  "final_tree": "6b724bf793c8a2d2cd155ebdbf96e658bf5449d3",
+  "base_commit": "302d432d69c21539e58093e7b6a06e783fe5185a",
+  "final_commit": "5cf5fdf69522d0278ec6c87225ca10c4ece4bcce",
+  "final_tree": "1de4d9d95a4d2a598f5948b0ca9f37636d30cf0f",
   "bundle": {
     "path": "reference-r01-r13.bundle",
-    "size": 355039,
-    "sha256": "e4ddac6177324abdfdaad35fcc0c845f4661ff07667b03d789dff0601eee000a"
+    "size": 371623,
+    "sha256": "057d552735599ed44d85de91cf9db726515e1bea331333218b49e84cda892f87"
   },
   "chain": {
     "path": "reference-task-chain.json",
-    "sha256": "4747d4855a7b585a4900527bf166cdb5a833c754a37580e7dcd81b565c6e3b87"
+    "sha256": "649eb812af773c10f21f9d19128c06d0a00754de691d97faef6446bff5c9a5be"
   },
   "chain_seal": {
     "path": "reference-chain-seal.json",
-    "sha256": "4c557cd0063ebfd517246c70489689286cf6abd47601555023aaa7ec9cc2636f",
-    "seal_sha256": "e1e2bdf638a347e378b5812cd0f7127b60c49d3280c5723f1dbab1a5190c453a"
+    "sha256": "1005f0a96992be480cbe0d24d0d0f9c8e49517de5e0795295e9dc8676a2ed608",
+    "seal_sha256": "817e12ec9c5eb40b8ec3e00c56260eb4e5de6c7820d0aa279d8fb8180fe2393d"
   },
   "worker_visible": false,
-  "seal_sha256": "4739376019dd7108189a33b64ea70887a1cf9d9b164bc8c7caca3bcb50a37060"
+  "seal_sha256": "d44283a2b1184f354a6fe15ccaf0b4224960576dd1d1c94cebde5204eb1512a8"
 }

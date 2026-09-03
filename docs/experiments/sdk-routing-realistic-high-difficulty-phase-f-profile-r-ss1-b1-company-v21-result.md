@@ -138,8 +138,10 @@ R04 hidden은 공개 `evidence_ids` 대신 단일 `evidence_id`를 요구했다.
 Cell 3·4와 기존 v21 Cell 재실행은 금지한다. 먼저 두 incident의 원인을 model-free로
 재현하고 다음 항목을 새 revision에서 검증한다.
 
-1. terminal timeout을 structured failure와 남은 Task/Variant budget에 맞춰 retry, resume,
-   최종 실패 중 하나로 결정한다.
+1. 다음 revision은 Cell당 R01~R13 전체 완료 wall-clock 9000초만 hard limit으로 사용한다.
+   Task·turn별 timeout과 호출·Attempt·retry/resume 상한은 제거하고 횟수·token·비용은
+   Measurement로만 기록한다. exact 계약은
+   `docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md`에 있다.
 2. R03·R04·R07 실제 실패를 공개 정보만으로 재현하는 새 회귀와 mutation을 만들되 hidden
    답안 정보를 Worker에 노출하지 않는다.
 3. 수정 source는 새 q Judge qualification, Task Pack qualification, candidate, 독립

@@ -3536,3 +3536,53 @@ Environment Closure와 Live는 `NO-GO`다.
 다음 관문은 위 최소 계약을 구현하는 새 source revision과 model-free regression이다. 기존 q24,
 q4와 candidate v21은 새 성공 근거로 사용하지 않는다. 새 qualification·candidate·acceptance·
 readiness 전에는 Live를 열지 않는다.
+
+## Profile R 전체 완료시간 단일 제한 결정
+
+- 작업일: 2026-09-03. 사용자 결정에 따라 v21 진단의 최초 per-turn 1800초, Task당 2,
+  Variant retry/resume 2, Cell 최대 15와 model-active 7200초 수정안은 구현 전에 폐기했다.
+- 다음 revision의 시험 하나는 SS1 또는 B1 한 Cell이 R01~R13 전체를 수행하고 terminal seal을
+  만드는 과정이다. 각 Variant에 같은 wall-clock 9000초를 독립적으로 준다.
+- Task·turn timeout, 호출·Attempt·retry/resume 횟수와 model-active 상한은 hard budget에서
+  제거한다. 호출 하나는 Cell 잔여시간을 사용한다.
+- model turn, SDK call, session, retry/resume, token, 비용과 Task별 시간은 계속 측정하지만
+  admission 또는 pass/fail 상한으로 사용하지 않는다.
+- secret·scope·protected path·source/Plan/state/seal 무결성과 terminal unknown은 시간 예산과
+  별개의 안전 중단으로 유지한다.
+- 새 정본은
+  `docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md`이며
+  v21 결과·q24·q4·candidate·acceptance·readiness·live Evidence는 수정하지 않는다.
+- 이번 턴의 actual model turn, SDK thread/start와 Docker workload는 0이다.
+
+다음 관문은 단일 deadline 계약과 R03·R04·R07 공개/hidden 계약 정렬을 함께 구현하고 model-free
+회귀를 통과하는 것이다. 기존 v21 Cell 3·4 또는 새 Live 실행은 아직 허용하지 않는다.
+
+## Profile R 단일 완료시간 구현·Task Pack q5 봉인
+
+- 작업일: 2026-09-03. Task·호출별 상한을 제거하고 SS1/B1 각 Cell이 R01~R13 전체와 terminal
+  seal을 끝내는 wall-clock 9000초만 hard limit으로 사용하는 source 계약을 구현했다.
+- B1 scheduler는 deadline mode에서 per-Task timeout, max turns, max attempts와 retry/resume
+  횟수 상한을 사용하지 않는다. 각 Worker·Check 대기는 남은 Cell 시간을 받는다. SS1도 같은
+  deadline을 매 turn에 전달하고 self-review 횟수를 제한하지 않는다.
+- R03·R04의 immutable Worker-visible contract와 독립 behavior probe를 추가하고 hidden Judge를
+  같은 API·필드 의미로 정렬했다. R07은 C2의 reserve 사용과 reserve 초과를 거부하고 일반화
+  keyword cap 계약을 public/hidden 양쪽에 고정했다.
+- Worker snapshot은 132파일, manifest file SHA `258f607d...3a77e`, tree aggregate
+  `6a168df7...6eff`다. reference는 14개 선형 commit으로 다시 만들었고 chain seal은
+  `817e12ec...2393d`, manifest seal은 `d44283a2...512a8`이다.
+- Judge source bundle은 `PROFILE_R_SOURCE_BUNDLE_VERIFIED`, payload aggregate
+  `d205e481...95c36`이다. reference positive, pristine, 13개 전용 mutation과 Worker test-oracle
+  공격을 model-free로 검사했다.
+- Task Pack q5는 positive 13/13, cumulative public Checks 104/104, public negative mutation
+  13/13 rejected와 Worker information boundary PASS로 `TASK_PACK_READY`다. qualification
+  file/seal은 `f102e3ef...3fa5` / `32d4327d...b06a97`, budget file/seal은
+  `366c260d...046be` / `4d5076ca...ce758`이다.
+- model-free 회귀는 q5/reference/budget 22 passed, deadline 전용 10 passed, Phase E/F·SS1/B1
+  핵심 136 passed·1 skipped·4 deselected, 추가 영향 범위 75 passed·2 skipped와 기대 파일 수
+  교정 1 passed다. B1 통합 두 경로는 R01~R13과 누적 Check 104/104를 끝냈고 sandbox 권한이
+  필요한 마지막 Windows process inventory만 skip됐다.
+- actual model turn, SDK thread/start와 Docker workload는 0이다. 기존 v21 state, raw,
+  Measurement, seal과 Cell 3·4는 건드리지 않았다.
+
+다음 관문은 변경 source를 commit한 뒤 fresh Docker Judge qualification을 만들고 q5와 직접
+결합하는 것이다. 그 전에는 새 candidate·acceptance·readiness 또는 Live를 시작하지 않는다.

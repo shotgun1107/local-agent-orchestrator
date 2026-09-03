@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "incident_id": "INC-2025-02-14-CHECKOUT",
+  "hypotheses": [
+    {"hypothesis_id":"HYP-001","statement":"rel-204의 인증 재시도 변경이 결제 API 오류 증가를 유발했다.","status":"unconfirmed","supporting_evidence_ids":["EV-B1","EV-B2","EV-A2","EV-A3","EV-A5"],"conflicting_evidence_ids":["EV-C2","EV-C4"],"uncertainty_ids":["UNC-002","UNC-003"]},
+    {"hypothesis_id":"HYP-002","statement":"인증 업스트림 지연이 결제 API 오류 증가를 유발했다.","status":"unconfirmed","supporting_evidence_ids":["EV-C2"],"conflicting_evidence_ids":["EV-A5","EV-C4"],"uncertainty_ids":["UNC-002","UNC-003"]}
+  ]
+}

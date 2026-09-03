@@ -2,7 +2,7 @@
   "profile": "R",
   "reference_chain": {
     "R01": {
-      "commit": "6f93bdb114a5706f3af5e074e62efff678944263",
+      "commit": "c7324194c63fac5334f7f55dea741958f15331b2",
       "effects": [
         {
           "path": "profile-r/work/migration-ledger.json",
@@ -17,10 +17,10 @@
           "status": "M"
         }
       ],
-      "tree": "45c69744b9050e62e29077fcde5076213863c3e4"
+      "tree": "c177ce698900379d76d38576cc7db4ac16f5174a"
     },
     "R02": {
-      "commit": "166750ed619d45136af095f5cf739b89535a045f",
+      "commit": "4b9f58545a04ff111b83dfc2186686afd483be90",
       "effects": [
         {
           "path": "benchmarks/suites/sdk-routing-v1/stage.schema.json",
@@ -53,10 +53,10 @@
           "status": "M"
         }
       ],
-      "tree": "7c03237635307ecf892ab30b671733bcaba9f4a6"
+      "tree": "971c872702537510d65a2b1cc765b19f40290b9b"
     },
     "R03": {
-      "commit": "c043c2a724dc1e8b3b19a68547b28dcc8b281c8e",
+      "commit": "1f18df8a2afa916ebba50a67fb6f831aa862146c",
       "effects": [
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/capabilities.yaml",
@@ -66,8 +66,8 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml",
-          "sha256": "0af1c8977d59e42264e23c4ec83cc59d58d211758ae3a72ad5effcec7afc6bca",
-          "size": 979,
+          "sha256": "a7d1221436fa085536177fa60d9772ebe84a60d5f9d87ccfdb2365c4419064c8",
+          "size": 947,
           "status": "A"
         },
         {
@@ -84,8 +84,8 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md",
-          "sha256": "20d71bcc6f55b1a93be7c3ef4c3613dd600ba85052a4996fea3d4db0276b9efe",
-          "size": 290,
+          "sha256": "af6863a6518e2487375a70c922277125689c31c3cf92938392ea855893ba96c5",
+          "size": 860,
           "status": "A"
         },
         {
@@ -96,111 +96,117 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py",
-          "sha256": "469957af822975a845c1a67a506f7c62a8d23ae4a1ead8b686eeb80175fe250e",
-          "size": 54,
+          "sha256": "4f260698b8bfcca04b190119799af0665b77942e3c0745b5032650cf683c0871",
+          "size": 63,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py",
-          "sha256": "5352c71243f4af9f9a222c74d8521ccf0a7938f2697cd6707eda294751be1c0d",
-          "size": 2318,
+          "sha256": "eb324aa1599c8b63bb54ce1a26acedb5be95287a338515ff15e3f94cee0163c7",
+          "size": 2257,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py",
-          "sha256": "b5c06ce3a9de2d514d06ba1be440b9184cedd95a85490dc13517c5b5b3a98845",
-          "size": 785,
+          "sha256": "839dea327d08f32216caa7c811ed7ce24217fdf9eadd80ccb689a876515d0f63",
+          "size": 1509,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py",
-          "sha256": "2ddfb83783e90ddb0f1bc57194ae8c4b86d801decc11cd9e35cca3e9e15da571",
-          "size": 1208,
+          "sha256": "2a574432b05af1cd99d1761a4ee772429ea650109e57b79b47d199ef49164ac2",
+          "size": 2074,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py",
-          "sha256": "c74e9f98e3efa5a6054bf6e65a48bc31788255e295cbb892e98971b0b75ffe85",
-          "size": 65,
+          "sha256": "ca119a2bb71b9ca6de541d28de1362613b2952b74ae7b565ce17358d1eed432e",
+          "size": 42,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py",
-          "sha256": "288c7b041076b6cc41c5b2951a4ce98a2dc783fafa859374f201b4c9a9444448",
-          "size": 798,
+          "sha256": "be967fbe110f7cefe470e8df4230da8c83561f97a1b17f2795f4dbd3456d3cc5",
+          "size": 1788,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json",
-          "sha256": "f63ed5558a7b4bbd17a7d5c4025d16909859800fef3c8692e678d329b24721d0",
-          "size": 88,
+          "sha256": "06e4e2951bb640fdb5de53f40075b91756267036c5b1d298bf1898a6175fd5bf",
+          "size": 249,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json",
-          "sha256": "49d6e24d07ce3eafe7a47d1b405bee26989b75079a68d3bf141e5f811e68e794",
-          "size": 76,
+          "sha256": "7c9a83cf39786887ea283f012a8271a17c9fea3f51b49b07574e2b4f9e672b25",
+          "size": 173,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py",
-          "sha256": "4162241a3d3ef075f2067c39805d34777b2a524ed0b3aa239cc2c93569a91ce7",
-          "size": 71,
+          "sha256": "82b8bc950205db45557ec56e626762dbf3325ba4dec84c3c2a1ae2872e66f7a8",
+          "size": 142,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py",
-          "sha256": "728e3c1f64f9598c6a021e56ac2987f865f547bf4e193c178f1753ecdb63eb84",
-          "size": 451,
+          "sha256": "9674874e09d063820f9c4ca1e31d596b1c2f2781266d0032897de22d60e3f83c",
+          "size": 1489,
+          "status": "A"
+        },
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/pytest.py",
+          "sha256": "92072a5ef3b7ab059899b50803b9b5e2a2bd430781a96e5b819c2e1ffbee87a1",
+          "size": 4982,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py",
-          "sha256": "a719386aecd237a3949bc2455214c12b4a6546073b005fdbd4eed3766a948ac1",
-          "size": 69,
+          "sha256": "6208265bf33ce360d7012b09c1476c38306aeb0dcd983a46a194f9b8a73f4bc8",
+          "size": 180,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py",
-          "sha256": "5b14524b29a15aa4e3f9b7357e55eb8ceded64b7959498c837e87d09be44da81",
-          "size": 648,
+          "sha256": "12e83aeef67056056b6ca042cb35c9cd3381cd8ed3e4d199ce0c654daee1fac8",
+          "size": 1504,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py",
-          "sha256": "729c8fa3a2d5be1ceed8891df393e7c32c61077979b2687e237ee082cc701dc9",
-          "size": 270,
+          "sha256": "a91d7167e2eea8fbe921c563e8dfd9f4abd55d33e8c131034833bd44231cf39a",
+          "size": 503,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py",
-          "sha256": "7d3717654e227f2dc4c25ee5e0a3c34ef88a0c8451fd86a3ea7d9719bbc1aedf",
-          "size": 68,
+          "sha256": "da83a24c513219851fd2152897130cf99931d295a6502901a6489bc629845166",
+          "size": 411,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py",
-          "sha256": "9e7966c51dfeb6b56f3fe49bc737bde7ce8033b607b4ed5f0b5fcf5be645712d",
-          "size": 189,
+          "sha256": "8f568a1711c3c7876b500008d2d79da963bf6aa449e5743ada7f8043f2a3c54a",
+          "size": 600,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py",
-          "sha256": "ff4c6c1a469dcabe08b0e1e22afafe393951041964b205fe0dc9c190d77539b9",
-          "size": 2139,
+          "sha256": "003dd4fddfbcce771b1504ebf4e4062998223b79224656d89789d8bb4656542a",
+          "size": 4264,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md",
-          "sha256": "2ba1c493a3582ab75e6a4235ec4a8ab79442ff328b5aabe6fb134da2eaca814e",
-          "size": 1399,
+          "sha256": "231fa392e9fe59cde2ed39ed51a29c4df3c3172acdb72c78fb4be89663f78347",
+          "size": 2635,
           "status": "A"
         }
       ],
-      "tree": "7d729a93c26623f8ef19d374aa6136846a4ecf32"
+      "tree": "1e48ba36df776ece632ac8172200e3c47cdf67a0"
     },
     "R04": {
-      "commit": "d16c67bcaa2f3865866a6c7937874d2c3e6c268e",
+      "commit": "671579d8ab1abc5f5ef3277b14f429d914fb9f71",
       "effects": [
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml",
@@ -210,8 +216,8 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml",
-          "sha256": "d53e99a67062f57876e79dfaf90505016bd0455380ad89a266b937a13e3c2e12",
-          "size": 1002,
+          "sha256": "e0b58ad1a543be6c1c912eaa245f2744040038035dbb26b222d2e2f8c52f5f76",
+          "size": 961,
           "status": "A"
         },
         {
@@ -228,20 +234,20 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md",
-          "sha256": "23396c5bb4f28dd44af9e1e9b20803d1ef89a9adf9d653cbe53c625bdc34cda2",
-          "size": 387,
+          "sha256": "04a5f3a99cbc245e20cda9ec707b67f1aa0fe85adcddda0a3391c59dedcdb3bf",
+          "size": 891,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json",
-          "sha256": "8804eaedf76d205114415faf898b9ae8e33788593abf6b233b09923ef43ba590",
-          "size": 2584,
+          "sha256": "37c0a630c718cc3d0647cd52c1edc0ec481e5f508fe8752dbedfeb54a23f002f",
+          "size": 3328,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json",
-          "sha256": "87cdd46eded6f803e4e285875b9c085b5c1de4dc765f81722aa41761398f8f3c",
-          "size": 166,
+          "sha256": "765795e407a2e698c0ac5cf1ee87309e1b5a43d8e2e410615ce2611b87e8f77e",
+          "size": 975,
           "status": "A"
         },
         {
@@ -252,105 +258,111 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py",
-          "sha256": "5248b7665ab355de206a4ce9b26c47e9ea8292c4d94f181f2a962a1f8ba1cc32",
-          "size": 55,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py",
-          "sha256": "9a9c595c00e34f391a21f4c4cae26f1fb93a37acb09cc5a877c80443ae9e8433",
-          "size": 1641,
+          "sha256": "3e592858c5cdba3106f801d0290d1de9e8dd48f069d84fa02b31276a0acfdf97",
+          "size": 4019,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py",
-          "sha256": "e92fd6294719e799fd9ebfd79cda1ef4e6198ebf366202c7e9d9b3850c5ec517",
-          "size": 2114,
+          "sha256": "2bed9667a4f132e7107e128e0af60aa5018880a326e7e59f3ed50340990a691a",
+          "size": 4717,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py",
-          "sha256": "3fb8c62cfb25117d3208afaf978989c821ea12cf1de64b03f79e9250c36e7a08",
-          "size": 1636,
+          "sha256": "36e72a7a7eca71c1aeef3272ca570f8297440258a43155f477e297f77f3e4a38",
+          "size": 4055,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json",
-          "sha256": "3eef4a18382138fb9c7f9d7d0aa8691625d3d1accef5d1c79e79fd26dccba2a5",
-          "size": 774,
+          "sha256": "26ee9d52f7a828eae793e29268d15c344f2f7d904905a2334a560c13e5cfd66a",
+          "size": 412,
+          "status": "A"
+        },
+        {
+          "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/pytest.py",
+          "sha256": "60397a6481ef57047344f5d61caed063d48d99f4ccee73774deaab9678efe424",
+          "size": 2556,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json",
-          "sha256": "e8090d43fa5316671b2f5300b283686beb9e1575d33be9729bab24bb3e51fc85",
-          "size": 392,
+          "sha256": "b99d382c9be9e72d8432368084c303f042e8f4299b128a5b133013405f3b3dc4",
+          "size": 717,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json",
-          "sha256": "6a285c59406500d9b020bddc33ce30e45ad911b380a1f1870cb2a3801aa5256f",
-          "size": 1316,
+          "sha256": "f78ab940e6ec9584b4ea84046ad655a24939f869ea3fbd719924d6ab9d90fbea",
+          "size": 1613,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md",
-          "sha256": "fe89c9c8ba0a77bc7f0e9ee33f864f98d3f5dd7826f3b7d61771ee22af8cf209",
-          "size": 810,
+          "sha256": "79690febf895919548b55068dfbb968254c64a59db3e2d592d838d7f39a50800",
+          "size": 1074,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md",
-          "sha256": "7178c99278d6b747af9c8875bc55d3dac9c1c7054479ee754b4aad1d667ed2a7",
-          "size": 138,
+          "sha256": "a82689415c6866e1be0ce2126fce9eaa98f38c54944741ed0a49099817a12551",
+          "size": 501,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md",
-          "sha256": "5b1f40e55c3f3bfda0b2d4f5457085e693fe118d465d8a8b36ec3b218efbe592",
-          "size": 147,
+          "sha256": "6f5457cb105eb4925dbbd94e56a04920e2bbb7b6ad723cdf8efa11d214950a71",
+          "size": 316,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md",
-          "sha256": "5df0622de2dee99f557bab8f3e82b609194860c61a55a6fcb2a51713058b6a28",
-          "size": 135,
+          "sha256": "75e9d5e7b6544126def80b3a0badb4bee88260286b6618dd8cf00eaead855634",
+          "size": 483,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md",
-          "sha256": "928439ffac2da7075fb00675d64bad7d50c772f12cfa0032ffccc150c24ae5aa",
-          "size": 1767,
+          "sha256": "662dd22b9be2dd5e0188b0c5181f0170820873b0df6ec68860e170a63a6e990a",
+          "size": 2412,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json",
-          "sha256": "6195ae37d96283050862de4bb7ce141ac7fab90fc5b6297ba40e34119174d114",
-          "size": 675,
+          "sha256": "2cc0475fcd78235a946ce1dc5eb433a4f801297a8be928731b51fbd10a3a0c00",
+          "size": 1756,
           "status": "A"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json",
-          "sha256": "e7fab1c95cce714955c84930c111154a2980154e9d2dbe33df511afe47489a0c",
-          "size": 146,
+          "sha256": "1e744579875fc1c3cd17c09f8b285d88827074c9e55382a2cda6c0ad4f41dc16",
+          "size": 658,
           "status": "A"
         }
       ],
-      "tree": "48590b8dd588e59290e5c8a213478e3c83cf0f3b"
+      "tree": "0851f439b1d0055cde0f1a9b809ca114e6c2db65"
     },
     "R05": {
-      "commit": "3d8cc25101e9ef7f1969d5f82780cbbbdbd28fe2",
+      "commit": "d90a5d992a435033ddae2f2c2ea2fb04ca508ea1",
       "effects": [
         {
           "path": "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
-          "sha256": "18c5492947c45aa00515285433112f29034fb3c126e0abbc570b6885bc91c140",
+          "sha256": "9e7616b5f8e584cf70f1cc645e50d2de25de9261b9cf7b1b6db7bfe52738ed38",
           "size": 1468,
           "status": "A"
         }
       ],
-      "tree": "56d285d819270352b74f937690c1e8f1fae00e51"
+      "tree": "63378f62119d1c33411ccfc0dc4aa90345b6718e"
     },
     "R06": {
-      "commit": "d6d4100b7e18bdf2af59e62aa81d0021df3798d8",
+      "commit": "db51befda1949ed3b6266c98afa31dce8605d3f6",
       "effects": [
         {
           "path": "tools/benchmark-runner/scripts/probe_sdk_routing_s1_plan.py",
@@ -371,22 +383,22 @@
           "status": "M"
         }
       ],
-      "tree": "9fffc9a3cb456072825cf1e5345d92cf4b9af422"
+      "tree": "f05e540daf562e30d6d9dc0874fb5f53d75f5e3c"
     },
     "R07": {
-      "commit": "dbd50c1ba807dfdfa43c47ce3b7f38e376848aca",
+      "commit": "891cfa5955f4606324990b53b3eae8d3af85323a",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
-          "sha256": "d1d9dff915662c3c90d61a907d09c557c6e7781f425f13e162646853799de719",
-          "size": 22920,
+          "sha256": "d61ccb4ea77ab194a21d6714849737680024cef6afdfccd0dc39587398020853",
+          "size": 42096,
           "status": "A"
         }
       ],
-      "tree": "dd7698181b9e7f4fd72a6bd5f95d3b80005ff792"
+      "tree": "0722ad296c3eccbcabad367bcef4127e5696a6c2"
     },
     "R08": {
-      "commit": "2a4f4e0936db3b53b0eacfc70ada2a2faec0b6bc",
+      "commit": "4a4b68a22e0c0860893f569d280a08f9721bdd8d",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/adapter.py",
@@ -407,10 +419,10 @@
           "status": "M"
         }
       ],
-      "tree": "fd1a1421c78af42a489bc0eb1badb16b65869788"
+      "tree": "429643d65ffc2335ec2b0266923e5089bee5c452"
     },
     "R09": {
-      "commit": "2ee0a7a5f33235615ea5a38b82a93923e489e7cb",
+      "commit": "a72d2428dca0edfa6b370a09561702aa5f63c607",
       "effects": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/routing_live.py",
@@ -426,8 +438,8 @@
         },
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
-          "sha256": "9b47bb4eb7c6f63d73b0a58ecb01d849f729659ba0a52cf9a9f898a1cba67734",
-          "size": 18931,
+          "sha256": "650c3456a1708ca2a84061ae7dcff4c747e1d2c3c1ad0b33e9a30106fda547b0",
+          "size": 19190,
           "status": "A"
         },
         {
@@ -437,10 +449,10 @@
           "status": "M"
         }
       ],
-      "tree": "ebe8638594f4d7460bc59730d95218e6498559ee"
+      "tree": "bd29effa1126dd6a12cc031d31438c32f70a4813"
     },
     "R10": {
-      "commit": "1e25f804acddd9c1d937d963fde11ef7eea6dc4d",
+      "commit": "5208b4c1922c76f7fcc385de365c67c314ebe26a",
       "effects": [
         {
           "path": "benchmarks/posthoc-checks/sdk-routing-v1/s2/checkers/check_config.py",
@@ -467,10 +479,10 @@
           "status": "M"
         }
       ],
-      "tree": "f48944a62b8d268f74f1575d546ddb962e2f6d88"
+      "tree": "d8b59759049ab99b2fbf44636d78ddbc555db95f"
     },
     "R11": {
-      "commit": "5e6e0fec77fdbd6d2d85de210adc20445efbea96",
+      "commit": "19c41cbe1555b7e182d4df4990d8f1089859c667",
       "effects": [
         {
           "path": "tools/benchmark-runner/tests/test_judge.py",
@@ -485,10 +497,10 @@
           "status": "A"
         }
       ],
-      "tree": "f2e79f810cb5292b060ffaa530c7c919afc8388e"
+      "tree": "6883ec6a6dfdd55211afc1fad86396678a00f4ae"
     },
     "R12": {
-      "commit": "9bb5d9af02616f5e50041083c677f362eef56e55",
+      "commit": "28b98ab53ed4ae60632325b45d78c170a18b83db",
       "effects": [
         {
           "path": "tools/benchmark-runner/tests/test_routing_suite.py",
@@ -497,10 +509,10 @@
           "status": "M"
         }
       ],
-      "tree": "62a56d11159100c99aaea1bf44936601c5f15fd6"
+      "tree": "7c2b30dd045b1754c091826742ff372ef0421544"
     },
     "R13": {
-      "commit": "6ef6a812a177c35584a75b0a70a891dcbc4b769b",
+      "commit": "5cf5fdf69522d0278ec6c87225ca10c4ece4bcce",
       "effects": [
         {
           "path": "profile-r/work/operator-contract.json",
@@ -515,13 +527,13 @@
           "status": "M"
         }
       ],
-      "tree": "6b724bf793c8a2d2cd155ebdbf96e658bf5449d3"
+      "tree": "1de4d9d95a4d2a598f5948b0ca9f37636d30cf0f"
     },
     "base": {
-      "commit": "b5b92a2594bad0d40cad0c63c2161a9d053e81b8",
-      "tree": "180d0e2de8ae2c4cfc17077e317babf638dca5e6"
+      "commit": "302d432d69c21539e58093e7b6a06e783fe5185a",
+      "tree": "8e0dfb1e970fe05499fccfb82d474562d7ece012"
     }
   },
   "schema_version": 1,
-  "seal_sha256": "e1e2bdf638a347e378b5812cd0f7127b60c49d3280c5723f1dbab1a5190c453a"
+  "seal_sha256": "817e12ec9c5eb40b8ec3e00c56260eb4e5de6c7820d0aa279d8fb8180fe2393d"
 }

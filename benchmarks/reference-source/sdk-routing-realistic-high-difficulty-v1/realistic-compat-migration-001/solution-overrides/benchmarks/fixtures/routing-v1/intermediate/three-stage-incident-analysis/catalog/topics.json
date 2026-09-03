@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "incident_id": "INC-2025-02-14-CHECKOUT",
+  "topics": [
+    {"topic_id": "TOP-001", "kind": "conflict", "label": "오류 증가 시작 시각"},
+    {"topic_id": "TOP-002", "kind": "fact", "label": "배포와 복구"},
+    {"topic_id": "TOP-003", "kind": "uncertainty", "label": "근본 원인"},
+    {"topic_id": "TOP-004", "kind": "fact", "label": "데이터베이스 상태"}
+  ]
+}

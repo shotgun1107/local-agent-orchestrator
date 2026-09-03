@@ -546,7 +546,7 @@ def test_materialized_profile_r_workspace_matches_manifest_and_has_clean_baselin
     )
 
     assert manifest == expected
-    assert len(manifest["files"]) == 130
+    assert len(manifest["files"]) == 132
     assert (
         subprocess.run(
             ["git", "-C", str(workspace), "config", "--bool", "core.autocrlf"],

@@ -42,6 +42,7 @@ from benchmark_runner.realistic_phase_f import (
     PhaseFRuntimeMode,
     load_verified_phase_f_candidate,
     phase_f_backend_result_matches_request,
+    phase_f_cell_completion_deadline_seconds,
     phase_f_cell_model_turn_ceiling,
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
@@ -196,7 +197,7 @@ class FakePhaseFJudgePort:
 
 
 class PhaseFCellSeal(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     kind: Literal["phase_f_realistic_cell_seal"] = "phase_f_realistic_cell_seal"
     experiment_id: str
     plan_fingerprint: Sha256
@@ -208,7 +209,9 @@ class PhaseFCellSeal(StrictModel):
     variant_id: Literal["ss1", "b1"]
     request_sha256: Sha256
     runtime_mode: PhaseFRuntimeMode
-    model_turn_ceiling: int = Field(ge=1)
+    model_turn_ceiling: int | None = Field(default=None, ge=1)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
+    cell_completion_deadline_seconds: int | None = Field(default=None, gt=0)
     actual_model_turns: int = Field(ge=0)
     adapter_evidence_path: str = Field(min_length=1)
     worker_artifact_sha256: Sha256
@@ -222,7 +225,17 @@ class PhaseFCellSeal(StrictModel):
         paths = [item.path for item in self.files]
         if paths != sorted(set(paths)):
             raise ValueError("Phase F Cell seal files must be sorted and unique")
-        payload = self.model_dump(mode="json", exclude={"seal_sha256"})
+        if self.schema_version == 1 and self.model_turn_ceiling is None:
+            raise ValueError("legacy Phase F Cell seal requires a turn ceiling")
+        if self.schema_version == 2 and (
+            self.model_turn_ceiling is not None
+            or self.budget_mode != "cell_completion_deadline"
+            or self.cell_completion_deadline_seconds != 9000
+        ):
+            raise ValueError("Phase F Cell seal deadline differs")
+        payload = self.model_dump(
+            mode="json", exclude={"seal_sha256"}, exclude_none=True
+        )
         if self.seal_sha256 != canonical_sha256(payload):
             raise ValueError("Phase F Cell seal self-hash differs")
         return self
@@ -375,6 +388,7 @@ def _verify_adapter_turn_evidence(
     if (
         accounting.runtime_mode is not request.runtime_mode
         or accounting.model_turn_ceiling != request.model_turn_ceiling
+        or accounting.budget_mode != request.budget_mode
         or accounting.actual_model_turns != expected_actual_model_turns
         or accounting.runtime_reported_model_turns != expected_actual_model_turns
         or top_level_actual != expected_actual_model_turns
@@ -621,6 +635,30 @@ class ProfileRPhaseFCellFinalizerBackend:
         self.worker_backend = worker_backend
         self.judge = judge
         self.runtime_mode = worker_backend.runtime_mode
+        self._completion_deadline_monotonic: float | None = None
+
+    def bind_completion_deadline_monotonic(self, deadline: float) -> None:
+        if deadline <= time.monotonic():
+            raise PhaseFFinalizationError("Cell completion deadline is not in the future")
+        self._completion_deadline_monotonic = deadline
+        bind_worker = getattr(
+            self.worker_backend, "bind_completion_deadline_monotonic", None
+        )
+        if not callable(bind_worker):
+            raise PhaseFFinalizationError(
+                "completion-budget Worker cannot bind the Cell deadline"
+            )
+        bind_worker(deadline)
+        bind_judge = getattr(self.judge, "bind_completion_deadline_monotonic", None)
+        if callable(bind_judge):
+            bind_judge(deadline)
+
+    def _require_time_remaining(self) -> None:
+        if (
+            self._completion_deadline_monotonic is not None
+            and time.monotonic() >= self._completion_deadline_monotonic
+        ):
+            raise PhaseFFinalizationError("Cell completion deadline exceeded")
 
     def _plan(
         self,
@@ -633,17 +671,24 @@ class ProfileRPhaseFCellFinalizerBackend:
         plan = snapshot.plan
         stage = snapshot.stage
         planned = next((item for item in plan.cells if item.cell_id == request.cell_id), None)
-        turn_ceiling = (
-            None
-            if planned is None
-            else phase_f_cell_model_turn_ceiling(stage=stage, cell=planned)
-        )
+        turn_ceiling = None
+        completion_deadline = None
+        if planned is not None:
+            if request.budget_mode == "cell_completion_deadline":
+                completion_deadline = phase_f_cell_completion_deadline_seconds(
+                    stage=stage, cell=planned
+                )
+            else:
+                turn_ceiling = phase_f_cell_model_turn_ceiling(
+                    stage=stage, cell=planned
+                )
         if (
             planned is None
             or plan.plan_fingerprint != request.plan_fingerprint
             or snapshot.seal.seal_sha256 != request.candidate_seal_sha256
             or snapshot.snapshot_sha256 != request.candidate_snapshot_sha256
             or turn_ceiling != request.model_turn_ceiling
+            or completion_deadline != request.cell_completion_deadline_seconds
             or planned.execution_ordinal != request.execution_ordinal
             or planned.fixture_id != request.fixture_id
             or planned.variant_id != request.variant_id
@@ -653,22 +698,29 @@ class ProfileRPhaseFCellFinalizerBackend:
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         snapshot = self._plan(request)
+        if (
+            request.budget_mode == "cell_completion_deadline"
+            and self._completion_deadline_monotonic is None
+        ):
+            raise PhaseFFinalizationError("Cell completion deadline was not bound")
+        self._require_time_remaining()
         plan = snapshot.plan
         stage = snapshot.stage
         total_started = time.monotonic()
         worker_started = time.monotonic()
         worker = self.worker_backend.run_one_cell(request)
+        self._require_time_remaining()
         worker_seconds = time.monotonic() - worker_started
         if not phase_f_backend_result_matches_request(request, worker):
             raise PhaseFFinalizationError(
                 "Phase F worker result identity differs before Judge"
             )
         planned_cell = next(item for item in plan.cells if item.cell_id == request.cell_id)
-        turn_ceiling = phase_f_cell_model_turn_ceiling(
-            stage=stage,
-            cell=planned_cell,
-        )
-        if worker.actual_model_turns > turn_ceiling:
+        turn_ceiling = request.model_turn_ceiling
+        if (
+            turn_ceiling is not None
+            and worker.actual_model_turns > turn_ceiling
+        ):
             raise PhaseFFinalizationError(
                 "Phase F worker model turns "
                 f"{worker.actual_model_turns} exceed candidate Cell ceiling "
@@ -689,11 +741,13 @@ class ProfileRPhaseFCellFinalizerBackend:
         )
         final_root = cell_root / PHASE_F_FINAL_DIRECTORY
         judge_root = final_root / PHASE_F_JUDGE_DIRECTORY
+        self._require_time_remaining()
         observation = self.judge.run(
             workspace=workspace,
             output_root=judge_root,
             request=request,
         )
+        self._require_time_remaining()
         _verify_judge_observation(judge_root, observation)
         evidence = [_evidence_ref(cell_root, adapter_path)]
         evidence.extend(
@@ -717,7 +771,7 @@ class ProfileRPhaseFCellFinalizerBackend:
         _write_new(measurement_path, measurement_bytes)
         seal_files = [*evidence, _evidence_ref(cell_root, measurement_path)]
         values = {
-            "schema_version": 1,
+            "schema_version": request.schema_version,
             "kind": "phase_f_realistic_cell_seal",
             "experiment_id": request.experiment_id,
             "plan_fingerprint": request.plan_fingerprint,
@@ -729,7 +783,16 @@ class ProfileRPhaseFCellFinalizerBackend:
             "variant_id": request.variant_id,
             "request_sha256": request.request_sha256,
             "runtime_mode": request.runtime_mode.value,
-            "model_turn_ceiling": request.model_turn_ceiling,
+            **(
+                {
+                    "budget_mode": "cell_completion_deadline",
+                    "cell_completion_deadline_seconds": (
+                        request.cell_completion_deadline_seconds
+                    ),
+                }
+                if request.budget_mode == "cell_completion_deadline"
+                else {"model_turn_ceiling": request.model_turn_ceiling}
+            ),
             "actual_model_turns": worker.actual_model_turns,
             "adapter_evidence_path": self.worker_backend.evidence_filename,
             "worker_artifact_sha256": worker.sealed_artifact_sha256,
@@ -788,11 +851,14 @@ def verify_phase_f_cell_finalization(
         raise PhaseFFinalizationError("Phase F Measurement hash differs")
     measurement = Measurement.model_validate_json(measurement_path.read_bytes())
     request = PhaseFDispatchRequest(
+        schema_version=seal.schema_version,
         experiment_id=seal.experiment_id,
         plan_fingerprint=seal.plan_fingerprint,
         candidate_seal_sha256=seal.candidate_seal_sha256,
         candidate_snapshot_sha256=seal.candidate_snapshot_sha256,
         model_turn_ceiling=seal.model_turn_ceiling,
+        budget_mode=seal.budget_mode,
+        cell_completion_deadline_seconds=seal.cell_completion_deadline_seconds,
         execution_ordinal=seal.execution_ordinal,
         cell_id=seal.cell_id,
         fixture_id=seal.fixture_id,

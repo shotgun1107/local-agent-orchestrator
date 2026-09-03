@@ -201,7 +201,7 @@ def test_phase_e_v3_requires_direct_task_pack_and_budget_bindings() -> None:
         PhaseEStageManifest.model_validate(missing)
 
 
-def test_task_budget_requires_ready_q1_and_seals_equal_variant_limits(
+def test_task_budget_requires_ready_q1_and_seals_equal_variant_deadlines(
     tmp_path: Path,
 ) -> None:
     repository = Path(__file__).resolve().parents[3]
@@ -225,10 +225,14 @@ def test_task_budget_requires_ready_q1_and_seals_equal_variant_limits(
     qualification["status"] = "TASK_PACK_READY"
     q1_path.write_text(json.dumps(qualification), encoding="utf-8")
     budget = module.build_budget(q1_path)
-    assert set(budget["per_task_maximum_turns"].values()) == {2}
-    assert budget["base_turns_per_cell"] == 13
-    assert budget["maximum_actual_model_turns_per_cell"] == 15
-    assert budget["retry_resume_maximum_turns"] == 2
+    assert budget["schema_version"] == 2
+    assert budget["budget_mode"] == "cell_completion_deadline"
+    assert budget["cell_completion_deadline_seconds"] == 9000
+    assert budget["hard_limit_fields"] == ["cell_completion_deadline_seconds"]
+    assert "actual_model_turns" in budget["measurement_only_fields"]
+    assert "per_task_maximum_turns" not in budget
+    assert "maximum_actual_model_turns_per_cell" not in budget
+    assert "retry_resume_maximum_turns" not in budget
     assert budget["ss1_b1_identical"] is True
 
 
@@ -312,6 +316,7 @@ def test_repository_reference_bundle_matches_chain_and_self_seals(
         ("profile-r-task-pack-q2", "profile-r-task-pack-q2"),
         ("profile-r-task-pack-q3", "profile-r-task-pack-q3"),
         ("profile-r-task-pack-q4", "profile-r-task-pack-q4"),
+        ("profile-r-task-pack-q5", "profile-r-task-pack-q5"),
     ),
 )
 def test_task_pack_artifact_and_budget_are_self_sealed(

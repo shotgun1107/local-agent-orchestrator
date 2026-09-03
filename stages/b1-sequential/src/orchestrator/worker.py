@@ -27,7 +27,7 @@ def build_task_envelope(
     attempt_id: str,
     requirements_version: int,
     timeout_seconds: int,
-    remaining_attempts: int,
+    remaining_attempts: int | None,
 ) -> TaskEnvelope:
     """Compile one TaskSpec into the worker-facing envelope used by every variant."""
 
@@ -121,7 +121,7 @@ def build_oneshot_envelope(
     attempt_id: str,
     requirements_version: int,
     timeout_seconds: int,
-    remaining_attempts: int,
+    remaining_attempts: int | None,
 ) -> TaskEnvelope:
     """Compile C0's information-equivalent synthetic TaskEnvelope."""
 

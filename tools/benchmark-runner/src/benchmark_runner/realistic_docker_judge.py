@@ -70,7 +70,7 @@ class DockerJudgeError(RuntimeError):
 
 
 class DockerJudgeLimits(StrictModel):
-    timeout_seconds: int = Field(default=180, ge=1, le=600)
+    timeout_seconds: int = Field(default=180, ge=1, le=9000)
     cleanup_timeout_seconds: int = Field(default=15, ge=1, le=60)
     stdout_limit_bytes: int = Field(default=1_048_576, ge=1024, le=1_048_576)
     memory_megabytes: int = Field(default=512, ge=128, le=4096)

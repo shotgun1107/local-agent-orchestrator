@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 from dataclasses import dataclass
@@ -217,6 +218,7 @@ class Orchestrator:
         auth_method_override: str | None = None,
         turn_boundary_observer: TurnBoundaryObserver | None = None,
         check_temp_hostile_git_probe: bool = False,
+        completion_deadline_monotonic: float | None = None,
     ) -> None:
         self.loaded = loaded
         self.state_root = Path(state_root or state_root_for(loaded.pack.project.project_id)).resolve()
@@ -240,6 +242,17 @@ class Orchestrator:
         )
         self.check_temp_hostile_git_probe = check_temp_hostile_git_probe
         self.policy: Policy = loaded.pack.policies.policies[loaded.pack.project.default_policy]
+        if completion_deadline_monotonic is not None:
+            if (
+                isinstance(completion_deadline_monotonic, bool)
+                or completion_deadline_monotonic <= time.monotonic()
+            ):
+                raise ConfigurationError("completion deadline must be in the future")
+            if max_turns_override is not None:
+                raise ConfigurationError(
+                    "completion deadline mode cannot also use a turn ceiling"
+                )
+        self.completion_deadline_monotonic = completion_deadline_monotonic
         if max_turns_override is not None:
             if max_turns_override < 1 or max_turns_override > self.policy.max_turns_per_run:
                 raise ConfigurationError("max turns override must be within the project policy")
@@ -278,6 +291,22 @@ class Orchestrator:
             self.auth_method = "chatgpt"
         else:
             raise ConfigurationError(f"unsupported runtime: {runtime_kind}")
+
+    @property
+    def completion_deadline_mode(self) -> bool:
+        return self.completion_deadline_monotonic is not None
+
+    def _remaining_completion_seconds(self) -> int:
+        if self.completion_deadline_monotonic is None:
+            return self.policy.task_timeout_seconds
+        remaining = self.completion_deadline_monotonic - time.monotonic()
+        if remaining <= 0:
+            raise VerificationError(
+                "cell_deadline",
+                "Cell completion deadline exceeded",
+                retryable=False,
+            )
+        return max(1, math.ceil(remaining))
 
     def close(self) -> None:
         self.runtime.close()
@@ -345,8 +374,16 @@ class Orchestrator:
                     "policy_name": self.loaded.pack.project.default_policy,
                     "project_pack_sha256": self.loaded.pack.sha256,
                     "core_version": CORE_VERSION,
-                    "max_turns": self.policy.max_turns_per_run,
-                    "timeout_seconds": self.policy.run_timeout_seconds,
+                    "max_turns": (
+                        0
+                        if self.completion_deadline_mode
+                        else self.policy.max_turns_per_run
+                    ),
+                    "timeout_seconds": (
+                        self._remaining_completion_seconds()
+                        if self.completion_deadline_mode
+                        else self.policy.run_timeout_seconds
+                    ),
                 })
                 run_id = run["run_id"]
                 self._persist(
@@ -398,10 +435,24 @@ class Orchestrator:
                 return
             from datetime import UTC, datetime
 
-            run_started = datetime.fromisoformat(run["started_at"].replace("Z", "+00:00"))
-            if (datetime.now(UTC) - run_started).total_seconds() > self.policy.run_timeout_seconds:
-                ledger.transition("run", run_id, run["version"], RunState.BLOCKED, "run_timeout", {})
-                return
+            if self.completion_deadline_mode:
+                try:
+                    self._remaining_completion_seconds()
+                except VerificationError:
+                    ledger.transition(
+                        "run",
+                        run_id,
+                        run["version"],
+                        RunState.BLOCKED,
+                        "cell_completion_deadline_exceeded",
+                        {},
+                    )
+                    return
+            else:
+                run_started = datetime.fromisoformat(run["started_at"].replace("Z", "+00:00"))
+                if (datetime.now(UTC) - run_started).total_seconds() > self.policy.run_timeout_seconds:
+                    ledger.transition("run", run_id, run["version"], RunState.BLOCKED, "run_timeout", {})
+                    return
             pending_verification = ledger.connection.execute(
                 """SELECT a.* FROM attempts a JOIN tasks t ON t.task_id=a.task_id
                    WHERE t.run_id=? AND a.state IN ('REPORTED','VERIFYING') ORDER BY t.ordinal LIMIT 1""",
@@ -423,7 +474,7 @@ class Orchestrator:
                     target = RunState.FAILED if any(row["state"] == TaskState.FAILED for row in tasks) else RunState.BLOCKED
                     ledger.transition("run", run_id, run["version"], target, "run_no_runnable_task", {})
                 return
-            if run["turns_used"] >= run["max_turns"]:
+            if run["max_turns"] > 0 and run["turns_used"] >= run["max_turns"]:
                 ledger.transition(
                     "run",
                     run_id,
@@ -526,7 +577,10 @@ class Orchestrator:
         self._assert_project_pack_unchanged(run["project_pack_sha256"])
         attempts = ledger.list_attempts(task["task_id"])
         attempt_no = len(attempts) + 1
-        if attempt_no > self.policy.max_attempts_per_task:
+        if (
+            not self.completion_deadline_mode
+            and attempt_no > self.policy.max_attempts_per_task
+        ):
             task = ledger.get("task", task["task_id"])
             ledger.transition("task", task["task_id"], task["version"], TaskState.FAILED, "task_attempt_budget_exhausted", {})
             return
@@ -539,8 +593,12 @@ class Orchestrator:
             task_id=task["task_id"],
             attempt_id=attempt_id,
             requirements_version=run["requirements_version"],
-            timeout_seconds=self.policy.task_timeout_seconds,
-            remaining_attempts=self.policy.max_attempts_per_task - attempt_no,
+            timeout_seconds=self._remaining_completion_seconds(),
+            remaining_attempts=(
+                None
+                if self.completion_deadline_mode
+                else self.policy.max_attempts_per_task - attempt_no
+            ),
         )
         retry_feedback = self._retry_feedback(ledger, attempts, spec)
         attempt = ledger.begin_attempt(
@@ -635,7 +693,12 @@ class Orchestrator:
         while True:
             ledger.increment_turns(run_id)
             outcome = self.runtime.await_terminal(
-                turn, time.monotonic() + self.policy.task_timeout_seconds
+                turn,
+                (
+                    self.completion_deadline_monotonic
+                    if self.completion_deadline_monotonic is not None
+                    else time.monotonic() + self.policy.task_timeout_seconds
+                ),
             )
             usage = outcome.usage_snapshot.model_dump(mode="json") if outcome.usage_snapshot else None
             ledger.append_usage_snapshot(session["session_id"], turn.id, usage)
@@ -733,11 +796,25 @@ class Orchestrator:
                 if (
                     exc.retryable
                     and self.runtime.capabilities().supports_resume
-                    and current_attempt["resume_count"] < self.policy.max_resume_per_attempt
-                    and ledger.get("run", run_id)["turns_used"]
-                    < ledger.get("run", run_id)["max_turns"]
+                    and (
+                        self.completion_deadline_mode
+                        or current_attempt["resume_count"]
+                        < self.policy.max_resume_per_attempt
+                    )
+                    and (
+                        self.completion_deadline_mode
+                        or ledger.get("run", run_id)["turns_used"]
+                        < ledger.get("run", run_id)["max_turns"]
+                    )
                 ):
-                    ledger.increment_resume(attempt["attempt_id"], self.policy.max_resume_per_attempt)
+                    ledger.increment_resume(
+                        attempt["attempt_id"],
+                        (
+                            current_attempt["resume_count"] + 1
+                            if self.completion_deadline_mode
+                            else self.policy.max_resume_per_attempt
+                        ),
+                    )
                     turn = self.runtime.resume_session(
                         session_handle,
                         {
@@ -846,7 +923,10 @@ class Orchestrator:
         payload: dict[str, Any],
     ) -> None:
         attempts = ledger.list_attempts(task["task_id"])
-        if retryable and len(attempts) < self.policy.max_attempts_per_task:
+        if retryable and (
+            self.completion_deadline_mode
+            or len(attempts) < self.policy.max_attempts_per_task
+        ):
             _, updated_task = ledger.finish_attempt(
                 attempt_id, AttemptState.RETRYABLE_FAILED, TaskState.RETRYABLE_FAILED,
                 failure_kind, payload,
@@ -952,6 +1032,11 @@ class Orchestrator:
                     self.workspace,
                     temp_root=self.check_temp_root,
                     termination_grace_seconds=self.policy.interrupt_grace_seconds,
+                    timeout_seconds_override=(
+                        self._remaining_completion_seconds()
+                        if self.completion_deadline_mode
+                        else None
+                    ),
                 )
                 check_base = f"{base}/checks/{check_name}"
                 stdout_artifact = self._persist(
@@ -1059,6 +1144,7 @@ class Orchestrator:
                 "check_environment": FailureKind.CHECK_ENVIRONMENT,
                 "check_mixed": FailureKind.CHECK_MIXED,
                 "check_unknown": FailureKind.CHECK_UNKNOWN,
+                "cell_deadline": FailureKind.TIMEOUT,
                 "project_pack": FailureKind.ARTIFACT_CORRUPT,
                 "declared_artifacts": FailureKind.ARTIFACT_CORRUPT,
                 "artifact_integrity": FailureKind.ARTIFACT_CORRUPT,

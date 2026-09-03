@@ -1,8 +1,8 @@
 diff --git a/tools/benchmark-runner/src/benchmark_runner/s2_policy.py b/tools/benchmark-runner/src/benchmark_runner/s2_policy.py
-index 89527298393950ea08f4e0957d632ef7f9f6274b..b52526553e72e00f6f417764a34e25c2f306b6dc 100644
+index 5b434163bf441a3dc46ced4d630ead829b9366ce..0f87867e92902c39245f045cd6918ec0c0425182 100644
 --- a/tools/benchmark-runner/src/benchmark_runner/s2_policy.py
 +++ b/tools/benchmark-runner/src/benchmark_runner/s2_policy.py
-@@ -78,7 +78,7 @@ def s2_b1_turn_cap(
+@@ -129,7 +129,7 @@ def s2_b1_turn_cap(
          sealed_measurements,
          reserve_turns=reserve_turns,
      )
@@ -10,4 +10,4 @@ index 89527298393950ea08f4e0957d632ef7f9f6274b..b52526553e72e00f6f417764a34e25c2
 +    return min(project_policy_turn_cap, task_count + remaining + 1)
  
  
- def _metric_number(metric: object) -> float | None:
+ def remaining_s3_b1_retry_resume_reserve(

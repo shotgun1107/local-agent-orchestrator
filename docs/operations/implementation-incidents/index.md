@@ -4617,42 +4617,61 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 
 - `rejected` R10의 900초 timeout만 크게 늘린다 — 느린 한 Task의 직접 증상만 늦추고 timeout이 봉인 retry 계약을 우회하는 상태기계 결함을 남긴다
 - `rejected` 모든 timeout을 무조건 자동 재시도한다 — terminal 불명확·반복 hang·예산 고갈을 구분하지 못하고 중복 실행 위험을 만든다
-- `adopted` timeout을 structured failure로 분류하고 terminal 확정성·남은 Task/Variant budget·Attempt 상한으로 retry/resume/최종 실패를 결정한다 — 기존 fail-closed 안전선을 유지하면서 봉인된 retry 계약을 실제 상태 전이에 연결한다
+- `rejected` timeout을 structured failure로 분류하고 terminal 확정성·남은 Task/Variant budget·Attempt 상한으로 retry/resume/최종 실패를 결정한다 — model-free 진단 직후에는 채택했지만 2026-09-03 사용자 결정으로 Task·Variant 호출 예산 자체를 제거해 더 이상 적용하지 않는다
+- `adopted` SS1/B1 각 Cell의 R01~R13 전체 완료시간 9000초만 hard limit으로 두고 문제별 timeout·호출·Attempt·retry/resume 상한은 제거한다 — 사용자가 실제로 기다리는 전체 완료시간을 두 전략에 동일하게 주면서 내부 문제 분할과 session 전략을 인위적인 호출 상한으로 왜곡하지 않는다
 
 ### 채택한 해결
 
-미해결
+새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5 model-free 검증은 완료했으며 fresh Docker qualification과 새 candidate 전까지 incident는 investigating을 유지한다.
 
 ### 수정 파일
 
 - stages/b1-sequential/src/orchestrator/schedule.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_routing.py
 - tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py
+- tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py
+- tools/benchmark-runner/src/benchmark_runner/sdk_cells.py
+- tools/benchmark-runner/scripts/build_profile_r_task_budget.py
+- stages/b1-sequential/src/orchestrator/ledger.py
+- stages/b1-sequential/src/orchestrator/verify.py
 - stages/b1-sequential/tests/unit/test_schedule.py
 - tools/benchmark-runner/tests/test_realistic_phase_f_b1.py
+- tools/benchmark-runner/tests/test_realistic_routing.py
 
 ### 회귀시험
 
-- model-free confirmed timeout with one remaining retry creates exactly one fresh Attempt
-- exhausted timeout budget closes the Task once and leaves no active Session or process
+- a Task exceeding the legacy 900-second boundary remains eligible while the Cell completion deadline has time remaining
+- more than 15 model turns and more than two Attempts for one Task do not fail admission while the Cell completion deadline has time remaining
+- each SDK call receives the remaining Cell time instead of a fixed per-Task timeout
+- the Cell completion deadline stops new dispatch and seals exactly one terminal deadline failure
 - terminal unknown remains fail-closed and is never retried automatically
-- R10 timeout handling cannot dispatch R11 before R10 succeeds
+- model call, session, retry and resume counts remain measured but do not act as hard limits
 
 ### 검증 결과
 
 - sealed v21 B1 Evidence and source inspection reproduced the control-flow mismatch without a new model turn
 - existing model-free timeout regression reproduced Task/Attempt final FAILED for interrupt-confirmed timeout: 1 passed in 1.54s
 - Cell 3 remained PLANNED and unclaimed; automatic continuation, residual container and live process were 0
+- deadline schema·unlimited turn accounting·deadline 이후 SS1/B1 새 dispatch 거부 회귀 10개가 통과했다.
+- Phase E/F·SS1/B1 scheduler 핵심 model-free 회귀는 136 passed, 1 skipped, 4 deselected였고 별도 B1 reference 통합은 두 경우 모두 R01~R13과 cumulative public Checks 104/104를 완료했다.
+- Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.
 
 ### 남은 위험
 
-- retryable timeout의 exact terminal 조건과 fresh retry 대 same-thread resume 선택이 아직 구현·검증되지 않았다.
-- per-turn 900초와 Cell model-active/wall-clock ceiling의 결합 규칙을 새 candidate 전에 다시 봉인해야 한다.
+- 새 Judge source를 실제 격리 Docker 경계에서 검증하는 fresh qualification은 아직 실행하지 않았다.
+- q5와 fresh Docker qualification을 직접 결합한 새 candidate·acceptance·readiness 전에는 실제 deadline mode Cell을 실행할 수 없다.
+- 현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다.
 
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md
+- 출처: benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json
 - 출처: benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json
 - 출처: stages/b1-sequential/src/orchestrator/schedule.py
 - 출처: tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
@@ -4696,7 +4715,7 @@ R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope
 
 ### 채택한 해결
 
-미해결
+R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했으며 fresh Docker qualification 전까지 incident는 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -4704,6 +4723,10 @@ R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope
 - benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 - benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py
 - tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/profile-r/requirements/r03-config-fixture-contract.md
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/profile-r/requirements/r04-incident-fixture-contract.md
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py
+- benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/solution-overrides
 - tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py
 
 ### 회귀시험
@@ -4719,11 +4742,14 @@ R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope
 - byte-identical diagnostic copy에서 R03/R04/R07 public exit 0과 hidden fail을 model-free로 동시에 재현했고 검사 전후 원본 대비 file mismatch는 0이었다
 - minimal probes confirmed R03 public names exist while hidden names do not, R04 plural evidence_ids exist while hidden singular key does not, and R07 hidden keyword call raises TypeError
 - existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap
+- v21-derived R03·R04·R07 구현을 새 public contract로 model-free 재검사했으며 세 사례가 모두 해당 public contract에서 거부됐다.
+- 새 Judge source bundle은 reference PASS, pristine FAIL, 13개 전용 mutation과 Worker test-oracle 공격을 검사해 PROFILE_R_SOURCE_BUNDLE_VERIFIED가 됐다.
+- Task Pack q5는 positive transition 13/13, cumulative public Checks 104/104, public negative mutation 13/13 rejected와 Worker information boundary PASS로 TASK_PACK_READY가 됐다.
 
 ### 남은 위험
 
-- 새 공개 계약의 exact bytes와 R07 일반화 cap 식은 구현 전에 별도 revision으로 동결해야 한다.
-- 실제 실패를 public Check에 추가할 때 hidden reference solution 정보가 Worker snapshot으로 새지 않도록 별도 information-boundary 검증이 필요하다.
+- 새 Judge source의 protected Docker runtime qualification은 아직 실행하지 않았다.
+- fresh Docker qualification과 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다.
 
 ### 추적 정보
 
@@ -4731,5 +4757,7 @@ R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md
+- 출처: benchmarks/artifacts/profile-r-task-pack-q5/qualification.json
 - 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "incident_id": "INC-2025-02-14-CHECKOUT",
+  "evidence": [
+    {"evidence_id":"EV-A1","topic_id":"TOP-001","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A1","statement":"결제 API 오류 증가는 2025-02-14T09:16:00Z에 처음 관찰되었다.","recorded_at":"2025-02-14T09:16:00Z"},
+    {"evidence_id":"EV-C1","topic_id":"TOP-001","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C1","statement":"원시 지표에서 결제 API 오류 증가는 2025-02-14T09:14:00Z에 시작되었다.","recorded_at":"2025-02-14T09:14:00Z"},
+    {"evidence_id":"EV-B1","topic_id":"TOP-002","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B1","statement":"릴리스 rel-204 배포는 2025-02-14T09:04:00Z에 시작되어 09:11:00Z에 완료되었다.","recorded_at":"2025-02-14T09:11:00Z"},
+    {"evidence_id":"EV-A2","topic_id":"TOP-002","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A2","statement":"릴리스 rel-204를 2025-02-14T09:31:00Z에 롤백하기 시작했다.","recorded_at":"2025-02-14T09:31:00Z"},
+    {"evidence_id":"EV-B3","topic_id":"TOP-002","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B3","statement":"롤백은 2025-02-14T09:34:00Z에 완료되었다.","recorded_at":"2025-02-14T09:34:00Z"},
+    {"evidence_id":"EV-A3","topic_id":"TOP-002","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A3","statement":"롤백 뒤 오류율은 2025-02-14T09:36:00Z에 정상 범위로 돌아왔다.","recorded_at":"2025-02-14T09:36:00Z"},
+    {"evidence_id":"EV-B2","topic_id":"TOP-003","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B2","statement":"rel-204의 변경 사항은 결제 API의 인증 클라이언트 재시도 정책을 수정했다.","recorded_at":"2025-02-14T09:11:00Z"},
+    {"evidence_id":"EV-A5","topic_id":"TOP-003","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A5","statement":"rel-204가 장애 원인일 가능성이 있지만 로그만으로는 인과관계를 확인할 수 없다.","recorded_at":"2025-02-14T09:40:00Z"},
+    {"evidence_id":"EV-C2","topic_id":"TOP-003","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C2","statement":"인증 업스트림 p95 지연 시간은 2025-02-14T09:13:00Z부터 09:35:00Z까지 함께 증가했다.","recorded_at":"2025-02-14T09:35:00Z"},
+    {"evidence_id":"EV-C4","topic_id":"TOP-003","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C4","statement":"지표의 시간적 상관관계만으로 rel-204 또는 인증 업스트림을 근본 원인으로 확정할 수 없다.","recorded_at":"2025-02-14T09:42:00Z"},
+    {"evidence_id":"EV-A4","topic_id":"TOP-004","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A4","statement":"장애 구간에도 데이터베이스 p95 지연 시간은 정상 범위였다.","recorded_at":"2025-02-14T09:38:00Z"},
+    {"evidence_id":"EV-C3","topic_id":"TOP-004","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C3","statement":"데이터베이스 p95 지연 시간은 같은 구간에 기준 범위 안에 있었다.","recorded_at":"2025-02-14T09:35:00Z"}
+  ]
+}

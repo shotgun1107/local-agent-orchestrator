@@ -3,8 +3,8 @@
   "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
   "cell_id": "r-p01-source-boundary",
   "checker_run_status": "completed",
-  "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
-  "envelope_sha256": "bac0d2127a69f35ac9f5b19d6a6c682fbdc3c71c357c66e64eef6a7dbf9d65b8",
+  "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+  "envelope_sha256": "b954acf7e984e1cf7b20fdad78e0e36ddf245dae76daa6607f725ea73761a385",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -35,12 +35,12 @@
   },
   "properties": [
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The legacy bytes and projected R01-R13 source boundary are exact.",
       "evidence_refs": [
         {
           "path": "benchmark-run.yaml",
-          "sha256": "e285b66288a97989cbee293bcd95fdfe6d92ee06a41e0ce4f6ff45e6f43de0ee"
+          "sha256": "3c9f4bfcbfdf0263ddafc43789e29eececedd37f2ba8dcc3f30511318624eafe"
         },
         {
           "path": "benchmarks/suites/sdk-routing-v1/stages/s1-baseline.yaml",
@@ -70,7 +70,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -97,7 +97,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The configuration fixture parses, serializes, and executes its CLI contract behaviorally.",
       "evidence_refs": [
         {
@@ -106,11 +106,11 @@
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py",
-          "sha256": "5b14524b29a15aa4e3f9b7357e55eb8ceded64b7959498c837e87d09be44da81"
+          "sha256": "12e83aeef67056056b6ca042cb35c9cd3381cd8ed3e4d199ce0c654daee1fac8"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py",
-          "sha256": "729c8fa3a2d5be1ceed8891df393e7c32c61077979b2687e237ee082cc701dc9"
+          "sha256": "a91d7167e2eea8fbe921c563e8dfd9f4abd55d33e8c131034833bd44231cf39a"
         }
       ],
       "prerequisite_ids": [],
@@ -120,16 +120,16 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The incident fixture preserves evidence, uncertainty, timeline, claim, action, and report relationships.",
       "evidence_refs": [
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json",
-          "sha256": "8804eaedf76d205114415faf898b9ae8e33788593abf6b233b09923ef43ba590"
+          "sha256": "37c0a630c718cc3d0647cd52c1edc0ec481e5f508fe8752dbedfeb54a23f002f"
         },
         {
           "path": "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md",
-          "sha256": "fe89c9c8ba0a77bc7f0e9ee33f864f98d3f5dd7826f3b7d61771ee22af8cf209"
+          "sha256": "79690febf895919548b55068dfbb968254c64a59db3e2d592d838d7f39a50800"
         }
       ],
       "prerequisite_ids": [],
@@ -139,12 +139,12 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The S2 fixture manifest binds both exact fixture identities and budgets.",
       "evidence_refs": [
         {
           "path": "benchmarks/manifests/sdk-routing-s2-intermediate.yaml",
-          "sha256": "18c5492947c45aa00515285433112f29034fb3c126e0abbc570b6885bc91c140"
+          "sha256": "9e7616b5f8e584cf70f1cc645e50d2de25de9261b9cf7b1b6db7bfe52738ed38"
         }
       ],
       "prerequisite_ids": [],
@@ -154,7 +154,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -173,12 +173,12 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
       "evidence_refs": [
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_policy.py",
-          "sha256": "d1d9dff915662c3c90d61a907d09c557c6e7781f425f13e162646853799de719"
+          "sha256": "d61ccb4ea77ab194a21d6714849737680024cef6afdfccd0dc39587398020853"
         }
       ],
       "prerequisite_ids": [],
@@ -188,7 +188,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -207,7 +207,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "S2 status and deterministic post-hoc evaluation remain on the shared implementation path.",
       "evidence_refs": [
         {
@@ -216,7 +216,7 @@
         },
         {
           "path": "tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py",
-          "sha256": "9b47bb4eb7c6f63d73b0a58ecb01d849f729659ba0a52cf9a9f898a1cba67734"
+          "sha256": "650c3456a1708ca2a84061ae7dcff4c747e1d2c3c1ad0b33e9a30106fda547b0"
         }
       ],
       "prerequisite_ids": [],
@@ -226,7 +226,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
       "evidence_refs": [
         {
@@ -249,7 +249,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The exact four S2 Cells require explicit effects, successful Checks, Measurements, and seals.",
       "evidence_refs": [
         {
@@ -264,7 +264,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "Legacy S1 regressions rebuild deterministic local Git identities without historical objects.",
       "evidence_refs": [
         {
@@ -279,7 +279,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "b98b6d254c032598215e24b721da6561cdec5fc21391c8dcf30cff980e255366",
+      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
       "description": "The structured command, state, failure, and stop relations match the public operator surface.",
       "evidence_refs": [
         {
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "93bb7f23ba672878be61ac7c73479b3d52a4c7a5a30c5f565d693abc4433d50f",
-  "workspace_before_sha256": "93bb7f23ba672878be61ac7c73479b3d52a4c7a5a30c5f565d693abc4433d50f",
+  "workspace_after_sha256": "989d4c69c413b1bf921b6899398c0ea00985e840733c3ab73ca0c46d840e2201",
+  "workspace_before_sha256": "989d4c69c413b1bf921b6899398c0ea00985e840733c3ab73ca0c46d840e2201",
   "workspace_mutated": false
 }

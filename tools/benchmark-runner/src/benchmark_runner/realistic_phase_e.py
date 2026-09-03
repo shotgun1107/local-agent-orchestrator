@@ -38,8 +38,11 @@ from benchmark_runner.plan import (
     recompute_plan_fingerprint,
 )
 from benchmark_runner.realistic_routing import (
+    B1CompletionDeadlineContract,
     B1PlanContract,
     CommonBudgetContract,
+    CompletionDeadlineBudgetContract,
+    CompletionProfileBudgetContract,
     PassiveBoundaryObservation,
     PassiveBoundaryRecord,
     ProfileBudgetContract,
@@ -48,6 +51,7 @@ from benchmark_runner.realistic_routing import (
     REALISTIC_SUITE_ID,
     REALISTIC_SUPPLEMENT_FIELD,
     RealisticRoutingPlanSupplement,
+    Ss1CompletionDeadlineContract,
     Ss1PlanContract,
     canonical_json_bytes,
     canonical_sha256,
@@ -206,6 +210,42 @@ class PhaseEBudget(StrictModel):
         return self
 
 
+class PhaseECompletionDeadlineBudget(StrictModel):
+    budget_mode: Literal["cell_completion_deadline"]
+    cell_completion_deadline_seconds: Literal[9000]
+    deadline_scope: Literal[
+        "from_cell_claim_acceptance_through_terminal_cell_seal"
+    ]
+    hard_limit_fields: list[Literal["cell_completion_deadline_seconds"]]
+    measurement_only_fields: list[
+        Literal[
+            "actual_model_turns",
+            "actual_sdk_calls",
+            "actual_sessions",
+            "actual_retries",
+            "actual_resumes",
+            "model_active_seconds",
+            "wall_clock_seconds",
+        ]
+    ]
+
+    @model_validator(mode="after")
+    def exact_fields(self) -> "PhaseECompletionDeadlineBudget":
+        if self.hard_limit_fields != ["cell_completion_deadline_seconds"]:
+            raise ValueError("Phase E completion hard-limit fields differ")
+        if self.measurement_only_fields != [
+            "actual_model_turns",
+            "actual_sdk_calls",
+            "actual_sessions",
+            "actual_retries",
+            "actual_resumes",
+            "model_active_seconds",
+            "wall_clock_seconds",
+        ]:
+            raise ValueError("Phase E completion measurement fields differ")
+        return self
+
+
 class PhaseEDispatchPolicy(StrictModel):
     one_cell_per_invocation: Literal[True]
     explicit_confirmation_per_cell: Literal[True]
@@ -221,7 +261,7 @@ class PhaseEClaimPolicy(StrictModel):
 
 
 class PhaseEStageManifest(StrictModel):
-    schema_version: Literal[1, 2, 3]
+    schema_version: Literal[1, 2, 3, 4]
     status: Literal["frozen_before_model_use"]
     suite_id: Literal["sdk-routing-realistic-high-difficulty-v1"]
     stage_id: Literal["realistic-high-difficulty-initial"]
@@ -235,7 +275,7 @@ class PhaseEStageManifest(StrictModel):
     runtime_contract: PhaseERuntimeContract
     profiles: list[PhaseEProfileSpec] = Field(min_length=2, max_length=2)
     cell_order: list[PhaseECellSpec] = Field(min_length=4, max_length=4)
-    budget: PhaseEBudget
+    budget: PhaseEBudget | PhaseECompletionDeadlineBudget
     dispatch: PhaseEDispatchPolicy
     claims: PhaseEClaimPolicy
 
@@ -275,6 +315,8 @@ class PhaseEStageManifest(StrictModel):
             if profile_i.docker_environment_path is not None:
                 raise ValueError("Phase E Profile I cannot claim Docker environment identity")
         if self.schema_version in {1, 2}:
+            if not isinstance(self.budget, PhaseEBudget):
+                raise ValueError("legacy Phase E requires turn-ceiling budget")
             if [item.task_count for item in self.profiles] != [8, 8]:
                 raise ValueError("legacy Phase E profile Task counts differ")
             if self.budget.profile_budgets is not None:
@@ -285,7 +327,9 @@ class PhaseEStageManifest(StrictModel):
                 for item in self.profiles
             ):
                 raise ValueError("legacy Phase E cannot claim redesign artifacts")
-        else:
+        elif self.schema_version == 3:
+            if not isinstance(self.budget, PhaseEBudget):
+                raise ValueError("Phase E v3 requires turn-ceiling budget")
             if [item.task_count for item in self.profiles] != [13, 8]:
                 raise ValueError("Phase E v3 profile Task counts differ")
             if self.budget.profile_budgets is None:
@@ -300,6 +344,21 @@ class PhaseEStageManifest(StrictModel):
                 or profile_i.task_budget_path is not None
             ):
                 raise ValueError("Phase E v3 Profile I cannot claim Profile R artifacts")
+        else:
+            if not isinstance(self.budget, PhaseECompletionDeadlineBudget):
+                raise ValueError("Phase E v4 requires completion deadline budget")
+            if [item.task_count for item in self.profiles] != [13, 8]:
+                raise ValueError("Phase E v4 profile Task counts differ")
+            if (
+                profile_r.task_pack_qualification_path is None
+                or profile_r.task_budget_path is None
+            ):
+                raise ValueError("Phase E v4 Profile R redesign artifacts are missing")
+            if (
+                profile_i.task_pack_qualification_path is not None
+                or profile_i.task_budget_path is not None
+            ):
+                raise ValueError("Phase E v4 Profile I cannot claim Profile R artifacts")
         expected = [
             (1, "repository-wide-compatibility-migration", "ss1"),
             (2, "repository-wide-compatibility-migration", "b1"),
@@ -309,7 +368,7 @@ class PhaseEStageManifest(StrictModel):
         actual = [(item.ordinal, item.profile_id, item.variant_id) for item in self.cell_order]
         if actual != expected:
             raise ValueError("Phase E Cell order differs from the approved order")
-        if (
+        if isinstance(self.budget, PhaseEBudget) and (
             self.budget.model_active_seconds_ceiling_per_variant
             > self.budget.wall_clock_seconds_ceiling_per_variant
         ):
@@ -395,7 +454,7 @@ class PhaseEProfileBinding(StrictModel):
 
 
 class PhaseESourceBindings(StrictModel):
-    schema_version: Literal[1, 2, 3] = 1
+    schema_version: Literal[1, 2, 3, 4] = 1
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_tree: str = Field(pattern=r"^[0-9a-f]{40}$")
     stage_manifest_path: Literal[PHASE_E_STAGE_RELATIVE]
@@ -475,14 +534,16 @@ class PhaseECandidateFile(StrictModel):
 
 
 class PhaseECandidateSeal(StrictModel):
-    schema_version: Literal[1, 2, 3] = 1
+    schema_version: Literal[1, 2, 3, 4] = 1
     kind: Literal[PHASE_E_CANDIDATE_KIND] = PHASE_E_CANDIDATE_KIND
     source_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     experiment_id: str
     plan_fingerprint: Sha256
     planned_cells: Literal[4]
-    planned_initial_model_turns: int = Field(gt=0)
-    planned_model_turn_ceiling: int = Field(gt=0)
+    planned_initial_model_turns: int | None = Field(default=None, gt=0)
+    planned_model_turn_ceiling: int | None = Field(default=None, gt=0)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
+    cell_completion_deadline_seconds: int | None = Field(default=None, gt=0)
     actual_model_turns: Literal[0]
     docker_environment_path: str | None = None
     docker_environment_sha256: Sha256 | None = None
@@ -510,12 +571,25 @@ class PhaseECandidateSeal(StrictModel):
             raise ValueError("Phase E v1 seal cannot claim Docker environment identity")
         if self.schema_version in {2, 3} and not (has_path and has_sha):
             raise ValueError("Phase E v2+ seal requires Docker environment path/SHA")
-        expected_turns = (42, 50) if self.schema_version == 3 else (32, 40)
-        if (
-            self.planned_initial_model_turns,
-            self.planned_model_turn_ceiling,
-        ) != expected_turns:
-            raise ValueError("Phase E candidate turn totals differ")
+        if self.schema_version == 4:
+            if (
+                self.budget_mode != "cell_completion_deadline"
+                or self.cell_completion_deadline_seconds != 9000
+                or self.planned_initial_model_turns is not None
+                or self.planned_model_turn_ceiling is not None
+            ):
+                raise ValueError("Phase E v4 completion deadline differs")
+        else:
+            expected_turns = (42, 50) if self.schema_version == 3 else (32, 40)
+            if (
+                self.budget_mode is not None
+                or self.cell_completion_deadline_seconds is not None
+                or (
+                    self.planned_initial_model_turns,
+                    self.planned_model_turn_ceiling,
+                ) != expected_turns
+            ):
+                raise ValueError("Phase E candidate turn totals differ")
         payload = self.model_dump(
             mode="json",
             exclude={"seal_sha256"},
@@ -715,28 +789,64 @@ def _profile_binding(
         )
         task_budget = _json(task_budget_bytes, profile.task_budget_path)
         expected_task_ids = [f"R{ordinal:02d}" for ordinal in range(1, 14)]
-        per_task = task_budget.get("per_task_maximum_turns")
         task_budget_without_seal = {
             key: value for key, value in task_budget.items() if key != "seal_sha256"
         }
-        if (
+        common_valid = (
             task_budget.get("status") != "PROFILE_R_TASK_BUDGET_SEALED"
             or task_budget.get("model_turns") != 0
             or task_budget.get("snapshot_id") != profile.snapshot_id
             or task_budget.get("task_ids") != expected_task_ids
-            or not isinstance(per_task, dict)
-            or list(per_task) != expected_task_ids
-            or any(value != 2 for value in per_task.values())
-            or task_budget.get("base_turns_per_cell") != 13
-            or task_budget.get("maximum_actual_model_turns_per_cell") != 15
-            or task_budget.get("retry_resume_maximum_turns") != 2
             or task_budget.get("ss1_b1_identical") is not True
             or not isinstance(task_budget.get("seal_sha256"), str)
             or task_budget.get("seal_sha256")
             != _profile_r_artifact_self_sha256(task_budget_without_seal)
-        ):
+        )
+        if common_valid:
             raise PhaseECandidateError(
                 f"{profile.snapshot_id} Task budget is not sealed"
+            )
+        if task_budget.get("schema_version") == 1:
+            per_task = task_budget.get("per_task_maximum_turns")
+            valid_specific = (
+                isinstance(per_task, dict)
+                and list(per_task) == expected_task_ids
+                and all(value == 2 for value in per_task.values())
+                and task_budget.get("base_turns_per_cell") == 13
+                and task_budget.get("maximum_actual_model_turns_per_cell") == 15
+                and task_budget.get("retry_resume_maximum_turns") == 2
+            )
+        elif task_budget.get("schema_version") == 2:
+            valid_specific = (
+                task_budget.get("budget_mode") == "cell_completion_deadline"
+                and task_budget.get("cell_completion_deadline_seconds") == 9000
+                and task_budget.get("deadline_scope")
+                == "from_cell_claim_acceptance_through_terminal_cell_seal"
+                and task_budget.get("hard_limit_fields")
+                == ["cell_completion_deadline_seconds"]
+                and task_budget.get("measurement_only_fields")
+                == [
+                    "actual_model_turns",
+                    "actual_sdk_calls",
+                    "actual_sessions",
+                    "actual_retries",
+                    "actual_resumes",
+                    "model_active_seconds",
+                    "wall_clock_seconds",
+                ]
+                and not {
+                    "per_task_maximum_turns",
+                    "base_turns_per_cell",
+                    "maximum_actual_model_turns_per_cell",
+                    "retry_resume_maximum_turns",
+                    "unused_reserve_transfer",
+                }.intersection(task_budget)
+            )
+        else:
+            valid_specific = False
+        if not valid_specific:
+            raise PhaseECandidateError(
+                f"{profile.snapshot_id} Task budget contract differs"
             )
         task_budget_sha256 = _sha256(task_budget_bytes)
         task_budget_seal_sha256 = str(task_budget["seal_sha256"])
@@ -816,6 +926,23 @@ def build_source_bindings(
     stage: PhaseEStageManifest,
 ) -> PhaseESourceBindings:
     repository = repository.resolve()
+    if stage.schema_version == 4:
+        profile_r = stage.profiles[0]
+        if profile_r.task_budget_path is None:
+            raise PhaseECandidateError("Phase E v4 task budget is unavailable")
+        deadline_budget = _json(
+            _git_bytes(repository, source_commit, profile_r.task_budget_path),
+            profile_r.task_budget_path,
+        )
+        if (
+            deadline_budget.get("schema_version") != 2
+            or deadline_budget.get("budget_mode")
+            != "cell_completion_deadline"
+            or deadline_budget.get("cell_completion_deadline_seconds") != 9000
+        ):
+            raise PhaseECandidateError(
+                "Phase E v4 requires the Profile R completion deadline artifact"
+            )
     profiles = [_profile_binding(repository, source_commit, item) for item in stage.profiles]
     values: dict[str, Any] = {
         "schema_version": stage.schema_version,
@@ -873,7 +1000,7 @@ def _docker_environment_identity(
 def _profile_r_redesign_identity(
     bindings: PhaseESourceBindings,
 ) -> dict[str, str]:
-    if bindings.schema_version != 3:
+    if bindings.schema_version not in {3, 4}:
         return {}
     profile_r = bindings.profiles[0]
     values = {
@@ -964,24 +1091,64 @@ def _supplement(
     qualifications = {
         item.profile_id: item.qualification_sha256 for item in bindings.profiles
     }
-    redesigned = bindings.schema_version == 3
-    return RealisticRoutingPlanSupplement(
-        schema_version=2 if redesigned else 1,
-        suite_id=REALISTIC_SUITE_ID,
-        stage_id=REALISTIC_STAGE_ID,
-        comparison_spec_sha256=bindings.comparison_spec_sha256,
-        implementation_spec_sha256=bindings.implementation_spec_sha256,
-        runtime_boundary_spec_sha256=bindings.runtime_boundary_spec_sha256,
-        machine_variant_ids=("ss1", "b1"),
-        ss1=Ss1PlanContract(
+    redesigned = bindings.schema_version in {3, 4}
+    completion_deadline = bindings.schema_version == 4
+    if completion_deadline:
+        ss1_contract = Ss1CompletionDeadlineContract(
+            result_schema_sha256=canonical_sha256(ss1_result_schema(base_result)),
+            neutral_review_prompt_sha256=neutral_review_prompt_sha256(),
+            review_trigger_position="after_observer_before_next_dispatch",
+            budget_mode="cell_completion_deadline",
+        )
+        b1_contract = B1CompletionDeadlineContract(
+            public_report_schema_sha256=_sha256(
+                _git_bytes(repository, source_commit, B1_REPORT_SCHEMA)
+            ),
+            observer_hook_schema_sha256=canonical_sha256(
+                PassiveBoundaryRecord.model_json_schema()
+            ),
+            feedback_template_sha256=_sha256(B1_FEEDBACK_TEMPLATE.encode("utf-8")),
+            feedback_stdout_stderr_byte_cap=65_536,
+            selection="resume_if_same_thread_safe_else_retry",
+            budget_mode="cell_completion_deadline",
+        )
+        common_budget = CompletionDeadlineBudgetContract(
+            budget_mode="cell_completion_deadline",
+            cell_completion_deadline_seconds=9000,
+            deadline_scope=(
+                "from_cell_claim_acceptance_through_terminal_cell_seal"
+            ),
+            hard_limit_fields=("cell_completion_deadline_seconds",),
+            measurement_only_fields=(
+                "actual_model_turns",
+                "actual_sdk_calls",
+                "actual_sessions",
+                "actual_retries",
+                "actual_resumes",
+                "model_active_seconds",
+                "wall_clock_seconds",
+            ),
+        )
+        profile_budgets = [
+            CompletionProfileBudgetContract(
+                profile_id="repository-wide-compatibility-migration",
+                task_count=13,
+            ),
+            CompletionProfileBudgetContract(
+                profile_id="evidence-bound-incident-repair",
+                task_count=8,
+            ),
+        ]
+    else:
+        ss1_contract = Ss1PlanContract(
             result_schema_sha256=canonical_sha256(ss1_result_schema(base_result)),
             neutral_review_prompt_sha256=neutral_review_prompt_sha256(),
             review_trigger_position="after_observer_before_next_dispatch",
             task_initial_turns=1,
             task_extra_turn_ceiling=1,
             variant_extra_turn_ceiling=2,
-        ),
-        b1=B1PlanContract(
+        )
+        b1_contract = B1PlanContract(
             public_report_schema_sha256=_sha256(
                 _git_bytes(repository, source_commit, B1_REPORT_SCHEMA)
             ),
@@ -994,8 +1161,8 @@ def _supplement(
             task_initial_turns=1,
             task_extra_turn_ceiling=1,
             variant_extra_turn_ceiling=2,
-        ),
-        common_budget=CommonBudgetContract(
+        )
+        common_budget = CommonBudgetContract(
             task_count=13 if redesigned else 8,
             base_turns_per_variant=13 if redesigned else 8,
             total_turn_ceiling_per_variant=15 if redesigned else 10,
@@ -1003,8 +1170,8 @@ def _supplement(
             wall_clock_seconds_ceiling_per_variant=9000,
             wall_clock_scope="from_adapter_run_entry_through_adapter_terminal",
             unused_reserve_transfer="forbidden",
-        ),
-        profile_budgets=(
+        )
+        profile_budgets = (
             [
                 ProfileBudgetContract(
                     profile_id="repository-wide-compatibility-migration",
@@ -1021,7 +1188,19 @@ def _supplement(
             ]
             if redesigned
             else None
-        ),
+        )
+    return RealisticRoutingPlanSupplement(
+        schema_version=3 if completion_deadline else 2 if redesigned else 1,
+        suite_id=REALISTIC_SUITE_ID,
+        stage_id=REALISTIC_STAGE_ID,
+        comparison_spec_sha256=bindings.comparison_spec_sha256,
+        implementation_spec_sha256=bindings.implementation_spec_sha256,
+        runtime_boundary_spec_sha256=bindings.runtime_boundary_spec_sha256,
+        machine_variant_ids=("ss1", "b1"),
+        ss1=ss1_contract,
+        b1=b1_contract,
+        common_budget=common_budget,
+        profile_budgets=profile_budgets,
         observer_schema_sha256=canonical_sha256(
             PassiveBoundaryObservation.model_json_schema()
         ),
@@ -1145,8 +1324,20 @@ def build_phase_e_plan(
             "stage_id": REALISTIC_STAGE_ID,
             "model": stage.model,
             "reasoning_effort": stage.reasoning_effort,
-            "planned_initial_model_turns": stage.budget.total_initial_turns,
-            "planned_model_turn_ceiling": stage.budget.total_turn_ceiling,
+            **(
+                {
+                    "budget_mode": "cell_completion_deadline",
+                    "cell_completion_deadline_seconds": (
+                        stage.budget.cell_completion_deadline_seconds
+                    ),
+                    "deadline_scope": stage.budget.deadline_scope,
+                }
+                if isinstance(stage.budget, PhaseECompletionDeadlineBudget)
+                else {
+                    "planned_initial_model_turns": stage.budget.total_initial_turns,
+                    "planned_model_turn_ceiling": stage.budget.total_turn_ceiling,
+                }
+            ),
             "one_cell_per_invocation": True,
             "explicit_confirmation_per_cell": True,
             "stop_after_first_profile_pair": True,
@@ -1239,6 +1430,12 @@ def create_phase_e_candidate(
     records = [_file_record(output_root, relative) for relative in PAYLOAD_FILES]
     files_bytes = _files_manifest_bytes(records)
     atomic_write(output_root / "files.sha256", files_bytes)
+    completion_budget = isinstance(
+        PhaseEStageManifest.model_validate_json(
+            _git_bytes(repository, source_commit, PHASE_E_STAGE_RELATIVE)
+        ).budget,
+        PhaseECompletionDeadlineBudget,
+    )
     values = {
         "schema_version": bindings.schema_version,
         "kind": PHASE_E_CANDIDATE_KIND,
@@ -1246,11 +1443,22 @@ def create_phase_e_candidate(
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
         "planned_cells": 4,
-        "planned_initial_model_turns": int(
-            plan.decision_policy["planned_initial_model_turns"]
-        ),
-        "planned_model_turn_ceiling": int(
-            plan.decision_policy["planned_model_turn_ceiling"]
+        **(
+            {
+                "budget_mode": "cell_completion_deadline",
+                "cell_completion_deadline_seconds": int(
+                    plan.decision_policy["cell_completion_deadline_seconds"]
+                ),
+            }
+            if completion_budget
+            else {
+                "planned_initial_model_turns": int(
+                    plan.decision_policy["planned_initial_model_turns"]
+                ),
+                "planned_model_turn_ceiling": int(
+                    plan.decision_policy["planned_model_turn_ceiling"]
+                ),
+            }
         ),
         "actual_model_turns": 0,
         **_docker_environment_identity(bindings),

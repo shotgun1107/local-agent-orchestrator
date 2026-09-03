@@ -19,6 +19,10 @@ import yaml
 SNAPSHOT_ID = "realistic-compat-migration-001"
 BASE_COMMIT = "dbd84422a315b8bc34d0fc2583862f5add8c7c44"
 REFERENCE_COMMIT = "56c91334fb32c4699d11ef80769831f14a0431d6"
+REFERENCE_OVERRIDE_ROOT = (
+    Path("benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/")
+    / "realistic-compat-migration-001/solution-overrides"
+)
 PROFILE_ROOT = Path("benchmarks/fixtures/routing-realistic-high-difficulty-v1") / SNAPSHOT_ID
 JUDGE_ROOT = Path("benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1") / SNAPSHOT_ID
 CHECKER_RELATIVE = Path("checker/check_properties.py")
@@ -610,6 +614,27 @@ def project_reference(repository: Path, pristine: Path, solution: Path, mapping:
         if not _reference_scope_allows(target, scopes):
             raise RuntimeError("golden mirror target escaped Profile R Task scopes")
         write_bytes(solution, target, source)
+    override_root = repository / REFERENCE_OVERRIDE_ROOT
+    if not override_root.is_dir():
+        raise RuntimeError("Profile R reference override root is unavailable")
+    for source in sorted(
+        (path for path in override_root.rglob("*") if path.is_file()),
+        key=lambda path: path.relative_to(override_root).as_posix(),
+    ):
+        relative = source.relative_to(override_root).as_posix()
+        if not _reference_scope_allows(relative, scopes):
+            raise RuntimeError(
+                f"Profile R reference override escaped Task scopes: {relative}"
+            )
+        payload = source.read_bytes()
+        if b"\x00" in payload or b"\r" in payload:
+            raise RuntimeError(
+                f"Profile R reference override is not exact UTF-8 LF text: {relative}"
+            )
+        text = payload.decode("utf-8")
+        stripped = text.rstrip("\n")
+        payload = ((stripped + "\n") if stripped else "").encode("utf-8")
+        write_bytes(solution, relative, payload)
     bind_s2_manifest_to_projected_fixtures(solution)
     ledger, inventory = migration_work_payloads(solution)
     write_bytes(solution, "profile-r/work/migration-ledger.json", canonical_json(ledger))
@@ -681,13 +706,21 @@ def mutate_stage_discriminator(root: Path) -> None:
 
 
 def mutate_config_fixture(root: Path) -> None:
-    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json"
-    path.write_bytes(b'{"version":999}\n')
+    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py"
+    replace_once(
+        path,
+        b"def parse_config(source: str | bytes | bytearray)",
+        b"def parse(source: str | bytes | bytearray)",
+    )
 
 
 def mutate_incident_fixture(root: Path) -> None:
-    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md"
-    replace_once(path, "## 확인된 사실".encode("utf-8"), "## 잘못된 사실".encode("utf-8"))
+    path = root / "benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json"
+    replace_once(
+        path,
+        b'"evidence_ids":["EV-B1"]',
+        b'"evidence_id":"EV-B1"',
+    )
 
 
 def mutate_manifest_binding(root: Path) -> None:
@@ -709,10 +742,16 @@ def mutate_plan_order(root: Path) -> None:
 
 def mutate_reserve(root: Path) -> None:
     path = root / "tools/benchmark-runner/src/benchmark_runner/s2_policy.py"
-    replace_once(
-        path,
-        b"return min(project_policy_turn_cap, task_count + remaining)",
-        b"return min(project_policy_turn_cap, task_count + remaining + 1)",
+    payload = path.read_bytes()
+    anchor = b"return min(project_policy_turn_cap, task_count + remaining)"
+    if payload.count(anchor) != 2:
+        raise RuntimeError("S2 reserve mutation anchor count differs")
+    path.write_bytes(
+        payload.replace(
+            anchor,
+            b"return min(project_policy_turn_cap, task_count + remaining + 1)",
+            1,
+        )
     )
 
 

@@ -1,5 +1,5 @@
 diff --git a/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
-index ee1a85c063d388224e9ba36d3d00617730be972c..ac95ce16bdfc893e5efefbafb699f4281d5e1954 100644
+index cb669abe6d1d3386165e4680d0352ce5a15a2e90..0b047106aefbb55f3c1efc3eacddcc9499c2d338 100644
 --- a/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
 +++ b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
 @@ -18,7 +18,7 @@ from typing import Any

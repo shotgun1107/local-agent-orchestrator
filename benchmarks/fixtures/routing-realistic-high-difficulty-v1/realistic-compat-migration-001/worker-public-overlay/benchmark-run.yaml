@@ -12,6 +12,7 @@ constraints:
   - "Preserve the existing S1 lifecycle, Measurement, seal, export, and route-decision meanings."
   - "Do not add an S2-only Controller, state machine, Judge, runtime, adapter, Measurement, or seal implementation."
   - "Do not use network access, external actions, API keys, or model calls from checks."
+  - "R03 and R04 normative contracts are the fixed profile-r/requirements/r03-config-fixture-contract.md and r04-incident-fixture-contract.md files; fixture-local docs and developer tests are supplemental and cannot redefine them."
 assumptions: []
 tasks:
   - key: R01
@@ -39,11 +40,11 @@ tasks:
     own_check: r02_contract
     approval: none
   - key: R03
-    goal: "Create only the public three-Task configuration-migration fixture and its semantic developer checks."
+    goal: "Implement the public three-Task configuration-migration fixture against the fixed R03 contract; developer checks are supplemental."
     completion_criteria:
       - {id: R03C1, text: "The configuration fixture graph, requirements, implementation, and outputs satisfy their semantic contract.", check_names: [r03_contract]}
     depends_on: [R02]
-    inputs: [{path: "profile-r/work/source-inventory.json"}]
+    inputs: [{path: "profile-r/work/source-inventory.json"}, {path: "profile-r/requirements/r03-config-fixture-contract.md"}]
     read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/**"]
     write_scope: ["benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/**"]
     capability_profile: code_change
@@ -51,11 +52,11 @@ tasks:
     own_check: r03_contract
     approval: none
   - key: R04
-    goal: "Create only the public three-Task incident-analysis fixture and its semantic developer checks."
+    goal: "Implement the public three-Task incident-analysis fixture against the fixed plural-reference R04 contract; developer checks are supplemental."
     completion_criteria:
       - {id: R04C1, text: "The incident fixture graph, evidence dependencies, implementation, and outputs satisfy their semantic contract.", check_names: [r04_contract]}
     depends_on: [R03]
-    inputs: [{path: "profile-r/work/source-inventory.json"}]
+    inputs: [{path: "profile-r/work/source-inventory.json"}, {path: "profile-r/requirements/r04-incident-fixture-contract.md"}]
     read_scope: ["README.md", "profile-r/requirements/**", "profile-r/work/**", "benchmark_checks/check_profile_r.py", "benchmarks/fixtures/routing-v1/**"]
     write_scope: ["benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/**"]
     capability_profile: code_change

@@ -1492,6 +1492,7 @@ def run_command_check(
     *,
     temp_root: Path,
     termination_grace_seconds: float = DEFAULT_CHECK_TERMINATION_GRACE_SECONDS,
+    timeout_seconds_override: float | None = None,
 ) -> CheckResult:
     cwd = (workspace.root / check.cwd).resolve()
     if workspace.root not in cwd.parents and cwd != workspace.root:
@@ -1502,11 +1503,18 @@ def run_command_check(
             check.argv,
             git_executable=workspace.git_executable,
         )
+        timeout_seconds = (
+            check.timeout_seconds
+            if timeout_seconds_override is None
+            else timeout_seconds_override
+        )
+        if timeout_seconds <= 0:
+            raise ValueError("Check timeout override must be positive")
         with isolated_check_temp_directory(temp_root) as allocation:
             completed, timed_out = _run_bounded_check_process(
                 execution_argv,
                 cwd=cwd,
-                timeout_seconds=check.timeout_seconds,
+                timeout_seconds=timeout_seconds,
                 termination_grace_seconds=termination_grace_seconds,
                 environment=build_check_environment(
                     temp_directory=allocation.path,

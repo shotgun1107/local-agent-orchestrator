@@ -47,36 +47,59 @@
     },
     {
       "option": "timeout을 structured failure로 분류하고 terminal 확정성·남은 Task/Variant budget·Attempt 상한으로 retry/resume/최종 실패를 결정한다",
+      "decision": "rejected",
+      "reason": "model-free 진단 직후에는 채택했지만 2026-09-03 사용자 결정으로 Task·Variant 호출 예산 자체를 제거해 더 이상 적용하지 않는다"
+    },
+    {
+      "option": "SS1/B1 각 Cell의 R01~R13 전체 완료시간 9000초만 hard limit으로 두고 문제별 timeout·호출·Attempt·retry/resume 상한은 제거한다",
       "decision": "adopted",
-      "reason": "기존 fail-closed 안전선을 유지하면서 봉인된 retry 계약을 실제 상태 전이에 연결한다"
+      "reason": "사용자가 실제로 기다리는 전체 완료시간을 두 전략에 동일하게 주면서 내부 문제 분할과 session 전략을 인위적인 호출 상한으로 왜곡하지 않는다"
     }
   ],
-  "resolution": "",
+  "resolution": "새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5 model-free 검증은 완료했으며 fresh Docker qualification과 새 candidate 전까지 incident는 investigating을 유지한다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/schedule.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_routing.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py",
+    "tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py",
+    "tools/benchmark-runner/src/benchmark_runner/sdk_cells.py",
+    "tools/benchmark-runner/scripts/build_profile_r_task_budget.py",
+    "stages/b1-sequential/src/orchestrator/ledger.py",
+    "stages/b1-sequential/src/orchestrator/verify.py",
     "stages/b1-sequential/tests/unit/test_schedule.py",
-    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py"
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py",
+    "tools/benchmark-runner/tests/test_realistic_routing.py"
   ],
   "regression_tests": [
-    "model-free confirmed timeout with one remaining retry creates exactly one fresh Attempt",
-    "exhausted timeout budget closes the Task once and leaves no active Session or process",
+    "a Task exceeding the legacy 900-second boundary remains eligible while the Cell completion deadline has time remaining",
+    "more than 15 model turns and more than two Attempts for one Task do not fail admission while the Cell completion deadline has time remaining",
+    "each SDK call receives the remaining Cell time instead of a fixed per-Task timeout",
+    "the Cell completion deadline stops new dispatch and seals exactly one terminal deadline failure",
     "terminal unknown remains fail-closed and is never retried automatically",
-    "R10 timeout handling cannot dispatch R11 before R10 succeeds"
+    "model call, session, retry and resume counts remain measured but do not act as hard limits"
   ],
   "verification": [
     "sealed v21 B1 Evidence and source inspection reproduced the control-flow mismatch without a new model turn",
     "existing model-free timeout regression reproduced Task/Attempt final FAILED for interrupt-confirmed timeout: 1 passed in 1.54s",
-    "Cell 3 remained PLANNED and unclaimed; automatic continuation, residual container and live process were 0"
+    "Cell 3 remained PLANNED and unclaimed; automatic continuation, residual container and live process were 0",
+    "deadline schema·unlimited turn accounting·deadline 이후 SS1/B1 새 dispatch 거부 회귀 10개가 통과했다.",
+    "Phase E/F·SS1/B1 scheduler 핵심 model-free 회귀는 136 passed, 1 skipped, 4 deselected였고 별도 B1 reference 통합은 두 경우 모두 R01~R13과 cumulative public Checks 104/104를 완료했다.",
+    "Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다."
   ],
   "remaining_risks": [
-    "retryable timeout의 exact terminal 조건과 fresh retry 대 same-thread resume 선택이 아직 구현·검증되지 않았다.",
-    "per-turn 900초와 Cell model-active/wall-clock ceiling의 결합 규칙을 새 candidate 전에 다시 봉인해야 한다."
+    "새 Judge source를 실제 격리 Docker 경계에서 검증하는 fresh qualification은 아직 실행하지 않았다.",
+    "q5와 fresh Docker qualification을 직접 결합한 새 candidate·acceptance·readiness 전에는 실제 deadline mode Cell을 실행할 수 없다.",
+    "현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다."
   ],
   "related_commits": [],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",
+    "docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md",
+    "benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json",
     "benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json",
     "stages/b1-sequential/src/orchestrator/schedule.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py"

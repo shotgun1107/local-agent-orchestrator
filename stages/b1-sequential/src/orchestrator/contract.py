@@ -529,7 +529,7 @@ class ProjectPack(StrictModel):
 
 class TaskLimits(StrictModel):
     timeout_seconds: int = Field(gt=0)
-    remaining_attempts: int = Field(ge=0)
+    remaining_attempts: int | None = Field(default=None, ge=0)
 
 
 class TaskEnvelope(StrictModel):

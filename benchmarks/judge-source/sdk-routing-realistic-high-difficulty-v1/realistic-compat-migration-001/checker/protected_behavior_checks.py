@@ -167,9 +167,7 @@ def _reserve_isolation(_workspace: Path) -> None:
 
     cases = (
         ([], 3, 6),
-        ([_measurement("c2", 9, 9)], 3, 6),
         ([_measurement("b1", 1, 1)], 1, 4),
-        ([_measurement("b1", 2, 2)], 0, 3),
     )
     for measurements, expected_remaining, expected_cap in cases:
         _require(
@@ -181,6 +179,15 @@ def _reserve_isolation(_workspace: Path) -> None:
         s2_b1_turn_cap([], task_count=5, project_policy_turn_cap=6, reserve_turns=3) == 6,
         "project turn cap is not enforced",
     )
+    for invalid_history in (
+        [_measurement("c2", 9, 9)],
+        [_measurement("b1", 2, 2)],
+    ):
+        try:
+            remaining_b1_retry_resume_reserve(invalid_history)
+        except S2PolicyError:
+            continue
+        raise AssertionError("invalid reserve history was accepted")
     for invalid in (-1, True):
         try:
             remaining_b1_retry_resume_reserve([_measurement("b1", invalid, 0)])

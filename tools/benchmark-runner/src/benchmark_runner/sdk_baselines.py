@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
@@ -268,14 +269,24 @@ class SS1PersistentConfig:
     observer: SS1Observer
     task_resolver: SS1TaskResolver | None = None
     forbidden_prompt_fragments: tuple[str, ...] = ()
-    task_extra_turn_ceiling: Literal[1] = 1
-    variant_extra_turn_ceiling: Literal[2] = 2
+    task_extra_turn_ceiling: Literal[1] | None = 1
+    variant_extra_turn_ceiling: Literal[2] | None = 2
+    completion_deadline_monotonic: float | None = None
 
     def __post_init__(self) -> None:
-        if self.task_extra_turn_ceiling != 1:
-            raise ValueError("SS1 Task extra-turn ceiling must be exactly 1")
-        if self.variant_extra_turn_ceiling != 2:
-            raise ValueError("SS1 Variant extra-turn ceiling must be exactly 2")
+        if self.completion_deadline_monotonic is None:
+            if self.task_extra_turn_ceiling != 1:
+                raise ValueError("SS1 Task extra-turn ceiling must be exactly 1")
+            if self.variant_extra_turn_ceiling != 2:
+                raise ValueError("SS1 Variant extra-turn ceiling must be exactly 2")
+        elif (
+            self.completion_deadline_monotonic <= time.monotonic()
+            or self.task_extra_turn_ceiling is not None
+            or self.variant_extra_turn_ceiling is not None
+        ):
+            raise ValueError(
+                "SS1 completion deadline mode cannot carry turn ceilings"
+            )
         if any(type(task) is not Ss1TaskRequest for task in self.tasks):
             raise TypeError("SS1 tasks must use the exact Ss1TaskRequest type")
         if any(not fragment for fragment in self.forbidden_prompt_fragments):
@@ -745,27 +756,28 @@ class SS1PersistentAdapter:
 
                 if not needs_review:
                     break
-                if next_kind == "ss1_self_review":
-                    ceiling_denials.append(
-                        {
-                            "task_id": task.task_id,
-                            "requested_after_turn_ordinal": global_turn_ordinal,
-                            "reason_code": "SS1_TASK_EXTRA_TURN_CEILING",
-                        }
-                    )
-                    break
-                if (
-                    variant_extra_turns_used
-                    >= self.config.variant_extra_turn_ceiling
-                ):
-                    ceiling_denials.append(
-                        {
-                            "task_id": task.task_id,
-                            "requested_after_turn_ordinal": global_turn_ordinal,
-                            "reason_code": "SS1_VARIANT_EXTRA_TURN_CEILING",
-                        }
-                    )
-                    break
+                if self.config.completion_deadline_monotonic is None:
+                    if next_kind == "ss1_self_review":
+                        ceiling_denials.append(
+                            {
+                                "task_id": task.task_id,
+                                "requested_after_turn_ordinal": global_turn_ordinal,
+                                "reason_code": "SS1_TASK_EXTRA_TURN_CEILING",
+                            }
+                        )
+                        break
+                    if (
+                        variant_extra_turns_used
+                        >= self.config.variant_extra_turn_ceiling
+                    ):
+                        ceiling_denials.append(
+                            {
+                                "task_id": task.task_id,
+                                "requested_after_turn_ordinal": global_turn_ordinal,
+                                "reason_code": "SS1_VARIANT_EXTRA_TURN_CEILING",
+                            }
+                        )
+                        break
                 variant_extra_turns_used += 1
                 next_kind = "ss1_self_review"
 

@@ -13,8 +13,8 @@
     },
     {
       "path": "checker/check_properties.py",
-      "sha256": "88a7b1ae880f0e23a3288d50690c785817d0918b949aefc19165ee0c38ae5cb3",
-      "size": 28758
+      "sha256": "36e0d2828229c312f59013c38c9fcab53de1e4de3d1819bf7731b75a09f15425",
+      "size": 29062
     },
     {
       "path": "checker/probe_runtime_boundary.py",
@@ -23,8 +23,8 @@
     },
     {
       "path": "checker/protected_behavior_checks.py",
-      "sha256": "489f2afc907837d47210c588a6e87c66d6fc3f345785161cb9f2bd59f2735e1a",
-      "size": 19668
+      "sha256": "222b1e5894af3240b2a0c29fdaaef91eb2593d12547459ccc4ebe083a736d358",
+      "size": 19884
     },
     {
       "path": "evidence/adversarial-worker-test-oracle.json",
@@ -33,82 +33,82 @@
     },
     {
       "path": "evidence/anonymization-review.md",
-      "sha256": "9f6a3ea7c7f1fe43230f2984802c3450387cd3eddca6678045509c00da6f1512",
+      "sha256": "0e55cff21a648bf7dd7bded7b6eaebe50b6a51c58dd211fa9da0bc4b06313cba",
       "size": 505
     },
     {
       "path": "evidence/mutations/r-p01-source-boundary.json",
-      "sha256": "b9684aa1bd0123d67e2f653d799532eb0ab8d474778b8b888bea704de33cc5da",
+      "sha256": "bd312b94c126772a57d30da4043daa77c71cad63d1cea23ba33445bc6ecd1594",
       "size": 12725
     },
     {
       "path": "evidence/mutations/r-p02-discriminator.json",
-      "sha256": "79002580713ac12ea6fa3ae437305508f4c5da91af2ab832dc2dfa658a5c9329",
+      "sha256": "b860eaac016d3b424a1f9bfa65dad2b7c9f59106bdad07be6ed46ae715d92ea6",
       "size": 12728
     },
     {
       "path": "evidence/mutations/r-p03-config-fixture.json",
-      "sha256": "9c114c2c8c12768e6a7090550077f2a21609b2527e6448b7d87a8e99affaa979",
+      "sha256": "752d3b02a1cd1bf1f5b633e1a557d2b348ffe97b65dda84823db0a1ed1a0c3e7",
       "size": 12725
     },
     {
       "path": "evidence/mutations/r-p04-incident-fixture.json",
-      "sha256": "72801f0bfe8f9835e82cd5c0c246ef3b7a1091cf3ddda55ac6e016a1194ba15b",
+      "sha256": "00cd24bbb429c76a1b1d8461bf385bf64b59e1b1eee1de1f93b01e00cca113e1",
       "size": 12727
     },
     {
       "path": "evidence/mutations/r-p05-manifest-binding.json",
-      "sha256": "52369f6c38bed94bf819e4cdc089e15a355c262784ddd49602ef67f0ed877381",
+      "sha256": "6ddd8cbb29936ff4ea12f36552a42200f796d2ffa65ba7df86cf6d323e4756ae",
       "size": 12726
     },
     {
       "path": "evidence/mutations/r-p06-plan-binding.json",
-      "sha256": "6bf2a5cab9fb81127b36b3c541419b3b86cd5ab575c66c77c493eab81bc2da02",
+      "sha256": "b77147a31ac7f2a415ba58418062f7ab90ff8d45b9d5f51c794adbaaecbbd703",
       "size": 12733
     },
     {
       "path": "evidence/mutations/r-p07-routing-policy.json",
-      "sha256": "65db53cd75637a7f37b65eedc2e9e44f276a5ea84fe3eef775e6a5ddb418c485",
+      "sha256": "9e6cf23fc2d657fb24fb045e6c14ac52e8fb44a86ac8890b22e495ca8c8de3cc",
       "size": 12734
     },
     {
       "path": "evidence/mutations/r-p08-lifecycle-reuse.json",
-      "sha256": "c39a17a79aa07dee40797a59cbe6b61c3800aa5f8a69de73880846d5f458ce18",
+      "sha256": "63e4725de1e6583ba35f0aa8e4b3f796e6a80af95b951180c07a2e769d9dd112",
       "size": 12737
     },
     {
       "path": "evidence/mutations/r-p09-status-posthoc.json",
-      "sha256": "978704c310b5572a3f9b4b5d5681adb97d120644697f8cb018e371574693f5cc",
+      "sha256": "9f0f72b7a90ff62f68ba5c1835f69f43f38565b99c8ec4e098f1b7e535f7b4f0",
       "size": 12721
     },
     {
       "path": "evidence/mutations/r-p10-export-verify.json",
-      "sha256": "57ca68d14ce85d0ffb3a81a26f010610c2d9e6077b7efe0a0ade498ffdc64a67",
+      "sha256": "4fe8836cca57b26bd082b37958c7aaf5b2ac4dadc38dbff5feec00ae084c05be",
       "size": 12723
     },
     {
       "path": "evidence/mutations/r-p11-s2-e2e.json",
-      "sha256": "b4a95f112dd3b1bb180366b07db577e76571f80cf7b8f5ab668f526e65f1535a",
+      "sha256": "ef43062dec44674c8d68910c16e30dec747a7aab4c0e0eb79d0df68b2486bd1e",
       "size": 12715
     },
     {
       "path": "evidence/mutations/r-p12-s1-portability.json",
-      "sha256": "694febde0aee7221e3c5008c8106a4984363d128e19df5a24e5cb410af2e476b",
+      "sha256": "a0f58d4b416364965968a639cad7947de319eef9df225dda50f92cf19555e74a",
       "size": 12726
     },
     {
       "path": "evidence/mutations/r-p13-operator-semantics.json",
-      "sha256": "63ebc5acd83138bbd7d55e82ca9b363e766a6b87258da9008fa2352543d44b8a",
+      "sha256": "2a1157a3c98edd0be9ebcc7063941d6197e4a2f8358b3d7a93e3ebabc3d6b7cb",
       "size": 12724
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "b74cb389296b9c77fea6fcd9bce13f5a0c233247f017b9f19e6b8be50e895d75",
+      "sha256": "ecb1071a87a283b46037c4e0b52519e4ca264ec4c101da5603dcfaaf92a6c386",
       "size": 10298
     },
     {
       "path": "evidence/public-negative-matrix.json",
-      "sha256": "edda87faa5e1db02904bdef667876b5efbc2e9d19ab95eb7bf79e10b8906c16d",
+      "sha256": "ac635f49d5bddecbc4568e93c2e6a6abac0d4dc5f482ffc2a8d6f9beae4cc0a7",
       "size": 13906
     },
     {
@@ -123,7 +123,7 @@
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "231eda8cc46247b875c74f24442cfc20d0f26fad3699a348103c040c4203ead8",
+      "sha256": "d0316ad4ca6f4a3ab6e83e5b9a076bb6b72292f39a216efcefe17bd13f572e9a",
       "size": 12711
     },
     {
@@ -148,17 +148,17 @@
     },
     {
       "path": "negative-mutations/r-p03-config-fixture.patch",
-      "sha256": "6fae54c9277d3138be0ef2068308ea84777f41353d6418df21296bf21c22754d",
-      "size": 613
+      "sha256": "c9dcd69213c4f23f4a4c2db4a5241344cee5e8bfcdf4cad8f8ac30fe07246fa2",
+      "size": 964
     },
     {
       "path": "negative-mutations/r-p04-incident-fixture.patch",
-      "sha256": "5a2cf2e032f3e078b848c95d5183a3874f154443b142dad03340495b40fcfcba",
-      "size": 739
+      "sha256": "8844c3e2c3865aa6c43c901274caa4a60b5d33a467fcab7fd3b432caf96d73bc",
+      "size": 1808
     },
     {
       "path": "negative-mutations/r-p05-manifest-binding.patch",
-      "sha256": "9ef919abc493818b512edadb606c8b2196f741b819efed1a035521e3917396b1",
+      "sha256": "01ba45f97850634e96445125a3b7615f1afe894466b692e17c3aff0d0754d6c0",
       "size": 799
     },
     {
@@ -168,8 +168,8 @@
     },
     {
       "path": "negative-mutations/r-p07-routing-policy.patch",
-      "sha256": "770eb765bd5e5f87ddf371c83ccc279c67072829a9ae92ecdca1076ffa9ae6e5",
-      "size": 655
+      "sha256": "c8c8d40be117778785db5884a5a3873dcac9d1a159eccff07401a74b39ecaa7a",
+      "size": 647
     },
     {
       "path": "negative-mutations/r-p08-lifecycle-reuse.patch",
@@ -178,7 +178,7 @@
     },
     {
       "path": "negative-mutations/r-p09-status-posthoc.patch",
-      "sha256": "0d39f59b34a8ceaaa19fa93d0b87bc376bbf19d81769ff711c18f2120b93e540",
+      "sha256": "86e6ef93b1807267c221f78b002381a8a5a72900fe273dfe3c46a0867e855b2f",
       "size": 832
     },
     {
@@ -223,8 +223,8 @@
     },
     {
       "path": "reference.patch",
-      "sha256": "c37d3e6320c8e96b5a82f93b83cb6ee460689ad07487d64ad36ffd418d7f3e8f",
-      "size": 285595
+      "sha256": "ba09db933550fda9a060dd4178974f80ff9c329448dfd293b30b7f2d27b00bd1",
+      "size": 337217
     },
     {
       "path": "solution-leakage-catalog.json",
@@ -237,7 +237,7 @@
       "size": 396
     }
   ],
-  "payload_aggregate_sha256": "6180174d54925337978d08e7e8abec55aa53e1612a492271ea8b3ee1edc929db",
+  "payload_aggregate_sha256": "d205e4817291decbbbce0db01d8650d541229e4d88e34fdf88271e3b7c495c36",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

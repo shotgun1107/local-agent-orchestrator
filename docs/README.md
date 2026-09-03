@@ -4,15 +4,16 @@
 
 ## 먼저 읽을 문서
 
-1. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 현재 `LIVE_NO_GO`와 다음 model-free 구현·검증 관문
-2. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
-3. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
-4. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
-5. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 비교 기준
-6. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
-7. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase D 구현 후보의 역사적 revision 14
-8. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작 기준
-9. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
+1. [Profile R 전체 완료시간 단일 제한 계약](./design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md) — 다음 revision은 Cell당 9000초만 hard limit으로 사용하고 Task·호출·재시도 횟수 제한을 제거
+2. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 현재 `LIVE_NO_GO`와 다음 model-free 구현·검증 관문
+3. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
+4. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
+5. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
+6. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 비교 기준
+7. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
+8. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase D 구현 후보의 역사적 revision 14
+9. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작 기준
+10. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
 
 ## 디렉터리 역할
 
@@ -43,6 +44,7 @@ docs/
 - [SDK routing S3 complex/high-risk 명세](./design/sdk-routing-s3-complex-high-risk-spec.md) — Claude closure 재심사와 사용자 승인을 마친 revision 2 구현 정본
 - [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase B/C 완료와 Phase D~F의 분리된 관문을 기록한 revision 14
 - [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — Pro revision 2 승인과 Profile R·I artifact 제작의 기준
+- [Profile R 전체 완료시간 단일 제한 계약](./design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md) — v21 이후 새 revision의 SS1/B1에 각각 9000초만 부여하고 내부 호출 제한을 평가 지표로 전환
 - [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — v8 환경 결함 뒤 조건부 승인된 다음 model-free 구현 정본; 실제 Live는 계속 NO-GO
 
 ### `experiments/`
@@ -62,6 +64,7 @@ docs/
 - [Profile R SS1→B1 회사 v8 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v8-result.md) — 두 Cell은 봉인됐지만 B1 R07 환경 결함으로 비교 무효
 - [Profile R SS1→B1 회사 v21 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md) — 두 Cell의 제품 실패, B1 R10 timeout·public/hidden 검사 간극과 Cell 3·4 중단 기록
 - [Profile R v21 첫 pair model-free 실패 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md) — timeout retry 우회와 R03·R04·R07 공개/hidden 계약 불일치 재현 및 최소 수정 범위
+- [Profile R 단일 완료시간 계약·Task Pack q5 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md) — Task·호출 횟수 상한을 제거하고 Cell 9000초만 남긴 source·reference·q5 model-free 검증 결과
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
 
 ### `reviews/`
@@ -127,6 +130,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: Phase B Candidate 015 `judge_only_verified=YES`, Phase C model-free 구현 완료, Phase D revision 2 승인과 Profile R·I challenge artifact까지 구축했다. 회사 image를 결합한 q18 qualification v15 9/9, Phase E v16 0-turn 후보·acceptance v8·readiness v8 로컬 검증을 통과했다. 회사 v16 SS1은 봉인 품질 실패, B1은 R01~R06 통과 후 R07이 Worker에 없는 frozen Git object를 요구해 infrastructure error로 봉인됐다. 현 pair는 비교 무효, route는 `ROUTING_INCONCLUSIVE`, Cell 3·4는 `NO-GO`다. 다음은 `DEV-20260825-001` model-free 교정이다
+- 현실 고난도 비교: v21 SS1/B1 첫 pair는 두 Cell 모두 봉인됐지만 제품 실패와 B1 R10의 900초 timeout, R03·R04·R07 public/hidden 의미 간극 때문에 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. 기존 Cell 3·4는 실행하지 않는다. 다음 revision의 source는 R03·R04·R07 계약을 정렬하고 Task·호출 횟수 상한 대신 SS1/B1 각 Cell의 R01~R13 전체 완료시간 9000초만 남겼다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했지만 fresh Docker Judge qualification·candidate·acceptance·readiness가 없어 Live는 계속 `NO-GO`다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

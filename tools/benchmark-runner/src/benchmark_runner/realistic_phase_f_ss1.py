@@ -14,6 +14,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -454,12 +455,14 @@ class _WorkspaceTrackingRuntime:
         delegate: SdkRuntime,
         *,
         runtime_mode: PhaseFRuntimeMode,
-        model_turn_ceiling: int,
+        model_turn_ceiling: int | None,
+        completion_deadline_monotonic: float | None = None,
     ) -> None:
         self.workspace = workspace
         self.delegate = delegate
         self.runtime_mode = runtime_mode
         self.model_turn_ceiling = model_turn_ceiling
+        self.completion_deadline_monotonic = completion_deadline_monotonic
         self.records: list[_TurnWorkspaceRecord] = []
         self._turn_start_attempts = 0
         self._receipts: list[PhaseFModelTurnReceipt] = []
@@ -479,8 +482,16 @@ class _WorkspaceTrackingRuntime:
 
     def model_turn_accounting(self) -> PhaseFModelTurnAccounting:
         return PhaseFModelTurnAccounting(
+            schema_version=(
+                2 if self.completion_deadline_monotonic is not None else 1
+            ),
             runtime_mode=self.runtime_mode,
             model_turn_ceiling=self.model_turn_ceiling,
+            budget_mode=(
+                "cell_completion_deadline"
+                if self.completion_deadline_monotonic is not None
+                else None
+            ),
             turn_start_attempts=self._turn_start_attempts,
             actual_model_turns=self.actual_model_turns,
             runtime_reported_model_turns=self.runtime_reported_model_turns,
@@ -501,7 +512,18 @@ class _WorkspaceTrackingRuntime:
         prompt: str,
         output_schema: dict[str, Any],
     ) -> SdkTurnResult:
-        if self._turn_start_attempts >= self.model_turn_ceiling:
+        if self.completion_deadline_monotonic is not None:
+            remaining = self.completion_deadline_monotonic - time.monotonic()
+            if remaining <= 0:
+                raise PhaseFSS1BackendError(
+                    "Phase F SS1 Cell completion deadline reached before dispatch"
+                )
+            if hasattr(self.delegate, "timeout_seconds"):
+                setattr(self.delegate, "timeout_seconds", remaining)
+        if (
+            self.model_turn_ceiling is not None
+            and self._turn_start_attempts >= self.model_turn_ceiling
+        ):
             raise PhaseFSS1BackendError(
                 "Phase F SS1 model turn ceiling reached before dispatch"
             )
@@ -701,17 +723,28 @@ class ProfileRPhaseFSS1Backend:
         self.environ = environ
         self.git_executable = git_executable
         self.source_environment = source_environment
+        self._completion_deadline_monotonic: float | None = None
         if (
             self.runtime_mode is PhaseFRuntimeMode.LIVE_CHATGPT
             and isinstance(telemetry, ModelFreeClearBoundaryTelemetry)
         ):
             raise PhaseFSS1BackendError("live Phase F cannot use fake clear telemetry")
 
+    def bind_completion_deadline_monotonic(self, deadline: float) -> None:
+        if deadline <= time.monotonic():
+            raise PhaseFSS1BackendError("Cell completion deadline is not in the future")
+        self._completion_deadline_monotonic = deadline
+
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         if present_api_key_environment_names(self.environ):
             raise PhaseFSS1BackendError("API key environment names are present")
         if request.runtime_mode is not self.runtime_mode:
             raise PhaseFSS1BackendError("Phase F backend/request runtime mode differs")
+        if (
+            request.budget_mode == "cell_completion_deadline"
+            and self._completion_deadline_monotonic is None
+        ):
+            raise PhaseFSS1BackendError("Cell completion deadline was not bound")
         if (
             request.execution_ordinal != 1
             or request.fixture_id != PROFILE_R_FIXTURE_ID
@@ -747,6 +780,7 @@ class ProfileRPhaseFSS1Backend:
             delegate,
             runtime_mode=self.runtime_mode,
             model_turn_ceiling=request.model_turn_ceiling,
+            completion_deadline_monotonic=self._completion_deadline_monotonic,
         )
         observer = _ProfileRObserver(
             workspace,
@@ -768,6 +802,21 @@ class ProfileRPhaseFSS1Backend:
                     workspace, task
                 ),
                 forbidden_prompt_fragments=forbidden_fragments,
+                task_extra_turn_ceiling=(
+                    None
+                    if request.budget_mode == "cell_completion_deadline"
+                    else 1
+                ),
+                variant_extra_turn_ceiling=(
+                    None
+                    if request.budget_mode == "cell_completion_deadline"
+                    else 2
+                ),
+                completion_deadline_monotonic=(
+                    self._completion_deadline_monotonic
+                    if request.budget_mode == "cell_completion_deadline"
+                    else None
+                ),
             )
         )
         evidence = adapter.run(CellContext(request.experiment_id, request.cell_id))
@@ -830,11 +879,16 @@ class ProfileRPhaseFSS1Backend:
         evidence_path = cell_root / PHASE_F_SS1_EVIDENCE_FILENAME
         _write_new(evidence_path, evidence_bytes)
         return PhaseFBackendResult(
+            schema_version=request.schema_version,
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
             candidate_seal_sha256=request.candidate_seal_sha256,
             candidate_snapshot_sha256=request.candidate_snapshot_sha256,
             model_turn_ceiling=request.model_turn_ceiling,
+            budget_mode=request.budget_mode,
+            cell_completion_deadline_seconds=(
+                request.cell_completion_deadline_seconds
+            ),
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,

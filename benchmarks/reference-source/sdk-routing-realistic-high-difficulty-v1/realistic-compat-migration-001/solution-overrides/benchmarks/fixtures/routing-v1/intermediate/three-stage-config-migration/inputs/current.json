@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "service": {
+    "name": "checkout",
+    "endpoint": "https://api.example.test/checkout"
+  },
+  "request": {
+    "timeout_seconds": 30,
+    "max_retries": 2
+  },
+  "features": {
+    "enabled": ["audit", "safe-mode"]
+  }
+}
