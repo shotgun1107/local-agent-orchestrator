@@ -873,7 +873,9 @@ class Ledger:
 
     def increment_turns(self, run_id: str) -> None:
         cursor = self.connection.execute(
-            "UPDATE runs SET turns_used=turns_used+1, updated_at=? WHERE run_id=? AND turns_used < max_turns",
+            """UPDATE runs
+               SET turns_used=turns_used+1, updated_at=?
+               WHERE run_id=? AND (max_turns=0 OR turns_used < max_turns)""",
             (utc_now(), run_id),
         )
         if cursor.rowcount != 1:

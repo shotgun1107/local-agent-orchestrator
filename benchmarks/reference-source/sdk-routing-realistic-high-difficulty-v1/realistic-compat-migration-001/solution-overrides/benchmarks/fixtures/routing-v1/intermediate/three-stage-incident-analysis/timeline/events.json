@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "incident_id": "INC-2025-02-14-CHECKOUT",
+  "events": [
+    {"event_id":"EVT-001","occurred_at":"2025-02-14T09:04:00Z","summary":"릴리스 rel-204 배포가 시작되었다.","status":"confirmed","evidence_ids":["EV-B1"],"uncertainty_ids":[]},
+    {"event_id":"EVT-002","occurred_at":"2025-02-14T09:11:00Z","summary":"릴리스 rel-204 배포가 완료되었다.","status":"confirmed","evidence_ids":["EV-B1"],"uncertainty_ids":[]},
+    {"event_id":"EVT-003","occurred_at":"2025-02-14T09:13:00Z","summary":"인증 업스트림 p95 지연 시간이 증가하기 시작했다.","status":"confirmed","evidence_ids":["EV-C2"],"uncertainty_ids":[]},
+    {"event_id":"EVT-004","occurred_at":"2025-02-14T09:14:00Z","summary":"결제 API 오류 증가의 시작 시각은 09:14 또는 09:16으로 보고되었다.","status":"disputed","evidence_ids":["EV-A1","EV-C1"],"uncertainty_ids":["UNC-001"]},
+    {"event_id":"EVT-005","occurred_at":"2025-02-14T09:31:00Z","summary":"릴리스 rel-204 롤백이 시작되었다.","status":"confirmed","evidence_ids":["EV-A2"],"uncertainty_ids":[]},
+    {"event_id":"EVT-006","occurred_at":"2025-02-14T09:34:00Z","summary":"릴리스 rel-204 롤백이 완료되었다.","status":"confirmed","evidence_ids":["EV-B3"],"uncertainty_ids":[]},
+    {"event_id":"EVT-008","occurred_at":"2025-02-14T09:35:00Z","summary":"두 출처가 장애 구간의 데이터베이스 p95 지연 시간을 정상 범위로 기록했다.","status":"confirmed","evidence_ids":["EV-A4","EV-C3"],"uncertainty_ids":[]},
+    {"event_id":"EVT-007","occurred_at":"2025-02-14T09:36:00Z","summary":"결제 API 오류율이 정상 범위로 돌아왔다.","status":"confirmed","evidence_ids":["EV-A3"],"uncertainty_ids":[]}
+  ]
+}

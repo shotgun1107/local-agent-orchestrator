@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "service": "checkout",
+  "endpoint": "https://api.example.test/checkout",
+  "timeout": 30,
+  "retries": 2,
+  "features": ["audit", "safe-mode"]
+}

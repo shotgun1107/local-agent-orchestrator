@@ -1,0 +1,1080 @@
+{
+  "benchmark_run_sha256": "3c9f4bfcbfdf0263ddafc43789e29eececedd37f2ba8dcc3f30511318624eafe",
+  "change_surface_sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7",
+  "model_turns": 0,
+  "negative_mutation_ids": [
+    "r-p01-source-boundary",
+    "r-p02-discriminator",
+    "r-p03-config-fixture",
+    "r-p04-incident-fixture",
+    "r-p05-manifest-binding",
+    "r-p06-plan-binding",
+    "r-p07-routing-policy",
+    "r-p08-lifecycle-reuse",
+    "r-p09-status-posthoc",
+    "r-p10-export-verify",
+    "r-p11-s2-e2e",
+    "r-p12-s1-portability",
+    "r-p13-operator-semantics"
+  ],
+  "positive_transitions": [
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R01"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R01"
+        }
+      ],
+      "task_id": "R01",
+      "tree": "c177ce698900379d76d38576cc7db4ac16f5174a"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R02"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R02"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R02"
+        }
+      ],
+      "task_id": "R02",
+      "tree": "971c872702537510d65a2b1cc765b19f40290b9b"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R03"
+        }
+      ],
+      "task_id": "R03",
+      "tree": "1e48ba36df776ece632ac8172200e3c47cdf67a0"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R04"
+        }
+      ],
+      "task_id": "R04",
+      "tree": "0851f439b1d0055cde0f1a9b809ca114e6c2db65"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R05"
+        }
+      ],
+      "task_id": "R05",
+      "tree": "63378f62119d1c33411ccfc0dc4aa90345b6718e"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R06"
+        }
+      ],
+      "task_id": "R06",
+      "tree": "f05e540daf562e30d6d9dc0874fb5f53d75f5e3c"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R07"
+        }
+      ],
+      "task_id": "R07",
+      "tree": "0722ad296c3eccbcabad367bcef4127e5696a6c2"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R08"
+        }
+      ],
+      "task_id": "R08",
+      "tree": "429643d65ffc2335ec2b0266923e5089bee5c452"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7e5dc7666559f303ddc018eb08409ffac73015d0c98ab585d5453f9b2cb1a027",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R09"
+        }
+      ],
+      "task_id": "R09",
+      "tree": "bd29effa1126dd6a12cc031d31438c32f70a4813"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7e5dc7666559f303ddc018eb08409ffac73015d0c98ab585d5453f9b2cb1a027",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5f557676871f923ef45c55c567ed8e37add34f15d63c60f8560a8adfb871bdf6",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R10"
+        }
+      ],
+      "task_id": "R10",
+      "tree": "d8b59759049ab99b2fbf44636d78ddbc555db95f"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7e5dc7666559f303ddc018eb08409ffac73015d0c98ab585d5453f9b2cb1a027",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5f557676871f923ef45c55c567ed8e37add34f15d63c60f8560a8adfb871bdf6",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "29712725de22da843774c035ac25f9fbb3d8de470c1c55e58a2d628d35df42e6",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R11"
+        }
+      ],
+      "task_id": "R11",
+      "tree": "6883ec6a6dfdd55211afc1fad86396678a00f4ae"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7e5dc7666559f303ddc018eb08409ffac73015d0c98ab585d5453f9b2cb1a027",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5f557676871f923ef45c55c567ed8e37add34f15d63c60f8560a8adfb871bdf6",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5ad4f507bbcabc20e0d1c51fbae739b77bc2132c50f64a76c715803d3102c122",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r12_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f0ad7d56cc3093ae7dac647226e47bc767f69cfe4fa7a1fb42fad797e2c8df3",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R12"
+        }
+      ],
+      "task_id": "R12",
+      "tree": "7c2b30dd045b1754c091826742ff372ef0421544"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "967041f44a5b06ba15c6419ffd3f10b137aa62f785ca9b5a072712be04364f9c",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a95cd14abf58fdfa0101f540e13310eb0b139dd4e489fc79fce7a9542280941",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "120aca85292ff839f5e78985994911aabfe0a02043b50e467fb434e4729bfe2a",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4f2b0236777323359df4be81ad046f91af3b9456adffab375ee057cf6827f9fc",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "76b84b16f3e382e02e17dd5d9c3c3cae4294ff4f1594a7fcc0dff7ceb47a2cef",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "327ab7e0cc8de15ca41715bc4c955745614495eb98f2435f9cca36e7a01d1300",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6baf65f706ea30865bf59cb65415775277ceb201d7043b2b4fc9915aa095285c",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2eaf352de68ffe4b98788d2bf6041ff898a0c184a63cc174d53cc115729de356",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7e5dc7666559f303ddc018eb08409ffac73015d0c98ab585d5453f9b2cb1a027",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5f557676871f923ef45c55c567ed8e37add34f15d63c60f8560a8adfb871bdf6",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4252cc11699eb02574daebe6c621192d397cfe71113aa6ebd14c450a6d77a8fe",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r12_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "3561066c9cbc2f9bc21dee60dc98265b46c8b383dc486d32c8324b8b737f673a",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r13_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a221b9afbfdfaee675289ddc8f17626a340eea6afb589a606b81bfd6326e91d8",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "task_id": "R13"
+        }
+      ],
+      "task_id": "R13",
+      "tree": "1de4d9d95a4d2a598f5948b0ca9f37636d30cf0f"
+    }
+  ],
+  "profile": "R",
+  "property_ids": [
+    "R-P01-SOURCE-BOUNDARY",
+    "R-P02-DISCRIMINATOR",
+    "R-P03-CONFIG-FIXTURE",
+    "R-P04-INCIDENT-FIXTURE",
+    "R-P05-MANIFEST-BINDING",
+    "R-P06-PLAN-BINDING",
+    "R-P07-ROUTING-POLICY",
+    "R-P08-LIFECYCLE-REUSE",
+    "R-P09-STATUS-POSTHOC",
+    "R-P10-EXPORT-VERIFY",
+    "R-P11-S2-E2E",
+    "R-P12-S1-PORTABILITY",
+    "R-P13-OPERATOR-SEMANTICS"
+  ],
+  "public_negative_matrix": [
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p01-source-boundary",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "aa0379a651135d67064f7b6f212436a4c6c442c80c7b63a3b24f1f6e15f9e34c",
+      "task_id": "R01"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p02-discriminator",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "41b94102df5f0138bb2e25e06da8d3fcf8f099a74aa7e243d8cadba86f5b0b11",
+      "task_id": "R02"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p03-config-fixture",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4f977b37e88aa53e27647ada182d4e71c83d3f2ae91fc4d557ce579adb332e01",
+      "task_id": "R03"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p04-incident-fixture",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "c118a7af261db75eebf7c4c8af078e3b0da49f8167875de879740074927250d3",
+      "task_id": "R04"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p05-manifest-binding",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "df8eebc23e8ce45c7c5383888d7b48d5ed08f12194e658264d346d7d0b5ce24d",
+      "task_id": "R05"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p06-plan-binding",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "f2c7f3f7c5959f894d72efd883297ddaa56f18f315656f19b0607557e0f9e2bf",
+      "task_id": "R06"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p07-routing-policy",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "8a7ce0e9648194c5c43bac4e4545d6f0565f641a058f915a5588d785db0d54b1",
+      "task_id": "R07"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p08-lifecycle-reuse",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e70fe8fcfde1f2612282d30797468df94a01a892a44d27c7eec993dc70295ffc",
+      "task_id": "R08"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p09-status-posthoc",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5c6f1f14c650436fa18858964571df3a52b6f5ef6376468bc8a8f096dc765fa0",
+      "task_id": "R09"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p10-export-verify",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5e98ea7237edcb1552e3a5cb7634c742e5d9aa5e9ae65240ed3b2172f14f6978",
+      "task_id": "R10"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p11-s2-e2e",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "b09b285b6f2340429f0cc29270a591b207a30e4ba856039a9403b0363372545f",
+      "task_id": "R11"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p12-s1-portability",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e4d19ae86006011a11b7f932aeb0624ac596610eb69f3c9e6e0f38d90ddbd610",
+      "task_id": "R12"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p13-operator-semantics",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "34ddded863c360ea8b3d36d85413a78400e9bffa97d467e59911d77023b398de",
+      "task_id": "R13"
+    }
+  ],
+  "public_negative_matrix_sha256": "1feda617803768564a7e19d07108e4d851f119aeaf31b742d511c37769732b4f",
+  "qualification_id": "profile-r-task-pack-q5",
+  "reference_chain_seal_sha256": "817e12ec9c5eb40b8ec3e00c56260eb4e5de6c7820d0aa279d8fb8180fe2393d",
+  "reference_chain_sha256": "1005f0a96992be480cbe0d24d0d0f9c8e49517de5e0795295e9dc8676a2ed608",
+  "schema_version": 1,
+  "seal_sha256": "32d4327d728288d08242b8a3779eff35b8e41b556f634a9007951e8be0b06a97",
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "TASK_PACK_READY",
+  "task_ids": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+  ],
+  "worker_information_boundary_passed": true,
+  "worker_manifest_sha256": "258f607d5a90a011939d6c09ba55d87a3845268fd8d86a4bbc034e982cf3a77e",
+  "worker_tree_aggregate_sha256": "6a168df72fb798b7ea61f7f27b300815a5a733467d200f6a0268263948746eff"
+}

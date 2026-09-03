@@ -9,6 +9,7 @@ One call can dispatch at most one Cell and always returns before the next Cell.
 from __future__ import annotations
 
 import os
+import time
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -26,6 +27,7 @@ from benchmark_runner.contract import (
 )
 from benchmark_runner.realistic_phase_e import (
     PHASE_E_TRACK,
+    PhaseECompletionDeadlineBudget,
     PhaseEStageManifest,
     VerifiedPhaseECandidateSnapshot,
     verify_phase_e_candidate_snapshot,
@@ -194,7 +196,7 @@ class PhaseFExecutionState(StrictModel):
 
 
 class PhaseFDispatchRequest(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     kind: Literal["realistic_phase_f_cell_dispatch"] = (
         "realistic_phase_f_cell_dispatch"
     )
@@ -202,7 +204,9 @@ class PhaseFDispatchRequest(StrictModel):
     plan_fingerprint: Sha256
     candidate_seal_sha256: Sha256
     candidate_snapshot_sha256: Sha256
-    model_turn_ceiling: int = Field(ge=1)
+    model_turn_ceiling: int | None = Field(default=None, ge=1)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
+    cell_completion_deadline_seconds: int | None = Field(default=None, gt=0)
     execution_ordinal: int = Field(ge=1, le=4)
     cell_id: str
     fixture_id: str
@@ -213,7 +217,22 @@ class PhaseFDispatchRequest(StrictModel):
 
     @model_validator(mode="after")
     def request_hash_matches(self) -> "PhaseFDispatchRequest":
-        payload = self.model_dump(mode="json", exclude={"request_sha256"})
+        if self.schema_version == 1:
+            if (
+                self.model_turn_ceiling is None
+                or self.budget_mode is not None
+                or self.cell_completion_deadline_seconds is not None
+            ):
+                raise ValueError("legacy Phase F request budget differs")
+        elif (
+            self.model_turn_ceiling is not None
+            or self.budget_mode != "cell_completion_deadline"
+            or self.cell_completion_deadline_seconds != 9000
+        ):
+            raise ValueError("Phase F completion deadline request differs")
+        payload = self.model_dump(
+            mode="json", exclude={"request_sha256"}, exclude_none=True
+        )
         if self.request_sha256 != canonical_sha256(payload):
             raise ValueError("Phase F dispatch request hash mismatch")
         return self
@@ -231,14 +250,16 @@ class PhaseFDispatchClaim(StrictModel):
 
     @model_validator(mode="after")
     def claim_hash_matches(self) -> "PhaseFDispatchClaim":
-        payload = self.model_dump(mode="json", exclude={"claim_sha256"})
+        payload = self.model_dump(
+            mode="json", exclude={"claim_sha256"}, exclude_none=True
+        )
         if self.claim_sha256 != canonical_sha256(payload):
             raise ValueError("Phase F dispatch claim hash mismatch")
         return self
 
 
 class PhaseFBackendResult(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     kind: Literal["realistic_phase_f_backend_result"] = (
         "realistic_phase_f_backend_result"
     )
@@ -246,7 +267,9 @@ class PhaseFBackendResult(StrictModel):
     plan_fingerprint: Sha256
     candidate_seal_sha256: Sha256
     candidate_snapshot_sha256: Sha256
-    model_turn_ceiling: int = Field(ge=1)
+    model_turn_ceiling: int | None = Field(default=None, ge=1)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
+    cell_completion_deadline_seconds: int | None = Field(default=None, gt=0)
     execution_ordinal: int = Field(ge=1, le=4)
     cell_id: str
     fixture_id: str
@@ -260,6 +283,19 @@ class PhaseFBackendResult(StrictModel):
 
     @model_validator(mode="after")
     def turn_count_matches_mode(self) -> "PhaseFBackendResult":
+        if self.schema_version == 1:
+            if (
+                self.model_turn_ceiling is None
+                or self.budget_mode is not None
+                or self.cell_completion_deadline_seconds is not None
+            ):
+                raise ValueError("legacy Phase F backend budget differs")
+        elif (
+            self.model_turn_ceiling is not None
+            or self.budget_mode != "cell_completion_deadline"
+            or self.cell_completion_deadline_seconds != 9000
+        ):
+            raise ValueError("Phase F backend completion deadline differs")
         if (
             self.runtime_mode is PhaseFRuntimeMode.MODEL_FREE_FAKE
             and self.actual_model_turns != 0
@@ -298,10 +334,11 @@ class PhaseFModelTurnReceipt(StrictModel):
 
 
 class PhaseFModelTurnAccounting(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     basis: Literal["turn_start_requests_issued"] = "turn_start_requests_issued"
     runtime_mode: PhaseFRuntimeMode
-    model_turn_ceiling: int = Field(ge=1)
+    model_turn_ceiling: int | None = Field(default=None, ge=1)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
     turn_start_attempts: int = Field(ge=0)
     actual_model_turns: int = Field(ge=0)
     runtime_reported_model_turns: int = Field(ge=0)
@@ -322,8 +359,18 @@ class PhaseFModelTurnAccounting(StrictModel):
         )
         if self.actual_model_turns != expected_actual:
             raise ValueError("Phase F actual turn accounting differs")
-        if self.turn_start_attempts > self.model_turn_ceiling:
+        if (
+            self.model_turn_ceiling is not None
+            and self.turn_start_attempts > self.model_turn_ceiling
+        ):
             raise ValueError("Phase F turn accounting exceeds its ceiling")
+        if self.schema_version == 1 and self.model_turn_ceiling is None:
+            raise ValueError("legacy Phase F accounting requires a turn ceiling")
+        if self.schema_version == 2 and (
+            self.model_turn_ceiling is not None
+            or self.budget_mode != "cell_completion_deadline"
+        ):
+            raise ValueError("Phase F deadline accounting carries a turn ceiling")
         return self
 
 
@@ -353,11 +400,14 @@ def phase_f_backend_result_matches_request(
     result: PhaseFBackendResult,
 ) -> bool:
     return (
+        result.schema_version,
         result.experiment_id,
         result.plan_fingerprint,
         result.candidate_seal_sha256,
         result.candidate_snapshot_sha256,
         result.model_turn_ceiling,
+        result.budget_mode,
+        result.cell_completion_deadline_seconds,
         result.execution_ordinal,
         result.cell_id,
         result.fixture_id,
@@ -365,11 +415,14 @@ def phase_f_backend_result_matches_request(
         result.runtime_mode,
         result.request_sha256,
     ) == (
+        request.schema_version,
         request.experiment_id,
         request.plan_fingerprint,
         request.candidate_seal_sha256,
         request.candidate_snapshot_sha256,
         request.model_turn_ceiling,
+        request.budget_mode,
+        request.cell_completion_deadline_seconds,
         request.execution_ordinal,
         request.cell_id,
         request.fixture_id,
@@ -426,14 +479,16 @@ class PhaseFExecutionAnchor(StrictModel):
 
 
 class PhaseFCellAnchor(StrictModel):
-    schema_version: Literal[1] = 1
+    schema_version: Literal[1, 2] = 1
     kind: Literal["realistic_phase_f_cell_anchor"] = "realistic_phase_f_cell_anchor"
     experiment_id: str
     execution_ordinal: int = Field(ge=1, le=4)
     cell_id: str
     request_sha256: Sha256
     candidate_snapshot_sha256: Sha256
-    model_turn_ceiling: int = Field(ge=1)
+    model_turn_ceiling: int | None = Field(default=None, ge=1)
+    budget_mode: Literal["cell_completion_deadline"] | None = None
+    cell_completion_deadline_seconds: int | None = Field(default=None, gt=0)
     actual_model_turns: int = Field(ge=0)
     backend_result_sha256: Sha256
     sealed_artifact_sha256: Sha256
@@ -442,7 +497,17 @@ class PhaseFCellAnchor(StrictModel):
 
     @model_validator(mode="after")
     def anchor_hash_matches(self) -> "PhaseFCellAnchor":
-        payload = self.model_dump(mode="json", exclude={"anchor_sha256"})
+        if self.schema_version == 1 and self.model_turn_ceiling is None:
+            raise ValueError("legacy Phase F Cell anchor requires a turn ceiling")
+        if self.schema_version == 2 and (
+            self.model_turn_ceiling is not None
+            or self.budget_mode != "cell_completion_deadline"
+            or self.cell_completion_deadline_seconds != 9000
+        ):
+            raise ValueError("Phase F Cell anchor deadline differs")
+        payload = self.model_dump(
+            mode="json", exclude={"anchor_sha256"}, exclude_none=True
+        )
         if self.anchor_sha256 != canonical_sha256(payload):
             raise ValueError("Phase F Cell anchor hash mismatch")
         return self
@@ -459,18 +524,34 @@ def _request_for(
     cell: PlannedCell,
     runtime_mode: PhaseFRuntimeMode,
 ) -> PhaseFDispatchRequest:
-    model_turn_ceiling = phase_f_cell_model_turn_ceiling(
-        stage=snapshot.stage,
-        cell=cell,
+    completion_budget = isinstance(
+        snapshot.stage.budget, PhaseECompletionDeadlineBudget
     )
     values: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2 if completion_budget else 1,
         "kind": "realistic_phase_f_cell_dispatch",
         "experiment_id": plan.experiment_id,
         "plan_fingerprint": plan.plan_fingerprint,
         "candidate_seal_sha256": snapshot.seal.seal_sha256,
         "candidate_snapshot_sha256": snapshot.snapshot_sha256,
-        "model_turn_ceiling": model_turn_ceiling,
+        **(
+            {
+                "budget_mode": "cell_completion_deadline",
+                "cell_completion_deadline_seconds": (
+                    phase_f_cell_completion_deadline_seconds(
+                        stage=snapshot.stage,
+                        cell=cell,
+                    )
+                ),
+            }
+            if completion_budget
+            else {
+                "model_turn_ceiling": phase_f_cell_model_turn_ceiling(
+                    stage=snapshot.stage,
+                    cell=cell,
+                )
+            }
+        ),
         "execution_ordinal": cell.execution_ordinal,
         "cell_id": cell.cell_id,
         "fixture_id": cell.fixture_id,
@@ -485,7 +566,7 @@ def _claim_for(request: PhaseFDispatchRequest, claimed_at: datetime) -> PhaseFDi
     values: dict[str, object] = {
         "schema_version": 1,
         "kind": "realistic_phase_f_dispatch_claim",
-        "request": request.model_dump(mode="json"),
+        "request": request.model_dump(mode="json", exclude_none=True),
         "claimed_at": _timestamp_text(claimed_at),
         "automatic_retry": False,
     }
@@ -587,6 +668,10 @@ def phase_f_cell_model_turn_ceiling(
     cell: PlannedCell,
 ) -> int:
     """Resolve one Cell's turn ceiling from the verified candidate stage."""
+    if isinstance(stage.budget, PhaseECompletionDeadlineBudget):
+        raise PhaseFControllerError(
+            "completion-deadline Cell does not have a model turn ceiling"
+        )
     matching_stage_cells = [
         item for item in stage.cell_order if item.ordinal == cell.execution_ordinal
     ]
@@ -614,6 +699,34 @@ def phase_f_cell_model_turn_ceiling(
     if len(matching_budgets) != 1:
         raise PhaseFControllerError("Phase F stage Cell turn budget differs")
     return matching_budgets[0].total_turn_ceiling_per_variant
+
+
+def phase_f_cell_completion_deadline_seconds(
+    *,
+    stage: PhaseEStageManifest,
+    cell: PlannedCell,
+) -> int:
+    """Resolve the one hard deadline for a completion-budget Cell."""
+
+    if not isinstance(stage.budget, PhaseECompletionDeadlineBudget):
+        raise PhaseFControllerError("legacy Cell does not have a completion deadline")
+    matching_stage_cells = [
+        item for item in stage.cell_order if item.ordinal == cell.execution_ordinal
+    ]
+    if len(matching_stage_cells) != 1:
+        raise PhaseFControllerError("Phase F stage Cell deadline binding differs")
+    stage_cell = matching_stage_cells[0]
+    if stage_cell.variant_id != cell.variant_id:
+        raise PhaseFControllerError("Phase F stage Cell deadline variant differs")
+    matching_profiles = [
+        item for item in stage.profiles if item.profile_id == stage_cell.profile_id
+    ]
+    if (
+        len(matching_profiles) != 1
+        or matching_profiles[0].snapshot_id != cell.fixture_id
+    ):
+        raise PhaseFControllerError("Phase F stage Cell deadline profile differs")
+    return stage.budget.cell_completion_deadline_seconds
 
 
 def initialize_phase_f_execution(
@@ -834,12 +947,33 @@ def _load_execution(
         planned_cell = next(
             item for item in candidate_plan.cells if item.cell_id == cell.cell_id
         )
-        turn_ceiling = phase_f_cell_model_turn_ceiling(
-            stage=candidate_stage,
-            cell=planned_cell,
+        completion_budget = isinstance(
+            candidate_stage.budget, PhaseECompletionDeadlineBudget
         )
-        if claim.request.model_turn_ceiling != turn_ceiling:
-            raise PhaseFControllerError("Phase F dispatch claim turn ceiling differs")
+        turn_ceiling = (
+            None
+            if completion_budget
+            else phase_f_cell_model_turn_ceiling(
+                stage=candidate_stage,
+                cell=planned_cell,
+            )
+        )
+        completion_deadline = (
+            phase_f_cell_completion_deadline_seconds(
+                stage=candidate_stage,
+                cell=planned_cell,
+            )
+            if completion_budget
+            else None
+        )
+        if (
+            claim.request.model_turn_ceiling != turn_ceiling
+            or claim.request.cell_completion_deadline_seconds
+            != completion_deadline
+            or claim.request.budget_mode
+            != ("cell_completion_deadline" if completion_budget else None)
+        ):
+            raise PhaseFControllerError("Phase F dispatch claim budget differs")
         if cell.lifecycle is PhaseFCellLifecycle.SEALED:
             if (
                 not result_path.is_file()
@@ -854,6 +988,8 @@ def _load_execution(
                 or result.candidate_snapshot_sha256
                 != state.candidate_snapshot_sha256
                 or result.model_turn_ceiling != turn_ceiling
+                or result.cell_completion_deadline_seconds != completion_deadline
+                or result.budget_mode != claim.request.budget_mode
                 or result.execution_ordinal != cell.execution_ordinal
                 or result.cell_id != cell.cell_id
                 or result.fixture_id != cell.fixture_id
@@ -863,7 +999,10 @@ def _load_execution(
                 or result.actual_model_turns != cell.actual_model_turns
             ):
                 raise PhaseFControllerError("sealed Phase F backend result identity differs")
-            if result.actual_model_turns > turn_ceiling:
+            if (
+                turn_ceiling is not None
+                and result.actual_model_turns > turn_ceiling
+            ):
                 raise PhaseFControllerError(
                     "sealed Phase F Cell exceeds its candidate turn ceiling"
                 )
@@ -906,6 +1045,9 @@ def _load_execution(
                 or cell_anchor.candidate_snapshot_sha256
                 != state.candidate_snapshot_sha256
                 or cell_anchor.model_turn_ceiling != turn_ceiling
+                or cell_anchor.cell_completion_deadline_seconds
+                != completion_deadline
+                or cell_anchor.budget_mode != claim.request.budget_mode
                 or cell_anchor.actual_model_turns != result.actual_model_turns
                 or cell_anchor.backend_result_sha256 != result_sha256
                 or cell_anchor.sealed_artifact_sha256
@@ -1047,6 +1189,19 @@ def run_next_phase_f_cell(
         cell=planned_cell,
         runtime_mode=runtime_mode,
     )
+    completion_deadline_monotonic: float | None = None
+    if request.cell_completion_deadline_seconds is not None:
+        completion_deadline_monotonic = (
+            time.monotonic() + request.cell_completion_deadline_seconds
+        )
+        bind_deadline = getattr(
+            backend, "bind_completion_deadline_monotonic", None
+        )
+        if not callable(bind_deadline):
+            raise PhaseFControllerError(
+                "completion-budget backend cannot bind the Cell deadline"
+            )
+        bind_deadline(completion_deadline_monotonic)
     claimed_at = utc_now()
     claim = _claim_for(request, claimed_at)
     cell_dir = experiment_dir / PHASE_F_CELLS_DIRECTORY / planned_cell.cell_id
@@ -1073,12 +1228,29 @@ def run_next_phase_f_cell(
         state = _replace_cell(state, failed_state)
         atomic_write(experiment_dir / PHASE_F_STATE_FILENAME, canonical_json_bytes(state))
         raise
+    if (
+        completion_deadline_monotonic is not None
+        and time.monotonic() > completion_deadline_monotonic
+    ):
+        failed_state = claimed_state.model_copy(
+            update={
+                "lifecycle": PhaseFCellLifecycle.FAILED,
+                "completed_at": utc_now(),
+                "failure_type": "CellCompletionDeadlineExceeded",
+            }
+        )
+        state = _replace_cell(state, failed_state)
+        atomic_write(experiment_dir / PHASE_F_STATE_FILENAME, canonical_json_bytes(state))
+        raise PhaseFControllerError("Phase F Cell completion deadline exceeded")
     expected_identity = (
+        request.schema_version,
         plan.experiment_id,
         plan.plan_fingerprint,
         snapshot.seal.seal_sha256,
         snapshot.snapshot_sha256,
         request.model_turn_ceiling,
+        request.budget_mode,
+        request.cell_completion_deadline_seconds,
         planned_cell.execution_ordinal,
         planned_cell.cell_id,
         planned_cell.fixture_id,
@@ -1087,11 +1259,14 @@ def run_next_phase_f_cell(
         request.request_sha256,
     )
     actual_identity = (
+        backend_result.schema_version,
         backend_result.experiment_id,
         backend_result.plan_fingerprint,
         backend_result.candidate_seal_sha256,
         backend_result.candidate_snapshot_sha256,
         backend_result.model_turn_ceiling,
+        backend_result.budget_mode,
+        backend_result.cell_completion_deadline_seconds,
         backend_result.execution_ordinal,
         backend_result.cell_id,
         backend_result.fixture_id,
@@ -1110,11 +1285,21 @@ def run_next_phase_f_cell(
         state = _replace_cell(state, failed_state)
         atomic_write(experiment_dir / PHASE_F_STATE_FILENAME, canonical_json_bytes(state))
         raise PhaseFControllerError("Phase F backend result identity differs")
-    turn_ceiling = phase_f_cell_model_turn_ceiling(
-        stage=stage,
-        cell=planned_cell,
+    completion_budget = isinstance(stage.budget, PhaseECompletionDeadlineBudget)
+    turn_ceiling = (
+        None
+        if completion_budget
+        else phase_f_cell_model_turn_ceiling(stage=stage, cell=planned_cell)
     )
-    if backend_result.actual_model_turns > turn_ceiling:
+    completion_deadline = (
+        phase_f_cell_completion_deadline_seconds(stage=stage, cell=planned_cell)
+        if completion_budget
+        else None
+    )
+    if (
+        turn_ceiling is not None
+        and backend_result.actual_model_turns > turn_ceiling
+    ):
         failed_state = claimed_state.model_copy(
             update={
                 "lifecycle": PhaseFCellLifecycle.FAILED,
@@ -1155,14 +1340,21 @@ def run_next_phase_f_cell(
             ).read_bytes()
         ).anchor_sha256
     anchor_values = {
-        "schema_version": 1,
+        "schema_version": 2 if completion_budget else 1,
         "kind": "realistic_phase_f_cell_anchor",
         "experiment_id": plan.experiment_id,
         "execution_ordinal": planned_cell.execution_ordinal,
         "cell_id": planned_cell.cell_id,
         "request_sha256": request.request_sha256,
         "candidate_snapshot_sha256": snapshot.snapshot_sha256,
-        "model_turn_ceiling": turn_ceiling,
+        **(
+            {
+                "budget_mode": "cell_completion_deadline",
+                "cell_completion_deadline_seconds": completion_deadline,
+            }
+            if completion_budget
+            else {"model_turn_ceiling": turn_ceiling}
+        ),
         "actual_model_turns": backend_result.actual_model_turns,
         "backend_result_sha256": result_sha256,
         "sealed_artifact_sha256": backend_result.sealed_artifact_sha256,

@@ -452,17 +452,20 @@ def _fixture_contract(root: str, expected_tasks: list[str], expected_outputs: in
 
 
 def _run_fixture_developer_checks(root: str) -> None:
+    fixture_root = (ROOT / root).resolve()
     result = subprocess.run(
         [
             sys.executable,
-            "-m",
-            "pytest",
-            "-q",
-            "-p",
-            "no:cacheprovider",
-            "benchmark_checks",
+            "-B",
+            "-c",
+            (
+                "import os,sys; os.chdir(sys.argv[1]); "
+                "from pytest import main; "
+                "raise SystemExit(main(['-q','-p','no:cacheprovider','benchmark_checks']))"
+            ),
+            str(fixture_root),
         ],
-        cwd=ROOT / root,
+        cwd=ROOT,
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
@@ -485,6 +488,38 @@ def _run_fixture_developer_checks(root: str) -> None:
         )
 
 
+def _run_fixed_fixture_probe(root: str, source: str) -> None:
+    fixture_root = (ROOT / root).resolve()
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            "import os,sys; os.chdir(sys.argv[1]);\n" + source,
+            str(fixture_root),
+        ],
+        cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+        check=False,
+        env={
+            **os.environ,
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONUTF8": "1",
+        },
+    )
+    if result.returncode != 0:
+        raise PublicContractError(
+            f"fixed public fixture probe failed: {root}",
+            public_feedback=_bounded_public_feedback([result.stdout, result.stderr]),
+        )
+
+
 def check_r03() -> None:
     config_files = [
         "spec/config-contract.md", "inputs/current.json", "inputs/legacy.json",
@@ -496,6 +531,41 @@ def check_r03() -> None:
     ]
     _require_paths([f"{CONFIG_ROOT}/{path}" for path in config_files])
     _fixture_contract(CONFIG_ROOT, ["T1", "T2", "T3"], 6)
+    _require_paths(["profile-r/requirements/r03-config-fixture-contract.md"])
+    _run_fixed_fixture_probe(
+        CONFIG_ROOT,
+        r'''
+import contextlib, io, json, sys
+from pathlib import Path
+sys.path.insert(0, ".")
+from cli.config_cli import main, run
+from runtime.parser import parse_config
+from runtime.serializer import serialize_config
+from schema.errors import ConfigParseError
+legacy_text = Path("inputs/legacy.json").read_text(encoding="utf-8")
+current = json.loads(Path("inputs/current.json").read_text(encoding="utf-8"))
+parsed = parse_config(legacy_text)
+assert parsed == current
+serialized = serialize_config(parsed)
+assert serialized == json.dumps(current, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+assert parse_config(serialized) == current
+try:
+    parse_config('{"schema_version":1,"schema_version":2}')
+except ConfigParseError:
+    pass
+else:
+    raise AssertionError("duplicate configuration keys were accepted")
+stdout, stderr = io.StringIO(), io.StringIO()
+with contextlib.redirect_stderr(stderr):
+    code = main(["inputs/current.json"], stdout=stdout)
+expected = json.dumps({"config": current, "ok": True}, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+assert code == 0 and stdout.getvalue() == expected and stderr.getvalue() == ""
+first, second = io.StringIO(), io.StringIO()
+assert run("{", first) == 2 and run("{", second) == 2
+assert first.getvalue() == second.getvalue()
+assert json.loads(first.getvalue()) == {"error": {"code": "ConfigParseError", "message": "configuration input must be valid JSON"}, "ok": False}
+''',
+    )
     _run_fixture_developer_checks(CONFIG_ROOT)
 
 
@@ -510,6 +580,40 @@ def check_r04() -> None:
     ]
     _require_paths([f"{INCIDENT_ROOT}/{path}" for path in incident_files])
     _fixture_contract(INCIDENT_ROOT, ["T1", "T2", "T3"], 7)
+    _require_paths(["profile-r/requirements/r04-incident-fixture-contract.md"])
+    _run_fixed_fixture_probe(
+        INCIDENT_ROOT,
+        r'''
+import json
+from pathlib import Path
+def load(path):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+evidence = load("analysis/evidence-ledger.json")["evidence"]
+uncertainties = load("analysis/uncertainties.json")["uncertainties"]
+events = load("timeline/events.json")["events"]
+hypotheses = load("timeline/hypotheses.json")["hypotheses"]
+claims = load("report/claims.json")["claims"]
+actions = load("report/action-plan.json")["actions"]
+evidence_ids = {item["evidence_id"] for item in evidence}
+uncertainty_ids = {item["uncertainty_id"] for item in uncertainties}
+event_ids = {item["event_id"] for item in events}
+claim_ids = {item["claim_id"] for item in claims}
+for item in [*events, *hypotheses]:
+    assert set(item.get("evidence_ids", [])) <= evidence_ids
+    assert set(item.get("uncertainty_ids", [])) <= uncertainty_ids
+for item in claims:
+    assert "evidence_id" not in item
+    assert item["evidence_ids"] and len(item["evidence_ids"]) == len(set(item["evidence_ids"]))
+    assert set(item["evidence_ids"]) <= evidence_ids
+    assert set(item["event_ids"]) <= event_ids
+    assert set(item["uncertainty_ids"]) <= uncertainty_ids
+for item in actions:
+    assert set(item["claim_ids"]) <= claim_ids
+    assert set(item["uncertainty_ids"]) <= uncertainty_ids
+report = Path("report/final-report.md").read_text(encoding="utf-8")
+assert [line[3:] for line in report.splitlines() if line.startswith("## ")] == ["확인된 사실", "상충", "미확인", "권고"]
+''',
+    )
     _run_fixture_developer_checks(INCIDENT_ROOT)
 
 
@@ -646,7 +750,12 @@ class _Measurement:
 
 def check_r07() -> None:
     policy = _import_runner_module("s2_policy")
-    for name in ("remaining_b1_retry_resume_reserve", "s2_b1_turn_cap", "derive_s2_routing_policy"):
+    for name in (
+        "S2PolicyError",
+        "remaining_b1_retry_resume_reserve",
+        "s2_b1_turn_cap",
+        "derive_s2_routing_policy",
+    ):
         if not callable(getattr(policy, name, None)):
             raise PublicContractError(f"structured S2 policy API is missing: {name}")
     if policy.remaining_b1_retry_resume_reserve([]) != 3 or policy.s2_b1_turn_cap([]) != 6:
@@ -654,6 +763,24 @@ def check_r07() -> None:
     history = [_Measurement(1, 0), _Measurement(0, 1)]
     if policy.remaining_b1_retry_resume_reserve(history) != 1 or policy.s2_b1_turn_cap(history) != 4:
         raise PublicContractError("S2 reserve reused or lost turns")
+    if policy.s2_b1_turn_cap(
+        [], task_count=5, project_policy_turn_cap=6, reserve_turns=3
+    ) != 6:
+        raise PublicContractError("S2 project turn cap is not enforced")
+
+    class _C2Identity:
+        variant_id = "c2"
+
+    class _C2Measurement:
+        identity = _C2Identity()
+        variant_metrics = _Metrics(9, 9)
+
+    for invalid_history in ([_Measurement(2, 2)], [_C2Measurement()]):
+        try:
+            policy.remaining_b1_retry_resume_reserve(invalid_history)
+        except policy.S2PolicyError:
+            continue
+        raise PublicContractError("S2 invalid reserve history was accepted")
 
 
 def check_r08() -> None:

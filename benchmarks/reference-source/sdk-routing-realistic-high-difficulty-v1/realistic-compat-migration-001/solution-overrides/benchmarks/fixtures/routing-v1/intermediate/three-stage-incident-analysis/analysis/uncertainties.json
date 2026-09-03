@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "incident_id": "INC-2025-02-14-CHECKOUT",
+  "uncertainties": [
+    {"uncertainty_id":"UNC-001","topic_id":"TOP-001","question":"오류 증가는 09:14와 09:16 중 언제 시작되었는가?","reason":"온콜 관찰 시각과 원시 지표의 시작 시각이 일치하지 않는다.","status":"open","evidence_ids":["EV-A1","EV-C1"]},
+    {"uncertainty_id":"UNC-002","topic_id":"TOP-003","question":"rel-204가 오류 증가의 근본 원인이었는가?","reason":"배포와 복구의 시간적 근접성은 있으나 직접적인 인과 증거가 없다.","status":"open","evidence_ids":["EV-B1","EV-B2","EV-A2","EV-A3","EV-A5","EV-C4"]},
+    {"uncertainty_id":"UNC-003","topic_id":"TOP-003","question":"인증 업스트림 지연이 오류 증가를 유발했는가?","reason":"지연 시간과 오류율이 함께 증가했지만 방향성이나 인과관계는 입증되지 않았다.","status":"open","evidence_ids":["EV-C2","EV-C4"]}
+  ]
+}

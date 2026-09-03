@@ -1,7 +1,13 @@
-diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
-index a44fa401155719ac758d1efe410c8f075ffd06cd..9a100a10191930d6c859f3e784e0cff96cbe80d8 100644
---- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
-@@ -1 +1 @@
--{"endpoint":"https://service.invalid","max_retries":3,"timeout_seconds":30,"version":2}
-+{"version":999}
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py
+index aca90de9191412cc64acb533321ede226274f716..e9db52d490b587b168915bcd0fd15bfce10ab485 100644
+--- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py
+@@ -22,7 +22,7 @@ def _invalid_constant(_value: str) -> None:
+     raise ConfigParseError("JSON numeric constants are not supported")
+ 
+ 
+-def parse_config(source: str | bytes | bytearray) -> dict[str, Any]:
++def parse(source: str | bytes | bytearray) -> dict[str, Any]:
+     """Parse strict JSON and return a detached canonical v2 dictionary."""
+     if not isinstance(source, (str, bytes, bytearray)):
+         raise ConfigParseError("configuration input must be JSON text")

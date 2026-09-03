@@ -569,6 +569,22 @@ class B1PlanContract(StrictModel):
     variant_extra_turn_ceiling: Literal[2]
 
 
+class Ss1CompletionDeadlineContract(StrictModel):
+    result_schema_sha256: Sha256
+    neutral_review_prompt_sha256: Sha256
+    review_trigger_position: Literal["after_observer_before_next_dispatch"]
+    budget_mode: Literal["cell_completion_deadline"]
+
+
+class B1CompletionDeadlineContract(StrictModel):
+    public_report_schema_sha256: Sha256
+    observer_hook_schema_sha256: Sha256
+    feedback_template_sha256: Sha256
+    feedback_stdout_stderr_byte_cap: int = Field(gt=0)
+    selection: Literal["resume_if_same_thread_safe_else_retry"]
+    budget_mode: Literal["cell_completion_deadline"]
+
+
 class CommonBudgetContract(StrictModel):
     task_count: int = Field(gt=0)
     base_turns_per_variant: int = Field(gt=0)
@@ -577,6 +593,41 @@ class CommonBudgetContract(StrictModel):
     wall_clock_seconds_ceiling_per_variant: float = Field(gt=0)
     wall_clock_scope: Literal["from_adapter_run_entry_through_adapter_terminal"]
     unused_reserve_transfer: Literal["forbidden"]
+
+
+class CompletionDeadlineBudgetContract(StrictModel):
+    budget_mode: Literal["cell_completion_deadline"]
+    cell_completion_deadline_seconds: Literal[9000]
+    deadline_scope: Literal[
+        "from_cell_claim_acceptance_through_terminal_cell_seal"
+    ]
+    hard_limit_fields: tuple[Literal["cell_completion_deadline_seconds"]]
+    measurement_only_fields: tuple[
+        Literal[
+            "actual_model_turns",
+            "actual_sdk_calls",
+            "actual_sessions",
+            "actual_retries",
+            "actual_resumes",
+            "model_active_seconds",
+            "wall_clock_seconds",
+        ],
+        ...,
+    ]
+
+    @model_validator(mode="after")
+    def exact_measurement_fields(self) -> "CompletionDeadlineBudgetContract":
+        if self.measurement_only_fields != (
+            "actual_model_turns",
+            "actual_sdk_calls",
+            "actual_sessions",
+            "actual_retries",
+            "actual_resumes",
+            "model_active_seconds",
+            "wall_clock_seconds",
+        ):
+            raise ValueError("completion deadline measurement fields differ")
+        return self
 
 
 class ProfileBudgetContract(StrictModel):
@@ -589,18 +640,28 @@ class ProfileBudgetContract(StrictModel):
     total_turn_ceiling_per_variant: int = Field(gt=0)
 
 
+class CompletionProfileBudgetContract(StrictModel):
+    profile_id: Literal[
+        "repository-wide-compatibility-migration",
+        "evidence-bound-incident-repair",
+    ]
+    task_count: int = Field(gt=0)
+
+
 class RealisticRoutingPlanSupplement(StrictModel):
-    schema_version: Literal[1, 2] = 1
+    schema_version: Literal[1, 2, 3] = 1
     suite_id: Literal["sdk-routing-realistic-high-difficulty-v1"]
     stage_id: Literal["realistic-high-difficulty-initial"]
     comparison_spec_sha256: Sha256
     implementation_spec_sha256: Sha256
     runtime_boundary_spec_sha256: Sha256
     machine_variant_ids: tuple[Literal["ss1"], Literal["b1"]]
-    ss1: Ss1PlanContract
-    b1: B1PlanContract
-    common_budget: CommonBudgetContract
-    profile_budgets: list[ProfileBudgetContract] | None = None
+    ss1: Ss1PlanContract | Ss1CompletionDeadlineContract
+    b1: B1PlanContract | B1CompletionDeadlineContract
+    common_budget: CommonBudgetContract | CompletionDeadlineBudgetContract
+    profile_budgets: (
+        list[ProfileBudgetContract] | list[CompletionProfileBudgetContract] | None
+    ) = None
     observer_schema_sha256: Sha256
     observer_implementation_sha256: Sha256
     runtime_boundary_manifest_sha256: Sha256
@@ -615,6 +676,35 @@ class RealisticRoutingPlanSupplement(StrictModel):
 
     @model_validator(mode="after")
     def budgets_are_symmetric(self) -> "RealisticRoutingPlanSupplement":
+        if self.schema_version == 3:
+            if (
+                not isinstance(self.ss1, Ss1CompletionDeadlineContract)
+                or not isinstance(self.b1, B1CompletionDeadlineContract)
+                or not isinstance(
+                    self.common_budget, CompletionDeadlineBudgetContract
+                )
+                or self.ss1.budget_mode != self.b1.budget_mode
+            ):
+                raise ValueError("v3 supplement requires the common deadline budget")
+            if self.profile_budgets is None or [
+                item.profile_id for item in self.profile_budgets
+            ] != [
+                "repository-wide-compatibility-migration",
+                "evidence-bound-incident-repair",
+            ] or [item.task_count for item in self.profile_budgets] != [13, 8]:
+                raise ValueError("v3 supplement profile Task counts differ")
+            if not all(
+                isinstance(item, CompletionProfileBudgetContract)
+                for item in self.profile_budgets
+            ):
+                raise ValueError("v3 supplement cannot carry turn ceilings")
+            return self
+        if (
+            not isinstance(self.ss1, Ss1PlanContract)
+            or not isinstance(self.b1, B1PlanContract)
+            or not isinstance(self.common_budget, CommonBudgetContract)
+        ):
+            raise ValueError("legacy supplement requires turn-ceiling budgets")
         if self.ss1.task_initial_turns != self.b1.task_initial_turns:
             raise ValueError("Variant initial-turn budgets differ")
         if self.ss1.task_extra_turn_ceiling != self.b1.task_extra_turn_ceiling:

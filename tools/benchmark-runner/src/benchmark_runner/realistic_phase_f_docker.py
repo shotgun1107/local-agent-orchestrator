@@ -10,7 +10,9 @@ do not start Docker or alter protected Windows ACLs.
 from __future__ import annotations
 
 import os
+import math
 import re
+import time
 from dataclasses import replace
 from pathlib import Path
 from typing import Mapping, Protocol
@@ -184,6 +186,12 @@ class PhaseFDockerJudgePort:
         self.source_environment = source_environment
         self.limits = limits
         self.roots_factory = roots_factory or WindowsPhaseFJudgeRootsFactory()
+        self._completion_deadline_monotonic: float | None = None
+
+    def bind_completion_deadline_monotonic(self, deadline: float) -> None:
+        if deadline <= time.monotonic():
+            raise PhaseFFinalizationError("Cell completion deadline is not in the future")
+        self._completion_deadline_monotonic = deadline
 
     def run(
         self,
@@ -196,6 +204,16 @@ class PhaseFDockerJudgePort:
             raise PhaseFFinalizationError("Docker Judge port only accepts Profile R")
         if not workspace.resolve(strict=True).is_dir() or output_root.exists():
             raise PhaseFFinalizationError("Docker Judge Cell roots are invalid")
+        limits = self.limits
+        if request.budget_mode == "cell_completion_deadline":
+            if self._completion_deadline_monotonic is None:
+                raise PhaseFFinalizationError("Docker Judge Cell deadline was not bound")
+            remaining = self._completion_deadline_monotonic - time.monotonic()
+            if remaining <= 0:
+                raise PhaseFFinalizationError("Cell completion deadline exceeded")
+            limits = (limits or DockerJudgeLimits()).model_copy(
+                update={"timeout_seconds": min(9000, max(1, math.ceil(remaining)))}
+            )
         self.raw_root.mkdir(parents=True, exist_ok=True)
         prepared = self.roots_factory.prepare(
             repository=self.repository,
@@ -209,7 +227,7 @@ class PhaseFDockerJudgePort:
             docker_executable=self.docker_executable,
             backend=self.execution_backend,
             source_environment=self.source_environment,
-            limits=self.limits,
+            limits=limits,
             cell_id=f"phase-f-r-{request.execution_ordinal}-{request.variant_id}",
         )
         status = verify_docker_judge_result(manifest, result)

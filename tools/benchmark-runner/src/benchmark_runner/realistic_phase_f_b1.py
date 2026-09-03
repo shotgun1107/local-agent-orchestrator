@@ -413,11 +413,13 @@ class _BudgetedB1Runtime(RuntimePort):
         delegate: RuntimePort,
         *,
         runtime_mode: PhaseFRuntimeMode,
-        model_turn_ceiling: int,
+        model_turn_ceiling: int | None,
+        completion_deadline_monotonic: float | None = None,
     ) -> None:
         self.delegate = delegate
         self.runtime_mode = runtime_mode
         self.model_turn_ceiling = model_turn_ceiling
+        self.completion_deadline_monotonic = completion_deadline_monotonic
         self._turn_start_attempts = 0
         self._receipts: list[PhaseFModelTurnReceipt] = []
 
@@ -443,8 +445,16 @@ class _BudgetedB1Runtime(RuntimePort):
 
     def model_turn_accounting(self) -> PhaseFModelTurnAccounting:
         return PhaseFModelTurnAccounting(
+            schema_version=(
+                2 if self.completion_deadline_monotonic is not None else 1
+            ),
             runtime_mode=self.runtime_mode,
             model_turn_ceiling=self.model_turn_ceiling,
+            budget_mode=(
+                "cell_completion_deadline"
+                if self.completion_deadline_monotonic is not None
+                else None
+            ),
             turn_start_attempts=self._turn_start_attempts,
             actual_model_turns=self.actual_model_turns,
             runtime_reported_model_turns=self.runtime_reported_model_turns,
@@ -472,7 +482,17 @@ class _BudgetedB1Runtime(RuntimePort):
         task_id: str,
         call: Callable[[], TurnHandle],
     ) -> TurnHandle:
-        if self._turn_start_attempts >= self.model_turn_ceiling:
+        if (
+            self.completion_deadline_monotonic is not None
+            and time.monotonic() >= self.completion_deadline_monotonic
+        ):
+            raise PhaseFB1BackendError(
+                "Phase F B1 Cell completion deadline reached before dispatch"
+            )
+        if (
+            self.model_turn_ceiling is not None
+            and self._turn_start_attempts >= self.model_turn_ceiling
+        ):
             raise PhaseFB1BackendError(
                 "Phase F B1 model turn ceiling reached before dispatch"
             )
@@ -578,12 +598,23 @@ class ProfileRPhaseFB1Backend:
         self.environ = environ
         self.git_executable = git_executable
         self.source_environment = source_environment
+        self._completion_deadline_monotonic: float | None = None
+
+    def bind_completion_deadline_monotonic(self, deadline: float) -> None:
+        if deadline <= time.monotonic():
+            raise PhaseFB1BackendError("Cell completion deadline is not in the future")
+        self._completion_deadline_monotonic = deadline
 
     def run_one_cell(self, request: PhaseFDispatchRequest) -> PhaseFBackendResult:
         if present_api_key_environment_names(self.environ):
             raise PhaseFB1BackendError("API key environment names are present")
         if request.runtime_mode is not self.runtime_mode:
             raise PhaseFB1BackendError("Phase F B1 runtime mode differs")
+        if (
+            request.budget_mode == "cell_completion_deadline"
+            and self._completion_deadline_monotonic is None
+        ):
+            raise PhaseFB1BackendError("Cell completion deadline was not bound")
         if (
             request.execution_ordinal != 2
             or request.fixture_id != PROFILE_R_FIXTURE_ID
@@ -666,6 +697,7 @@ class ProfileRPhaseFB1Backend:
             self.runtime_factory(workspace),
             runtime_mode=self.runtime_mode,
             model_turn_ceiling=request.model_turn_ceiling,
+            completion_deadline_monotonic=self._completion_deadline_monotonic,
         )
         if hasattr(runtime, "preflight"):
             runtime.preflight()  # type: ignore[attr-defined]
@@ -685,6 +717,7 @@ class ProfileRPhaseFB1Backend:
             ),
             runtime_kind="injected_codex_v2",
             max_turns_override=request.model_turn_ceiling,
+            completion_deadline_monotonic=self._completion_deadline_monotonic,
             runtime_port=runtime,
             runtime_profile_override=RuntimeProfile(
                 runtime="codex",
@@ -895,11 +928,16 @@ class ProfileRPhaseFB1Backend:
         evidence_path = cell_root / PHASE_F_B1_EVIDENCE_FILENAME
         _write_new(evidence_path, evidence_bytes)
         return PhaseFBackendResult(
+            schema_version=request.schema_version,
             experiment_id=request.experiment_id,
             plan_fingerprint=request.plan_fingerprint,
             candidate_seal_sha256=request.candidate_seal_sha256,
             candidate_snapshot_sha256=request.candidate_snapshot_sha256,
             model_turn_ceiling=request.model_turn_ceiling,
+            budget_mode=request.budget_mode,
+            cell_completion_deadline_seconds=(
+                request.cell_completion_deadline_seconds
+            ),
             execution_ordinal=request.execution_ordinal,
             cell_id=request.cell_id,
             fixture_id=request.fixture_id,

@@ -1,10 +1,13 @@
-diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
-index 48aa52ae1a97fba350020d512e294c4206bfc066..5e14597f319b2e66175ef47ade4d8d43314fa031 100644
---- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
-@@ -1,4 +1,4 @@
--## 확인된 사실
-+## 잘못된 사실
- - [claim-a1] Deployment of release 42 began at 09:00Z.
- - [claim-b1] Deployment of release 42 completed at 09:02Z.
- - [claim-b3] Rollback of release 42 began at 09:20Z.
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json
+index 9f0c7d77aa022a52285bcd5fa781fb1630e01790..511c8fe5febdccb90fc098b4dbc8426e9c3ba008 100644
+--- a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json
+@@ -2,7 +2,7 @@
+   "schema_version": 1,
+   "incident_id": "INC-2025-02-14-CHECKOUT",
+   "claims": [
+-    {"claim_id":"CLM-001","section":"확인된 사실","text":"rel-204 배포는 09:04에 시작되어 09:11에 완료되었다.","evidence_ids":["EV-B1"],"event_ids":["EVT-001","EVT-002"],"uncertainty_ids":[]},
++    {"claim_id":"CLM-001","section":"확인된 사실","text":"rel-204 배포는 09:04에 시작되어 09:11에 완료되었다.","evidence_id":"EV-B1","event_ids":["EVT-001","EVT-002"],"uncertainty_ids":[]},
+     {"claim_id":"CLM-002","section":"확인된 사실","text":"롤백은 09:31에 시작되어 09:34에 완료되었고 오류율은 09:36에 정상 범위로 돌아왔다.","evidence_ids":["EV-A2","EV-B3","EV-A3"],"event_ids":["EVT-005","EVT-006","EVT-007"],"uncertainty_ids":[]},
+     {"claim_id":"CLM-003","section":"확인된 사실","text":"두 독립된 관찰에서 장애 구간의 데이터베이스 p95 지연 시간이 정상 범위였다고 기록했다.","evidence_ids":["EV-A4","EV-C3"],"event_ids":["EVT-008"],"uncertainty_ids":[]},
+     {"claim_id":"CLM-004","section":"상충","text":"오류 증가 시작 시각은 온콜 로그의 09:16과 원시 지표의 09:14가 상충한다.","evidence_ids":["EV-A1","EV-C1"],"event_ids":["EVT-004"],"uncertainty_ids":["UNC-001"]},

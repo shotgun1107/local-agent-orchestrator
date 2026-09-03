@@ -1,13 +1,13 @@
 diff --git a/benchmarks/manifests/sdk-routing-s2-intermediate.yaml b/benchmarks/manifests/sdk-routing-s2-intermediate.yaml
-index b2ece1a34f15ab6904727c090065120e58e92f07..5b556f0b6b5b01ae9efdea2ff8785de39bb593e4 100644
+index 46e22c4b7b07d01d74dadd823fb51a80045c8ca0..6be859c94587ba95ad0c3e7be97e4657844b7cdb 100644
 --- a/benchmarks/manifests/sdk-routing-s2-intermediate.yaml
 +++ b/benchmarks/manifests/sdk-routing-s2-intermediate.yaml
 @@ -5,7 +5,7 @@ fixtures:
  - id: three-stage-config-migration
    path: benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration
-   commit: 2d464ebfddded84d09703c40ed8bd3ba6c1ef217
--  git_tree: b8e21f85886b027ec5124173d0bc1e02c8459a37
-+  git_tree: 08e21f85886b027ec5124173d0bc1e02c8459a37
+   commit: b4f9c4a39d01d8758bdd9606c9141af32225db22
+-  git_tree: 339a7505800240a83beecd2bcc121c906c97c72b
++  git_tree: 039a7505800240a83beecd2bcc121c906c97c72b
    success_check: integration_smoke
  - id: three-stage-incident-analysis
    path: benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis

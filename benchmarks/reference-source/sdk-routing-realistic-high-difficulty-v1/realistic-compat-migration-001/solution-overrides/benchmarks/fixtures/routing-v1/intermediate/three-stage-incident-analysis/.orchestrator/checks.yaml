@@ -1,0 +1,32 @@
+schema_version: 1
+checks:
+  ledger_structure:
+    kind: command
+    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_ledger_structure.py]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  timeline_structure:
+    kind: command
+    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_timeline_structure.py]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  report_structure:
+    kind: command
+    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_report_structure.py]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  s2_incident_acceptance:
+    kind: command
+    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]
+  diff_check:
+    kind: command
+    argv: [git, diff, --check]
+    cwd: "."
+    timeout_seconds: 120
+    expected_exit_codes: [0]

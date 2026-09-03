@@ -297,7 +297,7 @@ def test_profile_r_judge_builder_rejects_extra_worker_cache_before_derivation(
         WORKER_ROOT,
         WORKER_MANIFEST_PATH,
     )
-    assert canonical["file_count"] == len(canonical["files"]) == 130
+    assert canonical["file_count"] == len(canonical["files"]) == 132
 
     profile_root = tmp_path / builder.PROFILE_ROOT
     workspace = profile_root / "workspace"

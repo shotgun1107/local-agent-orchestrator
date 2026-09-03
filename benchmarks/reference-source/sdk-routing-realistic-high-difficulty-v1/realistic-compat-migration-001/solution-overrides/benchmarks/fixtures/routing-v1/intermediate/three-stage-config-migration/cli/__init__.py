@@ -1,0 +1,1 @@
+"""Machine-readable configuration CLI."""

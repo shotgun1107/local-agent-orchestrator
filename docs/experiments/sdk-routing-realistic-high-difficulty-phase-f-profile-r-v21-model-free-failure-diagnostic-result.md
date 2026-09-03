@@ -127,18 +127,24 @@ qualification은 reference와 다른 합리적인 contract 선택을 입력으�
 
 ## 4. 최소 수정 범위
 
-### 4.1 timeout·resume
+### 4.1 전체 완료시간 단일 제한
 
-1. 공통 task-budget에 SS1/B1 동일 `per_turn_timeout_seconds=1800`을 추가하고 Cell
-   model-active 7200초, wall-clock 9000초 상한은 유지한다.
-2. timeout interrupt가 확인되고 observer가 scope·stale·protected-file 위반 0을 증명하며
-   Task/Variant reserve가 남아 있으면 같은 담당 thread에 resume 1회를 허용한다.
-3. resume는 추가 model turn으로 계수하고 Task당 2, Variant당 추가 2, Cell 최대 15를 모두
-   만족해야 한다.
-4. interrupt 확인 실패나 terminal unknown은 기존처럼 `BLOCKED/QUARANTINED`로 fail-closed하고
-   자동 retry하지 않는다.
-5. fresh-session retry는 partial write를 정확히 baseline으로 복원할 수 있는 격리 workspace가
-   생기기 전에는 timeout 기본 경로로 사용하지 않는다.
+2026-09-03 사용자 결정으로 이 문서의 최초 `per_turn_timeout_seconds=1800`, Task당 2,
+Variant 추가 2, Cell 최대 15와 model-active 7200초 수정안은 구현 전에 폐기했다.
+
+1. 시험 하나는 SS1 또는 B1 한 Cell이 R01~R13 전체를 수행하고 terminal seal까지 만드는
+   과정이다. 두 Variant에 각각 같은 wall-clock 9000초를 준다.
+2. Task·turn별 timeout, Task별 Attempt 수, Cell model turn 수, retry/resume reserve와
+   model-active 상한은 pass/fail 예산에서 제거한다.
+3. 호출 하나의 timeout은 고정 숫자가 아니라 그 시점의 Cell 잔여시간이다. 시간이 남아 있고
+   안전 조건을 만족하면 retry/resume 횟수는 제한하지 않는다.
+4. model turn, SDK 호출, session, retry/resume, token, 비용과 Task별 시간은 계속 측정하지만
+   상한 초과 실패 조건으로 쓰지 않는다.
+5. terminal unknown, scope·secret·protected-file·state·seal 위반은 자원 예산과 무관한 안전
+   실패이므로 남은 시간이 있어도 fail-closed한다.
+6. exact 계약과 회귀 요구사항은
+   `docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md`를
+   다음 revision 정본으로 사용한다.
 
 ### 4.2 R03·R04·R07 공개 계약
 
@@ -163,6 +169,22 @@ qualification은 reference와 다른 합리적인 contract 선택을 입력으�
    Task Pack qualification과 budget seal을 만든다.
 5. 이후에만 새 candidate, acceptance 2회, readiness, Environment Closure와 fresh SS1/B1 pair를
    연다.
+
+### 2026-09-03 구현 결과
+
+위 최소 수정과 전체 완료시간 단일 제한을 source에 반영했다. Worker snapshot은 132파일로 다시
+생성했고, reviewer/reference 자료가 Worker에 없음을 검증했다. 새 Judge source bundle은
+`PROFILE_R_SOURCE_BUNDLE_VERIFIED`, Task Pack q5는 positive 13/13, cumulative public Checks
+104/104, public negative mutation 13/13 rejected로 `TASK_PACK_READY`가 됐다.
+
+q5 qualification seal은 `32d4327...b06a97`, budget seal은 `4d5076ca...ce758`이다. budget schema
+v2는 Cell 완료시간 9000초만 hard limit으로 가지며 호출·Attempt·retry·resume·model turn 수는
+측정값으로만 보존한다. 상세 결과는
+`docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md`에
+기록했다.
+
+fresh Docker Judge qualification과 새 candidate·acceptance·readiness는 아직 만들지 않았다.
+따라서 이 구현 결과는 기존 v21 비교 판정을 바꾸지 않으며 Live는 계속 `NO-GO`다.
 
 ## 5. 범위 밖
 

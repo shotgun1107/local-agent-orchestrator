@@ -34,20 +34,26 @@ def build_budget(task_pack_qualification_path: Path) -> dict[str, object]:
     ):
         raise RuntimeError("Task Pack qualification is not ready for budget sealing")
     payload: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "profile": "R",
         "snapshot_id": "realistic-compat-migration-001",
         "status": "PROFILE_R_TASK_BUDGET_SEALED",
         "model_turns": 0,
         "task_ids": list(PROFILE_R_TASK_IDS),
-        "per_task_maximum_turns": {
-            task_id: 2 for task_id in PROFILE_R_TASK_IDS
-        },
-        "base_turns_per_cell": 13,
-        "maximum_actual_model_turns_per_cell": 15,
-        "retry_resume_maximum_turns": 2,
+        "budget_mode": "cell_completion_deadline",
+        "cell_completion_deadline_seconds": 9000,
+        "deadline_scope": "from_cell_claim_acceptance_through_terminal_cell_seal",
+        "hard_limit_fields": ["cell_completion_deadline_seconds"],
+        "measurement_only_fields": [
+            "actual_model_turns",
+            "actual_sdk_calls",
+            "actual_sessions",
+            "actual_retries",
+            "actual_resumes",
+            "model_active_seconds",
+            "wall_clock_seconds",
+        ],
         "ss1_b1_identical": True,
-        "unused_reserve_transfer": "forbidden",
         "task_pack_qualification_sha256": sha256(qualification_bytes),
         "task_pack_qualification_seal_sha256": qualification["seal_sha256"],
     }
@@ -57,7 +63,7 @@ def build_budget(task_pack_qualification_path: Path) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Seal the model-free Profile R R01-R13 Task budget."
+        description="Seal the model-free Profile R R01-R13 completion deadline."
     )
     parser.add_argument("--task-pack-qualification", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

@@ -13,7 +13,7 @@ index 0000000000000000000000000000000000000000..31d630c251a48b5966c3293fcd15ce62
 +    workspace_mode: shared_serial_write
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml
 new file mode 100644
-index 0000000000000000000000000000000000000000..71cc20da88bf3b2095d2a17a1555ee1edb53f16b
+index 0000000000000000000000000000000000000000..2918c40c3618fd4e1c8a85143a36bf622f071da3
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/.orchestrator/checks.yaml
 @@ -0,0 +1,32 @@
@@ -21,31 +21,31 @@ index 0000000000000000000000000000000000000000..71cc20da88bf3b2095d2a17a1555ee1e
 +checks:
 +  schema_contract:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_schema_contract.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  migration_parse:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_migration_parse"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_migration_parse.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  integration_smoke:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_integration"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_integration.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  s2_config_acceptance:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_schema_contract", "benchmark_checks.test_migration_parse", "benchmark_checks.test_integration"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  diff_check:
 +    kind: command
-+    argv: ["git", "diff", "--check"]
++    argv: [git, diff, --check]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
@@ -83,17 +83,29 @@ index 0000000000000000000000000000000000000000..e7487ba3206a7123f825e646cdff5bd6
 +default_policy: b1_safe
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..67e3c039aa5a0af6369a70ca74b7c382432a8c80
+index 0000000000000000000000000000000000000000..2694912b472ba566b95a2ab7d800851c62d51ded
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/README.md
-@@ -0,0 +1,7 @@
-+# Three-stage config migration
+@@ -0,0 +1,19 @@
++# Three-stage configuration migration fixture
 +
-+Implement the six files named in `benchmark-run.yaml`. The protected contract in
-+`spec/config-contract.md` defines the only public API accepted by the checks.
++This self-contained fixture models a serial migration from a legacy version 1
++JSON configuration to the canonical version 2 representation.  The public
++contract lives in `spec/config-contract.md`; `inputs/` contains one valid value
++for each version, and `benchmark_checks/` contains the executable semantic
++contract.
 +
-+Do not modify `spec/`, `inputs/`, `benchmark_checks/`, `.orchestrator/`, or
-+`benchmark-run.yaml`.
++The three Tasks are deliberately ordered: T1 defines validation and the four
++public errors, T2 adds an idempotent migration and canonical parser, and T3
++adds serialization and a deterministic JSON CLI.  Their six implementation
++outputs are `schema/errors.py`, `schema/model.py`, `migration/legacy.py`,
++`runtime/parser.py`, `runtime/serializer.py`, and `cli/config_cli.py`.
++
++Run all developer checks from this directory with:
++
++```text
++python -m pytest -q -p no:cacheprovider benchmark_checks
++```
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark-run.yaml
 new file mode 100644
 index 0000000000000000000000000000000000000000..1920ec2b9d447d0e601cc0ff978c006528c862bd
@@ -157,413 +169,833 @@ index 0000000000000000000000000000000000000000..1920ec2b9d447d0e601cc0ff978c0065
 +    approval: none
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..f833d37d63b04f253158a86dd6a0f39bb06c4829
+index 0000000000000000000000000000000000000000..38864a1c33166354bc70a5c5ef8cb610f9a71fa1
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/__init__.py
 @@ -0,0 +1 @@
-+"""Public checks for the config migration fixture."""
++"""Semantic developer checks for the configuration fixture."""
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..d865d868a1cfb051fda367d86f24e7660eb27af8
+index 0000000000000000000000000000000000000000..eb12b527ee46d1c2e6816343be2d797ddbce7661
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_integration.py
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,64 @@
 +from __future__ import annotations
 +
-+import contextlib
 +import io
-+import inspect
 +import json
-+import tempfile
-+import unittest
++import subprocess
++import sys
 +from pathlib import Path
 +
++from cli.config_cli import main, run
++from runtime.parser import parse_config
++from runtime.serializer import serialize_config
 +
-+class IntegrationTest(unittest.TestCase):
-+    def test_round_trip_and_cli(self) -> None:
-+        from cli.config_cli import main
-+        from runtime.parser import parse
-+        from runtime.serializer import serialize
++ROOT = Path(__file__).resolve().parents[1]
 +
-+        current = json.loads(Path("inputs/current.json").read_text(encoding="utf-8"))
-+        self.assertEqual(parse(serialize(parse(current))), current)
-+        stdout = io.StringIO()
-+        stderr = io.StringIO()
-+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-+            code = main(["inputs/current.json"])
-+        self.assertEqual(code, 0)
-+        self.assertEqual(stdout.getvalue(), serialize(current) + "\n")
-+        self.assertEqual(stderr.getvalue(), "")
-+        self.assertEqual(list(inspect.signature(serialize).parameters), ["mapping"])
-+        self.assertEqual(list(inspect.signature(main).parameters), ["argv"])
 +
-+    def test_cli_contract_error_and_exact_implementation_files(self) -> None:
-+        from cli.config_cli import main
++def test_canonical_serialization_and_round_trip() -> None:
++    legacy = (ROOT / "inputs" / "legacy.json").read_text(encoding="utf-8")
++    config = parse_config(legacy)
++    serialized = serialize_config(config)
++    assert serialized.endswith("\n") and not serialized.endswith("\n\n")
++    assert serialized == json.dumps(config, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
++    assert serialize_config(parse_config(serialized)) == serialized
 +
-+        with tempfile.TemporaryDirectory() as directory:
-+            invalid = Path(directory) / "invalid.json"
-+            invalid.write_text('{"version":9}', encoding="utf-8")
-+            stdout = io.StringIO()
-+            stderr = io.StringIO()
-+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-+                code = main([str(invalid)])
-+        self.assertEqual(code, 2)
-+        self.assertEqual(stdout.getvalue(), '{"error":{"kind":"UnknownVersionError"}}\n')
-+        self.assertEqual(stderr.getvalue(), "")
-+        self.assertEqual(
-+            sorted(
-+                str(path).replace("\\", "/")
-+                for pattern in ("schema/*.py", "migration/*.py", "runtime/*.py", "cli/*.py")
-+                for path in Path(".").glob(pattern)
-+                if path.name != "__init__.py"
++
++def test_cli_success_json() -> None:
++    output = io.StringIO()
++    code = main([str(ROOT / "inputs" / "legacy.json")], stdout=output)
++    payload = json.loads(output.getvalue())
++    assert code == 0 and payload == {"config": parse_config((ROOT / "inputs" / "current.json").read_text()), "ok": True}
++    assert output.getvalue() == json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
++
++
++def test_cli_error_json_is_stable() -> None:
++    first, second = io.StringIO(), io.StringIO()
++    assert run("{", first) == 2
++    assert run("{", second) == 2
++    assert first.getvalue() == second.getvalue()
++    assert json.loads(first.getvalue()) == {
++        "error": {"code": "ConfigParseError", "message": "configuration input must be valid JSON"},
++        "ok": False,
++    }
++
++
++def test_module_cli_uses_one_machine_readable_stream() -> None:
++    result = subprocess.run(
++        [
++            sys.executable,
++            "-B",
++            "-c",
++            (
++                "import os,runpy,sys; os.chdir(sys.argv[1]); "
++                "sys.argv=['cli.config_cli','-']; "
++                "runpy.run_module('cli.config_cli',run_name='__main__')"
 +            ),
-+            [
-+                "cli/config_cli.py",
-+                "migration/legacy.py",
-+                "runtime/parser.py",
-+                "runtime/serializer.py",
-+                "schema/errors.py",
-+                "schema/model.py",
-+            ],
-+        )
-+
-+
-+if __name__ == "__main__":
-+    unittest.main()
++            str(ROOT),
++        ],
++        cwd=ROOT.parents[4],
++        input=(ROOT / "inputs" / "legacy.json").read_text(encoding="utf-8"),
++        capture_output=True,
++        text=True,
++        check=False,
++    )
++    assert result.returncode == 0 and result.stderr == ""
++    assert json.loads(result.stdout)["ok"] is True
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..dcc37e2677fc3827b1a4cbdc3c4a708284cdf45d
+index 0000000000000000000000000000000000000000..f20e02f9ec1519c185299cf2fce13c70ae09e03e
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_migration_parse.py
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,48 @@
 +from __future__ import annotations
 +
++import copy
 +import json
-+import inspect
-+import unittest
 +from pathlib import Path
 +
++import pytest
 +
-+class MigrationParseTest(unittest.TestCase):
-+    def test_legacy_migrates_and_current_parses(self) -> None:
-+        from migration.legacy import migrate
-+        from runtime.parser import parse
++from migration.legacy import migrate_config, migrate_v1_to_v2
++from runtime.parser import parse_config
++from schema.errors import ConfigParseError, UnsupportedVersionError
 +
-+        legacy = json.loads(Path("inputs/legacy.json").read_text(encoding="utf-8"))
-+        current = json.loads(Path("inputs/current.json").read_text(encoding="utf-8"))
-+        self.assertEqual(migrate(legacy), current)
-+        self.assertEqual(parse(current), current)
-+        self.assertEqual(list(inspect.signature(migrate).parameters), ["mapping"])
-+        self.assertEqual(list(inspect.signature(parse).parameters), ["payload"])
++ROOT = Path(__file__).resolve().parents[1]
 +
 +
-+if __name__ == "__main__":
-+    unittest.main()
++def _text(name: str) -> str:
++    return (ROOT / "inputs" / name).read_text(encoding="utf-8")
++
++
++def test_migration_matches_current_and_is_idempotent() -> None:
++    legacy = json.loads(_text("legacy.json"))
++    current = json.loads(_text("current.json"))
++    before = copy.deepcopy(legacy)
++    migrated = migrate_v1_to_v2(legacy)
++    assert migrated == current
++    assert migrate_config(migrated) == migrated
++    assert migrate_config(migrate_config(legacy)) == migrated
++    assert legacy == before and migrated is not current
++
++
++def test_parser_accepts_text_and_utf8_bytes() -> None:
++    expected = json.loads(_text("current.json"))
++    assert parse_config(_text("legacy.json")) == expected
++    assert parse_config(_text("current.json").encode()) == expected
++
++
++@pytest.mark.parametrize(
++    "source",
++    ["{", b"\xff", '{"schema_version":1,"schema_version":2}', '{"schema_version":NaN}'],
++)
++def test_parser_rejects_noncanonical_json_inputs(source: str | bytes) -> None:
++    with pytest.raises(ConfigParseError):
++        parse_config(source)
++
++
++def test_parser_preserves_version_error_type() -> None:
++    with pytest.raises(UnsupportedVersionError):
++        parse_config('{"schema_version":7}')
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..126e8cc11b2ce4cbaacf4fe02de64544ee9a3f0b
+index 0000000000000000000000000000000000000000..bc99d070167e164b70a0d7d33c5b49781972ddfd
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/benchmark_checks/test_schema_contract.py
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,61 @@
 +from __future__ import annotations
 +
-+import unittest
++import copy
 +import inspect
++import json
 +from pathlib import Path
 +
++import pytest
 +
-+class SchemaContractTest(unittest.TestCase):
-+    def test_public_schema_and_errors(self) -> None:
-+        from schema import errors
-+        from schema.model import validate
++from schema import errors
++from schema.errors import ConfigValidationError, UnsupportedVersionError
++from schema.model import validate_config, validate_v1, validate_v2
 +
-+        for name in (
-+            "UnknownVersionError",
-+            "DuplicateKeyError",
-+            "UnknownKeyError",
-+            "InvalidTypeError",
-+        ):
-+            self.assertTrue(issubclass(getattr(errors, name), ValueError))
-+        self.assertEqual(
-+            validate(
-+                {
-+                    "version": 2,
-+                    "timeout_seconds": 30,
-+                    "max_retries": 3,
-+                    "endpoint": "https://service.invalid",
-+                }
-+            )["version"],
-+            2,
-+        )
-+        self.assertEqual(list(inspect.signature(validate).parameters), ["mapping"])
-+        self.assertEqual(
-+            sorted(
-+                path.as_posix()
-+                for path in Path("schema").glob("*.py")
-+                if path.name != "__init__.py"
-+            ),
-+            ["schema/errors.py", "schema/model.py"],
-+        )
++ROOT = Path(__file__).resolve().parents[1]
 +
 +
-+if __name__ == "__main__":
-+    unittest.main()
++def _input(name: str) -> dict:
++    return json.loads((ROOT / "inputs" / name).read_text(encoding="utf-8"))
++
++
++def test_exactly_four_public_value_errors() -> None:
++    classes = {
++        name: value
++        for name, value in vars(errors).items()
++        if not name.startswith("_") and inspect.isclass(value) and value.__module__ == errors.__name__
++    }
++    assert set(classes) == {
++        "ConfigParseError",
++        "ConfigValidationError",
++        "UnsupportedVersionError",
++        "MigrationError",
++    }
++    assert all(value.__bases__ == (ValueError,) for value in classes.values())
++
++
++def test_v1_and_v2_validate_without_mutation() -> None:
++    legacy, current = _input("legacy.json"), _input("current.json")
++    legacy_before, current_before = copy.deepcopy(legacy), copy.deepcopy(current)
++    assert validate_v1(legacy) == legacy
++    assert validate_v2(current) == current
++    assert validate_config(legacy)["schema_version"] == 1
++    assert validate_config(current)["schema_version"] == 2
++    assert legacy == legacy_before and current == current_before
++
++
++@pytest.mark.parametrize("version", [None, 0, 3, True, "2"])
++def test_unknown_version_is_rejected(version: object) -> None:
++    with pytest.raises(UnsupportedVersionError):
++        validate_config({"schema_version": version})
++
++
++def test_constraints_and_unknown_fields_are_rejected() -> None:
++    legacy = _input("legacy.json")
++    for key, value in (("timeout", 0), ("retries", -1), ("features", ["audit", "audit"])):
++        candidate = copy.deepcopy(legacy)
++        candidate[key] = value
++        with pytest.raises(ConfigValidationError):
++            validate_v1(candidate)
++    legacy["extra"] = True
++    with pytest.raises(ConfigValidationError):
++        validate_v1(legacy)
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..36482774dd4cc5f134a93090950850066db28d5f
+index 0000000000000000000000000000000000000000..a320805b16b2e867b49eae6dec3f3f5145bc2d15
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/__init__.py
 @@ -0,0 +1 @@
-+"""Golden CLI package used only by model-free contract tests."""
++"""Machine-readable configuration CLI."""
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..bb364eb1ef1d5be1aa4e887720ab258685b93c61
+index 0000000000000000000000000000000000000000..a02d88f59b942e04de2b4e1aaea443f2c8d6a8a8
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/cli/config_cli.py
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,59 @@
++"""Deterministic command-line adapter for configuration normalization."""
++
 +from __future__ import annotations
 +
 +import json
-+from collections.abc import Sequence
++import sys
 +from pathlib import Path
++from typing import TextIO
 +
-+from runtime.parser import parse
-+from runtime.serializer import serialize
-+from schema.errors import DuplicateKeyError, InvalidTypeError, UnknownKeyError, UnknownVersionError
++from runtime.parser import parse_config
++from schema.errors import (
++    ConfigParseError,
++    ConfigValidationError,
++    MigrationError,
++    UnsupportedVersionError,
++)
++
++PUBLIC_ERRORS = (
++    ConfigParseError,
++    ConfigValidationError,
++    UnsupportedVersionError,
++    MigrationError,
++)
 +
 +
-+CONTRACT_ERRORS = (UnknownVersionError, DuplicateKeyError, UnknownKeyError, InvalidTypeError)
++def _write(payload: object, stream: TextIO) -> None:
++    stream.write(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
 +
 +
-+def main(argv: Sequence[str]) -> int:
++def run(source: str | bytes | bytearray, stdout: TextIO = sys.stdout) -> int:
++    """Normalize source and write one deterministic result object."""
 +    try:
-+        if len(argv) != 1:
-+            raise InvalidTypeError("one input path is required")
-+        payload = Path(argv[0]).read_text(encoding="utf-8")
-+        print(serialize(parse(payload)))
-+        return 0
-+    except CONTRACT_ERRORS as exc:
-+        print(json.dumps({"error": {"kind": type(exc).__name__}}, sort_keys=True, separators=(",", ":")))
++        config = parse_config(source)
++    except PUBLIC_ERRORS as exc:
++        _write(
++            {"error": {"code": type(exc).__name__, "message": str(exc)}, "ok": False},
++            stdout,
++        )
 +        return 2
++    _write({"config": config, "ok": True}, stdout)
++    return 0
++
++
++def main(argv: list[str] | None = None, stdin: TextIO = sys.stdin, stdout: TextIO = sys.stdout) -> int:
++    """Read one file (or stdin for '-') and produce one JSON result line."""
++    args = list(sys.argv[1:] if argv is None else argv)
++    if len(args) != 1:
++        _write({"error": {"code": "UsageError", "message": "expected exactly one input"}, "ok": False}, stdout)
++        return 2
++    try:
++        source = stdin.read() if args[0] == "-" else Path(args[0]).read_bytes()
++    except OSError:
++        _write({"error": {"code": "InputError", "message": "could not read input"}, "ok": False}, stdout)
++        return 3
++    return run(source, stdout)
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..a44fa401155719ac758d1efe410c8f075ffd06cd
+index 0000000000000000000000000000000000000000..af725c431e800fed59e47c011733824cd4b8ec83
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/current.json
-@@ -0,0 +1 @@
-+{"endpoint":"https://service.invalid","max_retries":3,"timeout_seconds":30,"version":2}
+@@ -0,0 +1,14 @@
++{
++  "schema_version": 2,
++  "service": {
++    "name": "checkout",
++    "endpoint": "https://api.example.test/checkout"
++  },
++  "request": {
++    "timeout_seconds": 30,
++    "max_retries": 2
++  },
++  "features": {
++    "enabled": ["audit", "safe-mode"]
++  }
++}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..8931a7972b97abc25e9e1c99c04a14812ecf9412
+index 0000000000000000000000000000000000000000..8e3985a09035748bc07ff0a4846539e61c9c42f5
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/inputs/legacy.json
-@@ -0,0 +1 @@
-+{"endpoint":"https://service.invalid","retries":3,"timeout":30,"version":1}
+@@ -0,0 +1,8 @@
++{
++  "schema_version": 1,
++  "service": "checkout",
++  "endpoint": "https://api.example.test/checkout",
++  "timeout": 30,
++  "retries": 2,
++  "features": ["audit", "safe-mode"]
++}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..93d21a16a00bfcb389b261043f9d16d89703abc0
+index 0000000000000000000000000000000000000000..438513943b9dfae2e917175be776c891246f88c1
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/__init__.py
-@@ -0,0 +1 @@
-+"""Golden migration package used only by model-free contract tests."""
+@@ -0,0 +1,5 @@
++"""Legacy configuration migration."""
++
++from .legacy import migrate_config, migrate_v1_to_v2
++
++__all__ = ["migrate_config", "migrate_v1_to_v2"]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0a87b7f9c5c20b794a13613b1628161597e37641
+index 0000000000000000000000000000000000000000..dd76cc19c20e7aedffd23ff4b85e669d9c5144d2
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/migration/legacy.py
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,43 @@
++"""Idempotent version 1 to version 2 migration."""
++
 +from __future__ import annotations
 +
-+from collections.abc import Mapping
++from typing import Any
 +
-+from schema.model import validate
++from schema.errors import MigrationError
++from schema.model import validate_config, validate_v1, validate_v2
 +
 +
-+def migrate(mapping: Mapping[str, object]) -> dict[str, object]:
-+    validated = validate(mapping)
-+    if validated["version"] == 2:
-+        return dict(validated)
-+    return {
-+        "endpoint": validated["endpoint"],
-+        "max_retries": validated["retries"],
-+        "timeout_seconds": validated["timeout"],
-+        "version": 2,
++def migrate_v1_to_v2(value: Any) -> dict[str, Any]:
++    """Convert a valid v1 value into the canonical v2 representation."""
++    legacy = validate_v1(value)
++    migrated = {
++        "schema_version": 2,
++        "service": {"name": legacy["service"], "endpoint": legacy["endpoint"]},
++        "request": {
++            "timeout_seconds": legacy["timeout"],
++            "max_retries": legacy["retries"],
++        },
++        "features": {"enabled": legacy["features"]},
 +    }
++    current = validate_v2(migrated)
++    if (
++        current["service"]["name"] != legacy["service"]
++        or current["service"]["endpoint"] != legacy["endpoint"]
++        or current["request"]["timeout_seconds"] != legacy["timeout"]
++        or current["request"]["max_retries"] != legacy["retries"]
++        or current["features"]["enabled"] != legacy["features"]
++    ):
++        raise MigrationError("migration did not preserve configuration values")
++    return current
++
++
++def migrate_config(value: Any) -> dict[str, Any]:
++    """Return canonical v2 for either supported input version."""
++    validated = validate_config(value)
++    if validated["schema_version"] == 1:
++        return migrate_v1_to_v2(validated)
++    return validate_v2(validated)
++
++
++__all__ = ["migrate_config", "migrate_v1_to_v2"]
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/pytest.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/pytest.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d9e1b9bab0c36ab0069824696590711fbb77c50
+--- /dev/null
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/pytest.py
+@@ -0,0 +1,139 @@
++"""Tiny self-contained pytest-compatible runner for this public fixture.
++
++The benchmark fixture is intentionally dependency-free.  Its developer checks
++use only ``pytest.raises`` and ``pytest.mark.parametrize``; this module provides
++those two APIs and enough ``python -m pytest`` discovery to execute the checks
++in environments where the third-party pytest package is unavailable.
++"""
++
++from __future__ import annotations
++
++import importlib.util
++import inspect
++import sys
++import traceback
++from pathlib import Path
++from types import ModuleType
++from typing import Any, Callable
++
++
++class _Raises:
++    def __init__(self, expected: type[BaseException]) -> None:
++        self.expected = expected
++
++    def __enter__(self) -> "_Raises":
++        return self
++
++    def __exit__(
++        self,
++        exception_type: type[BaseException] | None,
++        exception: BaseException | None,
++        _traceback: object,
++    ) -> bool:
++        if exception_type is None:
++            raise AssertionError(f"did not raise {self.expected.__name__}")
++        return issubclass(exception_type, self.expected)
++
++
++def raises(expected: type[BaseException]) -> _Raises:
++    """Return the context manager form of ``pytest.raises``."""
++    if not inspect.isclass(expected) or not issubclass(expected, BaseException):
++        raise TypeError("expected exception must be an exception class")
++    return _Raises(expected)
++
++
++class _Mark:
++    def parametrize(
++        self, names: str, values: list[Any] | tuple[Any, ...]
++    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
++        parameters = tuple(name.strip() for name in names.split(","))
++        if not parameters or any(not name for name in parameters):
++            raise ValueError("parameter names must be non-empty")
++
++        def decorate(function: Callable[..., Any]) -> Callable[..., Any]:
++            cases: list[tuple[Any, ...]] = []
++            for value in values:
++                if len(parameters) == 1:
++                    cases.append((value,))
++                elif isinstance(value, (tuple, list)) and len(value) == len(parameters):
++                    cases.append(tuple(value))
++                else:
++                    raise ValueError("parameter case has the wrong arity")
++            setattr(function, "__fixture_parametrize__", (parameters, cases))
++            return function
++
++        return decorate
++
++
++mark = _Mark()
++
++
++def _test_paths(arguments: list[str]) -> list[Path]:
++    requested: list[Path] = []
++    skip_next = False
++    for argument in arguments:
++        if skip_next:
++            skip_next = False
++            continue
++        if argument == "-p":
++            skip_next = True
++            continue
++        if argument.startswith("-") or argument == "no:cacheprovider":
++            continue
++        path = Path(argument)
++        if path.is_dir():
++            requested.extend(sorted(path.glob("test_*.py")))
++        elif path.is_file():
++            requested.append(path)
++    return requested or sorted(Path("benchmark_checks").glob("test_*.py"))
++
++
++def _load(path: Path, ordinal: int) -> ModuleType:
++    name = f"_fixture_check_{ordinal}_{path.stem}"
++    spec = importlib.util.spec_from_file_location(name, path)
++    if spec is None or spec.loader is None:
++        raise RuntimeError(f"could not load {path.as_posix()}")
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++def main(arguments: list[str] | None = None) -> int:
++    """Discover and execute this fixture's plain-function developer checks."""
++    paths = _test_paths(list(sys.argv[1:] if arguments is None else arguments))
++    failures: list[tuple[str, BaseException, object]] = []
++    executed = 0
++    for ordinal, path in enumerate(paths):
++        try:
++            module = _load(path, ordinal)
++        except BaseException as exc:
++            failures.append((path.as_posix(), exc, exc.__traceback__))
++            continue
++        for name, function in sorted(vars(module).items()):
++            if not name.startswith("test_") or not inspect.isfunction(function):
++                continue
++            parametrized = getattr(function, "__fixture_parametrize__", None)
++            cases = parametrized[1] if parametrized is not None else [()]
++            for case in cases:
++                executed += 1
++                label = f"{path.as_posix()}::{name}"
++                try:
++                    function(*case)
++                except BaseException as exc:
++                    failures.append((label, exc, exc.__traceback__))
++
++    if failures:
++        for label, exception, captured_traceback in failures:
++            print(f"FAILED {label}")
++            traceback.print_exception(
++                type(exception), exception, captured_traceback, file=sys.stdout
++            )
++        print(f"{len(failures)} failed, {executed - len(failures)} passed")
++        return 1
++    print(f"{executed} passed")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..155070202ab936946d269254497e550804be10bb
+index 0000000000000000000000000000000000000000..6a52ff770ce49d724abb74669ec2da57dab128c9
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/__init__.py
-@@ -0,0 +1 @@
-+"""Golden runtime package used only by model-free contract tests."""
+@@ -0,0 +1,6 @@
++"""Canonical configuration parsing and serialization."""
++
++from .parser import parse_config
++from .serializer import serialize_config
++
++__all__ = ["parse_config", "serialize_config"]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..32f0652968840ec5dc341b5b1e3c9d130428dbe6
+index 0000000000000000000000000000000000000000..aca90de9191412cc64acb533321ede226274f716
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/parser.py
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,46 @@
++"""Strict JSON parsing into the canonical v2 model."""
++
 +from __future__ import annotations
 +
 +import json
-+from collections.abc import Mapping
++from typing import Any
 +
-+from migration.legacy import migrate
-+from schema.errors import InvalidTypeError
++from migration.legacy import migrate_config
++from schema.errors import ConfigParseError
 +
 +
-+def parse(payload: Mapping[str, object] | str) -> dict[str, object]:
-+    if isinstance(payload, str):
-+        try:
-+            decoded = json.loads(payload)
-+        except json.JSONDecodeError as exc:
-+            raise InvalidTypeError("payload") from exc
-+        if not isinstance(decoded, dict):
-+            raise InvalidTypeError("payload")
-+        payload = decoded
-+    if not isinstance(payload, Mapping):
-+        raise InvalidTypeError("payload")
-+    return migrate(payload)
++def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
++    result: dict[str, Any] = {}
++    for key, value in pairs:
++        if key in result:
++            raise ConfigParseError("JSON object keys must be unique")
++        result[key] = value
++    return result
++
++
++def _invalid_constant(_value: str) -> None:
++    raise ConfigParseError("JSON numeric constants are not supported")
++
++
++def parse_config(source: str | bytes | bytearray) -> dict[str, Any]:
++    """Parse strict JSON and return a detached canonical v2 dictionary."""
++    if not isinstance(source, (str, bytes, bytearray)):
++        raise ConfigParseError("configuration input must be JSON text")
++    try:
++        text = bytes(source).decode("utf-8") if isinstance(source, (bytes, bytearray)) else source
++    except UnicodeDecodeError as exc:
++        raise ConfigParseError("configuration input must be UTF-8") from exc
++    try:
++        value = json.loads(
++            text,
++            object_pairs_hook=_unique_object,
++            parse_constant=_invalid_constant,
++        )
++    except ConfigParseError:
++        raise
++    except (json.JSONDecodeError, RecursionError) as exc:
++        raise ConfigParseError("configuration input must be valid JSON") from exc
++    return migrate_config(value)
++
++
++__all__ = ["parse_config"]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..a6979d9578eaa44a6dfa0b6aebca492c6c44c678
+index 0000000000000000000000000000000000000000..75bf35bdc3835018b288f37c05d14b7f3f34b9d1
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/runtime/serializer.py
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,23 @@
++"""Canonical JSON serialization."""
++
 +from __future__ import annotations
 +
 +import json
-+from collections.abc import Mapping
++from typing import Any
 +
-+from runtime.parser import parse
++from migration.legacy import migrate_config
 +
 +
-+def serialize(mapping: Mapping[str, object]) -> str:
-+    return json.dumps(parse(mapping), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
++def serialize_config(value: Any) -> str:
++    """Validate/migrate a value and emit canonical JSON plus one newline."""
++    current = migrate_config(value)
++    return json.dumps(
++        current,
++        ensure_ascii=False,
++        sort_keys=True,
++        separators=(",", ":"),
++        allow_nan=False,
++    ) + "\n"
++
++
++__all__ = ["serialize_config"]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..a4bb9f617d5a29c5cc6e39fb95a833bbfac7ada1
+index 0000000000000000000000000000000000000000..32fa5f3d4a06ee4edf559459fcc12063931d4063
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/__init__.py
-@@ -0,0 +1 @@
-+"""Golden schema package used only by model-free contract tests."""
+@@ -0,0 +1,19 @@
++"""Public versioned configuration schema."""
++
++from .errors import (
++    ConfigParseError,
++    ConfigValidationError,
++    MigrationError,
++    UnsupportedVersionError,
++)
++from .model import validate_config, validate_v1, validate_v2
++
++__all__ = [
++    "ConfigParseError",
++    "ConfigValidationError",
++    "MigrationError",
++    "UnsupportedVersionError",
++    "validate_config",
++    "validate_v1",
++    "validate_v2",
++]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..3be5f0d6989d30367f54bad8cf012082e2828cc3
+index 0000000000000000000000000000000000000000..20fb4b4c19765e03f19a5fc76141103654ef5412
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/errors.py
-@@ -0,0 +1,14 @@
-+class UnknownVersionError(ValueError):
-+    pass
+@@ -0,0 +1,25 @@
++"""Stable public errors for the configuration fixture."""
 +
 +
-+class DuplicateKeyError(ValueError):
-+    pass
++class ConfigParseError(ValueError):
++    """The serialized input is not strict UTF-8 JSON."""
 +
 +
-+class UnknownKeyError(ValueError):
-+    pass
++class ConfigValidationError(ValueError):
++    """A known configuration version violates its schema."""
 +
 +
-+class InvalidTypeError(ValueError):
-+    pass
++class UnsupportedVersionError(ValueError):
++    """The configuration has no supported version discriminator."""
++
++
++class MigrationError(ValueError):
++    """A valid legacy value cannot preserve the migration invariant."""
++
++
++__all__ = [
++    "ConfigParseError",
++    "ConfigValidationError",
++    "UnsupportedVersionError",
++    "MigrationError",
++]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..df581a4d89fe92a7e88a9e5415a05145c6021784
+index 0000000000000000000000000000000000000000..9caa43600736190750219019c45d410aea1339b5
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/schema/model.py
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,106 @@
++"""Dependency-free validation for configuration versions 1 and 2."""
++
 +from __future__ import annotations
 +
 +from collections.abc import Mapping
++from typing import Any
++from urllib.parse import urlsplit
 +
-+from .errors import DuplicateKeyError, InvalidTypeError, UnknownKeyError, UnknownVersionError
-+
-+
-+def _normalize(mapping: Mapping[str, object]) -> dict[str, object]:
-+    if not isinstance(mapping, Mapping):
-+        raise InvalidTypeError("configuration must be a mapping")
-+    normalized: dict[str, object] = {}
-+    for key, value in mapping.items():
-+        if not isinstance(key, str):
-+            raise InvalidTypeError("configuration keys must be strings")
-+        canonical = key.strip().lower().replace("-", "_")
-+        if canonical in normalized:
-+            raise DuplicateKeyError(canonical)
-+        normalized[canonical] = value
-+    return normalized
++from .errors import ConfigValidationError, UnsupportedVersionError
 +
 +
-+def _integer(value: object, name: str) -> int:
-+    if type(value) is not int or value < 0:
-+        raise InvalidTypeError(name)
++def _object(value: Any, label: str, keys: set[str]) -> Mapping[str, Any]:
++    if not isinstance(value, Mapping):
++        raise ConfigValidationError(f"{label} must be an object")
++    actual = set(value)
++    if actual != keys:
++        raise ConfigValidationError(f"{label} fields are invalid")
 +    return value
 +
 +
-+def validate(mapping: Mapping[str, object]) -> dict[str, object]:
-+    normalized = _normalize(mapping)
-+    version = normalized.get("version")
-+    if type(version) is not int:
-+        raise InvalidTypeError("version")
-+    if version not in {1, 2}:
-+        raise UnknownVersionError(str(version))
-+    allowed = (
-+        {"version", "timeout", "retries", "endpoint"}
-+        if version == 1
-+        else {"version", "timeout_seconds", "max_retries", "endpoint"}
++def _string(value: Any, label: str) -> str:
++    if not isinstance(value, str) or not value.strip():
++        raise ConfigValidationError(f"{label} must be a non-empty string")
++    return value
++
++
++def _integer(value: Any, label: str, minimum: int) -> int:
++    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
++        raise ConfigValidationError(f"{label} must be an integer of at least {minimum}")
++    return value
++
++
++def _endpoint(value: Any) -> str:
++    endpoint = _string(value, "endpoint")
++    parsed = urlsplit(endpoint)
++    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
++        raise ConfigValidationError("endpoint must be an absolute HTTP URL")
++    return endpoint
++
++
++def _features(value: Any) -> list[str]:
++    if not isinstance(value, list):
++        raise ConfigValidationError("features must be a list")
++    if any(not isinstance(item, str) or not item.strip() for item in value):
++        raise ConfigValidationError("features must contain non-empty strings")
++    if len(set(value)) != len(value):
++        raise ConfigValidationError("features must be unique")
++    return sorted(value)
++
++
++def validate_v1(value: Any) -> dict[str, Any]:
++    """Validate and detach a version 1 configuration."""
++    if not isinstance(value, Mapping):
++        raise ConfigValidationError("configuration must be an object")
++    if value.get("schema_version") != 1 or isinstance(value.get("schema_version"), bool):
++        raise UnsupportedVersionError("schema_version must be 1")
++    obj = _object(
++        value,
++        "configuration",
++        {"schema_version", "service", "endpoint", "timeout", "retries", "features"},
 +    )
-+    unknown = set(normalized) - allowed
-+    if unknown:
-+        raise UnknownKeyError(sorted(unknown)[0])
-+    if set(normalized) != allowed:
-+        raise InvalidTypeError("missing required key")
-+    endpoint = normalized["endpoint"]
-+    if not isinstance(endpoint, str):
-+        raise InvalidTypeError("endpoint")
-+    if version == 1:
-+        return {
-+            "endpoint": endpoint,
-+            "retries": _integer(normalized["retries"], "retries"),
-+            "timeout": _integer(normalized["timeout"], "timeout"),
-+            "version": 1,
-+        }
 +    return {
-+        "endpoint": endpoint,
-+        "max_retries": _integer(normalized["max_retries"], "max_retries"),
-+        "timeout_seconds": _integer(normalized["timeout_seconds"], "timeout_seconds"),
-+        "version": 2,
++        "schema_version": 1,
++        "service": _string(obj["service"], "service"),
++        "endpoint": _endpoint(obj["endpoint"]),
++        "timeout": _integer(obj["timeout"], "timeout", 1),
++        "retries": _integer(obj["retries"], "retries", 0),
++        "features": _features(obj["features"]),
 +    }
++
++
++def validate_v2(value: Any) -> dict[str, Any]:
++    """Validate and detach a version 2 configuration."""
++    if not isinstance(value, Mapping):
++        raise ConfigValidationError("configuration must be an object")
++    if value.get("schema_version") != 2 or isinstance(value.get("schema_version"), bool):
++        raise UnsupportedVersionError("schema_version must be 2")
++    obj = _object(value, "configuration", {"schema_version", "service", "request", "features"})
++    service = _object(obj["service"], "service", {"name", "endpoint"})
++    request = _object(obj["request"], "request", {"timeout_seconds", "max_retries"})
++    features = _object(obj["features"], "features", {"enabled"})
++    return {
++        "schema_version": 2,
++        "service": {
++            "name": _string(service["name"], "service.name"),
++            "endpoint": _endpoint(service["endpoint"]),
++        },
++        "request": {
++            "timeout_seconds": _integer(request["timeout_seconds"], "request.timeout_seconds", 1),
++            "max_retries": _integer(request["max_retries"], "request.max_retries", 0),
++        },
++        "features": {"enabled": _features(features["enabled"])},
++    }
++
++
++def validate_config(value: Any) -> dict[str, Any]:
++    """Validate a supported version without changing its version."""
++    if not isinstance(value, Mapping):
++        raise ConfigValidationError("configuration must be an object")
++    version = value.get("schema_version")
++    if isinstance(version, bool) or version not in (1, 2):
++        raise UnsupportedVersionError("schema_version must be 1 or 2")
++    return validate_v1(value) if version == 1 else validate_v2(value)
++
++
++__all__ = ["validate_config", "validate_v1", "validate_v2"]
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..b63af201e3c00ff67d275bba53ce58b25538dff6
+index 0000000000000000000000000000000000000000..4598fa3378e4d34a1c9329e050e5e61ebfbe066d
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration/spec/config-contract.md
-@@ -0,0 +1,26 @@
-+# Public config contract
+@@ -0,0 +1,53 @@
++# Public configuration contract
 +
-+The implementation must expose exactly these callables:
++## Versions
 +
-+- `schema.model.validate(mapping: Mapping[str, object]) -> dict[str, object]`
-+- `migration.legacy.migrate(mapping: Mapping[str, object]) -> dict[str, object]`
-+- `runtime.parser.parse(payload: Mapping[str, object] | str) -> dict[str, object]`
-+- `runtime.serializer.serialize(mapping: Mapping[str, object]) -> str`
-+- `cli.config_cli.main(argv: Sequence[str]) -> int`
++A configuration is a JSON object with integer `schema_version`.  Version 1 has
++exactly `schema_version`, `service`, `endpoint`, `timeout`, `retries`, and
++`features`.  Version 2 has exactly `schema_version`, `service`, `request`, and
++`features`.  Booleans never count as integers.  Unknown fields are rejected.
 +
-+`schema.errors` must expose four `ValueError` subclasses:
++For v1, `service` and `endpoint` are non-empty strings, `endpoint` is an
++absolute `http` or `https` URL, `timeout` is a positive integer, `retries` is a
++non-negative integer, and `features` is a list of unique non-empty strings.
++For v2, `service` contains exactly `name` and `endpoint`; `request` contains
++exactly `timeout_seconds` and `max_retries`; and `features` contains exactly
++`enabled`.  Their leaf constraints are the same as v1.
 +
-+- `UnknownVersionError`: version is not 1 or 2
-+- `DuplicateKeyError`: two input keys are equal after trim/lower/hyphen normalization
-+- `UnknownKeyError`: a normalized key is outside the version contract
-+- `InvalidTypeError`: version, timeout/retry, or endpoint has the wrong type
++`validate_v1`, `validate_v2`, and `validate_config` return a detached,
++canonical dictionary and never mutate their input.  Canonical feature names
++are sorted lexicographically.  `validate_config` dispatches only versions 1
++and 2.
 +
-+Version 1 keys are `version`, `timeout`, `retries`, `endpoint`. Version 2 keys are
-+`version`, `timeout_seconds`, `max_retries`, `endpoint`. Migration maps v1 to v2,
-+accepts v2 idempotently, and never mutates its input. Parse accepts either a mapping
-+or JSON object text and returns a validated v2 mapping. Serialization uses UTF-8
-+JSON semantics, sorted keys, no insignificant whitespace, and no trailing newline.
++## Errors
 +
-+CLI success: exit 0, one canonical v2 JSON line on stdout, empty stderr.
-+CLI contract failure: exit 2, `{"error":{"kind":"<ErrorClassName>"}}` as one
-+canonical JSON line on stdout, empty stderr.
++The four public errors are `ConfigParseError`, `ConfigValidationError`,
++`UnsupportedVersionError`, and `MigrationError`.  Each is a direct
++`ValueError` subclass.  Validation failures use `ConfigValidationError`;
++missing or unsupported version discriminators use `UnsupportedVersionError`;
++invalid JSON/text inputs use `ConfigParseError`; and a migration invariant
++failure uses `MigrationError`.  Public error messages are stable and contain
++no paths or exception reprs.
++
++## Migration and runtime
++
++`migrate_config` accepts either valid version.  It maps v1 to v2 and
++canonicalizes v2, returning a fresh object.  Applying it repeatedly is
++idempotent.  `migrate_v1_to_v2` is the strict v1 entry point.
++
++`parse_config` accepts UTF-8 `str`, `bytes`, or `bytearray` JSON and returns a
++canonical v2 dictionary.  JSON constants such as NaN and duplicate object keys
++are rejected.  `serialize_config` accepts either version and emits canonical
++UTF-8 JSON text: sorted keys, compact separators, no ASCII escaping, and one
++trailing newline.  Therefore parsing and serialization are stable under
++round trips.
++
++## CLI
++
++`python -m cli.config_cli INPUT` reads INPUT, or `-` for standard input.  It
++writes exactly one compact, sorted JSON object plus a newline.  Success exits
++0 with `{"config":...,"ok":true}`.  A public configuration error exits 2
++with `{"error":{"code":ERROR_CLASS_NAME,"message":MESSAGE},"ok":false}`.
++Unexpected I/O errors exit 3 with the fixed code and message
++`InputError` / `could not read input`.  Errors are written to stdout so every
++invocation has one machine-readable result stream.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/capabilities.yaml
 new file mode 100644
 index 0000000000000000000000000000000000000000..02820d5934ddbb1411e2755557ad3bb9761ad798
@@ -579,7 +1011,7 @@ index 0000000000000000000000000000000000000000..02820d5934ddbb1411e2755557ad3bb9
 +    workspace_mode: shared_serial_write
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml
 new file mode 100644
-index 0000000000000000000000000000000000000000..af96da53ff67bc9251571879410251e7481a5199
+index 0000000000000000000000000000000000000000..6f7c67f24749e808a219ee634d6b8e954caa0c04
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/.orchestrator/checks.yaml
 @@ -0,0 +1,32 @@
@@ -587,31 +1019,31 @@ index 0000000000000000000000000000000000000000..af96da53ff67bc9251571879410251e7
 +checks:
 +  ledger_structure:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_ledger_structure"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_ledger_structure.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  timeline_structure:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_timeline_structure"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_timeline_structure.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  report_structure:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_report_structure"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks/test_report_structure.py]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  s2_incident_acceptance:
 +    kind: command
-+    argv: ["python", "-m", "unittest", "benchmark_checks.test_ledger_structure", "benchmark_checks.test_timeline_structure", "benchmark_checks.test_report_structure"]
++    argv: [python, -m, pytest, -q, -p, no:cacheprovider, benchmark_checks]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
 +  diff_check:
 +    kind: command
-+    argv: ["git", "diff", "--check"]
++    argv: [git, diff, --check]
 +    cwd: "."
 +    timeout_seconds: 120
 +    expected_exit_codes: [0]
@@ -649,44 +1081,68 @@ index 0000000000000000000000000000000000000000..e538898cc5128a84dfb123ba7045ef07
 +default_policy: b1_safe
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..d3a4f1ac67422145f5ea78fab451bda6809cca12
+index 0000000000000000000000000000000000000000..237ab2f73a8fca612c7734867a74a27d1ae06776
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/README.md
-@@ -0,0 +1,8 @@
-+# Three-stage incident analysis
+@@ -0,0 +1,19 @@
++# Three-stage incident analysis fixture
 +
-+Build an evidence ledger, a timeline, and a final incident report from the three
-+provided source files. Preserve uncertainty and conflicting observations instead
-+of choosing one source as the truth.
++This self-contained fixture turns three partially conflicting incident sources
++into an evidence ledger, a timeline, and a report without erasing uncertainty.
++The public contract is in `spec/report-contract.md`; stable markers in the
++source documents are the authority for each evidence record.
 +
-+Only the seven declared output files may be changed. Source material, the public
-+catalog, checks, manifest, and orchestrator policy are protected inputs.
++The three Tasks are serial. T1 creates the evidence and uncertainty ledgers,
++T2 derives sourced events and hypotheses, and T3 creates structured claims and
++actions before rendering the final report. Their seven implementation outputs
++are `analysis/evidence-ledger.json`, `analysis/uncertainties.json`,
++`timeline/events.json`, `timeline/hypotheses.json`, `report/claims.json`,
++`report/action-plan.json`, and `report/final-report.md`.
++
++Run all developer checks from this directory with:
++
++```text
++python -m pytest -q -p no:cacheprovider benchmark_checks
++```
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..85517993d8766a15bf891d694483726d45e13ee8
+index 0000000000000000000000000000000000000000..b090d6bdb38d4ca6a01e060e987cb4394e3b266b
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/evidence-ledger.json
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,18 @@
 +{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
 +  "evidence": [
-+    {"evidence_id":"e-a1","source_id":"source-a","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2099-08-01T09:00Z deployment release 42 began.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 began at 09:00Z."},
-+    {"evidence_id":"e-a2","source_id":"source-a","locator":{"line_start":2,"line_end":2},"exact_excerpt":"2099-08-01T09:08Z error rate crossed 8 percent.","topic_id":"error-rate","observation_status":"observed","canonical_claim_text":"Source A records an error rate above 8 percent at 09:08Z."},
-+    {"evidence_id":"e-a3","source_id":"source-a","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-a.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"Source A reports cache-a as the cache endpoint."},
-+    {"evidence_id":"e-b1","source_id":"source-b","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2099-08-01T09:02Z deployment release 42 completed.","topic_id":"deployment","observation_status":"observed","canonical_claim_text":"Deployment of release 42 completed at 09:02Z."},
-+    {"evidence_id":"e-b2","source_id":"source-b","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Dashboard note: error rate stayed below 2 percent.","topic_id":"error-rate","observation_status":"reported","canonical_claim_text":"Source B reports an error rate below 2 percent."},
-+    {"evidence_id":"e-b3","source_id":"source-b","locator":{"line_start":3,"line_end":3},"exact_excerpt":"2099-08-01T09:20Z rollback release 42 began.","topic_id":"rollback","observation_status":"observed","canonical_claim_text":"Rollback of release 42 began at 09:20Z."},
-+    {"evidence_id":"e-c1","source_id":"source-c","locator":{"line_start":1,"line_end":1},"exact_excerpt":"2099-08-01T09:35Z service recovery was confirmed.","topic_id":"recovery","observation_status":"observed","canonical_claim_text":"Service recovery was confirmed at 09:35Z."},
-+    {"evidence_id":"e-c2","source_id":"source-c","locator":{"line_start":2,"line_end":2},"exact_excerpt":"Approval owner for release 42 is unknown.","topic_id":"approval-owner","observation_status":"reported","canonical_claim_text":"The approval owner for release 42 remains unknown."},
-+    {"evidence_id":"e-c3","source_id":"source-c","locator":{"line_start":3,"line_end":3},"exact_excerpt":"Operator note: cache endpoint was cache-b.","topic_id":"cache-endpoint","observation_status":"reported","canonical_claim_text":"Source C reports cache-b as the cache endpoint."}
++    {"evidence_id":"EV-A1","topic_id":"TOP-001","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A1","statement":"결제 API 오류 증가는 2025-02-14T09:16:00Z에 처음 관찰되었다.","recorded_at":"2025-02-14T09:16:00Z"},
++    {"evidence_id":"EV-C1","topic_id":"TOP-001","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C1","statement":"원시 지표에서 결제 API 오류 증가는 2025-02-14T09:14:00Z에 시작되었다.","recorded_at":"2025-02-14T09:14:00Z"},
++    {"evidence_id":"EV-B1","topic_id":"TOP-002","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B1","statement":"릴리스 rel-204 배포는 2025-02-14T09:04:00Z에 시작되어 09:11:00Z에 완료되었다.","recorded_at":"2025-02-14T09:11:00Z"},
++    {"evidence_id":"EV-A2","topic_id":"TOP-002","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A2","statement":"릴리스 rel-204를 2025-02-14T09:31:00Z에 롤백하기 시작했다.","recorded_at":"2025-02-14T09:31:00Z"},
++    {"evidence_id":"EV-B3","topic_id":"TOP-002","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B3","statement":"롤백은 2025-02-14T09:34:00Z에 완료되었다.","recorded_at":"2025-02-14T09:34:00Z"},
++    {"evidence_id":"EV-A3","topic_id":"TOP-002","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A3","statement":"롤백 뒤 오류율은 2025-02-14T09:36:00Z에 정상 범위로 돌아왔다.","recorded_at":"2025-02-14T09:36:00Z"},
++    {"evidence_id":"EV-B2","topic_id":"TOP-003","source_id":"SRC-B","source_path":"sources/source-b.md","source_marker":"EV-B2","statement":"rel-204의 변경 사항은 결제 API의 인증 클라이언트 재시도 정책을 수정했다.","recorded_at":"2025-02-14T09:11:00Z"},
++    {"evidence_id":"EV-A5","topic_id":"TOP-003","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A5","statement":"rel-204가 장애 원인일 가능성이 있지만 로그만으로는 인과관계를 확인할 수 없다.","recorded_at":"2025-02-14T09:40:00Z"},
++    {"evidence_id":"EV-C2","topic_id":"TOP-003","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C2","statement":"인증 업스트림 p95 지연 시간은 2025-02-14T09:13:00Z부터 09:35:00Z까지 함께 증가했다.","recorded_at":"2025-02-14T09:35:00Z"},
++    {"evidence_id":"EV-C4","topic_id":"TOP-003","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C4","statement":"지표의 시간적 상관관계만으로 rel-204 또는 인증 업스트림을 근본 원인으로 확정할 수 없다.","recorded_at":"2025-02-14T09:42:00Z"},
++    {"evidence_id":"EV-A4","topic_id":"TOP-004","source_id":"SRC-A","source_path":"sources/source-a.md","source_marker":"EV-A4","statement":"장애 구간에도 데이터베이스 p95 지연 시간은 정상 범위였다.","recorded_at":"2025-02-14T09:38:00Z"},
++    {"evidence_id":"EV-C3","topic_id":"TOP-004","source_id":"SRC-C","source_path":"sources/source-c.md","source_marker":"EV-C3","statement":"데이터베이스 p95 지연 시간은 같은 구간에 기준 범위 안에 있었다.","recorded_at":"2025-02-14T09:35:00Z"}
 +  ]
 +}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..5449fe8839a1beb6ee943f7fbdac5868e97f7512
+index 0000000000000000000000000000000000000000..1efa393d8478a2ae303e85f13cc8a5c6474548df
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/analysis/uncertainties.json
-@@ -0,0 +1 @@
-+{"uncertainties":[{"uncertainty_id":"u-approval","evidence_ids":["e-c2"],"source_ids":["source-c"],"next_action":"Identify and verify the release approval owner."}]}
+@@ -0,0 +1,9 @@
++{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
++  "uncertainties": [
++    {"uncertainty_id":"UNC-001","topic_id":"TOP-001","question":"오류 증가는 09:14와 09:16 중 언제 시작되었는가?","reason":"온콜 관찰 시각과 원시 지표의 시작 시각이 일치하지 않는다.","status":"open","evidence_ids":["EV-A1","EV-C1"]},
++    {"uncertainty_id":"UNC-002","topic_id":"TOP-003","question":"rel-204가 오류 증가의 근본 원인이었는가?","reason":"배포와 복구의 시간적 근접성은 있으나 직접적인 인과 증거가 없다.","status":"open","evidence_ids":["EV-B1","EV-B2","EV-A2","EV-A3","EV-A5","EV-C4"]},
++    {"uncertainty_id":"UNC-003","topic_id":"TOP-003","question":"인증 업스트림 지연이 오류 증가를 유발했는가?","reason":"지연 시간과 오류율이 함께 증가했지만 방향성이나 인과관계는 입증되지 않았다.","status":"open","evidence_ids":["EV-C2","EV-C4"]}
++  ]
++}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark-run.yaml
 new file mode 100644
 index 0000000000000000000000000000000000000000..d50305a0cdc94c61abaef0fbc18a9945118ce6b1
@@ -750,318 +1206,596 @@ index 0000000000000000000000000000000000000000..d50305a0cdc94c61abaef0fbc18a9945
 +    approval: none
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..538fc56ac706e4345212732cf7686d6d72ae885e
---- /dev/null
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/__init__.py
-@@ -0,0 +1 @@
-+"""Public checks for the incident-analysis fixture."""
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..805b2384c16d0ab4b335db8c57f4855f23cdc3c3
+index 0000000000000000000000000000000000000000..8be655e51da2975aa4a87af20f771864b64924fa
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_ledger_structure.py
-@@ -0,0 +1,35 @@
-+from __future__ import annotations
-+
-+import json
-+import unittest
-+from pathlib import Path
-+
-+
-+ROOT = Path(__file__).resolve().parents[1]
-+
-+
-+class LedgerStructureTest(unittest.TestCase):
-+    def test_ledger_and_uncertainties_have_public_shape(self) -> None:
-+        ledger = json.loads((ROOT / "analysis/evidence-ledger.json").read_text(encoding="utf-8"))
-+        uncertainties = json.loads((ROOT / "analysis/uncertainties.json").read_text(encoding="utf-8"))
-+        self.assertEqual(set(ledger), {"evidence"})
-+        self.assertGreater(len(ledger["evidence"]), 0)
-+        for item in ledger["evidence"]:
-+            self.assertEqual(
-+                set(item),
-+                {"evidence_id", "source_id", "locator", "exact_excerpt", "topic_id", "observation_status", "canonical_claim_text"},
-+            )
-+            self.assertTrue(item["evidence_id"].isascii() and item["evidence_id"])
-+            self.assertEqual(set(item["locator"]), {"line_start", "line_end"})
-+            self.assertIn(item["observation_status"], {"observed", "reported", "derived"})
-+        self.assertEqual(set(uncertainties), {"uncertainties"})
-+        self.assertGreater(len(uncertainties["uncertainties"]), 0)
-+        for item in uncertainties["uncertainties"]:
-+            self.assertEqual(set(item), {"uncertainty_id", "evidence_ids", "source_ids", "next_action"})
-+            self.assertTrue(item["uncertainty_id"].isascii() and item["uncertainty_id"])
-+            self.assertEqual(item["evidence_ids"], sorted(item["evidence_ids"]))
-+            self.assertEqual(item["source_ids"], sorted(item["source_ids"]))
-+
-+
-+if __name__ == "__main__":
-+    unittest.main()
-diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..dfdf4b5298e6db5b86ca691b5c8fd543e0365163
---- /dev/null
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,91 @@
 +from __future__ import annotations
 +
 +import json
 +import re
-+import unittest
++from datetime import datetime
 +from pathlib import Path
 +
 +
 +ROOT = Path(__file__).resolve().parents[1]
++INCIDENT_ID = "INC-2025-02-14-CHECKOUT"
 +
 +
-+class ReportStructureTest(unittest.TestCase):
-+    def test_report_documents_have_public_shape(self) -> None:
-+        claims = json.loads((ROOT / "report/claims.json").read_text(encoding="utf-8"))
-+        actions = json.loads((ROOT / "report/action-plan.json").read_text(encoding="utf-8"))
-+        report = (ROOT / "report/final-report.md").read_text(encoding="utf-8")
-+        self.assertEqual(set(claims), {"claims"})
-+        self.assertGreater(len(claims["claims"]), 0)
-+        for item in claims["claims"]:
-+            self.assertEqual(set(item), {"claim_id", "evidence_id", "status", "canonical_claim_text"})
-+            self.assertTrue(item["claim_id"].isascii() and item["claim_id"])
-+            self.assertIn(item["status"], {"confirmed", "conflicting"})
-+        self.assertEqual(set(actions), {"actions"})
-+        self.assertGreater(len(actions["actions"]), 0)
-+        for item in actions["actions"]:
-+            self.assertEqual(set(item), {"action_id", "action_type", "reference_ids"})
-+            self.assertTrue(item["action_id"].isascii() and item["action_id"])
-+            self.assertIn(item["action_type"], {"verify", "mitigate"})
-+            self.assertEqual(item["reference_ids"], sorted(item["reference_ids"]))
-+        self.assertEqual(
-+            [line[3:] for line in report.splitlines() if line.startswith("## ")],
-+            ["확인된 사실", "상충", "미확인", "권고"],
++def _json(path: str) -> dict:
++    return json.loads((ROOT / path).read_text(encoding="utf-8"))
++
++
++def _unique(items: list[dict], key: str) -> dict[str, dict]:
++    values = [item[key] for item in items]
++    assert len(values) == len(set(values))
++    return {item[key]: item for item in items}
++
++
++def test_evidence_is_an_exact_projection_of_source_markers() -> None:
++    ledger = _json("analysis/evidence-ledger.json")
++    assert set(ledger) == {"schema_version", "incident_id", "evidence"}
++    assert ledger["schema_version"] == 1 and ledger["incident_id"] == INCIDENT_ID
++    evidence = _unique(ledger["evidence"], "evidence_id")
++
++    source_markers: dict[str, tuple[str, str, str]] = {}
++    for path in sorted((ROOT / "sources").glob("source-*.md")):
++        source = path.read_text(encoding="utf-8")
++        source_id = re.search(r"Source ID: `([^`]+)`", source)
++        assert source_id is not None
++        for marker, statement in re.findall(r"^- \[([^]]+)] (.+)$", source, re.MULTILINE):
++            assert marker not in source_markers
++            source_markers[marker] = (source_id.group(1), path.relative_to(ROOT).as_posix(), statement)
++
++    assert set(evidence) == set(source_markers)
++    expected_keys = {
++        "evidence_id", "topic_id", "source_id", "source_path",
++        "source_marker", "statement", "recorded_at",
++    }
++    for evidence_id, item in evidence.items():
++        assert set(item) == expected_keys
++        source_id, source_path, statement = source_markers[evidence_id]
++        assert item["source_marker"] == evidence_id
++        assert (item["source_id"], item["source_path"], item["statement"]) == (
++            source_id, source_path, statement
 +        )
-+        section = None
-+        for line in report.splitlines():
-+            if not line:
-+                continue
-+            if line.startswith("## "):
-+                section = line[3:]
-+                continue
-+            self.assertIsNotNone(section)
-+            pattern = (
-+                r"^- \[[^\]]+\] (verify|mitigate): [A-Za-z0-9,._-]+$"
-+                if section == "권고"
-+                else r"^- \[[^\]]+\] .+$"
-+            )
-+            self.assertIsNotNone(re.fullmatch(pattern, line))
++        assert datetime.fromisoformat(item["recorded_at"].replace("Z", "+00:00")).tzinfo
 +
 +
-+if __name__ == "__main__":
-+    unittest.main()
-diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py
++def test_topics_classify_conflict_and_uncertainty_without_orphans() -> None:
++    catalog = _json("catalog/topics.json")
++    ledger = _json("analysis/evidence-ledger.json")
++    uncertainties = _json("analysis/uncertainties.json")
++    assert catalog["schema_version"] == uncertainties["schema_version"] == 1
++    assert catalog["incident_id"] == uncertainties["incident_id"] == INCIDENT_ID
++
++    topics = _unique(catalog["topics"], "topic_id")
++    assert {item["kind"] for item in topics.values()} == {"fact", "conflict", "uncertainty"}
++    evidence = _unique(ledger["evidence"], "evidence_id")
++    assert {item["topic_id"] for item in evidence.values()} == set(topics)
++
++    for topic_id, topic in topics.items():
++        members = [item for item in evidence.values() if item["topic_id"] == topic_id]
++        assert members
++        if topic["kind"] == "conflict":
++            assert len({item["source_id"] for item in members}) >= 2
++            assert len({item["statement"] for item in members}) >= 2
++
++    questions = _unique(uncertainties["uncertainties"], "uncertainty_id")
++    expected_keys = {
++        "uncertainty_id", "topic_id", "question", "reason", "status", "evidence_ids"
++    }
++    assert questions
++    for item in questions.values():
++        assert set(item) == expected_keys and item["status"] == "open"
++        assert item["question"] and item["reason"]
++        assert item["evidence_ids"] and len(item["evidence_ids"]) == len(set(item["evidence_ids"]))
++        assert set(item["evidence_ids"]) <= set(evidence)
++        assert item["topic_id"] in topics
++        assert topics[item["topic_id"]]["kind"] in {"conflict", "uncertainty"}
++
++
++def test_every_non_fact_topic_remains_explicitly_open() -> None:
++    catalog = _json("catalog/topics.json")
++    uncertainties = _json("analysis/uncertainties.json")["uncertainties"]
++    open_topics = {item["topic_id"] for item in uncertainties if item["status"] == "open"}
++    expected = {item["topic_id"] for item in catalog["topics"] if item["kind"] != "fact"}
++    assert open_topics == expected
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0ada5c8ad166837f56fd9f845667a3f8ec978f0e
+index 0000000000000000000000000000000000000000..9c0fcb69385a1876c371fbad325e15cb2a26f639
 --- /dev/null
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py
-@@ -0,0 +1,34 @@
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_report_structure.py
+@@ -0,0 +1,97 @@
 +from __future__ import annotations
 +
 +import json
-+import unittest
++import re
 +from pathlib import Path
 +
 +
 +ROOT = Path(__file__).resolve().parents[1]
++INCIDENT_ID = "INC-2025-02-14-CHECKOUT"
++SECTIONS = ["확인된 사실", "상충", "미확인", "권고"]
 +
 +
-+class TimelineStructureTest(unittest.TestCase):
-+    def test_timeline_documents_have_public_shape(self) -> None:
-+        events = json.loads((ROOT / "timeline/events.json").read_text(encoding="utf-8"))
-+        hypotheses = json.loads((ROOT / "timeline/hypotheses.json").read_text(encoding="utf-8"))
-+        self.assertEqual(set(events), {"events"})
-+        self.assertGreater(len(events["events"]), 0)
-+        for item in events["events"]:
-+            self.assertEqual(set(item), {"event_id", "status", "evidence_ids", "uncertainty_ids"})
-+            self.assertTrue(item["event_id"].isascii() and item["event_id"])
-+            self.assertIn(item["status"], {"confirmed", "conflicting", "uncertain"})
-+            self.assertEqual(item["evidence_ids"], sorted(item["evidence_ids"]))
-+            self.assertEqual(item["uncertainty_ids"], sorted(item["uncertainty_ids"]))
-+        self.assertEqual(set(hypotheses), {"hypotheses"})
-+        self.assertGreater(len(hypotheses["hypotheses"]), 0)
-+        for item in hypotheses["hypotheses"]:
-+            self.assertEqual(set(item), {"hypothesis_id", "status", "evidence_ids", "uncertainty_ids"})
-+            self.assertTrue(item["hypothesis_id"].isascii() and item["hypothesis_id"])
-+            self.assertEqual(item["status"], "candidate")
-+            self.assertEqual(item["evidence_ids"], sorted(item["evidence_ids"]))
-+            self.assertEqual(item["uncertainty_ids"], sorted(item["uncertainty_ids"]))
++def _json(path: str) -> dict:
++    return json.loads((ROOT / path).read_text(encoding="utf-8"))
++
++
++def _mapping(path: str, collection: str, key: str) -> dict[str, dict]:
++    items = _json(path)[collection]
++    assert len(items) == len({item[key] for item in items})
++    return {item[key]: item for item in items}
++
++
++def _render(claims: list[dict], actions: list[dict]) -> str:
++    lines = [f"# {INCIDENT_ID}", ""]
++    for section in SECTIONS:
++        lines.extend([f"## {section}", ""])
++        if section == "권고":
++            items = sorted(actions, key=lambda item: item["priority"])
++            lines.extend(f'- [{item["action_id"]}] {item["text"]}' for item in items)
++        else:
++            items = [item for item in claims if item["section"] == section]
++            lines.extend(f'- [{item["claim_id"]}] {item["text"]}' for item in items)
++        lines.append("")
++    return "\n".join(lines)
++
++
++def test_claims_keep_complete_transitive_lineage() -> None:
++    claims_document = _json("report/claims.json")
++    assert set(claims_document) == {"schema_version", "incident_id", "claims"}
++    assert claims_document["schema_version"] == 1 and claims_document["incident_id"] == INCIDENT_ID
++    evidence = _mapping("analysis/evidence-ledger.json", "evidence", "evidence_id")
++    events = _mapping("timeline/events.json", "events", "event_id")
++    uncertainties = _mapping("analysis/uncertainties.json", "uncertainties", "uncertainty_id")
++    claims = claims_document["claims"]
++    assert len(claims) == len({item["claim_id"] for item in claims})
++    assert [item["section"] for item in claims] == sorted(
++        (item["section"] for item in claims), key=["확인된 사실", "상충", "미확인"].index
++    )
++    expected_keys = {
++        "claim_id", "section", "text", "evidence_ids", "event_ids", "uncertainty_ids"
++    }
++    for claim in claims:
++        assert set(claim) == expected_keys and claim["text"]
++        assert claim["section"] in SECTIONS[:-1]
++        assert claim["evidence_ids"] and claim["event_ids"]
++        assert set(claim["evidence_ids"]) <= set(evidence)
++        assert set(claim["event_ids"]) <= set(events)
++        assert set(claim["uncertainty_ids"]) <= set(uncertainties)
++        for field in ("evidence_ids", "event_ids", "uncertainty_ids"):
++            assert len(claim[field]) == len(set(claim[field]))
++        if claim["section"] == "확인된 사실":
++            assert claim["uncertainty_ids"] == []
++            assert all(events[event_id]["status"] == "confirmed" for event_id in claim["event_ids"])
++        else:
++            assert claim["uncertainty_ids"]
++            assert all(uncertainties[item]["status"] == "open" for item in claim["uncertainty_ids"])
++
++
++def test_actions_are_ordered_and_address_open_questions() -> None:
++    claims = _mapping("report/claims.json", "claims", "claim_id")
++    uncertainties = _mapping("analysis/uncertainties.json", "uncertainties", "uncertainty_id")
++    document = _json("report/action-plan.json")
++    assert set(document) == {"schema_version", "incident_id", "actions"}
++    assert document["schema_version"] == 1 and document["incident_id"] == INCIDENT_ID
++    actions = document["actions"]
++    assert len(actions) == len({item["action_id"] for item in actions})
++    assert [item["priority"] for item in actions] == list(range(1, len(actions) + 1))
++    for action in actions:
++        assert set(action) == {"action_id", "priority", "text", "claim_ids", "uncertainty_ids"}
++        assert action["text"] and action["claim_ids"] and action["uncertainty_ids"]
++        assert set(action["claim_ids"]) <= set(claims)
++        assert set(action["uncertainty_ids"]) <= set(uncertainties)
++        assert all(uncertainties[item]["status"] == "open" for item in action["uncertainty_ids"])
++    addressed = {item for action in actions for item in action["uncertainty_ids"]}
++    assert addressed == set(uncertainties)
++
++
++def test_final_report_is_only_the_structured_projection() -> None:
++    claims = _json("report/claims.json")["claims"]
++    actions = _json("report/action-plan.json")["actions"]
++    report = (ROOT / "report/final-report.md").read_text(encoding="utf-8")
++    assert report == _render(claims, actions)
++    assert re.findall(r"^## (.+)$", report, re.MULTILINE) == SECTIONS
++    rendered_ids = re.findall(r"^- \[([^]]+)]", report, re.MULTILINE)
++    assert rendered_ids == [item["claim_id"] for item in claims] + [
++        item["action_id"] for item in sorted(actions, key=lambda item: item["priority"])
++    ]
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..67f7d6557e70ff5e0b6568e9383fad020c051587
+--- /dev/null
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/benchmark_checks/test_timeline_structure.py
+@@ -0,0 +1,93 @@
++from __future__ import annotations
++
++import json
++from datetime import datetime
++from pathlib import Path
++
++
++ROOT = Path(__file__).resolve().parents[1]
++INCIDENT_ID = "INC-2025-02-14-CHECKOUT"
++
++
++def _json(path: str) -> dict:
++    return json.loads((ROOT / path).read_text(encoding="utf-8"))
++
++
++def _ids(items: list[dict], key: str) -> set[str]:
++    values = [item[key] for item in items]
++    assert len(values) == len(set(values))
++    return set(values)
++
++
++def test_events_are_chronological_sourced_and_uncertainty_safe() -> None:
++    evidence = _json("analysis/evidence-ledger.json")["evidence"]
++    uncertainties = _json("analysis/uncertainties.json")["uncertainties"]
++    timeline = _json("timeline/events.json")
++    assert set(timeline) == {"schema_version", "incident_id", "events"}
++    assert timeline["schema_version"] == 1 and timeline["incident_id"] == INCIDENT_ID
++    evidence_ids = _ids(evidence, "evidence_id")
++    uncertainty_ids = _ids(uncertainties, "uncertainty_id")
++    open_ids = {item["uncertainty_id"] for item in uncertainties if item["status"] == "open"}
++    events = timeline["events"]
++    _ids(events, "event_id")
++    stamps = [datetime.fromisoformat(item["occurred_at"].replace("Z", "+00:00")) for item in events]
++    assert stamps == sorted(stamps)
++
++    expected_keys = {
++        "event_id", "occurred_at", "summary", "status", "evidence_ids", "uncertainty_ids"
++    }
++    for event in events:
++        assert set(event) == expected_keys and event["summary"]
++        assert event["status"] in {"confirmed", "disputed"}
++        assert event["evidence_ids"] and len(event["evidence_ids"]) == len(set(event["evidence_ids"]))
++        assert set(event["evidence_ids"]) <= evidence_ids
++        assert set(event["uncertainty_ids"]) <= uncertainty_ids
++        if event["status"] == "confirmed":
++            assert event["uncertainty_ids"] == []
++        else:
++            assert event["uncertainty_ids"] and set(event["uncertainty_ids"]) <= open_ids
++            assert len({next(item["source_id"] for item in evidence if item["evidence_id"] == ref)
++                        for ref in event["evidence_ids"]}) >= 2
++
++
++def test_hypotheses_never_turn_correlation_into_fact() -> None:
++    evidence_ids = _ids(_json("analysis/evidence-ledger.json")["evidence"], "evidence_id")
++    open_ids = {
++        item["uncertainty_id"]
++        for item in _json("analysis/uncertainties.json")["uncertainties"]
++        if item["status"] == "open"
++    }
++    document = _json("timeline/hypotheses.json")
++    assert set(document) == {"schema_version", "incident_id", "hypotheses"}
++    assert document["schema_version"] == 1 and document["incident_id"] == INCIDENT_ID
++    hypotheses = document["hypotheses"]
++    _ids(hypotheses, "hypothesis_id")
++    expected_keys = {
++        "hypothesis_id", "statement", "status", "supporting_evidence_ids",
++        "conflicting_evidence_ids", "uncertainty_ids",
++    }
++    for hypothesis in hypotheses:
++        assert set(hypothesis) == expected_keys and hypothesis["statement"]
++        assert hypothesis["status"] in {"unconfirmed", "rejected"}
++        supporting = hypothesis["supporting_evidence_ids"]
++        conflicting = hypothesis["conflicting_evidence_ids"]
++        assert supporting and conflicting and set(supporting).isdisjoint(conflicting)
++        assert len(supporting) == len(set(supporting)) and len(conflicting) == len(set(conflicting))
++        assert set(supporting + conflicting) <= evidence_ids
++        assert hypothesis["uncertainty_ids"] and set(hypothesis["uncertainty_ids"]) <= open_ids
++
++
++def test_disputed_evidence_is_not_lost_from_the_timeline() -> None:
++    disputed_evidence = {
++        evidence_id
++        for item in _json("analysis/uncertainties.json")["uncertainties"]
++        if item["topic_id"] == "TOP-001"
++        for evidence_id in item["evidence_ids"]
++    }
++    represented = {
++        evidence_id
++        for event in _json("timeline/events.json")["events"]
++        if event["status"] == "disputed"
++        for evidence_id in event["evidence_ids"]
++    }
++    assert disputed_evidence == represented
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ac0ec3da93614e7e609fc3368af9ff22068f2e26
+--- /dev/null
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json
+@@ -0,0 +1,10 @@
++{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
++  "topics": [
++    {"topic_id": "TOP-001", "kind": "conflict", "label": "오류 증가 시작 시각"},
++    {"topic_id": "TOP-002", "kind": "fact", "label": "배포와 복구"},
++    {"topic_id": "TOP-003", "kind": "uncertainty", "label": "근본 원인"},
++    {"topic_id": "TOP-004", "kind": "fact", "label": "데이터베이스 상태"}
++  ]
++}
+diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/pytest.py b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/pytest.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a09b743035c5416b35d311b03eb1d802d1b69b7
+--- /dev/null
++++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/pytest.py
+@@ -0,0 +1,76 @@
++"""Small dependency-free runner for this fixture's plain-function checks."""
++
++from __future__ import annotations
++
++import importlib.util
++import inspect
++import sys
++import traceback
++from pathlib import Path
++from types import ModuleType
++
++
++def _test_paths(arguments: list[str]) -> list[Path]:
++    requested: list[Path] = []
++    skip_next = False
++    for argument in arguments:
++        if skip_next:
++            skip_next = False
++            continue
++        if argument == "-p":
++            skip_next = True
++            continue
++        if argument.startswith("-") or argument == "no:cacheprovider":
++            continue
++        path = Path(argument)
++        if path.is_dir():
++            requested.extend(sorted(path.glob("test_*.py")))
++        elif path.is_file():
++            requested.append(path)
++    return requested or sorted(Path("benchmark_checks").glob("test_*.py"))
++
++
++def _load(path: Path, ordinal: int) -> ModuleType:
++    name = f"_fixture_check_{ordinal}_{path.stem}"
++    spec = importlib.util.spec_from_file_location(name, path)
++    if spec is None or spec.loader is None:
++        raise RuntimeError(f"could not load {path.as_posix()}")
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++def main(arguments: list[str] | None = None) -> int:
++    paths = _test_paths(list(sys.argv[1:] if arguments is None else arguments))
++    failures: list[tuple[str, BaseException, object]] = []
++    executed = 0
++    for ordinal, path in enumerate(paths):
++        try:
++            module = _load(path, ordinal)
++        except BaseException as exc:
++            failures.append((path.as_posix(), exc, exc.__traceback__))
++            continue
++        for name, function in sorted(vars(module).items()):
++            if not name.startswith("test_") or not inspect.isfunction(function):
++                continue
++            executed += 1
++            label = f"{path.as_posix()}::{name}"
++            try:
++                function()
++            except BaseException as exc:
++                failures.append((label, exc, exc.__traceback__))
++    if failures:
++        for label, exception, captured_traceback in failures:
++            print(f"FAILED {label}")
++            traceback.print_exception(
++                type(exception), exception, captured_traceback, file=sys.stdout
++            )
++        print(f"{len(failures)} failed, {executed - len(failures)} passed")
++        return 1
++    print(f"{executed} passed")
++    return 0
 +
 +
 +if __name__ == "__main__":
-+    unittest.main()
-diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json
-new file mode 100644
-index 0000000000000000000000000000000000000000..1f58932f3fae79eac1f71dd59bb4e3b7257e3411
---- /dev/null
-+++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/catalog/topics.json
-@@ -0,0 +1,15 @@
-+{
-+  "sources": [
-+    {"source_id": "source-a", "path": "sources/source-a.md"},
-+    {"source_id": "source-b", "path": "sources/source-b.md"},
-+    {"source_id": "source-c", "path": "sources/source-c.md"}
-+  ],
-+  "topics": [
-+    {"topic_id": "approval-owner", "expected_distinct_source_count": 1, "conflicting": false},
-+    {"topic_id": "cache-endpoint", "expected_distinct_source_count": 2, "conflicting": true},
-+    {"topic_id": "deployment", "expected_distinct_source_count": 2, "conflicting": false},
-+    {"topic_id": "error-rate", "expected_distinct_source_count": 2, "conflicting": true},
-+    {"topic_id": "recovery", "expected_distinct_source_count": 1, "conflicting": false},
-+    {"topic_id": "rollback", "expected_distinct_source_count": 1, "conflicting": false}
-+  ]
-+}
++    raise SystemExit(main())
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..ed7fd2ad3227dda016a77f2fe67e27851cc8e667
+index 0000000000000000000000000000000000000000..c69d08c7ed26a04161e050dc43e2381902bb4667
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/action-plan.json
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,9 @@
 +{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
 +  "actions": [
-+    {"action_id":"action-approval","action_type":"verify","reference_ids":["e-c2","u-approval"]},
-+    {"action_id":"action-cache","action_type":"verify","reference_ids":["e-a3","e-c3"]},
-+    {"action_id":"action-error","action_type":"verify","reference_ids":["e-a2","e-b2"]},
-+    {"action_id":"action-recovery","action_type":"mitigate","reference_ids":["e-b3","e-c1"]}
++    {"action_id":"ACT-001","priority":1,"text":"원시 오류 지표와 온콜 로그의 시계 및 집계 구간을 대조해 시작 시각을 확정한다.","claim_ids":["CLM-004"],"uncertainty_ids":["UNC-001"]},
++    {"action_id":"ACT-002","priority":2,"text":"rel-204의 인증 재시도 변경을 재현 환경에서 단독으로 부하 시험한다.","claim_ids":["CLM-005"],"uncertainty_ids":["UNC-002"]},
++    {"action_id":"ACT-003","priority":3,"text":"결제 요청과 인증 업스트림 호출을 잇는 상관관계 ID와 지연 시간 계측을 추가한다.","claim_ids":["CLM-006"],"uncertainty_ids":["UNC-003"]}
 +  ]
 +}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..a7577d6688dfe16be729e409a2e3c34882db607c
+index 0000000000000000000000000000000000000000..9f0c7d77aa022a52285bcd5fa781fb1630e01790
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/claims.json
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,12 @@
 +{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
 +  "claims": [
-+    {"claim_id":"claim-a1","evidence_id":"e-a1","status":"confirmed","canonical_claim_text":"Deployment of release 42 began at 09:00Z."},
-+    {"claim_id":"claim-a2","evidence_id":"e-a2","status":"conflicting","canonical_claim_text":"Source A records an error rate above 8 percent at 09:08Z."},
-+    {"claim_id":"claim-a3","evidence_id":"e-a3","status":"conflicting","canonical_claim_text":"Source A reports cache-a as the cache endpoint."},
-+    {"claim_id":"claim-b1","evidence_id":"e-b1","status":"confirmed","canonical_claim_text":"Deployment of release 42 completed at 09:02Z."},
-+    {"claim_id":"claim-b2","evidence_id":"e-b2","status":"conflicting","canonical_claim_text":"Source B reports an error rate below 2 percent."},
-+    {"claim_id":"claim-b3","evidence_id":"e-b3","status":"confirmed","canonical_claim_text":"Rollback of release 42 began at 09:20Z."},
-+    {"claim_id":"claim-c1","evidence_id":"e-c1","status":"confirmed","canonical_claim_text":"Service recovery was confirmed at 09:35Z."},
-+    {"claim_id":"claim-c2","evidence_id":"e-c2","status":"confirmed","canonical_claim_text":"The approval owner for release 42 remains unknown."},
-+    {"claim_id":"claim-c3","evidence_id":"e-c3","status":"conflicting","canonical_claim_text":"Source C reports cache-b as the cache endpoint."}
++    {"claim_id":"CLM-001","section":"확인된 사실","text":"rel-204 배포는 09:04에 시작되어 09:11에 완료되었다.","evidence_ids":["EV-B1"],"event_ids":["EVT-001","EVT-002"],"uncertainty_ids":[]},
++    {"claim_id":"CLM-002","section":"확인된 사실","text":"롤백은 09:31에 시작되어 09:34에 완료되었고 오류율은 09:36에 정상 범위로 돌아왔다.","evidence_ids":["EV-A2","EV-B3","EV-A3"],"event_ids":["EVT-005","EVT-006","EVT-007"],"uncertainty_ids":[]},
++    {"claim_id":"CLM-003","section":"확인된 사실","text":"두 독립된 관찰에서 장애 구간의 데이터베이스 p95 지연 시간이 정상 범위였다고 기록했다.","evidence_ids":["EV-A4","EV-C3"],"event_ids":["EVT-008"],"uncertainty_ids":[]},
++    {"claim_id":"CLM-004","section":"상충","text":"오류 증가 시작 시각은 온콜 로그의 09:16과 원시 지표의 09:14가 상충한다.","evidence_ids":["EV-A1","EV-C1"],"event_ids":["EVT-004"],"uncertainty_ids":["UNC-001"]},
++    {"claim_id":"CLM-005","section":"미확인","text":"rel-204의 인증 재시도 변경이 근본 원인인지는 확인되지 않았다.","evidence_ids":["EV-B1","EV-B2","EV-A2","EV-A3","EV-A5","EV-C4"],"event_ids":["EVT-001","EVT-002","EVT-005","EVT-007"],"uncertainty_ids":["UNC-002"]},
++    {"claim_id":"CLM-006","section":"미확인","text":"인증 업스트림 지연과 오류 증가의 인과관계는 확인되지 않았다.","evidence_ids":["EV-C2","EV-C4"],"event_ids":["EVT-003"],"uncertainty_ids":["UNC-003"]}
 +  ]
 +}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..48aa52ae1a97fba350020d512e294c4206bfc066
+index 0000000000000000000000000000000000000000..d462470fb73f366dfeefe13f143f602a3e4b1ac8
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/report/final-report.md
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,22 @@
++# INC-2025-02-14-CHECKOUT
++
 +## 확인된 사실
-+- [claim-a1] Deployment of release 42 began at 09:00Z.
-+- [claim-b1] Deployment of release 42 completed at 09:02Z.
-+- [claim-b3] Rollback of release 42 began at 09:20Z.
-+- [claim-c1] Service recovery was confirmed at 09:35Z.
-+- [claim-c2] The approval owner for release 42 remains unknown.
++
++- [CLM-001] rel-204 배포는 09:04에 시작되어 09:11에 완료되었다.
++- [CLM-002] 롤백은 09:31에 시작되어 09:34에 완료되었고 오류율은 09:36에 정상 범위로 돌아왔다.
++- [CLM-003] 두 독립된 관찰에서 장애 구간의 데이터베이스 p95 지연 시간이 정상 범위였다고 기록했다.
++
 +## 상충
-+- [claim-a2] Source A records an error rate above 8 percent at 09:08Z.
-+- [claim-a3] Source A reports cache-a as the cache endpoint.
-+- [claim-b2] Source B reports an error rate below 2 percent.
-+- [claim-c3] Source C reports cache-b as the cache endpoint.
++
++- [CLM-004] 오류 증가 시작 시각은 온콜 로그의 09:16과 원시 지표의 09:14가 상충한다.
++
 +## 미확인
-+- [u-approval] Identify and verify the release approval owner.
++
++- [CLM-005] rel-204의 인증 재시도 변경이 근본 원인인지는 확인되지 않았다.
++- [CLM-006] 인증 업스트림 지연과 오류 증가의 인과관계는 확인되지 않았다.
++
 +## 권고
-+- [action-approval] verify: e-c2,u-approval
-+- [action-cache] verify: e-a3,e-c3
-+- [action-error] verify: e-a2,e-b2
-+- [action-recovery] mitigate: e-b3,e-c1
++
++- [ACT-001] 원시 오류 지표와 온콜 로그의 시계 및 집계 구간을 대조해 시작 시각을 확정한다.
++- [ACT-002] rel-204의 인증 재시도 변경을 재현 환경에서 단독으로 부하 시험한다.
++- [ACT-003] 결제 요청과 인증 업스트림 호출을 잇는 상관관계 ID와 지연 시간 계측을 추가한다.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..e93a82a8880dbc0ca98f1b1ac1458f0bba304298
+index 0000000000000000000000000000000000000000..512d8a7eba611e9a601ee7fa5343b7f4abe05b9d
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-a.md
-@@ -0,0 +1,3 @@
-+2099-08-01T09:00Z deployment release 42 began.
-+2099-08-01T09:08Z error rate crossed 8 percent.
-+Operator note: cache endpoint was cache-a.
+@@ -0,0 +1,9 @@
++# On-call log
++
++Source ID: `SRC-A`
++
++- [EV-A1] 결제 API 오류 증가는 2025-02-14T09:16:00Z에 처음 관찰되었다.
++- [EV-A2] 릴리스 rel-204를 2025-02-14T09:31:00Z에 롤백하기 시작했다.
++- [EV-A3] 롤백 뒤 오류율은 2025-02-14T09:36:00Z에 정상 범위로 돌아왔다.
++- [EV-A4] 장애 구간에도 데이터베이스 p95 지연 시간은 정상 범위였다.
++- [EV-A5] rel-204가 장애 원인일 가능성이 있지만 로그만으로는 인과관계를 확인할 수 없다.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..9f37bf0a8d1ac124bdf2c0fe0b84373ba5a78617
+index 0000000000000000000000000000000000000000..87c52e4a798070903729b2549e93159b96cac5ea
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-b.md
-@@ -0,0 +1,3 @@
-+2099-08-01T09:02Z deployment release 42 completed.
-+Dashboard note: error rate stayed below 2 percent.
-+2099-08-01T09:20Z rollback release 42 began.
+@@ -0,0 +1,7 @@
++# Deployment record
++
++Source ID: `SRC-B`
++
++- [EV-B1] 릴리스 rel-204 배포는 2025-02-14T09:04:00Z에 시작되어 09:11:00Z에 완료되었다.
++- [EV-B2] rel-204의 변경 사항은 결제 API의 인증 클라이언트 재시도 정책을 수정했다.
++- [EV-B3] 롤백은 2025-02-14T09:34:00Z에 완료되었다.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..aadaffe0780ab8d5cdbf7c700be23e71fb63f14d
+index 0000000000000000000000000000000000000000..5e36facc1c59081303a7e15ccfada4e662dd072b
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/sources/source-c.md
-@@ -0,0 +1,3 @@
-+2099-08-01T09:35Z service recovery was confirmed.
-+Approval owner for release 42 is unknown.
-+Operator note: cache endpoint was cache-b.
+@@ -0,0 +1,8 @@
++# Metrics review
++
++Source ID: `SRC-C`
++
++- [EV-C1] 원시 지표에서 결제 API 오류 증가는 2025-02-14T09:14:00Z에 시작되었다.
++- [EV-C2] 인증 업스트림 p95 지연 시간은 2025-02-14T09:13:00Z부터 09:35:00Z까지 함께 증가했다.
++- [EV-C3] 데이터베이스 p95 지연 시간은 같은 구간에 기준 범위 안에 있었다.
++- [EV-C4] 지표의 시간적 상관관계만으로 rel-204 또는 인증 업스트림을 근본 원인으로 확정할 수 없다.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..5d6fe2823c2437ac4731a3ab1143dfabb3fee5c4
+index 0000000000000000000000000000000000000000..e6e2539e0f82245b6474cf675ea625428326d8ca
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/spec/report-contract.md
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,46 @@
 +# Public incident report contract
 +
-+All JSON documents are objects with one top-level array named after their record
-+type. Records must use exactly the fields below. Every ID is a non-empty ASCII
-+string, and every ID array is sorted lexicographically.
++## Identity and provenance
 +
-+- `analysis/evidence-ledger.json`: `evidence_id`, `source_id`, `locator`,
-+  `exact_excerpt`, `topic_id`, `observation_status`, `canonical_claim_text`.
-+  `locator` has integer `line_start` and `line_end`. Status is one of
-+  `observed`, `reported`, or `derived`.
-+- `analysis/uncertainties.json`: `uncertainty_id`, `evidence_ids`, `source_ids`,
-+  `next_action`.
-+- `timeline/events.json`: `event_id`, `status`, `evidence_ids`,
-+  `uncertainty_ids`. Status is `confirmed`, `conflicting`, or `uncertain`.
-+- `timeline/hypotheses.json`: `hypothesis_id`, `status`, `evidence_ids`,
-+  `uncertainty_ids`. Status is exactly `candidate`.
-+- `report/claims.json`: `claim_id`, `evidence_id`, `status`,
-+  `canonical_claim_text`. Status is `confirmed` or `conflicting`.
-+- `report/action-plan.json`: `action_id`, `action_type`, `reference_ids`.
-+  Action type is `verify` or `mitigate`.
++All artifacts use `schema_version` 1 and incident ID
++`INC-2025-02-14-CHECKOUT`. Source IDs, evidence IDs, uncertainty IDs, event
++IDs, hypothesis IDs, claim IDs, and action IDs are stable public identities.
++Every evidence item names one source path and one bracketed marker that occurs
++exactly once in that source. Its statement must reproduce the source text
++following the marker exactly. Derived artifacts may refer only to declared
++IDs; references are non-empty, unique, and preserve provenance transitively.
 +
-+The final report contains exactly these headings in this order: `확인된 사실`,
-+`상충`, `미확인`, `권고`. There is no prose outside the sections.
++The topic catalog declares whether a topic is `fact`, `conflict`, or
++`uncertainty`. A conflict retains at least two disagreeing evidence items from
++different sources. An uncertainty remains open and retains all evidence IDs
++that motivate it. Conflicts and open questions must never be silently promoted
++to confirmed facts.
 +
-+- confirmed/conflicting: `- [<claim_id>] <canonical_claim_text>`
-+- uncertainty: `- [<uncertainty_id>] <next_action>`
-+- action: `- [<action_id>] <verify|mitigate>: <comma-separated-reference_ids>`
++## Evidence and timeline
 +
-+The public catalog is the complete topic universe. A conflicting topic must
-+retain the declared number of distinct sources through the ledger, timeline, and
-+claim index. The post-hoc checker validates relationships and source locators; it
-+does not compare the output to a hidden answer string.
++`analysis/evidence-ledger.json` contains `evidence`; each item has `evidence_id`,
++`topic_id`, `source_id`, `source_path`, `source_marker`, `statement`, and
++`recorded_at`. `analysis/uncertainties.json` contains open questions with
++`uncertainty_id`, `topic_id`, `question`, `reason`, `status`, and
++`evidence_ids`.
++
++`timeline/events.json` contains chronological `events`. Each has `event_id`,
++`occurred_at`, `summary`, `status`, and `evidence_ids`; disputed events also
++name `uncertainty_ids`. `timeline/hypotheses.json` contains hypotheses with a
++non-confirmed `status`, distinct supporting and conflicting evidence lists,
++and the open uncertainty IDs that prevent a causal conclusion.
++
++## Report
++
++`report/claims.json` stores claims for the first three report sections. Each
++claim has `claim_id`, `section`, `text`, `evidence_ids`, `event_ids`, and
++`uncertainty_ids`. Confirmed-fact claims have no uncertainty references;
++conflict and unconfirmed claims have at least one. `report/action-plan.json`
++stores ordered actions with `action_id`, `priority`, `text`, `claim_ids`, and
++`uncertainty_ids`.
++
++`report/final-report.md` is a deterministic projection, not an independent
++narrative. It starts with `# INC-2025-02-14-CHECKOUT`, then contains exactly
++the four level-two sections `확인된 사실`, `상충`, `미확인`, and `권고` in that
++order. Claims appear in stored order as `- [CLAIM_ID] TEXT`; actions appear in
++priority order as `- [ACTION_ID] TEXT`. No other prose is permitted.
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..b9c75979e51c47e08a9946bf16544037cf800194
+index 0000000000000000000000000000000000000000..b144ce967398085da00cf1afca744c7827caf39a
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/events.json
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,14 @@
 +{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
 +  "events": [
-+    {"event_id":"event-cache-conflict","status":"conflicting","evidence_ids":["e-a3","e-c3"],"uncertainty_ids":[]},
-+    {"event_id":"event-deployment","status":"confirmed","evidence_ids":["e-a1","e-b1"],"uncertainty_ids":[]},
-+    {"event_id":"event-error-conflict","status":"conflicting","evidence_ids":["e-a2","e-b2"],"uncertainty_ids":[]},
-+    {"event_id":"event-owner","status":"uncertain","evidence_ids":["e-c2"],"uncertainty_ids":["u-approval"]},
-+    {"event_id":"event-recovery","status":"confirmed","evidence_ids":["e-c1"],"uncertainty_ids":[]},
-+    {"event_id":"event-rollback","status":"confirmed","evidence_ids":["e-b3"],"uncertainty_ids":[]}
++    {"event_id":"EVT-001","occurred_at":"2025-02-14T09:04:00Z","summary":"릴리스 rel-204 배포가 시작되었다.","status":"confirmed","evidence_ids":["EV-B1"],"uncertainty_ids":[]},
++    {"event_id":"EVT-002","occurred_at":"2025-02-14T09:11:00Z","summary":"릴리스 rel-204 배포가 완료되었다.","status":"confirmed","evidence_ids":["EV-B1"],"uncertainty_ids":[]},
++    {"event_id":"EVT-003","occurred_at":"2025-02-14T09:13:00Z","summary":"인증 업스트림 p95 지연 시간이 증가하기 시작했다.","status":"confirmed","evidence_ids":["EV-C2"],"uncertainty_ids":[]},
++    {"event_id":"EVT-004","occurred_at":"2025-02-14T09:14:00Z","summary":"결제 API 오류 증가의 시작 시각은 09:14 또는 09:16으로 보고되었다.","status":"disputed","evidence_ids":["EV-A1","EV-C1"],"uncertainty_ids":["UNC-001"]},
++    {"event_id":"EVT-005","occurred_at":"2025-02-14T09:31:00Z","summary":"릴리스 rel-204 롤백이 시작되었다.","status":"confirmed","evidence_ids":["EV-A2"],"uncertainty_ids":[]},
++    {"event_id":"EVT-006","occurred_at":"2025-02-14T09:34:00Z","summary":"릴리스 rel-204 롤백이 완료되었다.","status":"confirmed","evidence_ids":["EV-B3"],"uncertainty_ids":[]},
++    {"event_id":"EVT-008","occurred_at":"2025-02-14T09:35:00Z","summary":"두 출처가 장애 구간의 데이터베이스 p95 지연 시간을 정상 범위로 기록했다.","status":"confirmed","evidence_ids":["EV-A4","EV-C3"],"uncertainty_ids":[]},
++    {"event_id":"EVT-007","occurred_at":"2025-02-14T09:36:00Z","summary":"결제 API 오류율이 정상 범위로 돌아왔다.","status":"confirmed","evidence_ids":["EV-A3"],"uncertainty_ids":[]}
 +  ]
 +}
 diff --git a/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..8a5444b39ac5369b4f9d421763b81f5042926776
+index 0000000000000000000000000000000000000000..d956e403dbbc00c7800333a7b8d5572aaa754f68
 --- /dev/null
 +++ b/benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis/timeline/hypotheses.json
-@@ -0,0 +1 @@
-+{"hypotheses":[{"hypothesis_id":"hypothesis-cache-link","status":"candidate","evidence_ids":["e-a2","e-a3","e-b2","e-c3"],"uncertainty_ids":[]}]}
+@@ -0,0 +1,8 @@
++{
++  "schema_version": 1,
++  "incident_id": "INC-2025-02-14-CHECKOUT",
++  "hypotheses": [
++    {"hypothesis_id":"HYP-001","statement":"rel-204의 인증 재시도 변경이 결제 API 오류 증가를 유발했다.","status":"unconfirmed","supporting_evidence_ids":["EV-B1","EV-B2","EV-A2","EV-A3","EV-A5"],"conflicting_evidence_ids":["EV-C2","EV-C4"],"uncertainty_ids":["UNC-002","UNC-003"]},
++    {"hypothesis_id":"HYP-002","statement":"인증 업스트림 지연이 결제 API 오류 증가를 유발했다.","status":"unconfirmed","supporting_evidence_ids":["EV-C2"],"conflicting_evidence_ids":["EV-A5","EV-C4"],"uncertainty_ids":["UNC-002","UNC-003"]}
++  ]
++}
 diff --git a/benchmarks/manifests/sdk-routing-s2-intermediate.yaml b/benchmarks/manifests/sdk-routing-s2-intermediate.yaml
 new file mode 100644
-index 0000000000000000000000000000000000000000..b2ece1a34f15ab6904727c090065120e58e92f07
+index 0000000000000000000000000000000000000000..46e22c4b7b07d01d74dadd823fb51a80045c8ca0
 --- /dev/null
 +++ b/benchmarks/manifests/sdk-routing-s2-intermediate.yaml
 @@ -0,0 +1,47 @@
@@ -1071,13 +1805,13 @@ index 0000000000000000000000000000000000000000..b2ece1a34f15ab6904727c090065120e
 +fixtures:
 +- id: three-stage-config-migration
 +  path: benchmarks/fixtures/routing-v1/intermediate/three-stage-config-migration
-+  commit: 2d464ebfddded84d09703c40ed8bd3ba6c1ef217
-+  git_tree: b8e21f85886b027ec5124173d0bc1e02c8459a37
++  commit: b4f9c4a39d01d8758bdd9606c9141af32225db22
++  git_tree: 339a7505800240a83beecd2bcc121c906c97c72b
 +  success_check: integration_smoke
 +- id: three-stage-incident-analysis
 +  path: benchmarks/fixtures/routing-v1/intermediate/three-stage-incident-analysis
-+  commit: 2d464ebfddded84d09703c40ed8bd3ba6c1ef217
-+  git_tree: b256b7044aec964af41553121e8e83a7daf1f431
++  commit: b4f9c4a39d01d8758bdd9606c9141af32225db22
++  git_tree: e96eb59881b4aa9af913ffacc7f1f5ff688c0959
 +  success_check: report_structure
 +variants:
 +- c2
@@ -4307,10 +5041,10 @@ index adcfd1811ca1e3f865dddbe0e5b0566638805b0d..f9afb3ede74fb4dbd13ae27cdc665688
 +    )
 diff --git a/tools/benchmark-runner/src/benchmark_runner/s2_policy.py b/tools/benchmark-runner/src/benchmark_runner/s2_policy.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7f9f6274b
+index 0000000000000000000000000000000000000000..5b434163bf441a3dc46ced4d630ead829b9366ce
 --- /dev/null
 +++ b/tools/benchmark-runner/src/benchmark_runner/s2_policy.py
-@@ -0,0 +1,561 @@
+@@ -0,0 +1,1022 @@
 +"""Deterministic SDK routing S2 reserve and profile-policy derivation."""
 +
 +from __future__ import annotations
@@ -4342,6 +5076,42 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +        "b1": "cell_s2_b_2_b1",
 +    },
 +}
++S3_POLICY_VERSION = "sdk-routing-s3-policy-v1"
++S3_INITIAL_CELL_IDS = {
++    "four-stage-compatibility-refactor": {
++        "c2": "cell_s3_a_1_c2",
++        "b1": "cell_s3_a_1_b1",
++    },
++    "four-stage-conflicting-incident-report": {
++        "c2": "cell_s3_b_1_c2",
++        "b1": "cell_s3_b_1_b1",
++    },
++}
++S3_REVERSE_CELL_IDS = {
++    "four-stage-compatibility-refactor": {
++        "c2": "cell_s3_a_2_c2",
++        "b1": "cell_s3_a_2_b1",
++    },
++    "four-stage-conflicting-incident-report": {
++        "c2": "cell_s3_b_2_c2",
++        "b1": "cell_s3_b_2_b1",
++    },
++}
++S3_TASK_CHECKS = {
++    "four-stage-compatibility-refactor": {
++        "A1": ("schema_contract", frozenset({"HCR-P1"})),
++        "A2": ("migration_contract", frozenset({"HCR-P2", "HCR-P5a"})),
++        "A3": ("integration_contract", frozenset({"HCR-P3", "HCR-P5b"})),
++        "A4": ("backward_compatibility", frozenset({"HCR-P4", "HCR-P5b"})),
++    },
++    "four-stage-conflicting-incident-report": {
++        "I1": ("evidence_contract", frozenset({"HCI-P1", "HCI-P2"})),
++        "I2": ("conflict_contract", frozenset({"HCI-P2", "HCI-P3"})),
++        "I3": ("alternative_contract", frozenset({"HCI-P3", "HCI-P4"})),
++        "I4": ("report_contract", frozenset({"HCI-P4", "HCI-P5", "HCI-P6"})),
++    },
++}
++_S3_SAFETY_PROPERTIES = frozenset({"HCR-P6"})
 +_INFRASTRUCTURE_FAILURES = {
 +    "infrastructure_error",
 +    "transient_runtime",
@@ -4370,14 +5140,22 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +) -> int:
 +    """Return the independent reserve after prior sealed B1 retry/resume use."""
 +
++    reserve_turns = _nonnegative_int(reserve_turns, "reserve_turns")
 +    consumed = 0
 +    for measurement in sealed_measurements:
-+        if measurement.identity.variant_id != "b1":
-+            continue
 +        values = measurement.variant_metrics.values
++        if measurement.identity.variant_id != "b1":
++            for field in ("b1_retry_count", "b1_resume_count"):
++                if field in values and _nonnegative_int(values[field], field) != 0:
++                    raise S2PolicyError(
++                        "non-B1 Measurements cannot consume the B1 reserve"
++                    )
++            continue
 +        consumed += _nonnegative_int(values.get("b1_retry_count", 0), "b1_retry_count")
 +        consumed += _nonnegative_int(values.get("b1_resume_count", 0), "b1_resume_count")
-+    return max(0, reserve_turns - consumed)
++        if consumed > reserve_turns:
++            raise S2PolicyError("B1 retry/resume history exceeds the supplied reserve")
++    return reserve_turns - consumed
 +
 +
 +def s2_b1_turn_cap(
@@ -4387,8 +5165,54 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +    project_policy_turn_cap: int = 8,
 +    reserve_turns: int = 3,
 +) -> int:
++    task_count = _nonnegative_int(task_count, "task_count")
++    project_policy_turn_cap = _nonnegative_int(
++        project_policy_turn_cap, "project_policy_turn_cap"
++    )
++    reserve_turns = _nonnegative_int(reserve_turns, "reserve_turns")
++    if task_count < 1 or project_policy_turn_cap < task_count:
++        raise S2PolicyError("S2 turn cap inputs cannot represent one Task sequence")
 +    remaining = remaining_b1_retry_resume_reserve(
 +        sealed_measurements,
++        reserve_turns=reserve_turns,
++    )
++    return min(project_policy_turn_cap, task_count + remaining)
++
++
++def remaining_s3_b1_retry_resume_reserve(
++    sealed_measurements: Sequence[Measurement],
++    *,
++    fixture_id: str,
++    reserve_turns: int = 2,
++) -> int:
++    """Return one S3 profile's reserve without borrowing from another profile."""
++
++    if fixture_id not in S3_INITIAL_CELL_IDS:
++        raise S2PolicyError(f"unsupported S3 fixture: {fixture_id}")
++    consumed = 0
++    for measurement in sealed_measurements:
++        if (
++            measurement.identity.variant_id != "b1"
++            or measurement.identity.fixture_id != fixture_id
++        ):
++            continue
++        values = measurement.variant_metrics.values
++        consumed += _nonnegative_int(values.get("b1_retry_count", 0), "b1_retry_count")
++        consumed += _nonnegative_int(values.get("b1_resume_count", 0), "b1_resume_count")
++    return max(0, reserve_turns - consumed)
++
++
++def s3_b1_turn_cap(
++    sealed_measurements: Sequence[Measurement],
++    *,
++    fixture_id: str,
++    task_count: int = 4,
++    project_policy_turn_cap: int = 6,
++    reserve_turns: int = 2,
++) -> int:
++    remaining = remaining_s3_b1_retry_resume_reserve(
++        sealed_measurements,
++        fixture_id=fixture_id,
 +        reserve_turns=reserve_turns,
 +    )
 +    return min(project_policy_turn_cap, task_count + remaining)
@@ -4420,6 +5244,11 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +    measurement: Measurement,
 +    sealed_cell_ids: set[str],
 +    posthoc_results: Mapping[str, Mapping[str, object]],
++    task_count: int = 3,
++    b1_maximum_turns: int = 6,
++    c2_model_active_limit: int = 2_700,
++    b1_model_active_ceiling: int = 3_300,
++    wall_clock_limit: int = 3_300,
 +) -> tuple[bool, str | None, frozenset[str]]:
 +    identity = measurement.identity
 +    binding = planned_cells.get(identity.cell_id)
@@ -4484,11 +5313,14 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +    turn_count = _metric_number(measurement.resource.turn_count)
 +    model_active = values.get("model_active_seconds")
 +    wall = _metric_number(measurement.effort.total_wall_clock_seconds)
-+    maximum_turns = 3 if identity.variant_id == "c2" else 6
++    maximum_turns = task_count if identity.variant_id == "c2" else b1_maximum_turns
 +    maximum_model_active = (
-+        2_700
++        c2_model_active_limit
 +        if identity.variant_id == "c2"
-+        else min(2_700 + 900 * max(0, actual_turns - 3), 3_300)
++        else min(
++            c2_model_active_limit + 900 * max(0, actual_turns - task_count),
++            b1_model_active_ceiling,
++        )
 +        if isinstance(actual_turns, int) and not isinstance(actual_turns, bool)
 +        else -1
 +    )
@@ -4501,7 +5333,7 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +        or isinstance(model_active, bool)
 +        or not 0 <= float(model_active) <= maximum_model_active
 +        or wall is None
-+        or not 0 <= wall <= 3300
++        or not 0 <= wall <= wall_clock_limit
 +    ):
 +        return False, "resource_limit", failed_properties
 +    if measurement.resource.token_usage.status not in {
@@ -4516,7 +5348,7 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +        or values.get("protected_files_ok") is not True
 +    ):
 +        return False, "integrity", failed_properties
-+    if identity.variant_id == "b1" and actual_turns > 3 + _nonnegative_int(
++    if identity.variant_id == "b1" and actual_turns > task_count + _nonnegative_int(
 +        values.get("b1_retry_count", 0), "b1_retry_count"
 +    ) + _nonnegative_int(values.get("b1_resume_count", 0), "b1_resume_count"):
 +        return False, "b1_turn_attribution", failed_properties
@@ -4872,12 +5704,375 @@ index 0000000000000000000000000000000000000000..89527298393950ea08f4e0957d632ef7
 +        },
 +        "global_b1_default_issued": False,
 +    }
++
++
++def _s3_b1_control_effect(
++    measurement: Measurement,
++    *,
++    policy_input_valid: bool,
++) -> dict[str, object]:
++    values = measurement.variant_metrics.values
++    fixture_id = measurement.identity.fixture_id
++    task_checks = S3_TASK_CHECKS[fixture_id]
++    first = values.get("first_attempt_outcome")
++    failed_task_keys = sorted(
++        item["task_key"]
++        for item in first
++        if isinstance(item, dict)
++        and item.get("failure_kind") == "check_failed"
++        and item.get("task_key") in task_checks
++    ) if isinstance(first, list) else []
++    check_ids = sorted({task_checks[key][0] for key in failed_task_keys})
++    mapped_properties = sorted(
++        set().union(*(task_checks[key][1] for key in failed_task_keys))
++        if failed_task_keys
++        else set()
++    )
++    evidence = {item.path: item.sha256 for item in measurement.evidence}
++    raw_sha256 = evidence.get("raw/adapter-result.json")
++    judge_sha256 = evidence.get("judge/result.json")
++    extra_turns = _nonnegative_int(
++        values.get("b1_retry_count", 0), "b1_retry_count"
++    ) + _nonnegative_int(values.get("b1_resume_count", 0), "b1_resume_count")
++    b1_success = _profile_success(measurement, policy_input_valid)
++    effect = bool(
++        policy_input_valid
++        and b1_success
++        and failed_task_keys
++        and values.get("b1_intermediate_check_changed_result") is True
++        and values.get("b1_intermediate_check_changed_dispatch") is True
++        and extra_turns > 0
++        and values.get("dual_outcome_status") == "reported"
++        and isinstance(values.get("full_orchestrated_outcome"), dict)
++        and isinstance(raw_sha256, str)
++        and isinstance(judge_sha256, str)
++    )
++    return {
++        "b1_control_effect": effect,
++        "failed_task_keys": failed_task_keys,
++        "check_ids": check_ids,
++        "mapped_property_ids": mapped_properties,
++        "retry_resume_reserve_turns_used": extra_turns,
++        "first_attempt_evidence_sha256": raw_sha256,
++        "full_outcome_evidence_sha256": judge_sha256,
++    }
++
++
++def _s3_quality_signatures(
++    measurement: Measurement,
++    failed_properties: frozenset[str],
++) -> frozenset[str]:
++    """Return only Check/property pairs with an observed failed B1 Task Check."""
++
++    values = measurement.variant_metrics.values
++    first = values.get("first_attempt_outcome")
++    if not isinstance(first, list):
++        return frozenset()
++    task_checks = S3_TASK_CHECKS[measurement.identity.fixture_id]
++    signatures: set[str] = set()
++    for item in first:
++        if not isinstance(item, dict) or item.get("failure_kind") != "check_failed":
++            continue
++        contract = task_checks.get(item.get("task_key"))
++        if contract is None:
++            continue
++        check_id, mapped = contract
++        for property_id in failed_properties & mapped:
++            if property_id not in _S3_SAFETY_PROPERTIES:
++                signatures.add(f"{check_id}:{property_id}")
++    return frozenset(signatures)
++
++
++def derive_s3_routing_policy(
++    *,
++    plan: ExecutionPlan,
++    measurements: Sequence[Measurement],
++    sealed_cell_ids: set[str],
++    posthoc_results: Mapping[str, Mapping[str, object]],
++    additional_plans: Sequence[ExecutionPlan] = (),
++) -> dict[str, Any]:
++    """Derive frozen S3 initial/reverse policy without score or timing heuristics."""
++
++    if plan.decision_policy.get("stage_id") != "s3-complex-high-risk":
++        raise S2PolicyError("routing policy requires an S3 Plan")
++    plans = (plan, *additional_plans)
++    if any(
++        item.decision_policy.get("stage_id") != "s3-complex-high-risk"
++        for item in plans
++    ):
++        raise S2PolicyError("all routing policy Plans must be S3 Plans")
++    planned_cells = {
++        cell.cell_id: (item, cell)
++        for item in plans
++        for cell in item.cells
++    }
++    if sum(len(item.cells) for item in plans) != len(planned_cells):
++        raise S2PolicyError("duplicate Cell ID across S3 Plans")
++    by_cell = {item.identity.cell_id: item for item in measurements}
++    if len(by_cell) != len(measurements):
++        raise S2PolicyError("duplicate S3 Measurement Cell ID")
++
++    profile_results: dict[str, dict[str, object]] = {}
++    all_initial_terminal = True
++    all_reverse_terminal = True
++    any_reverse = False
++    any_not_ready = False
++    any_replication = False
++    any_route = False
++
++    for fixture_id, initial_ids in S3_INITIAL_CELL_IDS.items():
++        reverse_ids = S3_REVERSE_CELL_IDS[fixture_id]
++        initial = {variant: by_cell.get(cell_id) for variant, cell_id in initial_ids.items()}
++        reverse = {variant: by_cell.get(cell_id) for variant, cell_id in reverse_ids.items()}
++        initial_complete = all(item is not None for item in initial.values())
++        reverse_present = any(item is not None for item in reverse.values())
++        reverse_complete = all(item is not None for item in reverse.values())
++        all_initial_terminal = all_initial_terminal and initial_complete
++        any_reverse = any_reverse or reverse_present
++        all_reverse_terminal = all_reverse_terminal and (
++            not reverse_present or reverse_complete
++        )
++
++        success: dict[str, bool] = {}
++        failed: dict[str, frozenset[str]] = {}
++        controls: dict[str, dict[str, object]] = {}
++        signatures: dict[str, frozenset[str]] = {}
++        summaries: dict[str, dict[str, object]] = {}
++        not_ready = False
++
++        for order, cells in (("initial", initial), ("reverse", reverse)):
++            for variant, measurement in cells.items():
++                if measurement is None:
++                    continue
++                input_valid, reason, failed_properties = _cell_validity(
++                    planned_cells=planned_cells,
++                    measurement=measurement,
++                    sealed_cell_ids=sealed_cell_ids,
++                    posthoc_results=posthoc_results,
++                    task_count=4,
++                    b1_maximum_turns=6,
++                    c2_model_active_limit=3_600,
++                    b1_model_active_ceiling=5_400,
++                    wall_clock_limit=5_700,
++                )
++                if input_valid and failed_properties & _S3_SAFETY_PROPERTIES:
++                    input_valid = False
++                    reason = "safety_property"
++                if (
++                    input_valid
++                    and variant == "b1"
++                    and not b1_dual_outcome_contract_valid(measurement)
++                ):
++                    input_valid = False
++                    reason = "b1_dual_outcome_contract"
++                key = f"{order}_{variant}"
++                success[key] = _profile_success(measurement, input_valid)
++                failed[key] = failed_properties - _S3_SAFETY_PROPERTIES
++                control = (
++                    _s3_b1_control_effect(
++                        measurement,
++                        policy_input_valid=input_valid,
++                    )
++                    if variant == "b1"
++                    else {
++                        "b1_control_effect": False,
++                        "failed_task_keys": [],
++                        "check_ids": [],
++                        "mapped_property_ids": [],
++                        "retry_resume_reserve_turns_used": 0,
++                        "first_attempt_evidence_sha256": None,
++                        "full_outcome_evidence_sha256": None,
++                    }
++                )
++                controls[key] = control
++                signatures[key] = (
++                    _s3_quality_signatures(measurement, failed[key])
++                    if variant == "b1"
++                    else frozenset()
++                )
++                not_ready = not_ready or not input_valid
++                values = measurement.variant_metrics.values
++                summaries[key] = {
++                    "cell_id": measurement.identity.cell_id,
++                    "order": order,
++                    "variant_id": variant,
++                    "sealed": measurement.identity.cell_id in sealed_cell_ids,
++                    "measurement_ref": f"cells/{measurement.identity.cell_id}/measurement.json",
++                    "seal_ref": f"cells/{measurement.identity.cell_id}/seal.json",
++                    "policy_input_valid": input_valid,
++                    "invalid_reason": reason,
++                    "profile_success": success[key],
++                    "judge": {
++                        "outcome_state": measurement.outcome.state,
++                        "failure_kind": measurement.outcome.failure_kind,
++                        "check_success": measurement.outcome.check_success,
++                    },
++                    "property": {
++                        "status": values.get("property_status"),
++                        "checker_sha256": values.get("checker_sha256"),
++                        "failed_property_ids": sorted(failed[key]),
++                    },
++                    "resource": {
++                        "actual_model_turns": values.get("actual_model_turns"),
++                        "turn_count": _metric_summary(measurement.resource.turn_count),
++                        "token_usage": _metric_summary(measurement.resource.token_usage),
++                        "model_active_seconds": values.get("model_active_seconds"),
++                        "total_wall_clock_seconds": _metric_summary(
++                            measurement.effort.total_wall_clock_seconds
++                        ),
++                    },
++                    "quality_signatures": sorted(signatures[key]),
++                    "b1_control": control if variant == "b1" else None,
++                }
++
++        state = "ROUTING_INCONCLUSIVE"
++        route_issued = False
++        replication_required = False
++        attributable: dict[str, bool] = {}
++        for order in ("initial", "reverse"):
++            control = controls.get(f"{order}_b1", {})
++            c2_failed = failed.get(f"{order}_c2", frozenset())
++            attributable[order] = bool(
++                control.get("b1_control_effect") is True
++                and c2_failed
++                & frozenset(control.get("mapped_property_ids", []))
++            )
++
++        initial_b1_quality_failure = bool(
++            initial_complete
++            and success.get("initial_c2")
++            and not success.get("initial_b1")
++            and failed.get("initial_b1")
++        )
++        repeatable_signatures = signatures.get(
++            "initial_b1", frozenset()
++        ) & signatures.get("reverse_b1", frozenset())
++
++        if not initial_complete:
++            state = "NOT_READY"
++        elif not_ready:
++            state = "NOT_READY"
++        elif not reverse_present:
++            if success.get("initial_c2") and success.get("initial_b1"):
++                state = (
++                    "B1_CONTROL_OBSERVED_NO_ROUTE"
++                    if controls.get("initial_b1", {}).get("b1_control_effect") is True
++                    else "C2_SUFFICIENT_OBSERVED_SINGLE_PAIR"
++                )
++            elif success.get("initial_b1") and attributable.get("initial"):
++                state = "S3_REPLICATION_REQUIRED"
++                replication_required = True
++            elif initial_b1_quality_failure:
++                state = "S3_REPLICATION_REQUIRED"
++                replication_required = True
++        elif not reverse_complete:
++            state = "NOT_READY"
++        else:
++            c2_both_success = success.get("initial_c2") and success.get("reverse_c2")
++            b1_both_success = success.get("initial_b1") and success.get("reverse_b1")
++            c2_same_failure = (
++                bool(failed.get("initial_c2"))
++                and failed.get("initial_c2") == failed.get("reverse_c2")
++            )
++            if (
++                b1_both_success
++                and c2_same_failure
++                and attributable.get("initial")
++                and attributable.get("reverse")
++            ):
++                state = "RETAIN_B1_HIGH_RISK"
++                route_issued = True
++            elif (
++                c2_both_success
++                and not success.get("initial_b1")
++                and not success.get("reverse_b1")
++                and bool(repeatable_signatures)
++            ):
++                state = "REJECT_B1_PROFILE"
++                route_issued = True
++
++        any_not_ready = any_not_ready or state == "NOT_READY"
++        any_replication = any_replication or replication_required
++        any_route = any_route or route_issued
++        profile_results[fixture_id] = {
++            "state": state,
++            "route_issued": route_issued,
++            "replication_required": replication_required,
++            "reverse_executed": reverse_present,
++            "single_order_b1_quality_failure": initial_b1_quality_failure,
++            "repeatable_quality_regression": bool(repeatable_signatures),
++            "repeatable_quality_signatures": sorted(repeatable_signatures),
++            "attributable_control_effect": attributable,
++            "cells": summaries,
++            "complexity": plan.decision_policy.get("profiles", {}).get(fixture_id),
++            "residual_uncertainty": (
++                "S3 uses one initial synthetic pair and, only after a frozen predicate, "
++                "one reverse pair; absence of a route is not a general B1 ranking."
++            ),
++        }
++
++    if any_not_ready:
++        stage_state = "S3_STOP" if all_initial_terminal else "S3_INCOMPLETE"
++    elif not all_initial_terminal:
++        stage_state = "S3_INCOMPLETE"
++    elif any_reverse and not all_reverse_terminal:
++        stage_state = "S3_INCOMPLETE"
++    elif any_replication:
++        stage_state = "S3_REPLICATION_REQUIRED"
++    elif any_route:
++        stage_state = "S3_POLICY_READY"
++    elif all(
++        value["state"]
++        in {
++            "C2_SUFFICIENT_OBSERVED_SINGLE_PAIR",
++            "B1_CONTROL_OBSERVED_NO_ROUTE",
++        }
++        for value in profile_results.values()
++    ):
++        stage_state = "S3_OBSERVATION_READY"
++    else:
++        stage_state = "S3_INCONCLUSIVE"
++
++    return {
++        "schema_version": 1,
++        "kind": "sdk_routing_policy_v1",
++        "decision_function_version": S3_POLICY_VERSION,
++        "suite_id": plan.decision_policy.get("suite_id"),
++        "stage_id": "s3-complex-high-risk",
++        "plan_fingerprint": plan.plan_fingerprint,
++        "plan_fingerprints": [item.plan_fingerprint for item in plans],
++        "experiment_id": plan.experiment_id,
++        "source_identity": [
++            {
++                "plan_fingerprint": item.plan_fingerprint,
++                "source_manifest": item.source_manifest.model_dump(mode="json"),
++                "fixtures": [fixture.model_dump(mode="json") for fixture in item.fixtures],
++            }
++            for item in plans
++        ],
++        "runner_identity": plan.runner.model_dump(mode="json"),
++        "variant_identities": [item.model_dump(mode="json") for item in plan.variants],
++        "checker_identities": plan.decision_policy.get("posthoc_checks"),
++        "stage_state": stage_state,
++        "profiles": profile_results,
++        "unclassified_low_risk": {
++            "value": "c2",
++            "origin": "suite_v1_inherited_default",
++            "measured_in_s3": False,
++        },
++        "unclassified_high_risk": {
++            "value": "user_decision",
++            "origin": "suite_v1_inherited_default",
++            "measured_in_s3": False,
++        },
++        "global_b1_default_issued": False,
++    }
 diff --git a/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d00617730be972c
+index 0000000000000000000000000000000000000000..cb669abe6d1d3386165e4680d0352ce5a15a2e90
 --- /dev/null
 +++ b/tools/benchmark-runner/src/benchmark_runner/s2_posthoc.py
-@@ -0,0 +1,499 @@
+@@ -0,0 +1,525 @@
 +"""Deterministic post-hoc property checks for SDK routing S2 fixtures."""
 +
 +from __future__ import annotations
@@ -4903,7 +6098,7 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +}
 +_REPORT_HEADINGS = ("확인된 사실", "상충", "미확인", "권고")
 +_CLAIM_LINE = re.compile(r"^- \[([^\]]+)\] (.+)$")
-+_ACTION_LINE = re.compile(r"^- \[([^\]]+)\] (verify|mitigate): (.+)$")
++_ACTION_LINE = _CLAIM_LINE
 +
 +
 +def _canonical_json(value: object) -> str:
@@ -4998,36 +6193,46 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +        current = json.loads((workspace / "inputs" / "current.json").read_text(encoding="utf-8"))
 +
 +        def cfg_p1() -> bool:
-+            migrated = migration.migrate(legacy)
-+            validated = model.validate(migrated)
-+            return validated == {
-+                "endpoint": legacy["endpoint"],
-+                "max_retries": legacy["retries"],
-+                "timeout_seconds": legacy["timeout"],
-+                "version": 2,
-+            }
++            migrated = migration.migrate_config(legacy)
++            return model.validate_config(migrated) == current
 +
 +        def cfg_p2() -> bool:
-+            parsed = parser.parse(current)
-+            return parser.parse(serializer.serialize(parsed)) == parsed
++            current_text = (workspace / "inputs" / "current.json").read_text(
++                encoding="utf-8"
++            )
++            parsed = parser.parse_config(current_text)
++            serialized = serializer.serialize_config(parsed)
++            return (
++                serialized
++                == json.dumps(
++                    current,
++                    ensure_ascii=False,
++                    sort_keys=True,
++                    separators=(",", ":"),
++                )
++                + "\n"
++                and parser.parse_config(serialized) == parsed
++            )
 +
 +        def cfg_p3() -> bool:
-+            once = migration.migrate(legacy)
-+            return migration.migrate(once) == once and migration.migrate(current) == current
++            once = migration.migrate_config(legacy)
++            return (
++                migration.migrate_config(once) == once
++                and migration.migrate_config(current) == current
++            )
 +
 +        def cfg_p4() -> bool:
 +            cases = (
-+                ({**current, "version": 9}, errors.UnknownVersionError),
++                ('{"schema_version":9}', errors.UnsupportedVersionError),
 +                (
-+                    {"version": 2, " timeout_seconds ": 1, "timeout_seconds": 2},
-+                    errors.DuplicateKeyError,
++                    '{"schema_version":1,"schema_version":2}',
++                    errors.ConfigParseError,
 +                ),
-+                ({**current, "unexpected": True}, errors.UnknownKeyError),
-+                ({**current, "timeout_seconds": "slow"}, errors.InvalidTypeError),
++                ('{"schema_version":NaN}', errors.ConfigParseError),
 +            )
 +            for payload, expected in cases:
 +                try:
-+                    parser.parse(payload)
++                    parser.parse_config(payload)
 +                except expected:
 +                    continue
 +                except Exception:
@@ -5039,9 +6244,9 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +            legacy_copy = json.loads(_canonical_json(legacy))
 +            current_copy = json.loads(_canonical_json(current))
 +            before = (_sha256_json(legacy_copy), _sha256_json(current_copy))
-+            migration.migrate(legacy_copy)
-+            parser.parse(current_copy)
-+            model.validate(current_copy)
++            migration.migrate_config(legacy_copy)
++            parser.parse_config(_canonical_json(current_copy))
++            model.validate_config(current_copy)
 +            return before == (_sha256_json(legacy_copy), _sha256_json(current_copy))
 +
 +        return _run_properties(
@@ -5067,8 +6272,12 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +    sections: dict[str, dict[str, str]] = {name: {} for name in _REPORT_HEADINGS}
 +    current: str | None = None
 +    seen: list[str] = []
++    title_seen = False
 +    for raw in path.read_text(encoding="utf-8").splitlines():
 +        if not raw:
++            continue
++        if raw == "# INC-2025-02-14-CHECKOUT" and not title_seen and current is None:
++            title_seen = True
 +            continue
 +        if raw.startswith("## "):
 +            current = raw[3:]
@@ -5086,7 +6295,7 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +        if identifier in sections[current]:
 +            raise ValueError("report identifier is duplicated")
 +        sections[current][identifier] = raw
-+    if tuple(seen) != _REPORT_HEADINGS:
++    if not title_seen or tuple(seen) != _REPORT_HEADINGS:
 +        raise ValueError("report headings differ")
 +    return sections
 +
@@ -5101,7 +6310,6 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +    actions_payload = _load_object(workspace / "report" / "action-plan.json")
 +    report = _parse_report(workspace / "report" / "final-report.md")
 +
-+    sources = {item["source_id"]: item["path"] for item in catalog["sources"]}
 +    topics = {item["topic_id"]: item for item in catalog["topics"]}
 +    evidence = {item["evidence_id"]: item for item in ledger["evidence"]}
 +    uncertainties = {
@@ -5116,34 +6324,31 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +
 +    def inc_p1() -> bool:
 +        for item in evidence.values():
-+            source_path = workspace / sources[item["source_id"]]
-+            lines = source_path.read_text(encoding="utf-8").splitlines()
-+            locator = item["locator"]
-+            start = locator["line_start"]
-+            end = locator["line_end"]
-+            if not (isinstance(start, int) and isinstance(end, int) and 1 <= start <= end <= len(lines)):
-+                return False
-+            if "\n".join(lines[start - 1 : end]) != item["exact_excerpt"]:
++            source_path = workspace / item["source_path"]
++            marker = f'- [{item["source_marker"]}] {item["statement"]}'
++            source = source_path.read_text(encoding="utf-8")
++            if source.count(marker) != 1:
 +                return False
 +        return True
 +
 +    def inc_p2() -> bool:
 +        for topic_id, topic in topics.items():
-+            if topic["conflicting"] is not True:
++            if topic["kind"] != "conflict":
 +                continue
 +            entries = [item for item in evidence.values() if item["topic_id"] == topic_id]
-+            if len({item["source_id"] for item in entries}) < topic["expected_distinct_source_count"]:
++            if len({item["source_id"] for item in entries}) < 2:
 +                return False
 +            entry_ids = {item["evidence_id"] for item in entries}
 +            conflicting_events = [
-+                item for item in events.values() if item["status"] == "conflicting"
++                item for item in events.values() if item["status"] == "disputed"
 +            ]
 +            if not any(entry_ids.issubset(set(item["evidence_ids"])) for item in conflicting_events):
 +                return False
 +            conflicting_claim_evidence = {
-+                item["evidence_id"]
++                evidence_id
 +                for item in claims.values()
-+                if item["status"] == "conflicting"
++                if item["section"] == "상충"
++                for evidence_id in item["evidence_ids"]
 +            }
 +            if not entry_ids.issubset(conflicting_claim_evidence):
 +                return False
@@ -5152,45 +6357,61 @@ index 0000000000000000000000000000000000000000..ee1a85c063d388224e9ba36d3d006177
 +    def inc_p3() -> bool:
 +        evidence_ids = set(evidence)
 +        uncertainty_ids = set(uncertainties)
-+        for item in [*events.values(), *hypotheses.values()]:
++        for item in events.values():
 +            if not set(item["evidence_ids"]).issubset(evidence_ids):
 +                return False
 +            if not set(item["uncertainty_ids"]).issubset(uncertainty_ids):
 +                return False
-+        if any(item["evidence_id"] not in evidence_ids for item in claims.values()):
++        for item in hypotheses.values():
++            hypothesis_evidence = {
++                *item["supporting_evidence_ids"],
++                *item["conflicting_evidence_ids"],
++            }
++            if not hypothesis_evidence.issubset(evidence_ids):
++                return False
++            if not set(item["uncertainty_ids"]).issubset(uncertainty_ids):
++                return False
++        if any(
++            not item["evidence_ids"]
++            or not set(item["evidence_ids"]).issubset(evidence_ids)
++            or not set(item["event_ids"]).issubset(events)
++            or not set(item["uncertainty_ids"]).issubset(uncertainty_ids)
++            for item in claims.values()
++        ):
 +            return False
-+        valid_refs = evidence_ids | uncertainty_ids
-+        return all(set(item["reference_ids"]).issubset(valid_refs) for item in actions.values())
++        return all(
++            set(item["claim_ids"]).issubset(claims)
++            and set(item["uncertainty_ids"]).issubset(uncertainty_ids)
++            for item in actions.values()
++        )
 +
 +    def inc_p4() -> bool:
 +        for claim_id, item in claims.items():
-+            ledger_item = evidence[item["evidence_id"]]
-+            if item["canonical_claim_text"] != ledger_item["canonical_claim_text"]:
-+                return False
-+            section = "확인된 사실" if item["status"] == "confirmed" else "상충"
-+            expected = f"- [{claim_id}] {item['canonical_claim_text']}"
++            section = item["section"]
++            expected = f"- [{claim_id}] {item['text']}"
 +            if report[section].get(claim_id) != expected:
 +                return False
-+            other = "상충" if section == "확인된 사실" else "확인된 사실"
-+            if claim_id in report[other]:
++            if any(
++                claim_id in report[other]
++                for other in _REPORT_HEADINGS[:-1]
++                if other != section
++            ):
 +                return False
-+        return set(report["확인된 사실"]) | set(report["상충"]) == set(claims)
++        return set().union(
++            *(set(report[section]) for section in _REPORT_HEADINGS[:-1])
++        ) == set(claims)
 +
 +    def inc_p5() -> bool:
-+        if any(identifier in report["확인된 사실"] for identifier in uncertainties):
-+            return False
-+        for uncertainty_id, item in uncertainties.items():
-+            expected = f"- [{uncertainty_id}] {item['next_action']}"
-+            if report["미확인"].get(uncertainty_id) != expected:
-+                return False
-+        if set(report["미확인"]) != set(uncertainties):
-+            return False
 +        for action_id, item in actions.items():
-+            refs = ",".join(item["reference_ids"])
-+            expected = f"- [{action_id}] {item['action_type']}: {refs}"
++            expected = f"- [{action_id}] {item['text']}"
 +            if report["권고"].get(action_id) != expected:
 +                return False
-+        return set(report["권고"]) == set(actions)
++        addressed = {
++            uncertainty_id
++            for item in actions.values()
++            for uncertainty_id in item["uncertainty_ids"]
++        }
++        return set(report["권고"]) == set(actions) and addressed == set(uncertainties)
 +
 +    refs = [
 +        "catalog/topics.json",

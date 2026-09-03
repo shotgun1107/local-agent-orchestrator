@@ -60,12 +60,16 @@
       "reason": "Worker가 자기 계약과 시험을 함께 작성하는 순환을 제거하고 public/hidden 의미를 사전에 하나로 고정한다"
     }
   ],
-  "resolution": "",
+  "resolution": "R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했으며 fresh Docker qualification 전까지 incident는 investigating을 유지한다.",
   "affected_files": [
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
     "tools/benchmark-runner/src/benchmark_runner/profile_r_redesign.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/profile-r/requirements/r03-config-fixture-contract.md",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/profile-r/requirements/r04-incident-fixture-contract.md",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
+    "benchmarks/reference-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/solution-overrides",
     "tools/benchmark-runner/tests/test_r07_public_checker_adversarial.py"
   ],
   "regression_tests": [
@@ -78,17 +82,22 @@
     "sealed SS1/B1 v21 Evidence established the common hidden failure cluster without re-running either Cell",
     "byte-identical diagnostic copy에서 R03/R04/R07 public exit 0과 hidden fail을 model-free로 동시에 재현했고 검사 전후 원본 대비 file mismatch는 0이었다",
     "minimal probes confirmed R03 public names exist while hidden names do not, R04 plural evidence_ids exist while hidden singular key does not, and R07 hidden keyword call raises TypeError",
-    "existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap"
+    "existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap",
+    "v21-derived R03·R04·R07 구현을 새 public contract로 model-free 재검사했으며 세 사례가 모두 해당 public contract에서 거부됐다.",
+    "새 Judge source bundle은 reference PASS, pristine FAIL, 13개 전용 mutation과 Worker test-oracle 공격을 검사해 PROFILE_R_SOURCE_BUNDLE_VERIFIED가 됐다.",
+    "Task Pack q5는 positive transition 13/13, cumulative public Checks 104/104, public negative mutation 13/13 rejected와 Worker information boundary PASS로 TASK_PACK_READY가 됐다."
   ],
   "remaining_risks": [
-    "새 공개 계약의 exact bytes와 R07 일반화 cap 식은 구현 전에 별도 revision으로 동결해야 한다.",
-    "실제 실패를 public Check에 추가할 때 hidden reference solution 정보가 Worker snapshot으로 새지 않도록 별도 information-boundary 검증이 필요하다."
+    "새 Judge source의 protected Docker runtime qualification은 아직 실행하지 않았다.",
+    "fresh Docker qualification과 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다."
   ],
   "related_commits": [],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md",
+    "benchmarks/artifacts/profile-r-task-pack-q5/qualification.json",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py"
   ]
