@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 73건
+- 전체: 74건
 - 해결: 72건
 - 조사 중: 1건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -86,6 +86,7 @@
 | DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
 | DEV-20260903-001 | resolved | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
 | DEV-20260903-002 | resolved | phase-f-profile-r-v22-readiness | tooling | Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함 |
+| DEV-20260903-003 | open | phase-f-profile-r-v22-ss1 | integration | Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4886,3 +4887,60 @@ v10 allowlist와 이후 Git 변경으로 선택 경로를 계산하되 모든 re
 
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v11-package-result.md
+
+## DEV-20260903-003 — Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨
+
+- 상태: `open`
+- 단계: `phase-f-profile-r-v22-ss1`
+- 분류: `integration`
+- 발견: 2026-09-03T07:23:11Z / Profile R v22 SS1 Cell 1 live와 sealed Evidence inspection
+- 해결: 미해결
+
+### 증상
+
+R01~R10 뒤 R11이 pytest와 pydantic 부재로 behavioral check를 실행하지 못하고 52 turns를 사용한 뒤 blocked를 선언했다. R12·R13은 실행되지 않았고 Judge는 R-P10~R-P13을 실패 처리했다.
+
+### 재현
+
+- Worker 셸 기본 Python에 pytest와 pydantic이 없는 환경에서 candidate v22 SS1 Cell 1의 R11 S2 E2E Task를 실행한다.
+- needs_additional_review=public_check_uncertainty를 반복 반환할 때 SS1이 동일 R11 self-review를 별도 수렴 판정 없이 계속 허용하는지 확인한다.
+
+### 증거
+
+- `direct-observation`: Cell은 5905.297초와 70 model turns 뒤 SEALED/failed/worker_blocked가 됐고 R11에만 52 turns가 집중됐다.
+- `direct-observation`: R11 마지막 envelope는 supplied environment lacks pytest and pydantic를 이유로 blocked와 public_check_uncertainty를 기록했다.
+- `direct-observation`: Worker 기본 Python은 3.12.10, pytest false, pydantic false였지만 Environment Closure는 Controller Python과 SDK preflight만 통과시켰다.
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md

@@ -49,5 +49,6 @@ API-key 환경 이름, SDK thread/start, turn/start와 model turn은 모두 0이
 통과했다.
 
 q24·q4·candidate v21과 live v21은 수정하지 않았다. candidate v22 independent model-free
-acceptance 두 회차와 readiness v11은 모두 통과했다. 다음 관문은 별도 Environment Closure이며
-Live는 아직 `NO-GO`다.
+acceptance 두 회차와 readiness v11은 모두 통과했고 별도 Environment Closure도 GO였다. 그 뒤
+실행한 SS1 Cell 1은 R11 Worker Python 의존성 결손으로 `SEALED_FAILED`가 됐다. 이
+candidate의 기존 Cell을 재실행하지 않으며 B1 전에는 `DEV-20260903-003` 진단이 필요하다.

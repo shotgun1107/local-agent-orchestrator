@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260903-003",
+  "title": "Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨",
+  "status": "open",
+  "stage": "phase-f-profile-r-v22-ss1",
+  "category": "integration",
+  "discovered_at": "2026-09-03T07:23:11Z",
+  "resolved_at": null,
+  "discovered_by": "Profile R v22 SS1 Cell 1 live와 sealed Evidence inspection",
+  "symptom": "R01~R10 뒤 R11이 pytest와 pydantic 부재로 behavioral check를 실행하지 못하고 52 turns를 사용한 뒤 blocked를 선언했다. R12·R13은 실행되지 않았고 Judge는 R-P10~R-P13을 실패 처리했다.",
+  "reproduction": [
+    "Worker 셸 기본 Python에 pytest와 pydantic이 없는 환경에서 candidate v22 SS1 Cell 1의 R11 S2 E2E Task를 실행한다.",
+    "needs_additional_review=public_check_uncertainty를 반복 반환할 때 SS1이 동일 R11 self-review를 별도 수렴 판정 없이 계속 허용하는지 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "Cell은 5905.297초와 70 model turns 뒤 SEALED/failed/worker_blocked가 됐고 R11에만 52 turns가 집중됐다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "R11 마지막 envelope는 supplied environment lacks pytest and pydantic를 이유로 blocked와 public_check_uncertainty를 기록했다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "Worker 기본 Python은 3.12.10, pytest false, pydantic false였지만 Environment Closure는 Controller Python과 SDK preflight만 통과시켰다."
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md",
+    "docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md"
+  ]
+}
