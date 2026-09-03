@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260902-004",
   "title": "Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-f-profile-r-v21-b1",
   "category": "implementation",
   "discovered_at": "2026-09-02T06:45:16Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-03T05:15:04Z",
   "discovered_by": "Profile R v21 B1 Cell 2 live와 post-run source inspection",
   "symptom": "B1 R10 첫 turn이 900초에 interrupted된 뒤 Task가 즉시 최종 FAILED가 됐고 R11~R13은 PENDING으로 남았다. R03 retry 한 번만 사용해 Variant reserve가 남아 있었고 R10 자체도 per-task maximum 2였지만 두 번째 Attempt는 만들어지지 않았다.",
   "reproduction": [
@@ -56,7 +56,7 @@
       "reason": "사용자가 실제로 기다리는 전체 완료시간을 두 전략에 동일하게 주면서 내부 문제 분할과 session 전략을 인위적인 호출 상한으로 왜곡하지 않는다"
     }
   ],
-  "resolution": "새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5, fresh Docker Judge q25, Phase E candidate v22 검증까지 완료했으며 독립 acceptance와 readiness 전까지 incident는 investigating을 유지한다.",
+  "resolution": "새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남기지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source, Task Pack q5, fresh Docker Judge q25, Phase E candidate v22, 독립 acceptance 2회와 readiness v11 검증을 모두 완료했다.",
   "affected_files": [
     "stages/b1-sequential/src/orchestrator/schedule.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_routing.py",
@@ -89,11 +89,11 @@
     "Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.",
     "schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.",
     "candidate v22 independent model-free acceptance run 1은 1 passed, manifest 12/12 mismatch 0, SS1/B1 deadline anchor 9000초, public contract 13/13과 cumulative Check 104/104로 통과했다.",
-    "independent acceptance run 2도 alternate-deep R12 topology에서 1 passed, manifest 12/12 mismatch 0, public contract 13/13과 cumulative Check 104/104로 통과했다."
+    "independent acceptance run 2도 alternate-deep R12 topology에서 1 passed, manifest 12/12 mismatch 0, public contract 13/13과 cumulative Check 104/104로 통과했다.",
+    "readiness v11 원본과 ZIP 해제본 verifier가 payload 690, manifest 691, 같은 seal e730ba7f...3055로 통과했고 live_authorized=false를 유지했다."
   ],
   "remaining_risks": [
-    "candidate v22 readiness package가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.",
-    "현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다."
+    "실제 deadline mode Cell은 별도 Environment Closure GO와 다음 사용자 승인 전까지 실행할 수 없다."
   ],
   "related_commits": [
     "7185f5f823757406238c1ef2d6d3e0c0fbf3393f",
@@ -107,6 +107,7 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v16-run2-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v11-package-result.md",
     "benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json",
     "benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json",
     "stages/b1-sequential/src/orchestrator/schedule.py",

@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 72건
-- 해결: 70건
-- 조사 중: 2건
+- 전체: 73건
+- 해결: 72건
+- 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -82,9 +82,10 @@
 | DEV-20260902-001 | resolved | profile-r-reference-q3-judge-source-bundle | integration | pytest hook과 JUnit의 packaged test identity 표기가 달라 R11 제품 실패가 UNKNOWN이 됨 |
 | DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
 | DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
-| DEV-20260902-004 | investigating | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
+| DEV-20260902-004 | resolved | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
 | DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
 | DEV-20260903-001 | resolved | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
+| DEV-20260903-002 | resolved | phase-f-profile-r-v22-readiness | tooling | Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4587,11 +4588,11 @@ preflight를 실행한 ambient Python에는 benchmark-runner dependency가 설�
 
 ## DEV-20260902-004 — Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-v21-b1`
 - 분류: `implementation`
 - 발견: 2026-09-02T06:45:16Z / Profile R v21 B1 Cell 2 live와 post-run source inspection
-- 해결: 미해결
+- 해결: 2026-09-03T05:15:04Z
 
 ### 증상
 
@@ -4623,7 +4624,7 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 
 ### 채택한 해결
 
-새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source와 Task Pack q5, fresh Docker Judge q25, Phase E candidate v22 검증까지 완료했으며 독립 acceptance와 readiness 전까지 incident는 investigating을 유지한다.
+새 revision의 자원 계약을 Task·호출 횟수 상한에서 Cell 전체 완료시간 9000초 하나로 교체했다. B1 scheduler는 deadline mode에서 per-Task timeout, max attempts, max turns와 retry/resume 상한을 적용하지 않고 모든 Worker·Check 대기에 남은 Cell 시간을 전달한다. SS1도 self-review와 model turn 횟수를 제한하지 않고 매 호출 전에 같은 Cell deadline을 확인한다. 호출·session·retry·resume 수는 Evidence에 계속 남기지만 admission과 최종 pass/fail 상한으로 쓰지 않는다. source, Task Pack q5, fresh Docker Judge q25, Phase E candidate v22, 독립 acceptance 2회와 readiness v11 검증을 모두 완료했다.
 
 ### 수정 파일
 
@@ -4661,11 +4662,11 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.
 - candidate v22 independent model-free acceptance run 1은 1 passed, manifest 12/12 mismatch 0, SS1/B1 deadline anchor 9000초, public contract 13/13과 cumulative Check 104/104로 통과했다.
 - independent acceptance run 2도 alternate-deep R12 topology에서 1 passed, manifest 12/12 mismatch 0, public contract 13/13과 cumulative Check 104/104로 통과했다.
+- readiness v11 원본과 ZIP 해제본 verifier가 payload 690, manifest 691, 같은 seal e730ba7f...3055로 통과했고 live_authorized=false를 유지했다.
 
 ### 남은 위험
 
-- candidate v22 readiness package가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
-- 현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다.
+- 실제 deadline mode Cell은 별도 Environment Closure GO와 다음 사용자 승인 전까지 실행할 수 없다.
 
 ### 추적 정보
 
@@ -4677,6 +4678,7 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v16-run2-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v11-package-result.md
 - 출처: benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json
 - 출처: benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json
 - 출처: stages/b1-sequential/src/orchestrator/schedule.py
@@ -4826,3 +4828,61 @@ acceptance 하네스의 key 부재 단언을 null 값 단언으로 교체했다.
 - 관련 커밋: 7a5c45ce78068aebab82b82b35c1446132727795
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
+
+## DEV-20260903-002 — Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함
+
+- 상태: `resolved`
+- 단계: `phase-f-profile-r-v22-readiness`
+- 분류: `tooling`
+- 발견: 2026-09-03T05:15:15Z / readiness v11 model-free package assembly
+- 해결: 2026-09-03T05:15:48Z
+
+### 증상
+
+세 번의 조립이 seal 생성 전에 각각 working-tree 줄바꿈 차이, Git quoted 한글 경로, credential scanner 오탐으로 중단됐다.
+
+### 재현
+
+- readiness v10 repository allowlist를 현재 working tree bytes와 비교하고 기본 git ls-files 및 경계 없는 sk- 정규식으로 v11 패키지를 조립한다.
+
+### 증거
+
+- `reproducible-test`: partial-1은 .gitattributes의 Git blob LF와 working-tree CRLF를 다르다고 판정했다.
+- `reproducible-test`: partial-2는 core.quotepath 기본 escape가 적용된 한글 tracked path를 미추적 파일로 판정했다.
+- `reproducible-test`: partial-3은 task-pack 파일명 일부와 test_r5_reporter의 의도된 비밀 차단 fixture를 credential로 오판했다.
+
+### 근본 원인
+
+repository snapshot 검증이 Git blob이 아니라 autocrlf 영향을 받는 working-tree bytes를 기준으로 했고, git ls-files의 기본 quoted path와 토큰 경계가 없는 credential 정규식을 그대로 사용했다.
+
+### 검토한 해결안
+
+- `rejected` working-tree 줄바꿈을 임의 정규화해 복사 — binary와 -text 경계를 흐리고 package record commit의 exact bytes를 보장하지 못한다
+- `adopted` package record commit의 Git blob을 직접 추출하고 quotePath를 끄며 known-fake fixture를 token hash로 허용 — source bytes·Unicode path·credential 경계를 각각 독립적으로 확정한다
+
+### 채택한 해결
+
+v10 allowlist와 이후 Git 변경으로 선택 경로를 계산하되 모든 repository payload를 package record commit의 Git blob에서 추출했다. core.quotepath=false를 고정하고 sk- 앞 토큰 경계를 추가했으며 비밀 차단 회귀 fixture 하나만 SHA-256 allowlist로 분류했다. 세 partial root는 seal 없는 실패 자료로 보존하고 네 번째 fresh root를 봉인했다.
+
+### 수정 파일
+
+- benchmarks/.local-r6/build_profile_r_readiness_v11.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_readiness_package.py
+
+### 검증 결과
+
+- readiness v11 원본 package verifier와 새 ZIP 해제본 verifier가 payload 690, manifest 691, 같은 seal e730ba7f...3055로 통과했다.
+- canonical readiness regression 13개와 패키지 내부 q25 14-cell 재검증이 통과했다.
+- high-confidence credential finding 0, ZIP duplicate·directory·unsafe path·CRC·missing·extra·hash mismatch 0을 확인했다.
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v11-package-result.md
