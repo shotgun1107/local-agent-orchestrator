@@ -1,6 +1,6 @@
 # Profile R 전체 완료시간 단일 제한 계약
 
-- 문서 상태: `CANDIDATE_V22_VERIFIED_AWAITING_ACCEPTANCE`
+- 문서 상태: `ACCEPTANCE_RUN1_VERIFIED_AWAITING_RUN2`
 - 결정일: 2026-09-03
 - 적용 대상: Profile R v21 이후 새 revision의 SS1/B1 비교
 - 적용 제외: 기존 q24·q4·candidate v21·acceptance·readiness·live v21
@@ -184,5 +184,6 @@ schema v4 stage가 q25 qualification v22와 Task Pack q5/budget을 직접 결합
 `cell_completion_deadline`, deadline은 9000초다. planned model turn ceiling 필드는 없고 actual
 model turn은 0이다.
 
-candidate 생성기 내부 검증과 별도 process verifier, checked-in v22 회귀가 통과했다. 다음 관문은
-independent model-free acceptance run 1이며 Live는 계속 `NO-GO`다.
+candidate 생성기 내부 검증과 별도 process verifier, checked-in v22 회귀가 통과했다. independent
+model-free acceptance run 1도 새 경로에서 통과했다. 다음 관문은 acceptance run 2이며 Live는
+계속 `NO-GO`다.

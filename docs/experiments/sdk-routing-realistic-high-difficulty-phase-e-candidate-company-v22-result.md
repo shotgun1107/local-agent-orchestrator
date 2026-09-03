@@ -48,6 +48,6 @@ API-key 환경 이름, SDK thread/start, turn/start와 model turn은 모두 0이
 별도 process verifier, clean source Phase E·routing·deadline 회귀 63개와 checked-in v22 회귀 1개가
 통과했다.
 
-q24·q4·candidate v21과 live v21은 수정하지 않았다. 다음 관문은 candidate v22 independent
-model-free acceptance run 1이다. acceptance 2, readiness, Environment Closure와 Live는 아직
-`NO-GO`다.
+q24·q4·candidate v21과 live v21은 수정하지 않았다. candidate v22 independent model-free
+acceptance run 1은 새 경로에서 통과했다. 다음 관문은 acceptance run 2이며 readiness,
+Environment Closure와 Live는 아직 `NO-GO`다.
