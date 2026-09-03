@@ -1,6 +1,6 @@
 # Profile R 전체 완료시간 단일 제한 계약
 
-- 문서 상태: `ACCEPTANCE_RUNS_VERIFIED_AWAITING_READINESS`
+- 문서 상태: `READINESS_V11_VERIFIED_AWAITING_ENVIRONMENT_CLOSURE`
 - 결정일: 2026-09-03
 - 적용 대상: Profile R v21 이후 새 revision의 SS1/B1 비교
 - 적용 제외: 기존 q24·q4·candidate v21·acceptance·readiness·live v21
@@ -185,5 +185,5 @@ schema v4 stage가 q25 qualification v22와 Task Pack q5/budget을 직접 결합
 model turn은 0이다.
 
 candidate 생성기 내부 검증과 별도 process verifier, checked-in v22 회귀가 통과했다. independent
-model-free acceptance 두 회차도 서로 다른 새 경로에서 통과했다. 다음 관문은 readiness
-package이며 Live는 계속 `NO-GO`다.
+model-free acceptance 두 회차와 readiness v11 원본·ZIP 해제본 검증도 통과했다. 다음 관문은
+별도 Environment Closure이며 Live는 계속 `NO-GO`다.

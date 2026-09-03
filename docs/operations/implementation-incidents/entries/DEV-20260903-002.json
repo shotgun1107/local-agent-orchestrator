@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260903-002",
+  "title": "Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함",
+  "status": "resolved",
+  "stage": "phase-f-profile-r-v22-readiness",
+  "category": "tooling",
+  "discovered_at": "2026-09-03T05:15:15Z",
+  "resolved_at": "2026-09-03T05:15:48Z",
+  "discovered_by": "readiness v11 model-free package assembly",
+  "symptom": "세 번의 조립이 seal 생성 전에 각각 working-tree 줄바꿈 차이, Git quoted 한글 경로, credential scanner 오탐으로 중단됐다.",
+  "reproduction": [
+    "readiness v10 repository allowlist를 현재 working tree bytes와 비교하고 기본 git ls-files 및 경계 없는 sk- 정규식으로 v11 패키지를 조립한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "partial-1은 .gitattributes의 Git blob LF와 working-tree CRLF를 다르다고 판정했다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "partial-2는 core.quotepath 기본 escape가 적용된 한글 tracked path를 미추적 파일로 판정했다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "partial-3은 task-pack 파일명 일부와 test_r5_reporter의 의도된 비밀 차단 fixture를 credential로 오판했다."
+    }
+  ],
+  "root_cause": "repository snapshot 검증이 Git blob이 아니라 autocrlf 영향을 받는 working-tree bytes를 기준으로 했고, git ls-files의 기본 quoted path와 토큰 경계가 없는 credential 정규식을 그대로 사용했다.",
+  "considered_options": [
+    {
+      "option": "working-tree 줄바꿈을 임의 정규화해 복사",
+      "decision": "rejected",
+      "reason": "binary와 -text 경계를 흐리고 package record commit의 exact bytes를 보장하지 못한다"
+    },
+    {
+      "option": "package record commit의 Git blob을 직접 추출하고 quotePath를 끄며 known-fake fixture를 token hash로 허용",
+      "decision": "adopted",
+      "reason": "source bytes·Unicode path·credential 경계를 각각 독립적으로 확정한다"
+    }
+  ],
+  "resolution": "v10 allowlist와 이후 Git 변경으로 선택 경로를 계산하되 모든 repository payload를 package record commit의 Git blob에서 추출했다. core.quotepath=false를 고정하고 sk- 앞 토큰 경계를 추가했으며 비밀 차단 회귀 fixture 하나만 SHA-256 allowlist로 분류했다. 세 partial root는 seal 없는 실패 자료로 보존하고 네 번째 fresh root를 봉인했다.",
+  "affected_files": [
+    "benchmarks/.local-r6/build_profile_r_readiness_v11.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_readiness_package.py"
+  ],
+  "verification": [
+    "readiness v11 원본 package verifier와 새 ZIP 해제본 verifier가 payload 690, manifest 691, 같은 seal e730ba7f...3055로 통과했다.",
+    "canonical readiness regression 13개와 패키지 내부 q25 14-cell 재검증이 통과했다.",
+    "high-confidence credential finding 0, ZIP duplicate·directory·unsafe path·CRC·missing·extra·hash mismatch 0을 확인했다."
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v11-package-result.md"
+  ]
+}

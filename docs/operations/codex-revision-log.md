@@ -3661,3 +3661,24 @@ Live는 계속 `NO-GO`다.
 candidate v22의 independent acceptance 두 회차가 모두 통과했다. 다음 관문은 candidate,
 q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. Environment Closure와 Live는
 계속 `NO-GO`다.
+
+## Profile R R01~R13 Live readiness v11 package
+
+- 작업일: 2026-09-03. package record commit/tree
+  `3ee3f0352c0db5d2232bb65f44b33c5b4106968a` /
+  `3f0a4522973e933a706f7db5decc73205fcacac5`에서 q25·q5·reference·candidate v22와 official
+  acceptance 2회를 직접 결합했다.
+- package는 692파일, manifest 691, payload 690, aggregate `5572f0c7...a35230`, readiness seal
+  `e730ba7f...3055`, seal file `0e702d8d...d45d1`로 봉인됐다.
+- deterministic ZIP은 3,502,409 bytes, SHA `4a8369fd...74d9b`, 692 entries다.
+  duplicate·directory·unsafe path·CRC failure는 0이다.
+- 원본과 새 해제본 verifier가 같은 manifest count, payload aggregate와 seal을 반환했다. 패키지
+  내부 q25도 `CHALLENGE_READY`, 14/14로 재검증했다.
+- 조립 partial 1~3은 각각 working-tree 줄바꿈 비교, Git 한글 quoted path, credential fixture
+  오탐으로 seal 전에 중단됐다. 세 경로는 보존했고 `DEV-20260903-002`에 원인과 교정을 기록했다.
+- high-confidence credential finding 0, known-fake marker file 2, model turn과 Docker workload
+  0이다. seal은 `environment_closure_required=true`, `current_docker_runtime_verified=false`,
+  `live_authorized=false`다.
+
+다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
+제어권을 돌려준다.
