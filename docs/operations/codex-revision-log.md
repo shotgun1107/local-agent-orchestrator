@@ -3624,3 +3624,21 @@ candidate다. acceptance와 Live는 계속 `NO-GO`다.
 
 다음 관문은 candidate v22 independent model-free acceptance run 1이다. acceptance 2,
 readiness, Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v22 acceptance run 1
+
+- 작업일: 2026-09-03. acceptance 하네스를 candidate v22에 결합하고 schema v2 Cell anchor의
+  `cell_completion_deadline` 9000초와 `model_turn_ceiling=null`을 직접 검사했다.
+- 최초 경로는 SS1/B1 봉인 뒤 새 단언이 nullable field를 absent field로 잘못 해석해 실패했다.
+  경로와 JUnit은 보존하고 `DEV-20260903-001`로 기록했으며 하네스만 교정했다.
+- 새 공식 경로 `C:\pf-v22-acceptance-company-official-run1-r2\acceptance-1`에서 parameter `[1]`
+  하나가 `1 passed in 263.87s`로 통과했다.
+- manifest 12/12 mismatch 0, lifecycle `SEALED, SEALED, PLANNED, PLANNED`, public contract
+  13/13, cumulative Check 104/104, source·secret·TEMP·process·lock residue 0을 확인했다.
+- acceptance attestation/file manifest/JUnit은 `630478c4...78106b` / `766f2ca9...8b66a` /
+  `b07ce5c0...f1f66`이다. checkout은 `7a5c45ce78068aebab82b82b35c1446132727795`다.
+- actual model turn, 실제 SDK thread/start·turn/start와 Docker workload는 0이다. Cell 3·4의
+  claim과 automatic continuation도 0이다.
+
+다음 관문은 별도 새 경로의 independent acceptance run 2다. readiness, Environment Closure와
+Live는 계속 `NO-GO`다.

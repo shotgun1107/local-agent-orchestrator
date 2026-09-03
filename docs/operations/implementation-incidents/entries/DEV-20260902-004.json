@@ -87,10 +87,11 @@
     "deadline schema·unlimited turn accounting·deadline 이후 SS1/B1 새 dispatch 거부 회귀 10개가 통과했다.",
     "Phase E/F·SS1/B1 scheduler 핵심 model-free 회귀는 136 passed, 1 skipped, 4 deselected였고 별도 B1 reference 통합은 두 경우 모두 R01~R13과 cumulative public Checks 104/104를 완료했다.",
     "Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.",
-    "schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다."
+    "schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.",
+    "candidate v22 independent model-free acceptance run 1은 1 passed, manifest 12/12 mismatch 0, SS1/B1 deadline anchor 9000초, public contract 13/13과 cumulative Check 104/104로 통과했다."
   ],
   "remaining_risks": [
-    "candidate v22의 독립 acceptance 2회와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.",
+    "candidate v22의 독립 acceptance run 2와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.",
     "현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다."
   ],
   "related_commits": [

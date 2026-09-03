@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260903-001",
   "title": "Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함",
-  "status": "open",
+  "status": "resolved",
   "stage": "phase-f-profile-r-v22-acceptance",
   "category": "test",
   "discovered_at": "2026-09-03T04:30:12Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-03T04:38:56Z",
   "discovered_by": "candidate v22 official model-free acceptance run 1",
   "symptom": "두 Cell은 deadline schema로 정상 봉인됐지만 하네스가 model_turn_ceiling null field를 key 부재가 아니라고 실패 처리했다.",
   "reproduction": [
@@ -19,15 +19,38 @@
       "detail": "첫 공식 경로는 SS1/B1 Cell을 모두 deadline schema로 봉인한 뒤 model_turn_ceiling key 부재 단언에서 1 failed로 종료됐다."
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [],
-  "related_commits": [],
+  "root_cause": "PhaseFCellAnchor schema v2는 model_turn_ceiling=None을 허용하고 canonical 파일 직렬화는 해당 선택 필드를 null로 남기지만, 새 acceptance 단언은 필드가 JSON에서 완전히 생략된다고 잘못 가정했다.",
+  "considered_options": [
+    {
+      "option": "schema v2 anchor 직렬화에서 nullable field를 강제로 생략",
+      "decision": "rejected",
+      "reason": "test 편의를 위해 이미 검증된 프로덕션 bytes와 hash 규약을 불필요하게 변경한다"
+    },
+    {
+      "option": "model_turn_ceiling 값이 null인지 exact 검사",
+      "decision": "adopted",
+      "reason": "현재 schema와 직렬화 계약을 유지하면서 turn ceiling 미적용을 직접 확인한다"
+    }
+  ],
+  "resolution": "acceptance 하네스의 key 부재 단언을 null 값 단언으로 교체했다. 최초 실패 경로는 보존하고 새 Evidence와 basetemp 경로에서 run 1을 다시 실행했다.",
+  "affected_files": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py::test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatches[1]"
+  ],
+  "verification": [
+    "fresh 공식 경로에서 parameter 1이 1 passed in 263.87s로 완료됐다.",
+    "Evidence manifest 12/12 mismatch 0, 두 Cell schema v2 deadline 9000초, model_turn_ceiling null, actual model turn 0을 별도 확인했다."
+  ],
+  "remaining_risks": [
+    "acceptance run 2와 readiness는 별도 관문으로 남아 있다."
+  ],
+  "related_commits": [
+    "7a5c45ce78068aebab82b82b35c1446132727795"
+  ],
   "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md",
     "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
   ]
 }

@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 72건
-- 해결: 69건
+- 해결: 70건
 - 조사 중: 2건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -84,7 +84,7 @@
 | DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
 | DEV-20260902-004 | investigating | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
 | DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
-| DEV-20260903-001 | open | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
+| DEV-20260903-001 | resolved | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4659,10 +4659,11 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - Phase E/F·SS1/B1 scheduler 핵심 model-free 회귀는 136 passed, 1 skipped, 4 deselected였고 별도 B1 reference 통합은 두 경우 모두 R01~R13과 cumulative public Checks 104/104를 완료했다.
 - Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.
 - schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.
+- candidate v22 independent model-free acceptance run 1은 1 passed, manifest 12/12 mismatch 0, SS1/B1 deadline anchor 9000초, public contract 13/13과 cumulative Check 104/104로 통과했다.
 
 ### 남은 위험
 
-- candidate v22의 독립 acceptance 2회와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
+- candidate v22의 독립 acceptance run 2와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
 - 현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다.
 
 ### 추적 정보
@@ -4769,11 +4770,11 @@ R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하�
 
 ## DEV-20260903-001 — Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-v22-acceptance`
 - 분류: `test`
 - 발견: 2026-09-03T04:30:12Z / candidate v22 official model-free acceptance run 1
-- 해결: 미해결
+- 해결: 2026-09-03T04:38:56Z
 
 ### 증상
 
@@ -4789,33 +4790,36 @@ R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하�
 
 ### 근본 원인
 
-미확인
+PhaseFCellAnchor schema v2는 model_turn_ceiling=None을 허용하고 canonical 파일 직렬화는 해당 선택 필드를 null로 남기지만, 새 acceptance 단언은 필드가 JSON에서 완전히 생략된다고 잘못 가정했다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` schema v2 anchor 직렬화에서 nullable field를 강제로 생략 — test 편의를 위해 이미 검증된 프로덕션 bytes와 hash 규약을 불필요하게 변경한다
+- `adopted` model_turn_ceiling 값이 null인지 exact 검사 — 현재 schema와 직렬화 계약을 유지하면서 turn ceiling 미적용을 직접 확인한다
 
 ### 채택한 해결
 
-미해결
+acceptance 하네스의 key 부재 단언을 null 값 단언으로 교체했다. 최초 실패 경로는 보존하고 새 Evidence와 basetemp 경로에서 run 1을 다시 실행했다.
 
 ### 수정 파일
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
 
 ### 회귀시험
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py::test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatches[1]
 
 ### 검증 결과
 
-- 기록 없음
+- fresh 공식 경로에서 parameter 1이 1 passed in 263.87s로 완료됐다.
+- Evidence manifest 12/12 mismatch 0, 두 Cell schema v2 deadline 9000초, model_turn_ceiling null, actual model turn 0을 별도 확인했다.
 
 ### 남은 위험
 
-- 없음
+- acceptance run 2와 readiness는 별도 관문으로 남아 있다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 7a5c45ce78068aebab82b82b35c1446132727795
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md
 - 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py
