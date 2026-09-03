@@ -130,28 +130,36 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
         (3, "b1"),
         (4, "ss1"),
     ]
-    assert stage.budget.total_initial_turns == 42
-    assert stage.budget.total_turn_ceiling == 50
+    assert stage.budget.budget_mode == "cell_completion_deadline"
+    assert stage.budget.cell_completion_deadline_seconds == 9000
+    assert stage.budget.hard_limit_fields == ["cell_completion_deadline_seconds"]
     assert stage.dispatch.automatic_continuation is False
-    assert stage.schema_version == 3
+    assert stage.schema_version == 4
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v21/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v22/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v21/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v22/"
         "docker-environment.json"
     )
     assert stage.profiles[0].task_pack_qualification_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q4/qualification.json"
+        "benchmarks/artifacts/profile-r-task-pack-q5/qualification.json"
     )
     assert stage.profiles[0].task_budget_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json"
+        "benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json"
     )
     assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
     assert stage.profiles[1].task_count == 8
-    assert stage.budget.profile_budgets is not None
-    assert [item.task_count for item in stage.budget.profile_budgets] == [13, 8]
+    assert stage.budget.measurement_only_fields == [
+        "actual_model_turns",
+        "actual_sdk_calls",
+        "actual_sessions",
+        "actual_retries",
+        "actual_resumes",
+        "model_active_seconds",
+        "wall_clock_seconds",
+    ]
 
 
 def test_v2_stage_requires_only_profile_r_qualification_sibling() -> None:
@@ -629,6 +637,63 @@ def test_profile_r_redesign_q24_v21_is_exact_fourteen_cell_projection() -> None:
     )
 
 
+def test_profile_r_redesign_q25_v22_is_exact_fourteen_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v22"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["schema_version"] == 2
+    assert qualification["source_commit"] == (
+        "7185f5f823757406238c1ef2d6d3e0c0fbf3393f"
+    )
+    assert qualification["batch_id"] == (
+        "profile-r-docker-matrix-q25-company-r01-r13"
+    )
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(
+        range(1, 15)
+    )
+    assert qualification["cells"][0]["variant_id"] == "reference"
+    assert qualification["cells"][0]["aggregate_status"] == "pass"
+    assert all(
+        cell["matched_expectation"] is True
+        for cell in qualification["cells"]
+    )
+    assert all(
+        cell["aggregate_status"] == "fail"
+        for cell in qualification["cells"][1:]
+    )
+    assert all(len(cell["properties"]) == 13 for cell in qualification["cells"])
+    assert all(
+        property_result["status"] != "blocked_by_prerequisite"
+        for cell in qualification["cells"]
+        for property_result in cell["properties"]
+    )
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 14,
+        "cell_count": 14,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
+
+
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
     included = (
         "src/benchmark_runner/sdk_baselines.py",
@@ -659,25 +724,27 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     )
     assert [cell.variant_id for cell in plan.cells] == ["ss1", "b1", "b1", "ss1"]
     assert len(bindings.profiles) == 2
-    assert bindings.schema_version == 3
+    assert bindings.schema_version == 4
     profile_r = bindings.profiles[0]
     assert profile_r.qualification_sha256 == (
-        "2c93d1029c4d6efb8caa52692c4a9d83c04da881e84cee83f6aa95b48383dec3"
+        "c756c9051ecd833fedf72740d3113c3aa89876555b9bde83dea39b26a20df58e"
     )
     assert profile_r.task_pack_qualification_sha256 == (
-        "6dad99081990a188a5c32351eca297d38036f331cb85d2a8a55c719031ed9c66"
+        "f102e3ef48b5f10f173c282a98ce0b21cacfb7a164d716124cdee357d9c13fa5"
     )
     assert profile_r.task_pack_qualification_seal_sha256 == (
-        "2a61a30beee918cbbc6969e8e3a75a461a6999f4b2cb81f5f689a09adb56b027"
+        "32d4327d728288d08242b8a3779eff35b8e41b556f634a9007951e8be0b06a97"
     )
     assert profile_r.task_budget_sha256 == (
-        "a0872bb16e0215e7ee864e83778bac211b06a459506de63a8a93546d69a33794"
+        "366c260dfb412623d02838a5cf7a78a95a71f6ba6a7ccfbbbbb7e319cb7046be"
     )
     assert profile_r.task_budget_seal_sha256 == (
-        "2f1eeb6c43dbf0672a1ba756db2598573c6b3e2f92385e08381f762aa6f5c39d"
+        "4d5076cabe4df5553b24850d5d0fe1e5a2097fd8b6b505932d9c367c116ce758"
     )
-    assert plan.decision_policy["planned_initial_model_turns"] == 42
-    assert plan.decision_policy["planned_model_turn_ceiling"] == 50
+    assert plan.decision_policy["budget_mode"] == "cell_completion_deadline"
+    assert plan.decision_policy["cell_completion_deadline_seconds"] == 9000
+    assert "planned_initial_model_turns" not in plan.decision_policy
+    assert "planned_model_turn_ceiling" not in plan.decision_policy
     assert plan.environment_fingerprint[
         "profile_r_task_pack_qualification_seal_sha256"
     ] == profile_r.task_pack_qualification_seal_sha256
@@ -692,9 +759,11 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
         preflight=_preflight(),
         created_at=created_at,
     )
-    assert seal.schema_version == 3
-    assert seal.planned_initial_model_turns == 42
-    assert seal.planned_model_turn_ceiling == 50
+    assert seal.schema_version == 4
+    assert seal.budget_mode == "cell_completion_deadline"
+    assert seal.cell_completion_deadline_seconds == 9000
+    assert seal.planned_initial_model_turns is None
+    assert seal.planned_model_turn_ceiling is None
     assert seal.actual_model_turns == 0
     assert verify_phase_e_candidate(REPOSITORY, candidate) == seal
     with (candidate / "stage-manifest.json").open("ab") as stream:
