@@ -39,6 +39,6 @@ Docker environment는 context `default`, endpoint `npipe:////./pipe/docker_engin
 Desktop `4.85.0`, engine/client `29.6.2`, server `linux/amd64`와 exact image digest를 기록했다.
 API key와 model·SDK thread/turn은 사용하지 않았다.
 
-q24 qualification v21은 v21 역사 자료로 보존한다. 다음 관문은 q25 qualification v22와 Task
-Pack q5 qualification/budget을 stage에 직접 결합한 새 Phase E candidate다. acceptance와 Live는
-아직 `NO-GO`다.
+q24 qualification v21은 v21 역사 자료로 보존한다. q25와 q5를 직접 결합한 Phase E candidate
+v22는 source `a7016e9c...d5b9`에서 생성·검증됐다. 다음 관문은 independent model-free acceptance
+run 1이다. acceptance 2와 Live는 아직 `NO-GO`다.
