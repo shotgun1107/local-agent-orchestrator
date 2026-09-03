@@ -6,8 +6,8 @@
 ## 요약
 
 - 전체: 71건
-- 해결: 68건
-- 조사 중: 3건
+- 해결: 69건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -83,7 +83,7 @@
 | DEV-20260902-002 | resolved | profile-r-docker-judge-q23 | integration | Worker public overlay가 working-tree CRLF bytes를 봉인해 q23 workspace identity가 전부 불일치함 |
 | DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
 | DEV-20260902-004 | investigating | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
-| DEV-20260902-005 | investigating | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
+| DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4666,7 +4666,7 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 7185f5f823757406238c1ef2d6d3e0c0fbf3393f
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
@@ -4678,11 +4678,11 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 
 ## DEV-20260902-005 — Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-v21-first-pair`
 - 분류: `test`
 - 발견: 2026-09-02T08:04:37Z / Profile R v21 SS1/B1 sealed Judge result comparison
-- 해결: 미해결
+- 해결: 2026-09-03T02:57:53Z
 
 ### 증상
 
@@ -4715,7 +4715,7 @@ R03·R04 Task가 normative spec, developer tests와 구현을 같은 write scope
 
 ### 채택한 해결
 
-R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했으며 fresh Docker qualification 전까지 incident는 investigating을 유지한다.
+R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증 뒤 clean source의 fresh q25 Docker Judge가 reference와 13개 mutation expectation 14/14를 통과해 public/hidden 의미 간극 수정을 완료했다.
 
 ### 수정 파일
 
@@ -4745,19 +4745,22 @@ R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하�
 - v21-derived R03·R04·R07 구현을 새 public contract로 model-free 재검사했으며 세 사례가 모두 해당 public contract에서 거부됐다.
 - 새 Judge source bundle은 reference PASS, pristine FAIL, 13개 전용 mutation과 Worker test-oracle 공격을 검사해 PROFILE_R_SOURCE_BUNDLE_VERIFIED가 됐다.
 - Task Pack q5는 positive transition 13/13, cumulative public Checks 104/104, public negative mutation 13/13 rejected와 Worker information boundary PASS로 TASK_PACK_READY가 됐다.
+- source 7185f5f823757406238c1ef2d6d3e0c0fbf3393f의 fresh q25 Docker Judge는 reference 13/13 pass와 13개 target mutation fail, expectation 14/14, prerequisite blocking 0으로 CHALLENGE_READY가 됐다.
+- q25 raw 독립 검증과 path-free qualification v22 재계산이 통과했고 residual q25 container와 model turn은 0이었다.
 
 ### 남은 위험
 
-- 새 Judge source의 protected Docker runtime qualification은 아직 실행하지 않았다.
-- fresh Docker qualification과 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다.
+- q25 qualification v22와 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 7185f5f823757406238c1ef2d6d3e0c0fbf3393f
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md
 - 출처: benchmarks/artifacts/profile-r-task-pack-q5/qualification.json
+- 출처: benchmarks/artifacts/profile-r-docker-judge-qualification-v22/qualification.json
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md
 - 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py

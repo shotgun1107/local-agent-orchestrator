@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260902-005",
   "title": "Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "phase-f-profile-r-v21-first-pair",
   "category": "test",
   "discovered_at": "2026-09-02T08:04:37Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-03T02:57:53Z",
   "discovered_by": "Profile R v21 SS1/B1 sealed Judge result comparison",
   "symptom": "B1은 R03, R04와 R07을 cumulative public Check까지 성공 처리했지만 final hidden Judge는 대응 property R-P03, R-P04와 R-P07을 실패시켰다. SS1도 이 세 property를 포함한 동일한 6-property 묶음을 실패했다.",
   "reproduction": [
@@ -60,7 +60,7 @@
       "reason": "Worker가 자기 계약과 시험을 함께 작성하는 순환을 제거하고 public/hidden 의미를 사전에 하나로 고정한다"
     }
   ],
-  "resolution": "R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했으며 fresh Docker qualification 전까지 incident는 investigating을 유지한다.",
+  "resolution": "R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하고 top-level public checker가 그 문서를 근거로 실제 behavior를 직접 검사하게 했다. R03 hidden은 공개 parse_config·serialize_config·structured CLI와, R04 hidden은 공개 복수 evidence_ids와 transitive provenance와 일치시켰다. R07 public checker는 일반화 keyword cap과 C2 non-zero·reserve overrun 거부를 공개하고 hidden도 같은 의미의 추가 경계값만 검사한다. 별도 reference override와 Worker 차단 prefix로 답안 정보 경계를 유지했다. Judge source bundle과 Task Pack q5 model-free 검증 뒤 clean source의 fresh q25 Docker Judge가 reference와 13개 mutation expectation 14/14를 통과해 public/hidden 의미 간극 수정을 완료했다.",
   "affected_files": [
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark-run.yaml",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
@@ -85,19 +85,24 @@
     "existing q4 positive 13/13, cumulative public Checks 104/104 and known-bad 13/13 remain historical qualification Evidence, not closure of the new live-derived gap",
     "v21-derived R03·R04·R07 구현을 새 public contract로 model-free 재검사했으며 세 사례가 모두 해당 public contract에서 거부됐다.",
     "새 Judge source bundle은 reference PASS, pristine FAIL, 13개 전용 mutation과 Worker test-oracle 공격을 검사해 PROFILE_R_SOURCE_BUNDLE_VERIFIED가 됐다.",
-    "Task Pack q5는 positive transition 13/13, cumulative public Checks 104/104, public negative mutation 13/13 rejected와 Worker information boundary PASS로 TASK_PACK_READY가 됐다."
+    "Task Pack q5는 positive transition 13/13, cumulative public Checks 104/104, public negative mutation 13/13 rejected와 Worker information boundary PASS로 TASK_PACK_READY가 됐다.",
+    "source 7185f5f823757406238c1ef2d6d3e0c0fbf3393f의 fresh q25 Docker Judge는 reference 13/13 pass와 13개 target mutation fail, expectation 14/14, prerequisite blocking 0으로 CHALLENGE_READY가 됐다.",
+    "q25 raw 독립 검증과 path-free qualification v22 재계산이 통과했고 residual q25 container와 model turn은 0이었다."
   ],
   "remaining_risks": [
-    "새 Judge source의 protected Docker runtime qualification은 아직 실행하지 않았다.",
-    "fresh Docker qualification과 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다."
+    "q25 qualification v22와 q5를 직접 결합한 새 candidate·acceptance·readiness 전에는 Live 비교를 재개할 수 없다."
   ],
-  "related_commits": [],
+  "related_commits": [
+    "7185f5f823757406238c1ef2d6d3e0c0fbf3393f"
+  ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q4-company-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md",
     "benchmarks/artifacts/profile-r-task-pack-q5/qualification.json",
+    "benchmarks/artifacts/profile-r-docker-judge-qualification-v22/qualification.json",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py"
   ]
