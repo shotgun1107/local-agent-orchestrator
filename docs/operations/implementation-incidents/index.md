@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 71건
+- 전체: 72건
 - 해결: 69건
 - 조사 중: 2건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -84,6 +84,7 @@
 | DEV-20260902-003 | resolved | profile-r-acceptance-v13-preflight | test | acceptance pytest Python에 Check dependency가 없어 B1 R01이 제품 검사 전에 중단됨 |
 | DEV-20260902-004 | investigating | phase-f-profile-r-v21-b1 | implementation | Profile R v21 B1 timeout이 남은 retry budget을 사용하지 않고 후속 Task를 모두 중단함 |
 | DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
+| DEV-20260903-001 | open | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4765,3 +4766,56 @@ R03과 R04의 normative contract 문서를 Worker 초기 snapshot에 고정하�
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md
 - 출처: benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 - 출처: benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py
+
+## DEV-20260903-001 — Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함
+
+- 상태: `open`
+- 단계: `phase-f-profile-r-v22-acceptance`
+- 분류: `test`
+- 발견: 2026-09-03T04:30:12Z / candidate v22 official model-free acceptance run 1
+- 해결: 미해결
+
+### 증상
+
+두 Cell은 deadline schema로 정상 봉인됐지만 하네스가 model_turn_ceiling null field를 key 부재가 아니라고 실패 처리했다.
+
+### 재현
+
+- candidate v22에 acceptance parameter 1을 실행하고 schema v2 Cell anchor의 model_turn_ceiling 직렬화 결과를 검사한다.
+
+### 증거
+
+- `reproducible-test`: 첫 공식 경로는 SS1/B1 Cell을 모두 deadline schema로 봉인한 뒤 model_turn_ceiling key 부재 단언에서 1 failed로 종료됐다.
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260903-001",
+  "title": "Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함",
+  "status": "open",
+  "stage": "phase-f-profile-r-v22-acceptance",
+  "category": "test",
+  "discovered_at": "2026-09-03T04:30:12Z",
+  "resolved_at": null,
+  "discovered_by": "candidate v22 official model-free acceptance run 1",
+  "symptom": "두 Cell은 deadline schema로 정상 봉인됐지만 하네스가 model_turn_ceiling null field를 key 부재가 아니라고 실패 처리했다.",
+  "reproduction": [
+    "candidate v22에 acceptance parameter 1을 실행하고 schema v2 Cell anchor의 model_turn_ceiling 직렬화 결과를 검사한다."
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "첫 공식 경로는 SS1/B1 Cell을 모두 deadline schema로 봉인한 뒤 model_turn_ceiling key 부재 단언에서 1 failed로 종료됐다."
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "tools/benchmark-runner/tests/test_realistic_phase_f_ss1.py"
+  ]
+}
