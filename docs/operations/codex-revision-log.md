@@ -3482,6 +3482,28 @@ Environment Closure와 Live는 `NO-GO`다.
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
 
+## Profile R v22 SS1 Cell 1 봉인·Worker 환경 결손
+
+- 작업일: 2026-09-03. 별도 Environment Closure GO와 다음 사용자 승인 뒤 experiment
+  `exp_20260903_d6db9848_1`의 SS1 Cell 1 하나만 실행했다.
+- Cell은 5,905.297초 안에 terminal seal을 만들었고 70 turns·1 session·1 attempt를 사용했다.
+  Task·turn 횟수 상한은 없었으며 deadline 9000초를 넘지 않았다.
+- R01~R10 뒤 R11이 실제 Worker 기본 Python에서 `pytest`와 `pydantic`을 찾지 못해 52 turns의
+  self-review 뒤 `blocked`를 선언했다. R12·R13은 실행되지 않았다.
+- Docker Judge는 R-P01~R-P09 pass, R-P10~R-P13 fail이다. R-P10은 독립 제품 실패이고 R11
+  이후에는 환경 결손과 미실행 영향이 함께 있어 전체 결과는 혼합 진단 자료다.
+- Measurement는 `failed/worker_blocked`로만 기록해 혼합 실패를 구조적으로 표현하지 못했다.
+  Environment Closure와 acceptance가 실제 Worker 셸 Python dependency를 검사하지 않은 gap도
+  함께 `DEV-20260903-003`으로 등록했다.
+- Cell seal self/file은 `e0068f76...ea90b` / `1926bfaa...8f52`, Measurement는
+  `ba92c400...a220`, adapter Evidence는 `8d15191d...afc0`이다.
+- 독립 finalization verifier 통과, secret finding과 residual process/container 0이다. lifecycle은
+  `SEALED, PLANNED, PLANNED, PLANNED`, Cell 2 claim과 automatic continuation은 0이다.
+
+기존 SS1 Cell과 state·raw·Measurement·seal은 수정하거나 재실행하지 않는다. B1을 지금 실행해도
+공정한 pair가 되지 않으므로 다음 관문은 Worker dependency preflight, self-review 수렴과 혼합
+실패 분류의 최소 수정 범위를 확정하는 것이다.
+
 ## Profile R v21 SS1→B1 첫 pair 봉인과 진단 전환
 
 - 작업일: 2026-09-02. Environment Closure와 별도 Cell 승인 뒤 experiment

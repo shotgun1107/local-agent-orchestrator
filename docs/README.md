@@ -132,6 +132,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: v21 SS1/B1 첫 pair는 두 Cell 모두 봉인됐지만 제품 실패와 B1 R10의 900초 timeout, R03·R04·R07 public/hidden 의미 간극 때문에 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. 기존 Cell 3·4는 실행하지 않는다. 다음 revision은 R03·R04·R07 계약을 정렬하고 Task·호출 횟수 상한 대신 각 Cell의 전체 완료시간 9000초만 남겼다. Task Pack q5, Docker Judge q25, Phase E candidate v22, independent acceptance 두 회차와 readiness v11까지 검증했다. 다음은 별도 Environment Closure이며 Live는 계속 `NO-GO`다.
+- 현실 고난도 비교: v21 SS1/B1 첫 pair는 제품 실패와 B1 R10 timeout 때문에 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. v22는 R03·R04·R07 계약을 정렬하고 Task·호출 횟수 상한 대신 Cell 전체 완료시간 9000초만 남겼으며 q25·q5·candidate·acceptance·readiness를 통과했다. 그러나 실제 SS1 Cell 1은 Worker Python의 `pytest`·`pydantic` 결손 때문에 R11에서 52 turns 뒤 blocked됐고 Judge R-P10~R-P13이 실패했다. Cell은 `SEALED_FAILED`, Cell 2~4는 미실행이며 `DEV-20260903-003` 진단 전에는 B1과 route를 진행하지 않는다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

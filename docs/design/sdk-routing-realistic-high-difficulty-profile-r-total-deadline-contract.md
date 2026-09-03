@@ -1,6 +1,6 @@
 # Profile R 전체 완료시간 단일 제한 계약
 
-- 문서 상태: `READINESS_V11_VERIFIED_AWAITING_ENVIRONMENT_CLOSURE`
+- 문서 상태: `LIVE_V22_SS1_DIAGNOSTIC_ONLY_WORKER_ENVIRONMENT_GAP`
 - 결정일: 2026-09-03
 - 적용 대상: Profile R v21 이후 새 revision의 SS1/B1 비교
 - 적용 제외: 기존 q24·q4·candidate v21·acceptance·readiness·live v21
@@ -186,4 +186,7 @@ model turn은 0이다.
 
 candidate 생성기 내부 검증과 별도 process verifier, checked-in v22 회귀가 통과했다. independent
 model-free acceptance 두 회차와 readiness v11 원본·ZIP 해제본 검증도 통과했다. 다음 관문은
-별도 Environment Closure이며 Live는 계속 `NO-GO`다.
+별도 Environment Closure를 통과한 SS1 Cell 1이었다. 실제 Cell은 9000초 안에서 70 turns를
+사용했지만 R11 Worker Python의 `pytest`·`pydantic` 결손으로 blocked됐고 Judge R-P10~R-P13이
+실패했다. 기존 Cell은 진단 자료로만 보존하며 다음 관문은 Worker 환경 preflight와 혼합 실패
+분류의 최소 수정 범위를 확정하는 것이다.
