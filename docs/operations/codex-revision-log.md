@@ -3586,3 +3586,22 @@ readiness 전에는 Live를 열지 않는다.
 
 다음 관문은 변경 source를 commit한 뒤 fresh Docker Judge qualification을 만들고 q5와 직접
 결합하는 것이다. 그 전에는 새 candidate·acceptance·readiness 또는 Live를 시작하지 않는다.
+
+## Profile R Docker Judge q25 봉인
+
+- 작업일: 2026-09-03. 단일 완료시간과 R03·R04·R07 계약 정렬 source
+  `7185f5f823757406238c1ef2d6d3e0c0fbf3393f`에서 fresh q25를 실행했다.
+- raw는 `C:\q25\profile-r-docker-matrix-q25-company-r01-r13`, projection은 qualification
+  v22다. exact image digest는 `ba83a183...30ab`이다.
+- reference 13/13 pass, 13개 negative mutation은 각 target property fail이며 expectation
+  `14/14`, prerequisite blocking 0, model turn 0이다.
+- raw file_count 72, manifest/result/seal self는 `4570f772...c2f3` / `23a5801e...6749` /
+  `640bf71b...19b7b`, payload aggregate는 `7aa086dc...20f`다.
+- independent raw verifier와 path-free projection exact recomputation이 통과했다. residual q25
+  container는 0이고 관련 model-free 회귀는 17 passed다.
+- qualification v22 file SHA는 `c756c905...df58e`, Docker environment file SHA는
+  `c5f9595d...001db`다. context `default`, Docker Desktop 4.85.0, engine/client 29.6.2,
+  server `linux/amd64`와 exact image를 기록했다.
+
+다음 관문은 q25 qualification v22와 Task Pack q5 qualification/budget을 직접 결합한 새 Phase E
+candidate다. acceptance와 Live는 계속 `NO-GO`다.

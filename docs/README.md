@@ -65,6 +65,7 @@ docs/
 - [Profile R SS1→B1 회사 v21 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md) — 두 Cell의 제품 실패, B1 R10 timeout·public/hidden 검사 간극과 Cell 3·4 중단 기록
 - [Profile R v21 첫 pair model-free 실패 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md) — timeout retry 우회와 R03·R04·R07 공개/hidden 계약 불일치 재현 및 최소 수정 범위
 - [Profile R 단일 완료시간 계약·Task Pack q5 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md) — Task·호출 횟수 상한을 제거하고 Cell 9000초만 남긴 source·reference·q5 model-free 검증 결과
+- [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
 
 ### `reviews/`
@@ -130,6 +131,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: v21 SS1/B1 첫 pair는 두 Cell 모두 봉인됐지만 제품 실패와 B1 R10의 900초 timeout, R03·R04·R07 public/hidden 의미 간극 때문에 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. 기존 Cell 3·4는 실행하지 않는다. 다음 revision의 source는 R03·R04·R07 계약을 정렬하고 Task·호출 횟수 상한 대신 SS1/B1 각 Cell의 R01~R13 전체 완료시간 9000초만 남겼다. Judge source bundle과 Task Pack q5 model-free 검증은 통과했지만 fresh Docker Judge qualification·candidate·acceptance·readiness가 없어 Live는 계속 `NO-GO`다.
+- 현실 고난도 비교: v21 SS1/B1 첫 pair는 두 Cell 모두 봉인됐지만 제품 실패와 B1 R10의 900초 timeout, R03·R04·R07 public/hidden 의미 간극 때문에 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. 기존 Cell 3·4는 실행하지 않는다. 다음 revision의 source는 R03·R04·R07 계약을 정렬하고 Task·호출 횟수 상한 대신 SS1/B1 각 Cell의 R01~R13 전체 완료시간 9000초만 남겼다. Task Pack q5와 fresh Docker Judge q25 qualification v22는 통과했다. 다음은 둘을 결합한 새 candidate이며 acceptance·readiness가 없어 Live는 계속 `NO-GO`다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

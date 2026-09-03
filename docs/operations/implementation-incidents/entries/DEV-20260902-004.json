@@ -93,7 +93,9 @@
     "q5와 fresh Docker qualification을 직접 결합한 새 candidate·acceptance·readiness 전에는 실제 deadline mode Cell을 실행할 수 없다.",
     "현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다."
   ],
-  "related_commits": [],
+  "related_commits": [
+    "7185f5f823757406238c1ef2d6d3e0c0fbf3393f"
+  ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md",

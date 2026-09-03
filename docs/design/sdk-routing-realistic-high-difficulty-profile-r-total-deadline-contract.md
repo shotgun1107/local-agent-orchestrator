@@ -1,6 +1,6 @@
 # Profile R 전체 완료시간 단일 제한 계약
 
-- 문서 상태: `MODEL_FREE_IMPLEMENTED_AWAITING_FRESH_DOCKER_QUALIFICATION`
+- 문서 상태: `Q25_DOCKER_QUALIFIED_AWAITING_NEW_CANDIDATE`
 - 결정일: 2026-09-03
 - 적용 대상: Profile R v21 이후 새 revision의 SS1/B1 비교
 - 적용 제외: 기존 q24·q4·candidate v21·acceptance·readiness·live v21
@@ -163,5 +163,15 @@ Pack q5를 model-free로 검증했다.
 
 상세 identity와 검증 결과는
 `docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md`에
-기록한다. 아직 fresh Docker Judge qualification, 새 candidate, acceptance와 readiness는 만들지
-않았다. 따라서 현재 단계는 source·model-free qualification 완료이며 Live는 계속 `NO-GO`다.
+기록한다. q5 봉인 시점에는 fresh Docker Judge qualification, 새 candidate, acceptance와
+readiness를 만들지 않았으며 Live는 `NO-GO`였다.
+
+### q25 Docker Judge qualification
+
+clean source `7185f5f823757406238c1ef2d6d3e0c0fbf3393f`에서 fresh q25를 실행했다. exact
+image digest를 사용한 reference와 13개 negative mutation이 expectation `14/14`로 일치했고,
+raw 독립 검증과 projection 재계산도 통과했다. qualification v22 file SHA는
+`c756c905...df58e`, raw seal은 `640bf71b...19b7b`이며 residual container와 model turn은 0이다.
+
+따라서 fresh Docker qualification 관문은 완료됐다. 아직 q25·q5를 stage에 결합한 새 candidate,
+acceptance와 readiness는 없으므로 Live는 계속 `NO-GO`다.
