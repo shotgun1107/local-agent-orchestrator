@@ -3642,3 +3642,22 @@ readiness, Environment Closure와 Live는 계속 `NO-GO`다.
 
 다음 관문은 별도 새 경로의 independent acceptance run 2다. readiness, Environment Closure와
 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v22 acceptance run 2
+
+- 작업일: 2026-09-03. run 1과 겹치지 않는 새 경로에서 acceptance parameter `[2]` 하나를
+  실행해 `1 passed in 192.03s`로 통과했다.
+- run 2는 R12의 내부 Git 저장소를 alternate-deep 경로로 바꿨으며 reference와 실제 B1
+  workspace 양쪽에 해당 표식이 적용된 상태로 public contract를 통과했다.
+- 두 Cell anchor는 `cell_completion_deadline` 9000초, `model_turn_ceiling=null`이고 lifecycle은
+  `SEALED, SEALED, PLANNED, PLANNED`다.
+- manifest 12/12 mismatch 0, public contract 13/13, cumulative Check 104/104, source·secret·
+  TEMP·process·lock residue 0을 별도로 확인했다.
+- acceptance attestation/file manifest/JUnit은 `2ed7083e...94368` / `dd1f1c2c...3aa74` /
+  `d3d40777...ac083`이다. checkout은 `5c246560bfb6b497a5d3b79fa9f99cd63273b610`다.
+- actual model turn, 실제 SDK thread/start·turn/start와 Docker workload는 0이다. Cell 3·4의
+  claim과 automatic continuation도 0이다.
+
+candidate v22의 independent acceptance 두 회차가 모두 통과했다. 다음 관문은 candidate,
+q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. Environment Closure와 Live는
+계속 `NO-GO`다.

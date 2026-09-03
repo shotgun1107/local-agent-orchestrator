@@ -4660,10 +4660,11 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - Task Pack q5는 positive transition 13/13, public negative mutation 13/13 rejected, Worker information boundary PASS로 TASK_PACK_READY가 됐다. actual model turn과 Docker workload는 0이다.
 - schema v4 Phase E candidate v22가 q25·q5와 Cell 완료시간 9000초를 직접 결합했고 planned model turn ceiling 없이 생성기·별도 verifier·checked-in 회귀를 통과했다. actual model turn은 0이다.
 - candidate v22 independent model-free acceptance run 1은 1 passed, manifest 12/12 mismatch 0, SS1/B1 deadline anchor 9000초, public contract 13/13과 cumulative Check 104/104로 통과했다.
+- independent acceptance run 2도 alternate-deep R12 topology에서 1 passed, manifest 12/12 mismatch 0, public contract 13/13과 cumulative Check 104/104로 통과했다.
 
 ### 남은 위험
 
-- candidate v22의 독립 acceptance run 2와 readiness가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
+- candidate v22 readiness package가 아직 완료되지 않아 실제 deadline mode Cell은 실행할 수 없다.
 - 현재 sandbox에서는 Windows process inventory 권한이 없어 B1 통합 회귀의 마지막 잔여 process 조회만 skip됐다.
 
 ### 추적 정보
@@ -4674,6 +4675,8 @@ B1 scheduler가 timeout으로 interrupt-confirmed된 CANCELLED terminal을 무�
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v15-run1-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v16-run2-result.md
 - 출처: benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json
 - 출처: benchmarks/artifacts/profile-r-task-pack-q4/task-budget.json
 - 출처: stages/b1-sequential/src/orchestrator/schedule.py
