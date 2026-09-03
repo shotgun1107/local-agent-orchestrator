@@ -75,7 +75,7 @@ CANDIDATE_ROOT = (
     REPOSITORY
     / "benchmarks"
     / "artifacts"
-    / "sdk-routing-realistic-high-difficulty-phase-e-v21"
+    / "sdk-routing-realistic-high-difficulty-phase-e-v22"
 )
 REFERENCE_PATCH = (
     REPOSITORY
@@ -923,6 +923,10 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
             / PHASE_F_CELL_ANCHOR_FILENAME
         )
         anchor = json.loads(anchor_path.read_text(encoding="utf-8"))
+        assert anchor["schema_version"] == 2
+        assert anchor["budget_mode"] == "cell_completion_deadline"
+        assert anchor["cell_completion_deadline_seconds"] == 9000
+        assert "model_turn_ceiling" not in anchor
         assert anchor["anchor_sha256"] == result.cell_anchor_sha256
         assert sha256_file(anchor_path) == result.cell_anchor_file_sha256
         assert anchor["previous_anchor_sha256"] == previous_anchor_sha256
@@ -980,6 +984,9 @@ def test_model_free_phase_f_runs_ss1_then_b1_only_with_separate_explicit_dispatc
     attestation = {
         "actual_model_turns": 0,
         "automatic_continuation": False,
+        "budget_mode": "cell_completion_deadline",
+        "cell_completion_deadline_seconds": 9000,
+        "model_turn_ceiling": None,
         "cell_anchor_sha256": {
             "ss1": first.cell_anchor_sha256,
             "b1": second.cell_anchor_sha256,
