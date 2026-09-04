@@ -1489,3 +1489,69 @@ def test_checked_in_profile_r_q25_q5_v22_candidate_verifies() -> None:
     assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
         "92d4ff1a44ca1e84275775d302d358d57df9ad06ec151730bacbef1998d652ba"
     )
+
+
+def test_checked_in_profile_r_q26_q6_v23_candidate_verifies() -> None:
+    candidate = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "sdk-routing-realistic-high-difficulty-phase-e-v23"
+    )
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
+    bindings = json.loads(
+        (candidate / "source-bindings.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads((candidate / "execution-plan.json").read_text(encoding="utf-8"))
+    profile_r = bindings["profiles"][0]
+
+    assert seal.schema_version == 4
+    assert seal.source_commit == "376c01c250bb82463442d87abeeaff9519fae536"
+    assert seal.experiment_id == "exp_20260904_2d1b83bb_1"
+    assert seal.plan_fingerprint == (
+        "2d1b83bb2bf20011883bc2df77cf983355a94c1f144ce65c65e06e9e7440804e"
+    )
+    assert seal.seal_sha256 == (
+        "fa7c730731b13de1264d1978e44f635a0b5f9ab3b9d048ca06870de5ae48f557"
+    )
+    assert seal.files_manifest_sha256 == (
+        "cc245229c3c116b5a1741feafd2fe0c864cf1aca31c85d3a5ec83617e1d070c3"
+    )
+    assert seal.budget_mode == "cell_completion_deadline"
+    assert seal.cell_completion_deadline_seconds == 9000
+    assert seal.planned_initial_model_turns is None
+    assert seal.planned_model_turn_ceiling is None
+    assert seal.actual_model_turns == 0
+    assert bindings["source_tree"] == "c6569c835b1fe34241873483659fbd793eb50ed0"
+    assert bindings["bindings_sha256"] == (
+        "4ab2543a76e1f99ddb80e31c363c4465f9f9deb35ef8050fbf0dab6456ff83bb"
+    )
+    assert profile_r["worker_manifest_sha256"] == (
+        "89b5534baed130a786a0bae8bbe9e59da825564b324cae6d082f04c9f4a1c931"
+    )
+    assert profile_r["qualification_sha256"] == (
+        "20e0a0ad13f9e02e78b55375c95555fcf74406c309409c04fc0e6a72e2a27385"
+    )
+    assert profile_r["qualification_seal_sha256"] == (
+        "3c23f3f30182e584f346b5750d1bf72f848a2297dab25a4877c4517452d47e9e"
+    )
+    assert profile_r["docker_environment_sha256"] == (
+        "e0eb7dd86424d83151b86b8d17edd4019441b3a219a6f2a8f2c74f54061b0c41"
+    )
+    assert profile_r["task_pack_qualification_sha256"] == (
+        "1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471"
+    )
+    assert profile_r["task_pack_qualification_seal_sha256"] == (
+        "6e2a6bbc3b8e5478b22207fd06ec176c4206d06b07bd2858e1cd57038322f5bd"
+    )
+    assert profile_r["task_budget_sha256"] == (
+        "088d010ae3e50579beb87fc3c0d4f85c17e2d1e7b9a0fe836168cf9dc2d00a1f"
+    )
+    assert profile_r["task_budget_seal_sha256"] == (
+        "d601a8a565b91cd26970746baa098523d34e971b9127d9e478c3f1332efc1132"
+    )
+    assert plan["decision_policy"]["budget_mode"] == "cell_completion_deadline"
+    assert plan["decision_policy"]["cell_completion_deadline_seconds"] == 9000
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
+        "50dde4f19af7656557aa590615d44e62e3a64a438f26b58368c431b8cf885e44"
+    )
