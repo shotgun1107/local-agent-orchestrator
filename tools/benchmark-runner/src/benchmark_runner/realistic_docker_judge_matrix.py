@@ -260,20 +260,21 @@ class GitPatchBackend:
     """Apply already hash-bound patches without creating a repository in W."""
 
     def apply(self, workspace: Path, patch: bytes, *, environment: Mapping[str, str]) -> None:
-        command = [
+        base_command = [
             "git",
             "-c",
             "core.autocrlf=false",
             "-c",
             "core.safecrlf=false",
+            "-c",
+            "core.longpaths=true",
             "apply",
             "--no-index",
             "--whitespace=nowarn",
-            "-",
         ]
         creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         check = subprocess.run(
-            [*command[:6], "--check", *command[6:]],
+            [*base_command, "--check", "-"],
             cwd=workspace,
             env=dict(environment),
             input=patch,
@@ -283,7 +284,7 @@ class GitPatchBackend:
         if check.returncode != 0:
             raise DockerJudgeMatrixError("frozen patch precheck failed")
         applied = subprocess.run(
-            command,
+            [*base_command, "-"],
             cwd=workspace,
             env=dict(environment),
             input=patch,
