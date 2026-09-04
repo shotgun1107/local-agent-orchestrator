@@ -136,17 +136,17 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 4
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v23/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v24/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v23/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v24/"
         "docker-environment.json"
     )
     assert stage.profiles[0].task_pack_qualification_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q6/qualification.json"
+        "benchmarks/artifacts/profile-r-task-pack-q7/qualification.json"
     )
     assert stage.profiles[0].task_budget_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q6/task-budget.json"
+        "benchmarks/artifacts/profile-r-task-pack-q7/task-budget.json"
     )
     assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
@@ -807,6 +807,32 @@ def test_profile_r_contract_alignment_q27_v24_is_exact_sixteen_cell_projection()
     )
 
 
+def test_candidate_binding_rejects_contract_alignment_semantic_drift() -> None:
+    qualification_path = (
+        REPOSITORY
+        / "benchmarks/artifacts/profile-r-docker-judge-qualification-v24/qualification.json"
+    )
+    qualification = json.loads(qualification_path.read_text(encoding="utf-8"))
+    assert phase_e._profile_r_contract_alignment_qualification_is_valid(
+        qualification
+    )
+    changed = json.loads(json.dumps(qualification))
+    changed["cells"][1]["aggregate_status"] = "fail"
+    assert not phase_e._profile_r_contract_alignment_qualification_is_valid(changed)
+
+    task_pack_path = (
+        REPOSITORY
+        / "benchmarks/artifacts/profile-r-task-pack-q7/qualification.json"
+    )
+    task_pack = json.loads(task_pack_path.read_text(encoding="utf-8"))
+    assert phase_e._profile_r_public_equivalents_are_valid(task_pack)
+    changed_task_pack = json.loads(json.dumps(task_pack))
+    changed_task_pack["public_equivalent_implementations"][0][
+        "contract_accepted"
+    ] = False
+    assert not phase_e._profile_r_public_equivalents_are_valid(changed_task_pack)
+
+
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
     included = (
         "src/benchmark_runner/sdk_baselines.py",
@@ -840,25 +866,25 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     assert bindings.schema_version == 4
     profile_r = bindings.profiles[0]
     assert profile_r.qualification_sha256 == (
-        "20e0a0ad13f9e02e78b55375c95555fcf74406c309409c04fc0e6a72e2a27385"
+        "1d73e90e0ab4763af899d96826ba812d9c89869fd26c58addda7c1ba4172223a"
     )
     assert profile_r.qualification_seal_sha256 == (
-        "3c23f3f30182e584f346b5750d1bf72f848a2297dab25a4877c4517452d47e9e"
+        "952bfdfd1068c4341c424ad7ca36e21a52c96cc17ea8ad70ddf2259b991e6fc3"
     )
     assert profile_r.docker_environment_sha256 == (
-        "e0eb7dd86424d83151b86b8d17edd4019441b3a219a6f2a8f2c74f54061b0c41"
+        "ef40c01c239b31c8e28716fbc53bdf41f8997159f5025201daf4fed9f2c7c510"
     )
     assert profile_r.task_pack_qualification_sha256 == (
-        "1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471"
+        "553d7c4b0fe180a051257526b28b4b8c389df91045e04ef610dd9d23a95242bc"
     )
     assert profile_r.task_pack_qualification_seal_sha256 == (
-        "6e2a6bbc3b8e5478b22207fd06ec176c4206d06b07bd2858e1cd57038322f5bd"
+        "22d62374403d43ae055dd17e592ecdd1edeb5de27bcd38f0473ea034c61f8e1e"
     )
     assert profile_r.task_budget_sha256 == (
-        "088d010ae3e50579beb87fc3c0d4f85c17e2d1e7b9a0fe836168cf9dc2d00a1f"
+        "9e81b08b4bc105e032dc889206c9491c4bb0eeabfd02abcfb27997d836fa9238"
     )
     assert profile_r.task_budget_seal_sha256 == (
-        "d601a8a565b91cd26970746baa098523d34e971b9127d9e478c3f1332efc1132"
+        "1540a56ad7c7ab58f2d63aff25588f8f83ec276a96755a2c7e17ad5d003b19b0"
     )
     assert plan.decision_policy["budget_mode"] == "cell_completion_deadline"
     assert plan.decision_policy["cell_completion_deadline_seconds"] == 9000
