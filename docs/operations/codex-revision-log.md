@@ -3482,22 +3482,6 @@ Environment Closure와 Live는 `NO-GO`다.
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
 
-## Profile R v23 Worker Python 실행환경 준비
-
-- 작업일: 2026-09-04. 기존 `C:\lao-v21-runtime`은 보존하고 source commit
-  `fe7aa3d369e54430f1a14a59620c4c03da6ee51d`에서 별도 `C:\lao-v23-runtime`을 만들었다.
-- Python은 3.12.10, executable SHA-256은 `0b471133...fc14`다. Docker Judge 고정 lock과
-  `openai-codex==0.144.4`를 설치하고 B1·Benchmark Runner는 clean source에서 만든 wheel을
-  non-editable로 설치했다. `pip check`는 통과했다.
-- 실제 Worker `python -I -B` dependency probe가 `pytest 8.4.2`, `pydantic 2.13.4`,
-  `PyYAML 6.0.3`, `jsonschema 4.26.0`의 파일 aggregate를 계산했고 Evidence self seal은
-  `2429f0ca...db90c`다.
-- 새 runtime의 환경 고정·Phase F live-stack 회귀는 `25 passed, 1 skipped`다. skip은 명시적
-  실제 SDK zero-turn preflight로 이번 단계에서는 app-server, SDK thread/turn, model, Docker와
-  Controller state를 사용하지 않았다.
-- 아직 새 Docker Judge qualification, candidate, acceptance 2회와 readiness가 없으므로 Live는
-  `NO-GO`다. 다음 관문은 현재 source의 Docker Judge qualification이다.
-
 ## Profile R v22 실패 교정·Task Pack q6
 
 - 작업일: 2026-09-04. v22 봉인 자료는 그대로 두고 R10 공개검사, Worker Python 환경,
@@ -3742,3 +3726,35 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
+
+## Profile R v23 Worker Python 실행환경 준비
+
+- 작업일: 2026-09-04. 기존 `C:\lao-v21-runtime`은 보존하고 source commit
+  `fe7aa3d369e54430f1a14a59620c4c03da6ee51d`에서 별도 `C:\lao-v23-runtime`을 만들었다.
+- Python은 3.12.10, executable SHA-256은 `0b471133...fc14`다. Docker Judge 고정 lock과
+  `openai-codex==0.144.4`를 설치하고 B1·Benchmark Runner는 clean source에서 만든 wheel을
+  non-editable로 설치했다. `pip check`는 통과했다.
+- 실제 Worker `python -I -B` dependency probe가 `pytest 8.4.2`, `pydantic 2.13.4`,
+  `PyYAML 6.0.3`, `jsonschema 4.26.0`의 파일 aggregate를 계산했고 Evidence self seal은
+  `2429f0ca...db90c`다.
+- 새 runtime의 환경 고정·Phase F live-stack 회귀는 `25 passed, 1 skipped`다. skip은 명시적
+  실제 SDK zero-turn preflight로 이번 단계에서는 app-server, SDK thread/turn, model, Docker와
+  Controller state를 사용하지 않았다.
+- 아직 새 Docker Judge qualification, candidate, acceptance 2회와 readiness가 없으므로 Live는
+  `NO-GO`다. 다음 관문은 현재 source의 Docker Judge qualification이다.
+
+## Profile R Docker Judge q26 봉인
+
+- 작업일: 2026-09-04. source `7dc780efbf51b4252c9ca2765675605a5f29520a`에서
+  `profile-r-docker-matrix-q26-company-r01-r13`을 실행했다.
+- 정상 reference는 13 properties 전부 통과했고 전용 오류 사례 13개는 모두 담당 property를
+  실패시켰다. 14개 Cell 전부 expectation과 일치했으며 prerequisite blocking과 checker error는
+  0이다.
+- raw verifier, path-free projection exact recomputation, Docker environment binding과
+  no-network distribution/lock comparison이 통과했다. 관련 model-free 회귀와 checked-in artifact
+  검사는 `34 passed`, clean local record commit의 Phase E 전체 회귀는 `41 passed`다.
+- qualification v23 projection SHA-256은 `20e0a0ad...a27385`, raw seal self hash는
+  `3c23f3f3...d47e9e`다. Docker image는 `ba83a183...330ab`이고 잔여 q26 container는 0이다.
+- API key, model과 SDK thread/turn은 사용하지 않았고 Controller state도 변경하지 않았다.
+  다음 관문은 q26과 Task Pack q6를 직접 결합한 새 Phase E candidate다. acceptance와 Live는
+  계속 `NO-GO`다.
