@@ -366,6 +366,7 @@ def test_repository_reference_bundle_matches_chain_and_self_seals(
         ("profile-r-task-pack-q4", "profile-r-task-pack-q4"),
         ("profile-r-task-pack-q5", "profile-r-task-pack-q5"),
         ("profile-r-task-pack-q6", "profile-r-task-pack-q6"),
+        ("profile-r-task-pack-q7", "profile-r-task-pack-q7"),
     ),
 )
 def test_task_pack_artifact_and_budget_are_self_sealed(
@@ -415,3 +416,15 @@ def test_task_pack_artifact_and_budget_are_self_sealed(
                 "task_id": "R10",
             }
         ]
+    if qualification_id == "profile-r-task-pack-q7":
+        assert [
+            item["equivalent_id"]
+            for item in qualification["public_equivalent_implementations"]
+        ] == [
+            "r11-equivalent-write-effects",
+            "r13-equivalent-operator-vocabulary",
+        ]
+        assert all(
+            item["contract_accepted"] is True
+            for item in qualification["public_equivalent_implementations"]
+        )

@@ -70,7 +70,7 @@
         "contract_rejected": true,
         "return_code": 1,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "b174038cbc46862c8da0bc95a13b5b54af8eef7e77afc48bec3f37026161dff1",
+        "stdout_sha256": "0497dd0fff6637f36e9ea5a05a9c44d02c45e08ccbe751111e8f62ead83f9abc",
         "task_id": "R03"
       },
       "statuses": {
@@ -301,7 +301,7 @@
         "contract_rejected": true,
         "return_code": 1,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "19f3244f02efd296017ce6fa88d10455beb549fd80b056d482ce7d2e270a59ea",
+        "stdout_sha256": "eab696538bd242c3acc12694fb7cd9a470704210551421d7aacf3f76f40307d3",
         "task_id": "R11"
       },
       "statuses": {

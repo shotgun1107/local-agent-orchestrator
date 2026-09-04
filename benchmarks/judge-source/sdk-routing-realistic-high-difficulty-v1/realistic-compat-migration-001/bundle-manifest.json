@@ -1,5 +1,5 @@
 {
-  "file_count_excluding_manifest": 47,
+  "file_count_excluding_manifest": 52,
   "files": [
     {
       "path": "anonymization-map.json",
@@ -8,13 +8,13 @@
     },
     {
       "path": "challenge-eligibility.json",
-      "sha256": "42d626c72b88cbf1348df2da19a316508f2dd3e5f6fe8e5cf5c2140f733a1d81",
-      "size": 491
+      "sha256": "41bee0d1b5bd4c9d96761b782a45411d56f67732608ccbdba69e4ed732944c11",
+      "size": 581
     },
     {
       "path": "checker/check_properties.py",
-      "sha256": "36e0d2828229c312f59013c38c9fcab53de1e4de3d1819bf7731b75a09f15425",
-      "size": 29062
+      "sha256": "371c28a85765e4372f11fd30f380c9485d276d536f85865a072a53dca9da0996",
+      "size": 31132
     },
     {
       "path": "checker/probe_runtime_boundary.py",
@@ -27,88 +27,113 @@
       "size": 19884
     },
     {
+      "path": "equivalent-implementations/r11-equivalent-write-effects.patch",
+      "sha256": "f76bc9430bd50232480c919a316d93303ce05754f8c8a05f97aa420c3237d930",
+      "size": 914
+    },
+    {
+      "path": "equivalent-implementations/r13-equivalent-operator-vocabulary.patch",
+      "sha256": "834ae7c303aa1339d3f8c30c69969cc6fc3cf0c0f3b74d668be56a5c56db812d",
+      "size": 5144
+    },
+    {
       "path": "evidence/adversarial-worker-test-oracle.json",
       "sha256": "0b873adb3d0e256005e6f6a39ebe5653bc44196776b30fd1214670b0713161a8",
       "size": 5795
     },
     {
       "path": "evidence/anonymization-review.md",
-      "sha256": "0e55cff21a648bf7dd7bded7b6eaebe50b6a51c58dd211fa9da0bc4b06313cba",
-      "size": 505
+      "sha256": "c66a91b3cecf126ab2ec0750dc87fa828d4726d2ef879d8dfac6186b1be9ce10",
+      "size": 559
+    },
+    {
+      "path": "evidence/equivalents/r11-equivalent-write-effects.json",
+      "sha256": "21155b7a2456a0563e03bd8d5b37288548a7898c8f5163b965e15d33871a6210",
+      "size": 12730
+    },
+    {
+      "path": "evidence/equivalents/r13-equivalent-operator-vocabulary.json",
+      "sha256": "66a7564d40e275f6c7edcac3669806a9d1a36c5db0ca83188a0caec22b925550",
+      "size": 12736
     },
     {
       "path": "evidence/mutations/r-p01-source-boundary.json",
-      "sha256": "8fe7381df00fb0d4d00ad08486a9f77703d130d9731ae1be85ae5afc4d52d994",
+      "sha256": "1a66fa3fe0f4d03d5534f4abbb8218c0c718989e8c6a7385d2908903b4429969",
       "size": 12725
     },
     {
       "path": "evidence/mutations/r-p02-discriminator.json",
-      "sha256": "1e09ce13e9697bb7aed89aa242e46ef2cc33f9f13fa07edb81d5010f9047080d",
+      "sha256": "8c55410c0967fe0336b1909dc2c22f41211a8a74c0beb53ee7e3c0ac53edf94f",
       "size": 12728
     },
     {
       "path": "evidence/mutations/r-p03-config-fixture.json",
-      "sha256": "377bba6af090ade3be47825e57b45190b7bf5c0fecdfab3d279d3dea2466aa94",
+      "sha256": "008066c82c67ade51cc79038a9add89e4f12b68dd286ef479377dfba299b92ed",
       "size": 12725
     },
     {
       "path": "evidence/mutations/r-p04-incident-fixture.json",
-      "sha256": "823acd98d380aa4bf6dc5dc4a19b80ba4baa22f8c724f64ecea3ae3853b4171f",
+      "sha256": "4ac10dca47fff3ac4ea0d53a3a0e7fcfed7051255d4b51703bc322c46c039c7f",
       "size": 12727
     },
     {
       "path": "evidence/mutations/r-p05-manifest-binding.json",
-      "sha256": "46bc2822184a27cc2904099e499db7b709e098db7ed6d286016ebeff2938dd5f",
+      "sha256": "c650152227485afeed905a32b1e2f17cab13677ef8b0fa83313a713cd365c727",
       "size": 12726
     },
     {
       "path": "evidence/mutations/r-p06-plan-binding.json",
-      "sha256": "1a04aeb7e3060e9b4d154fe172d7be2948107fdf721fcf9ae36fbfb13bb90406",
+      "sha256": "2370234a8414ee5ed1a188ed6039f91c6b9d33dd6594adabee1bb2df9ee23b43",
       "size": 12733
     },
     {
       "path": "evidence/mutations/r-p07-routing-policy.json",
-      "sha256": "e0b629633df75a997151cfcb095ee12a3eec9c1a1ed86ee127d2df6c927ff76a",
+      "sha256": "64ae8879a0cfdea29adccbd84087197f392e80209263a3d1602f3196b0e38ea7",
       "size": 12734
     },
     {
       "path": "evidence/mutations/r-p08-lifecycle-reuse.json",
-      "sha256": "cc929256fb86b8c66febe857b54631939cdd2f04a7d92fbb579a82ad42a3b3ea",
+      "sha256": "b93cb6f8bd95e19c3ac1d85aed5234bd4f93611c7c0e2214175a6c052f596f92",
       "size": 12737
     },
     {
       "path": "evidence/mutations/r-p09-status-posthoc.json",
-      "sha256": "f5bd44fd093cd3ad94283db46b20ff3c40cadf1531739647041224c7b0b3a13e",
+      "sha256": "13b97e3644836486c39a563085560376bfb890ef8e618f573ee3783920d0e94f",
       "size": 12721
     },
     {
       "path": "evidence/mutations/r-p10-export-verify.json",
-      "sha256": "40dfe76398d62df54ed872dd8e18240320eec1fe186e7f22112aa66f5398e3d7",
+      "sha256": "15a8633139191c9d929742e71f8a986895c1c9ed944bd245d9c9bea4f6cac607",
       "size": 12723
     },
     {
       "path": "evidence/mutations/r-p11-s2-e2e.json",
-      "sha256": "897b6276c548f49fab91d1a6f18e29350cd91eade50a732761b009e33f7e3a21",
+      "sha256": "544b4aa1244e154c734073db68bd1d4ba90a0c6097da23d00b294593a17446f3",
       "size": 12715
     },
     {
       "path": "evidence/mutations/r-p12-s1-portability.json",
-      "sha256": "73fec2f3cf454dc949f24bbd49492905d2c74cca2d54f41d56662441f026b066",
+      "sha256": "88bc0a58a7126c58376f48655e118fe5927a9e3138eff6b3376a7ad79ed116cc",
       "size": 12726
     },
     {
       "path": "evidence/mutations/r-p13-operator-semantics.json",
-      "sha256": "e0b40899820622e460d059ca2e6c9373d414ad95ee754574d1578915d100df4b",
+      "sha256": "c88ac706f55a6275a5e62db1d8f732db6ac59c7850fcd31232c7dc59e1a25659",
       "size": 12724
     },
     {
       "path": "evidence/pristine.json",
-      "sha256": "59e9f6c4ae85cfd1d469c6c76c20cb16c741c5cd48e744995ef32c64d46f795d",
+      "sha256": "2e734b820eafdf1e53ba04f87cac76014decf1bf7c864a40db14ca6eafbe3ee3",
       "size": 10298
     },
     {
+      "path": "evidence/public-hidden-equivalence.json",
+      "sha256": "817d1aacaa14c640dfeb720904ab44226968ff64f8825b50a7244eeef7fb5a95",
+      "size": 3022
+    },
+    {
       "path": "evidence/public-negative-matrix.json",
-      "sha256": "843adfbbdb5d797c1ea9e945352e43a9124f3bfeebdc98aa04316678bfd408b5",
+      "sha256": "422fb9ea2f3e4a95d34e4df3d62d1fd4a580b8be5a427f84a7b768757534a5e5",
       "size": 13906
     },
     {
@@ -123,7 +148,7 @@
     },
     {
       "path": "evidence/reference.json",
-      "sha256": "e208e2b0349f463527d261320b455404b6fdea5c40e598336225bd4cf797a5fe",
+      "sha256": "b767a9bfa405e519cfe28624f7f4950c3cf44205ab2c13f287943121aafe1120",
       "size": 12711
     },
     {
@@ -188,8 +213,8 @@
     },
     {
       "path": "negative-mutations/r-p11-s2-e2e.patch",
-      "sha256": "74d73807849f9b51a19192c54e48bebdce199761030b66b5e1469e9fc57c2a4f",
-      "size": 923
+      "sha256": "bb0f9badf59320cfbf23a4678a6b3161899a01de4eddade708a93e0b9688ff62",
+      "size": 760
     },
     {
       "path": "negative-mutations/r-p12-s1-portability.patch",
@@ -228,16 +253,16 @@
     },
     {
       "path": "solution-leakage-catalog.json",
-      "sha256": "a3cb2b792c494a5080820c0ba79239fc8a73daacac3c2f35d51beb7a110144c6",
-      "size": 317
+      "sha256": "0110119ca308a961fbe88aa2b626176dfcec1a8eeb1c1c7e24ef22c63924a9f0",
+      "size": 352
     },
     {
       "path": "worker-information-boundary.json",
-      "sha256": "17d31f7cbff4469442f7097077750d2013becbc493bd06853945090fee10d165",
-      "size": 396
+      "sha256": "956defd27440ccb0b57e8f9e5365542d378355f6e392cced3f973e4c54c2fb79",
+      "size": 433
     }
   ],
-  "payload_aggregate_sha256": "d01814f601486bd017bfe310392beb0047c2e90a780cf38deb6b715f282ce02e",
+  "payload_aggregate_sha256": "6dfc39986c7f481d364bf4f87f18c220a2301db7f2902d8d861a179a017addac",
   "profile": "R",
   "reference_commit": "56c91334fb32c4699d11ef80769831f14a0431d6",
   "schema_version": 1,

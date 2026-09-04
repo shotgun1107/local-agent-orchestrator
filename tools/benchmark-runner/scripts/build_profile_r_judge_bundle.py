@@ -777,9 +777,11 @@ def mutate_status_posthoc(root: Path) -> None:
 def mutate_s2_e2e(root: Path) -> None:
     path = root / "tools/benchmark-runner/tests/test_routing_s2.py"
     payload = path.read_bytes()
-    if b'"type": "write_file"' not in payload:
-        raise RuntimeError("S2 write-effect mutation anchor is absent")
-    path.write_bytes(payload.replace(b'"type": "write_file"', b'"type": "missing_effect"'))
+    before = b'result.cell_state == "SEALED"'
+    after = b'result.lifecycle_state == "SEALED"'
+    if payload.count(before) != 1:
+        raise RuntimeError("S2 Cell-state mutation anchor differs")
+    path.write_bytes(payload.replace(before, after, 1))
 
 
 def mutate_s1_portability(root: Path) -> None:
@@ -803,6 +805,35 @@ def mutate_operator(root: Path) -> None:
     path = root / "profile-r/work/operator-contract.json"
     value = load_json(path)
     value["commands"][2]["stop_before_next_dispatch"] = False
+    path.write_bytes(canonical_json(value))
+
+
+def make_r11_equivalent_write_effects(root: Path) -> None:
+    """Keep the R11 behavior while changing the source representation."""
+
+    path = root / "tools/benchmark-runner/tests/test_routing_s2.py"
+    payload = path.read_bytes()
+    before = b'{"type": "write_file", "path": path, "content": content}'
+    after = b'dict(type="write_file", path=path, content=content)'
+    if payload.count(before) != 1:
+        raise RuntimeError("R11 equivalent write-effect anchor differs")
+    path.write_bytes(payload.replace(before, after, 1))
+
+
+def make_r13_equivalent_operator_vocabulary(root: Path) -> None:
+    """Keep the public operator invariants with non-oracle wording."""
+
+    path = root / "profile-r/work/operator-contract.json"
+    value = load_json(path)
+    for command in value["commands"]:
+        command_id = str(command["command_id"])
+        command["argv"] = [command_id, "--public-contract"]
+        command["precondition"] = f"public precondition for {command_id}"
+        command["failure_map"] = {
+            "1": f"public failure semantics for {command_id}"
+        }
+        command["allowed_source_states"] = [f"{command_id.upper()}_SOURCE"]
+        command["allowed_terminal_states"] = [f"{command_id.upper()}_TERMINAL"]
     path.write_bytes(canonical_json(value))
 
 
@@ -866,6 +897,23 @@ MUTATIONS: tuple[tuple[str, str, Callable[[Path], None]], ...] = (
     ("r-p11-s2-e2e", "R-P11-S2-E2E", mutate_s2_e2e),
     ("r-p12-s1-portability", "R-P12-S1-PORTABILITY", mutate_s1_portability),
     ("r-p13-operator-semantics", "R-P13-OPERATOR-SEMANTICS", mutate_operator),
+)
+
+EQUIVALENT_IMPLEMENTATIONS: tuple[
+    tuple[str, str, str, Callable[[Path], None]], ...
+] = (
+    (
+        "r11-equivalent-write-effects",
+        "R11",
+        "R-P11-S2-E2E",
+        make_r11_equivalent_write_effects,
+    ),
+    (
+        "r13-equivalent-operator-vocabulary",
+        "R13",
+        "R-P13-OPERATOR-SEMANTICS",
+        make_r13_equivalent_operator_vocabulary,
+    ),
 )
 
 
@@ -1012,6 +1060,68 @@ def validate_public_regression_reference(
     }
 
 
+def validate_public_equivalent(
+    solution: Path,
+    *,
+    task_id: str,
+) -> dict[str, object]:
+    """Require a non-canonical but public-valid implementation to pass."""
+
+    if task_id == "R11":
+        return validate_public_regression_reference(
+            solution,
+            task_id=task_id,
+            expected_tests=7,
+        )
+    timeout_seconds = public_check_timeout_seconds(
+        solution, f"{task_id.lower()}_contract"
+    )
+    with tempfile.TemporaryDirectory(
+        prefix=f"profile-r-public-equivalent-{task_id.lower()}-"
+    ) as raw:
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "TEMP": raw,
+                "TMP": raw,
+                "TMPDIR": raw,
+                "PYTHONUTF8": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            }
+        )
+        environment.pop("PYTHONPATH", None)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(solution / "benchmark_checks" / "check_profile_r.py"),
+                task_id,
+            ],
+            cwd=solution,
+            env=environment,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    stdout_lines = completed.stdout.decode(
+        "utf-8", errors="replace"
+    ).splitlines()
+    passed = (
+        completed.returncode == 0
+        and completed.stderr == b""
+        and stdout_lines == [f"{task_id}_PUBLIC_CONTRACT_OK"]
+    )
+    return {
+        "schema_version": 1,
+        "entrypoint": f"benchmark_checks/check_profile_r.py {task_id}",
+        "outer_timeout_seconds": timeout_seconds,
+        "return_code": completed.returncode,
+        "stdout_sha256": sha256(completed.stdout),
+        "stderr_sha256": sha256(completed.stderr),
+        "contract_ok_marker": stdout_lines == [f"{task_id}_PUBLIC_CONTRACT_OK"],
+        "passed": passed,
+    }
+
+
 def validate_public_mutation(
     solution: Path,
     *,
@@ -1151,7 +1261,11 @@ def build(repository: Path) -> dict[str, object]:
         "solution-leakage-catalog.json", "operator-contract.json", "incident-claims.json",
         "reference.patch", "bundle-manifest.json", PROBE_RELATIVE.as_posix(),
     }
-    generated_prefixes = ("negative-mutations/", "evidence/")
+    generated_prefixes = (
+        "negative-mutations/",
+        "equivalent-implementations/",
+        "evidence/",
+    )
     for path in list(judge_root.rglob("*")):
         if not path.is_file():
             continue
@@ -1241,11 +1355,11 @@ def build(repository: Path) -> dict[str, object]:
         "schema_version": 1,
         "worker_root": "workspace",
         "allowed_information": ["public requirements", "public developer checks", "base implementation", "declared Task graph"],
-        "forbidden_information": ["reference.patch", "negative-mutations/**", "checker/**", "evidence/**", "historical reference commit explanation", "golden solution tree"],
+        "forbidden_information": ["reference.patch", "negative-mutations/**", "equivalent-implementations/**", "checker/**", "evidence/**", "historical reference commit explanation", "golden solution tree"],
     }))
     write_bytes(judge_root, "solution-leakage-catalog.json", pretty_json({
         "schema_version": 1,
-        "forbidden_worker_literals": ["reference.patch", "negative-mutations/", "check_properties.py", REFERENCE_COMMIT],
+        "forbidden_worker_literals": ["reference.patch", "negative-mutations/", "equivalent-implementations/", "check_properties.py", REFERENCE_COMMIT],
         "forbidden_worker_paths": ["benchmarks/judge-source/**", "benchmarks/posthoc-checks/sdk-routing-v1/s2/golden/**"],
     }))
     write_bytes(judge_root, "challenge-eligibility.json", pretty_json({
@@ -1295,6 +1409,72 @@ def build(repository: Path) -> dict[str, object]:
         reference_result = checker.evaluate_workspace(reference_eval, experiment_id="phase-d-profile-r", cell_id="reference")
         write_bytes(judge_root, "evidence/pristine.json", pretty_json(pristine_result))
         write_bytes(judge_root, "evidence/reference.json", pretty_json(reference_result))
+
+        equivalent_summaries = []
+        for equivalent_id, task_id, target_property, transform in (
+            EQUIVALENT_IMPLEMENTATIONS
+        ):
+            equivalent = temporary / f"equivalent-{equivalent_id}"
+            copy_tree(solution, equivalent)
+            transform(equivalent)
+            equivalent_patch = patch_bytes(solution, equivalent)
+            if not equivalent_patch:
+                raise RuntimeError(
+                    f"public-equivalent patch is empty: {equivalent_id}"
+                )
+            equivalent_eval = temporary / f"eval-equivalent-{equivalent_id}"
+            copy_tree(pristine, equivalent_eval)
+            initialize_repo(equivalent_eval)
+            git(equivalent_eval, "apply", "-", input_bytes=reference_patch)
+            git(equivalent_eval, "apply", "-", input_bytes=equivalent_patch)
+            result = checker.evaluate_workspace(
+                equivalent_eval,
+                experiment_id="phase-d-profile-r",
+                cell_id=equivalent_id,
+            )
+            public_result = validate_public_equivalent(
+                equivalent,
+                task_id=task_id,
+            )
+            write_bytes(
+                judge_root,
+                f"equivalent-implementations/{equivalent_id}.patch",
+                equivalent_patch,
+            )
+            write_bytes(
+                judge_root,
+                f"evidence/equivalents/{equivalent_id}.json",
+                pretty_json(result),
+            )
+            statuses = {
+                item["property_id"]: item["status"]
+                for item in result["properties"]
+            }
+            equivalent_summaries.append(
+                {
+                    "equivalent_id": equivalent_id,
+                    "task_id": task_id,
+                    "target_property_id": target_property,
+                    "aggregate_status": result["aggregate_status"],
+                    "statuses": statuses,
+                    "public_contract": public_result,
+                    "all_hidden_properties_passed": all(
+                        status == "pass" for status in statuses.values()
+                    ),
+                }
+            )
+
+        write_bytes(
+            judge_root,
+            "evidence/public-hidden-equivalence.json",
+            pretty_json(
+                {
+                    "schema_version": 1,
+                    "profile": "R",
+                    "cases": equivalent_summaries,
+                }
+            ),
+        )
 
         mutation_summaries = []
         for mutation_index, (mutation_id, target_property, mutate) in enumerate(
@@ -1443,6 +1623,13 @@ def build(repository: Path) -> dict[str, object]:
             public_r11_result["passed"] is True
             and public_r12_result["passed"] is True
         )
+        equivalence_ok = all(
+            item["public_contract"]["passed"] is True
+            and item["aggregate_status"] == "pass"
+            and item["statuses"].get(item["target_property_id"]) == "pass"
+            and item["all_hidden_properties_passed"] is True
+            for item in equivalent_summaries
+        )
         forbidden = load_json(judge_root / "solution-leakage-catalog.json")
         worker_files = [path for path in pristine.rglob("*") if path.is_file()]
         leakage_hits = []
@@ -1459,6 +1646,7 @@ def build(repository: Path) -> dict[str, object]:
             f"- Negative mutation contracts: {'pass' if mutation_ok else 'fail'}\n"
             f"- Adversarial Worker test-oracle contracts: {'pass' if adversarial_ok else 'fail'}\n"
             f"- Exact public R11/R12 projected-reference runs: {'pass' if public_regressions_ok else 'fail'}\n"
+            f"- Public/hidden equivalent implementation cases: {'pass' if equivalence_ok else 'fail'}\n"
             f"- Forbidden Worker literal hits: {len(leakage_hits)}\n"
             "- The public S2 regression consumes current fixture outputs and never reads the hidden golden tree.\n"
             "- This source bundle does not claim the protected Judge runtime filesystem/no-network boundary.\n"
@@ -1470,6 +1658,7 @@ def build(repository: Path) -> dict[str, object]:
             and mutation_ok
             and adversarial_ok
             and public_regressions_ok
+            and equivalence_ok
             and not leakage_hits
         )
         eligibility = load_json(judge_root / "challenge-eligibility.json")
@@ -1483,6 +1672,8 @@ def build(repository: Path) -> dict[str, object]:
             "negative_mutation_count": len(mutation_summaries),
             "adversarial_worker_test_oracle_count": len(adversarial_summaries),
             "public_r11_r12_reference_verified": public_regressions_ok,
+            "public_hidden_equivalent_case_count": len(equivalent_summaries),
+            "public_hidden_equivalence_verified": equivalence_ok,
         })
         write_bytes(judge_root, "challenge-eligibility.json", pretty_json(eligibility))
 
