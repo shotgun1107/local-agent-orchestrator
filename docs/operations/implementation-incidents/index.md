@@ -6,9 +6,9 @@
 ## 요약
 
 - 전체: 75건
-- 해결: 73건
+- 해결: 74건
 - 조사 중: 1건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -86,7 +86,7 @@
 | DEV-20260902-005 | resolved | phase-f-profile-r-v21-first-pair | test | Profile R v21 B1 public success와 대응 hidden property 판정 사이에 실제 의미 간극이 남음 |
 | DEV-20260903-001 | resolved | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
 | DEV-20260903-002 | resolved | phase-f-profile-r-v22-readiness | tooling | Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함 |
-| DEV-20260903-003 | open | phase-f-profile-r-v22-ss1 | integration | Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨 |
+| DEV-20260903-003 | resolved | phase-f-profile-r-v22-ss1 | integration | Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨 |
 | DEV-20260904-001 | resolved | profile-r-task-pack-q6 | tooling | Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
@@ -4891,11 +4891,11 @@ v10 allowlist와 이후 Git 변경으로 선택 경로를 계산하되 모든 re
 
 ## DEV-20260903-003 — Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-v22-ss1`
 - 분류: `integration`
 - 발견: 2026-09-03T07:23:11Z / Profile R v22 SS1 Cell 1 live와 sealed Evidence inspection
-- 해결: 미해결
+- 해결: 2026-09-04T03:34:51Z
 
 ### 증상
 
@@ -4927,7 +4927,7 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 
 ### 채택한 해결
 
-새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀를 통과한 뒤 C:\lao-v23-runtime에 새 exact Worker Python을 별도로 준비해 dependency probe를 통과시켰다. Docker Judge q26도 reference와 13개 오류 사례 14/14 expectation 일치로 통과했다. q26과 q6를 직접 결합한 candidate v23을 생성·검증했고 서로 분리된 acceptance run 1과 run 2도 통과했다. readiness v12는 이 입력을 하나의 봉인 패키지로 결합하고 원본과 새 ZIP 해제본을 독립 검증했다. 실제 Phase F zero-turn preflight와 Environment Closure 전까지 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
+새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀를 통과한 뒤 C:\lao-v23-runtime에 새 exact Worker Python을 별도로 준비해 dependency probe를 통과시켰다. Docker Judge q26도 reference와 13개 오류 사례 14/14 expectation 일치로 통과했다. q26과 q6를 직접 결합한 candidate v23, 서로 분리된 acceptance 두 회차와 readiness v12를 검증했다. 실제 Environment Closure와 v23 SS1은 Worker Python Evidence가 준비 단계와 정확히 같고 환경 실패가 없음을 확인했다. v23 SS1의 R09 무진전은 별도 제품 성능 결과이며 이 incident의 환경 결함은 해결됐다. 기존 v22 Evidence는 수정하지 않는다.
 
 ### 수정 파일
 
@@ -4970,15 +4970,17 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 - readiness v12 원본 package와 새 ZIP 해제본 verifier가 manifest 714 records, payload 713 files, aggregate 8f4620115442ef28ef8227966ba9be6806d62872238800f6f1c3ae1ff40d1c80과 seal 06f7dd70fb22f7c7aba47b16f67f3b11609ab7c845b810ae816ca05e7632dd7d로 일치
 - readiness v12 내부 q26 verifier는 CHALLENGE_READY 14/14, canonical regression은 13 passed, high-confidence credential finding은 0
 - readiness v12 조립·검증의 model·SDK thread/turn·Docker workload는 0
+- v23 Environment Closure에서 실제 Worker python dependency Evidence가 준비 단계 self seal 2429f0ca4d485c162c0c4abb87bb7686f89903b3df93b165eedfc06b075db90c와 일치
+- v23 SS1은 17 model turns 뒤 제품 무진전으로 봉인됐고 failure classification PRODUCT_ASSERTION, environment_failure_present=false로 기록됨
+- v23 SS1 independent finalization verifier가 Cell seal 파일, Measurement identity, 17-turn accounting과 state/anchor chain을 검증
 
 ### 남은 위험
 
-- 새 Worker Python은 candidate 생성에 사용됐지만 실제 Phase F zero-turn preflight와 Environment Closure에 아직 결합되지 않았다.
-- 실제 SDK preflight와 Docker smoke/dry-run은 별도 Environment Closure 전까지 실행하지 않았다.
+- 없음
 
 ### 추적 정보
 
-- 관련 커밋: fe7aa3d369e54430f1a14a59620c4c03da6ee51d, 376c01c250bb82463442d87abeeaff9519fae536, c42158e6c5617c02635c98ea6e7dbda11bd8cc71, 3503d6126bb394398c8cbb2445f9e09fb3918e47, 7167edf4b896a66ccd935f9e8255d36b353779b2
+- 관련 커밋: fe7aa3d369e54430f1a14a59620c4c03da6ee51d, 376c01c250bb82463442d87abeeaff9519fae536, c42158e6c5617c02635c98ea6e7dbda11bd8cc71, 3503d6126bb394398c8cbb2445f9e09fb3918e47, 7167edf4b896a66ccd935f9e8255d36b353779b2, 2366fd8ca0ad97c1cc1f9442e4e5f6c71902dc5f
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-worker-python-v23-company-result.md
@@ -4987,6 +4989,7 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v17-run1-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v18-run2-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v12-package-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
 
 ## DEV-20260904-001 — Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함

@@ -3831,3 +3831,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 실제 Cell을 실행하지 않고
 사용자에게 제어권을 돌려준다.
+
+## Profile R v23 Environment Closure와 SS1 Cell 1
+
+- 작업일: 2026-09-04. HEAD/tree `2366fd8ca0ad97c1cc1f9442e4e5f6c71902dc5f` /
+  `4a432a8a18effae20487f267b65859c56b1f0ffd`에서 candidate v23·readiness v12, Python 3.12.10,
+  SDK/CLI 0.144.4, ChatGPT `gpt-5.6-sol`과 exact Docker image를 대조했다.
+- 실제 Worker `python`의 네 필수 distribution Evidence가 준비 단계 seal `2429f0ca...db90c`와
+  일치했다. 동일경로 Docker no-op과 외부 경로·긴 경로 probe를 통과했고 state·claim·thread·model
+  turn과 잔여 process/container는 0으로 Environment Closure `GO`가 됐다.
+- 별도 사용자 승인 뒤 SS1 Cell 1 하나만 실행했다. R01~R08은 각 1 turn에 완료됐고 R09는 initial
+  1회와 self-review 8회를 사용한 뒤 `ss1_review_no_progress`로 종료됐다. R10~R13은 미실행이다.
+- Cell은 17 turns, 1 session, 1 attempt, 2,831.891초로 봉인됐다. token usage는 input
+  19,323,090, output 117,537, total 19,440,627이다.
+- Docker Judge는 R-P01~R-P09 pass, R-P10~R-P13 fail이다. 최종 분류는
+  `SEALED_FAILED / PRODUCT_ASSERTION`, `comparison_valid=true`, 환경 실패 false다.
+- 독립 verifier가 Cell seal, Measurement, adapter accounting과 state/anchor chain을 통과했다.
+  자동 연속 실행, 잔여 process/container와 secret finding은 0이다.
+
+현재 lifecycle은 `SEALED, PLANNED, PLANNED, PLANNED`다. 다음 관문은 같은 pair의 B1 Cell 2를
+실행할지에 대한 별도 사용자 승인이다. 이번 턴에서는 B1과 Cell 3·4를 실행하지 않았다.
