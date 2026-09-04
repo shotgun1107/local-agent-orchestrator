@@ -70,6 +70,7 @@ docs/
 - [Profile R R01~R13 Docker Judge q26 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md) — q6 source의 reference와 13개 오류 사례를 Docker에서 14/14 검증한 qualification v23
 - [현실 고난도 Phase E candidate v23](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v23-result.md) — q26·q6와 새 Worker 환경 계약을 결합한 0-turn 실행 후보
 - [Phase F Profile R candidate v23 acceptance run 1](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v17-run1-result.md) — 별도 경로에서 SS1·B1 모형 실행과 Evidence 14파일을 봉인한 1차 검사
+- [Phase F Profile R candidate v23 acceptance run 2](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v18-run2-result.md) — 대체 R12 내부 Git 경로에서 동일 후보를 독립 검증한 2차 검사
 - [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [현실 고난도 Phase E candidate v22](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md) — q25·q5와 Cell 9000초 계약을 schema v4 Plan에 결합한 0-turn 후보
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행

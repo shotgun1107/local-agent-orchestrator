@@ -3793,3 +3793,20 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - source change, generated candidate, Check TEMP, child process와 active lock residue는 0이고
   model·SDK thread/turn·Docker workload도 0이다. 다음 관문은 다른 빈 경로의 acceptance run 2다.
   readiness, Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v23 acceptance run 2
+
+- 작업일: 2026-09-04. run 1과 겹치지 않는 새 경로에서 acceptance parameter `[2]` 하나를
+  실행해 `1 passed in 243.28s`로 통과했다.
+- run 2는 R12의 내부 Git 저장소를 `alternate-valid-worker-internal-repository-root`로 바꿨고
+  reference와 B1 workspace 양쪽에서 해당 표식을 확인했다.
+- lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`, public contract `13/13`, cumulative Check
+  `104/104`, R11/R12 nested pytest `7/7`, `5/5`다.
+- 14개 Evidence와 12-record manifest, state/anchor chain, 두 Cell seal과 JUnit을 독립
+  재검증했다. attestation/file manifest/JUnit SHA-256은 `6cc2f296...3fb81` /
+  `62caf2b3...b57eb` / `fcee3bc4...72381`이다.
+- run 1과 run 2 checkout의 차이는 run 1 결과 문서 5개뿐이며 candidate, Worker, Judge와
+  acceptance 하네스는 같다. model·SDK thread/turn·Docker workload는 0이다.
+- candidate v23 acceptance 두 회차가 모두 통과했다. 다음 관문은 q26·q6·candidate와 두
+  acceptance를 직접 결합하는 readiness package다. Environment Closure와 Live는 계속
+  `NO-GO`다.
