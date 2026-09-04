@@ -3903,3 +3903,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   actual model turn과 SDK thread/turn은 0이며 기존 v23 state/raw/Measurement/seal은 변경하지 않았다.
 - `DEV-20260904-002`는 해결됐다. 기존 v23 pair의 `DIAGNOSTIC_ONLY_NO_ROUTE`는 그대로다. 다음
   관문은 q7·q27을 exact hash로 결합한 새 Phase E candidate이며 Live와 Cell 3·4는 계속 NO-GO다.
+
+## Profile R q27·q7 Phase E candidate v24
+
+- 작업일: 2026-09-04. stage의 Profile R 경로를 Docker qualification v24(q27), Docker
+  environment와 Task Pack q7 qualification/budget으로 갱신했다.
+- candidate builder가 q27의 exact 16-case 순서, reference·public-equivalent positive 3개 pass,
+  negative 13개 fail과 q7 public-equivalent 2개 수용 Evidence를 의미적으로 검사하도록 보강했다.
+  semantic tamper 두 사례는 candidate binding에서 거부됐다.
+- source commit/tree는 `9fb80ac887620c1990f9a76c2244aa70c5cb93f0` /
+  `e4839663f4dfce0f69bf5368f33d5c561b0933d9`다. clean source의 Phase E 전체 회귀는
+  `44 passed`다.
+- candidate v24는 `exp_20260904_b4d482cf_1`, Plan fingerprint `b4d482cf...df4e9`, candidate
+  seal `c0718c3c...be323`으로 생성됐다. 생성기 내부와 별도 process verifier가 같은 seal을 반환했고
+  checked-in candidate 집중 검사는 `3 passed`다.
+- Plan은 네 Cell 순서, Cell당 9000초 완료시간, 호출 횟수 제한 없음, Cell별 별도 승인과 자동
+  연속 실행 금지를 유지한다. preflight는 ChatGPT 계정과 `gpt-5.6-sol` 가시성만 확인했으며
+  actual model turn과 SDK thread/start·turn/start는 0이다.
+- 기존 v23 candidate와 실제 pair는 수정하거나 재판정하지 않았다. 다음 관문은 candidate v24의
+  독립 model-free acceptance run 1과 run 2다. readiness, Environment Closure, Live와 Cell 3·4는
+  계속 NO-GO다.

@@ -4,20 +4,21 @@
 
 ## 먼저 읽을 문서
 
-1. [Profile R R11·R13 계약 교정과 q7·q27 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md) — 공개·hidden 계약을 맞추고 정상 대안 2개와 오답 13개를 model-free로 재검증
-2. [Profile R v23 SS1→B1 실제 결과와 Judge 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md) — B1은 R01~R13과 public Check 104/104를 완료했지만 R11·R13 hidden 계약 결함으로 공식 route 미발행
-3. [Profile R v23 SS1 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md) — R01~R08 완료 뒤 R09 무진전 종료
-4. [Profile R Live readiness v12 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v12-package-result.md) — q26·q6·candidate v23·독립 acceptance 2회를 결합한 과거 실행 전 패키지
-5. [Profile R v22 실패 교정·Task Pack q6 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md) — Worker Python 고정, R10 행동검사, 무진전 review 중단과 혼합 실패 분류를 model-free로 검증
-6. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 실제 실행 전 환경 검증 기준
-7. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
-8. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
-9. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
-10. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 비교 기준
-11. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
-12. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase D 구현 후보의 역사적 revision 14
-13. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작 기준
-14. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
+1. [Phase E candidate v24 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md) — q7·q27과 정상 대안 Evidence를 직접 결합한 새 0-turn 후보
+2. [Profile R R11·R13 계약 교정과 q7·q27 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md) — 공개·hidden 계약을 맞추고 정상 대안 2개와 오답 13개를 model-free로 재검증
+3. [Profile R v23 SS1→B1 실제 결과와 Judge 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md) — B1은 R01~R13과 public Check 104/104를 완료했지만 R11·R13 hidden 계약 결함으로 공식 route 미발행
+4. [Profile R v23 SS1 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md) — R01~R08 완료 뒤 R09 무진전 종료
+5. [Profile R Live readiness v12 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v12-package-result.md) — q26·q6·candidate v23·독립 acceptance 2회를 결합한 과거 실행 전 패키지
+6. [Profile R v22 실패 교정·Task Pack q6 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md) — Worker Python 고정, R10 행동검사, 무진전 review 중단과 혼합 실패 분류를 model-free로 검증
+7. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 실제 실행 전 환경 검증 기준
+8. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
+9. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
+10. [범용 Benchmark Runner 설계](./design/general-benchmark-runner-design.md) — B0~B3 공통 비교 실행·측정·판정 구조
+11. [SDK 통제 C0·C1·C2·B1 비교 명세](./design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md) — 사람을 제외한 비교 기준
+12. [SDK 라우팅 테스트 스위트 v1 설계](./design/sdk-routing-suite-v1-design.md) — C2/B1 시험을 S1 교정과 S2 이후 profile 라우팅으로 분리한 동결 설계
+13. [현실 고난도 비교 구현 후보 명세](./design/sdk-routing-realistic-high-difficulty-implementation-candidate-spec.md) — Phase D 구현 후보의 역사적 revision 14
+14. [현실 고난도 Phase D snapshot·checker 명세](./design/sdk-routing-realistic-high-difficulty-phase-d-snapshot-checker-spec.md) — revision 2 승인 뒤 Profile R·I artifact 제작 기준
+15. [Codex SDK 최소 turn 실험](./experiments/codex-sdk-single-turn-experiment.md) — 인증·usage 런타임 증거
 
 ## 디렉터리 역할
 
@@ -79,6 +80,7 @@ docs/
 - [Profile R v23 SS1 실제 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md) — 정상 환경에서 R01~R08 완료, R09 무진전 종료와 제품 실패 봉인; B1 미실행
 - [Profile R v23 SS1→B1 실제 결과와 Judge 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md) — B1 R01~R13·public Check 104/104 완료, R11/R13 공개·hidden 계약 불일치와 비교 무효 기록
 - [Profile R R11·R13 계약 교정과 q7·q27 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md) — 정상 대안 2/2와 오답 13/13을 public·hidden·exact Docker에서 재검증; 새 candidate 전 Live NO-GO
+- [현실 고난도 Phase E candidate v24](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md) — q27·q7과 public-equivalent Evidence를 의미 검증해 직접 결합한 0-turn 후보
 - [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [현실 고난도 Phase E candidate v22](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md) — q25·q5와 Cell 9000초 계약을 schema v4 Plan에 결합한 0-turn 후보
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
@@ -146,6 +148,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: v23 pair는 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. R11 문자열 조건과 R13 비공개 JSON equality는 제거했고 Task Pack q7과 Docker q27이 canonical reference, public-equivalent positive 2개와 negative mutation 13개를 통과해 `DEV-20260904-002`는 해결됐다. 기존 pair를 재판정하지 않는다. 다음 관문은 q7·q27을 직접 결합한 새 candidate이며 그 전까지 실제 Live와 Cell 3·4는 `NO-GO`다.
+- 현실 고난도 비교: v23 pair는 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. R11·R13 계약 교정 뒤 Task Pack q7과 Docker q27을 직접 결합한 candidate v24가 `CANDIDATE_VERIFIED`로 봉인됐다. 기존 pair를 재판정하지 않는다. 다음 관문은 candidate v24의 서로 분리된 model-free acceptance run 1과 run 2이며 그 전까지 실제 Live와 Cell 3·4는 `NO-GO`다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.
