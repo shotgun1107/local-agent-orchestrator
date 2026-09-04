@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260904-002",
   "title": "Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함",
-  "status": "open",
+  "status": "resolved",
   "stage": "phase-f-profile-r-v23-b1",
   "category": "test",
   "discovered_at": "2026-09-04T05:26:02Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-04T06:53:10Z",
   "discovered_by": "Profile R v23 B1 Cell 2 live와 public/hidden checker source inspection",
   "symptom": "B1이 R01~R13을 각 1회에 완료하고 누적 public Check 104/104를 통과했지만 Docker hidden Judge는 R-P11과 R-P13을 실패시켜 Cell을 failed로 봉인했다.",
   "reproduction": [
@@ -54,13 +54,14 @@
       "reason": "관측 사실을 보존하면서 다음 비교가 공개 계약만으로 통과 가능하도록 만든다"
     }
   ],
-  "resolution": "",
+  "resolution": "R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미인 네 Cell ID, SEALED 상태, Check 성공, Measurement seal과 model turn 0 표식을 독립 protected behavior와 함께 검사하도록 바꿨다. R-P13은 비공개 operator JSON 전체 equality를 제거하고 공개 Schema, 명령 순서, 필수 관계, 구현 symbol, stop flag와 README binding을 독립 검증한다. Judge source qualification과 Task Pack q7에 R11 helper 표현과 R13 대체 vocabulary의 public-valid positive 사례를 추가했다. Docker q27은 reference 1개, public-equivalent positive 2개와 negative mutation 13개를 exact image에서 16/16 expectation 일치로 봉인했다. 기존 v23 pair는 수정하거나 재판정하지 않는다.",
   "affected_files": [
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
     "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
     "tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py",
-    "tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py"
+    "tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py"
   ],
   "regression_tests": [
     "R-P11은 literal JSON source 표현 없이 같은 four-Cell write-effect behavior를 구현한 public-pass 대안을 통과시켜야 한다",
@@ -70,20 +71,26 @@
   "verification": [
     "기존 v23 SS1/B1 state, raw, Measurement와 seal을 변경하지 않고 lifecycle SEALED, SEALED, PLANNED, PLANNED를 유지했다",
     "B1 public Check 104/104 PASSED와 hidden Judge 11/13 pass를 외부 봉인 Evidence에서 독립 확인했다",
-    "R-P11 literal source 조건, R-P13 exact oracle equality와 q26/q6 qualification 판정 로직을 source에서 확인했다"
+    "R-P11 literal source 조건, R-P13 exact oracle equality와 q26/q6 qualification 판정 로직을 source에서 확인했다",
+    "Judge source는 canonical reference 1개와 public-equivalent 2개를 hidden 13/13 pass로, negative mutation 13개를 담당 property fail로 검증했다",
+    "Task Pack q7은 positive 13/13, 누적 Check 104/104, negative 13/13 거부, equivalent 2/2 수용으로 두 번 동일 hash를 생성했다",
+    "Docker q27은 exact image에서 16/16 expectation match와 CHALLENGE_READY를 봉인했다"
   ],
   "remaining_risks": [
-    "R11/R13과 qualification을 교정한 새 candidate가 봉인될 때까지 Profile R의 공식 routing 비교를 재개할 수 없다",
-    "다른 property에도 공개 계약보다 좁은 hidden-only 구현 표현이 남아 있을 수 있다"
+    "q27과 Task Pack q7을 직접 결합한 새 candidate, acceptance와 readiness가 아직 없으므로 Live는 계속 NO-GO다",
+    "등록한 public-equivalent 사례는 R11과 R13 결함의 회귀를 막지만 가능한 모든 구현 표현을 열거하는 증명은 아니다"
   ],
   "related_commits": [
     "376c01c250bb82463442d87abeeaff9519fae536",
-    "6bb678bee093bc5b868217bccd1ee417681761b9"
+    "6bb678bee093bc5b868217bccd1ee417681761b9",
+    "85ce0c7a0959f9bf434e31614155d4cf8f3c1d5f",
+    "d5268e62ab1015266152e4ffdd6cdf30357d2b6a"
   ],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md"
   ]
 }

@@ -748,6 +748,65 @@ def test_profile_r_remediation_q26_v23_is_exact_fourteen_cell_projection() -> No
     )
 
 
+def test_profile_r_contract_alignment_q27_v24_is_exact_sixteen_cell_projection() -> None:
+    path = (
+        REPOSITORY
+        / "benchmarks"
+        / "artifacts"
+        / "profile-r-docker-judge-qualification-v24"
+        / "qualification.json"
+    )
+    qualification = json.loads(path.read_text(encoding="utf-8"))
+    environment = json.loads(
+        (path.parent / "docker-environment.json").read_text(encoding="utf-8")
+    )
+
+    assert qualification["schema_version"] == 3
+    assert qualification["source_commit"] == (
+        "d5268e62ab1015266152e4ffdd6cdf30357d2b6a"
+    )
+    assert qualification["batch_id"] == (
+        "profile-r-docker-matrix-q27-company-r01-r13-equivalence"
+    )
+    assert qualification["status"] == "CHALLENGE_READY"
+    assert qualification["challenge_ready"] is True
+    assert qualification["model_turns"] == 0
+    assert [cell["ordinal"] for cell in qualification["cells"]] == list(
+        range(1, 17)
+    )
+    assert [cell["variant_id"] for cell in qualification["cells"][:3]] == [
+        "reference",
+        "r11-equivalent-write-effects",
+        "r13-equivalent-operator-vocabulary",
+    ]
+    assert all(
+        cell["aggregate_status"] == "pass"
+        for cell in qualification["cells"][:3]
+    )
+    assert all(
+        cell["aggregate_status"] == "fail"
+        for cell in qualification["cells"][3:]
+    )
+    assert all(cell["matched_expectation"] for cell in qualification["cells"])
+    assert all(len(cell["properties"]) == 13 for cell in qualification["cells"])
+    assert environment["qualification"] == {
+        "source_commit": qualification["source_commit"],
+        "batch_id": qualification["batch_id"],
+        "status": "CHALLENGE_READY",
+        "matched_expectations": 16,
+        "cell_count": 16,
+        "reference_positive_count": 1,
+        "public_equivalent_positive_count": 2,
+        "negative_mutation_count": 13,
+        "actual_model_turns": 0,
+        "residual_profile_r_containers": 0,
+    }
+    assert environment["image"]["reference"] == qualification["image_reference"]
+    assert environment["image"]["id"].endswith(
+        qualification["image_reference"].split("@", 1)[1]
+    )
+
+
 def test_git_source_fingerprint_matches_worktree_algorithm() -> None:
     included = (
         "src/benchmark_runner/sdk_baselines.py",

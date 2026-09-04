@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260904-003",
+  "title": "Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨",
+  "status": "resolved",
+  "stage": "profile-r-docker-judge-q27",
+  "category": "tooling",
+  "discovered_at": "2026-09-04T06:42:47Z",
+  "resolved_at": "2026-09-04T06:53:10Z",
+  "discovered_by": "Profile R q27 public-equivalent Docker matrix preparation",
+  "symptom": "짧은 reference variant는 준비됐지만 이름이 긴 r11-equivalent-write-effects variant의 Worker에 reference.patch를 적용하는 precheck가 Filename too long으로 중단됐다. Docker container와 Judge workload는 시작되지 않았다.",
+  "reproduction": [
+    "Windows에서 긴 base root와 profile-r-judge-q27-company-r01-r13-equivalence-02-r11-equivalent-write-effects run directory를 만든다.",
+    "GitPatchBackend로 긴 fixture 경로를 포함한 reference.patch를 적용하고 core.longpaths 설정 부재에서 precheck가 Filename too long을 반환하는지 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "q27-r2는 두 번째 variant 준비 중 frozen patch precheck failed로 종료됐고 worker의 긴 fixture 파일들에 Filename too long이 재현됐다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "GitPatchBackend는 core.autocrlf와 core.safecrlf만 지정했고 repository의 다른 Git 경로에서 사용하는 core.longpaths=true가 빠져 있었다."
+    },
+    {
+      "kind": "reproducible-test",
+      "detail": "core.longpaths=true 추가 뒤 같은 긴 run token의 q27-r3가 16개 variant를 모두 준비·실행하고 CHALLENGE_READY로 봉인됐다."
+    }
+  ],
+  "root_cause": "Docker matrix 전용 Git patch backend가 Windows long-path 계약을 상속하지 않아 variant 이름이 길어지면 같은 patch도 경로 길이에 따라 성공 여부가 달라졌다.",
+  "considered_options": [
+    {
+      "option": "q27 run token과 variant 이름만 줄인다",
+      "decision": "rejected",
+      "reason": "현재 실행은 우회할 수 있지만 다른 base root에서 같은 비결정적 실패가 반복된다"
+    },
+    {
+      "option": "Git patch precheck와 apply 모두 core.longpaths=true를 고정한다",
+      "decision": "adopted",
+      "reason": "source extraction과 다른 Git helper가 이미 사용하는 Windows 경로 계약과 일치한다"
+    }
+  ],
+  "resolution": "GitPatchBackend의 공통 base command에 -c core.longpaths=true를 추가하고 precheck 명령 조립을 명시적인 base_command + --check + stdin 형태로 바꿨다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py",
+    "tools/benchmark-runner/tests/test_realistic_docker_judge_matrix.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_realistic_docker_judge_matrix.py",
+    "Profile R Docker Judge q27 16-case exact-image matrix"
+  ],
+  "verification": [
+    "GitPatchBackend unit regression 8 passed",
+    "q27 raw independent verifier CHALLENGE_READY, 16/16 expectation match",
+    "exact Docker image requirements.lock 16/16 일치와 residual container 0"
+  ],
+  "remaining_risks": [],
+  "related_commits": [
+    "d5268e62ab1015266152e4ffdd6cdf30357d2b6a"
+  ],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md"
+  ]
+}
