@@ -729,6 +729,82 @@ def load_phase_e_stage(repository: Path, commit: str = "HEAD") -> PhaseEStageMan
     )
 
 
+_PROFILE_R_CONTRACT_ALIGNMENT_VARIANTS = (
+    "reference",
+    "r11-equivalent-write-effects",
+    "r13-equivalent-operator-vocabulary",
+    "r-p01-source-boundary",
+    "r-p02-discriminator",
+    "r-p03-config-fixture",
+    "r-p04-incident-fixture",
+    "r-p05-manifest-binding",
+    "r-p06-plan-binding",
+    "r-p07-routing-policy",
+    "r-p08-lifecycle-reuse",
+    "r-p09-status-posthoc",
+    "r-p10-export-verify",
+    "r-p11-s2-e2e",
+    "r-p12-s1-portability",
+    "r-p13-operator-semantics",
+)
+
+
+def _profile_r_contract_alignment_qualification_is_valid(
+    qualification: Mapping[str, Any],
+) -> bool:
+    cells = qualification.get("cells")
+    if qualification.get("schema_version") != 3 or not isinstance(cells, list):
+        return False
+    if len(cells) != len(_PROFILE_R_CONTRACT_ALIGNMENT_VARIANTS):
+        return False
+    for ordinal, (cell, expected_variant) in enumerate(
+        zip(cells, _PROFILE_R_CONTRACT_ALIGNMENT_VARIANTS, strict=True),
+        1,
+    ):
+        if not isinstance(cell, dict):
+            return False
+        expected_aggregate = "pass" if ordinal <= 3 else "fail"
+        properties = cell.get("properties")
+        if (
+            cell.get("ordinal") != ordinal
+            or cell.get("variant_id") != expected_variant
+            or cell.get("aggregate_status") != expected_aggregate
+            or cell.get("matched_expectation") is not True
+            or not isinstance(properties, list)
+            or len(properties) != 13
+        ):
+            return False
+        if ordinal <= 3 and any(
+            not isinstance(item, dict) or item.get("status") != "pass"
+            for item in properties
+        ):
+            return False
+    return True
+
+
+def _profile_r_public_equivalents_are_valid(
+    task_pack: Mapping[str, Any],
+) -> bool:
+    equivalents = task_pack.get("public_equivalent_implementations")
+    if not isinstance(equivalents, list):
+        return False
+    expected = [
+        ("r11-equivalent-write-effects", "R11"),
+        ("r13-equivalent-operator-vocabulary", "R13"),
+    ]
+    actual = [
+        (item.get("equivalent_id"), item.get("task_id"))
+        for item in equivalents
+        if isinstance(item, dict)
+    ]
+    return (
+        actual == expected
+        and all(item.get("contract_accepted") is True for item in equivalents)
+        and task_pack.get("public_equivalent_implementations_sha256")
+        == _profile_r_artifact_self_sha256(equivalents)
+    )
+
+
 def _profile_binding(
     repository: Path,
     commit: str,
@@ -750,6 +826,16 @@ def _profile_binding(
         or qualification.get("snapshot_id") != profile.snapshot_id
     ):
         raise PhaseECandidateError(f"{profile.snapshot_id} qualification is not ready")
+    contract_alignment_required = (
+        profile.profile_id == "repository-wide-compatibility-migration"
+        and qualification.get("schema_version") == 3
+    )
+    if contract_alignment_required and not (
+        _profile_r_contract_alignment_qualification_is_valid(qualification)
+    ):
+        raise PhaseECandidateError(
+            f"{profile.snapshot_id} contract-alignment qualification differs"
+        )
     task_pack_qualification_sha256 = None
     task_pack_qualification_seal_sha256 = None
     task_budget_sha256 = None
@@ -778,6 +864,12 @@ def _profile_binding(
         ):
             raise PhaseECandidateError(
                 f"{profile.snapshot_id} Task Pack qualification is not ready"
+            )
+        if contract_alignment_required and not (
+            _profile_r_public_equivalents_are_valid(task_pack)
+        ):
+            raise PhaseECandidateError(
+                f"{profile.snapshot_id} public-equivalent Task Pack evidence differs"
             )
         task_pack_qualification_sha256 = _sha256(task_pack_bytes)
         task_pack_qualification_seal_sha256 = str(task_pack["seal_sha256"])
@@ -878,6 +970,19 @@ def _profile_binding(
             != qualification.get("model_turns")
             or environment_image.get("reference")
             != qualification.get("image_reference")
+            or (
+                contract_alignment_required
+                and (
+                    environment_qualification.get("matched_expectations") != 16
+                    or environment_qualification.get("cell_count") != 16
+                    or environment_qualification.get("reference_positive_count") != 1
+                    or environment_qualification.get(
+                        "public_equivalent_positive_count"
+                    )
+                    != 2
+                    or environment_qualification.get("negative_mutation_count") != 13
+                )
+            )
         ):
             raise PhaseECandidateError(
                 f"{profile.snapshot_id} Docker environment and qualification differ"
