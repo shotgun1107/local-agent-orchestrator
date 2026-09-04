@@ -5124,7 +5124,7 @@ R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미
 
 ### 남은 위험
 
-- candidate v24의 독립 acceptance 두 회차와 readiness가 아직 없으므로 Live는 계속 NO-GO다
+- candidate v24 acceptance run 2와 readiness가 아직 없으므로 Live는 계속 NO-GO다
 - 등록한 public-equivalent 사례는 R11과 R13 결함의 회귀를 막지만 가능한 모든 구현 표현을 열거하는 증명은 아니다
 
 ### 추적 정보
@@ -5136,6 +5136,7 @@ R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v19-run1-result.md
 
 ## DEV-20260904-003 — Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨
 
