@@ -4927,7 +4927,7 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 
 ### 채택한 해결
 
-새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀를 통과한 뒤 C:\lao-v23-runtime에 새 exact Worker Python을 별도로 준비해 dependency probe를 통과시켰다. Docker qualification과 새 candidate 이후까지 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
+새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀를 통과한 뒤 C:\lao-v23-runtime에 새 exact Worker Python을 별도로 준비해 dependency probe를 통과시켰다. Docker Judge q26도 reference와 13개 오류 사례 14/14 expectation 일치로 통과했다. 새 candidate 이후까지 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
 
 ### 수정 파일
 
@@ -4955,11 +4955,15 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 - 완료시간·Phase F·B1·Docker port·SS1 pytest 37 passed, 3 skipped
 - C:\lao-v23-runtime Worker Python 3.12.10 dependency probe self seal 2429f0ca4d485c162c0c4abb87bb7686f89903b3df93b165eedfc06b075db90c
 - 새 Worker runtime에서 환경 고정·Phase F live-stack pytest 25 passed, 1 skipped
-- model turn 0, SDK thread/start 0, 실제 Docker workload 0
+- Docker Judge q26 reference와 13개 negative mutation expectation 14/14 일치, 각 Cell 13 properties 독립 실행
+- q26 independent raw verifier, path-free projection recomputation, Docker environment binding과 no-network lock comparison 통과
+- Docker Judge 관련 model-free 회귀와 checked-in q26 artifact pytest 34 passed
+- q26 local record commit의 clean source에서 Phase E 전체 pytest 41 passed
+- Task Pack q6와 Worker runtime 준비의 model turn·SDK thread/start·Docker workload는 0; q26은 model-free Docker Judge workload 14개만 실행
 
 ### 남은 위험
 
-- q6 이후 fresh Docker Judge qualification, 새 candidate, acceptance 2회와 readiness가 아직 없다.
+- q26과 q6를 직접 결합한 새 candidate, acceptance 2회와 readiness가 아직 없다.
 - 새 Worker Python은 실제 SDK preflight와 새 candidate에 아직 결합되지 않았다.
 - 실제 SDK preflight와 Docker smoke/dry-run은 별도 Environment Closure 전까지 실행하지 않았다.
 
@@ -4969,6 +4973,7 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-worker-python-v23-company-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
 
 ## DEV-20260904-001 — Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함

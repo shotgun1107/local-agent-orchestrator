@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-04T01:03:50.9894164Z",
+  "context": {
+    "name": "desktop-linux",
+    "endpoint": "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "skip_tls_verify": false
+  },
+  "daemon": {
+    "platform": "Docker Desktop 4.85.0 (235549)",
+    "engine_version": "29.6.2",
+    "api_version": "1.55",
+    "git_commit": "3d80467",
+    "os": "linux",
+    "architecture": "amd64",
+    "kernel_version": "6.18.33.2-microsoft-standard-WSL2"
+  },
+  "client": {
+    "version": "29.6.2",
+    "api_version": "1.55",
+    "git_commit": "dfc4efb",
+    "os": "windows",
+    "architecture": "amd64",
+    "executable_sha256": "83541df5bb9fdba4be1b36e63f7282cc3bebf04a60b147ef95e32a0cff3b45d6"
+  },
+  "image": {
+    "reference": "local-agent-orchestrator/profile-r-judge@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab",
+    "id": "sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab",
+    "repository_digest": "local-agent-orchestrator/profile-r-judge@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab",
+    "created": "2026-08-11T08:27:25.669412168Z",
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "build_inputs": {
+    "dockerfile_sha256": "e923029fe5f20c3e01f4d1da27d5cbfc40f0899658251455274c85b8b6e3b1c1",
+    "requirements_lock_sha256": "0fe996a5674c46d85b217d8579c10d4b1d24a801de01b11d9814cf095b7dc07b",
+    "no_network_lock_verification": true
+  },
+  "qualification": {
+    "source_commit": "7dc780efbf51b4252c9ca2765675605a5f29520a",
+    "batch_id": "profile-r-docker-matrix-q26-company-r01-r13",
+    "status": "CHALLENGE_READY",
+    "matched_expectations": 14,
+    "cell_count": 14,
+    "actual_model_turns": 0,
+    "residual_profile_r_containers": 0
+  }
+}
