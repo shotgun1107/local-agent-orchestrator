@@ -3758,3 +3758,21 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - API key, model과 SDK thread/turn은 사용하지 않았고 Controller state도 변경하지 않았다.
   다음 관문은 q26과 Task Pack q6를 직접 결합한 새 Phase E candidate다. acceptance와 Live는
   계속 `NO-GO`다.
+
+## Profile R q26·q6 Phase E candidate v23
+
+- 작업일: 2026-09-04. schema v4 stage를 Docker Judge qualification v23과 Task Pack q6로
+  갱신하고 source `376c01c250bb82463442d87abeeaff9519fae536` / tree
+  `c6569c835b1fe34241873483659fbd793eb50ed0`에서 candidate v23을 생성했다.
+- source binding은 Worker manifest, q26 qualification file/seal, Docker environment file,
+  q6 qualification file/seal과 budget file/seal을 직접 포함한다.
+- Plan은 네 Cell 순서와 9000초 완료시간, 호출 횟수 제한 없음, Cell별 별도 승인과 자동 연속
+  실행 금지를 유지한다. experiment는 `exp_20260904_2d1b83bb_1`, Plan fingerprint는
+  `2d1b83bb...40804e`다.
+- `C:\lao-v23-runtime`의 SDK 0.144.4로 ChatGPT account와 `gpt-5.6-sol` 노출을 확인했으며
+  API-key 환경 이름, SDK thread/start·turn/start와 model turn은 0이다.
+- 생성기 내부 verifier와 별도 process verifier가 동일한 candidate seal `fa7c7307...8f557`을
+  반환했다. seal file SHA-256은 `50dde4f1...85e44`이고 clean local record commit의 Phase E
+  전체 회귀는 `42 passed`다.
+- 다음 관문은 candidate v23 independent model-free acceptance run 1과 run 2다. readiness,
+  Environment Closure와 Live는 계속 `NO-GO`다.
