@@ -4,7 +4,7 @@
   "cell_id": "r-p04-incident-fixture",
   "checker_run_status": "completed",
   "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
-  "envelope_sha256": "b1f39ec79971d970ff5cbc7088edb0d8aa651a716758fa602f9fd0e4784edc99",
+  "envelope_sha256": "cb9dc83e9619cdf1e0e22d5e15b525cbcbef7ae0ad82076b187cf5a0b0a5e65b",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "5c13e5ef464ab2f9928bc4abbca35429d56cf2fbcd6a18d090b01a486a5bb1f9",
-  "workspace_before_sha256": "5c13e5ef464ab2f9928bc4abbca35429d56cf2fbcd6a18d090b01a486a5bb1f9",
+  "workspace_after_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
+  "workspace_before_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
   "workspace_mutated": false
 }

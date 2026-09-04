@@ -164,13 +164,18 @@ def _phase_e_v3_stage() -> dict[str, object]:
     profile_r["task_budget_path"] = (
         "benchmarks/artifacts/profile-r-task-pack-q1/task-budget.json"
     )
-    value["budget"].update(
-        {
-            "base_turns_per_variant": 13,
-            "total_turn_ceiling_per_variant": 15,
-            "total_initial_turns": 42,
-            "total_turn_ceiling": 50,
-            "profile_budgets": [
+    value["budget"] = {
+        "task_initial_turns": 1,
+        "task_extra_turn_ceiling": 1,
+        "variant_extra_turn_ceiling": 2,
+        "base_turns_per_variant": 13,
+        "total_turn_ceiling_per_variant": 15,
+        "total_initial_turns": 42,
+        "total_turn_ceiling": 50,
+        "model_active_seconds_ceiling_per_variant": 7200,
+        "wall_clock_seconds_ceiling_per_variant": 9000,
+        "unused_reserve_transfer": "forbidden",
+        "profile_budgets": [
                 {
                     "profile_id": "repository-wide-compatibility-migration",
                     "task_count": 13,
@@ -183,9 +188,8 @@ def _phase_e_v3_stage() -> dict[str, object]:
                     "base_turns_per_variant": 8,
                     "total_turn_ceiling_per_variant": 10,
                 },
-            ],
-        }
-    )
+        ],
+    }
     return value
 
 
@@ -259,6 +263,50 @@ def test_task_pack_qualification_id_can_advance_without_changing_q1_default() ->
         )
 
 
+def test_task_pack_stdout_projection_excludes_transient_temp_paths() -> None:
+    repository = Path(__file__).resolve().parents[3]
+    script = repository / "tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py"
+    spec = importlib.util.spec_from_file_location("profile_r_task_pack_projection", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def payload(temp_root: str, deepest: str, growth: str) -> bytes:
+        evidence = {
+            "schema_version": 1,
+            "temp_root": temp_root,
+            "deepest_path": deepest,
+            "growth_probe_path": growth,
+            "growth_probe_path_length": 300,
+            "probe_repository_path_length": 120,
+            "growth_margin": 40,
+            "pytest": {
+                "tests": 7,
+                "failures": 0,
+                "errors": 0,
+                "skipped": 0,
+                "warnings": 0,
+            },
+        }
+        return (
+            "CHECK_DIAGNOSTIC_RESULT:{}\n"
+            "CHECK_ENVIRONMENT_EVIDENCE:"
+            + json.dumps(evidence, sort_keys=True, separators=(",", ":"))
+            + "\nWORKER_FEEDBACK:"
+            + temp_root
+            + "\nR11_PUBLIC_CONTRACT_OK\n"
+        ).encode("utf-8")
+
+    first = module._public_check_stdout_projection(
+        payload("C:/temp/one", "C:/temp/one/deep", "C:/temp/one/growth")
+    )
+    second = module._public_check_stdout_projection(
+        payload("D:/other/two", "D:/other/two/deep", "D:/other/two/growth")
+    )
+
+    assert first == second
+
+
 def test_repository_reference_bundle_matches_chain_and_self_seals(
     tmp_path: Path,
 ) -> None:
@@ -317,6 +365,7 @@ def test_repository_reference_bundle_matches_chain_and_self_seals(
         ("profile-r-task-pack-q3", "profile-r-task-pack-q3"),
         ("profile-r-task-pack-q4", "profile-r-task-pack-q4"),
         ("profile-r-task-pack-q5", "profile-r-task-pack-q5"),
+        ("profile-r-task-pack-q6", "profile-r-task-pack-q6"),
     ),
 )
 def test_task_pack_artifact_and_budget_are_self_sealed(
@@ -355,3 +404,14 @@ def test_task_pack_artifact_and_budget_are_self_sealed(
     assert budget["task_pack_qualification_seal_sha256"] == qualification[
         "seal_sha256"
     ]
+    if qualification_id == "profile-r-task-pack-q6":
+        assert qualification["incident_regressions"] == [
+            {
+                "contract_rejected": True,
+                "regression_id": "v22-r10-missing-run-all",
+                "return_code": 1,
+                "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "stdout_sha256": "db0d9237acdc9535df73d80ad4df5163865b391c2a97aa5ab0f665749de13fda",
+                "task_id": "R10",
+            }
+        ]

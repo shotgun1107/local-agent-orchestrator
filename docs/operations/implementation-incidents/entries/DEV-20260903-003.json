@@ -28,16 +28,72 @@
       "detail": "Worker 기본 Python은 3.12.10, pytest false, pydantic false였지만 Environment Closure는 Controller Python과 SDK preflight만 통과시켰다."
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [],
+  "root_cause": "R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routing_s2_nonlive_cells가 없는 구현을 통과시켰다. 동시에 app-server Worker process가 Controller Python이 아닌 PATH의 사용자 Python을 선택했고, Environment Closure는 그 실제 python 명령과 pytest·pydantic import를 검사하지 않았다. 완료시간 전용 모드에는 동일 uncertainty와 불변 workspace를 감지하는 수렴 조건도 없었다. finalizer는 Worker와 Judge의 제품·환경 실패를 구조화해 집계하지 않았다.",
+  "considered_options": [
+    {
+      "option": "R11에 고정 turn 상한을 다시 둔다",
+      "decision": "rejected",
+      "reason": "R01~R13 전체 완료시간만 제한한다는 현재 계약과 충돌하고 진전 있는 복구까지 임의 횟수로 막는다"
+    },
+    {
+      "option": "Worker가 필요할 때 임의 Python이나 임시 가상환경을 찾게 둔다",
+      "decision": "rejected",
+      "reason": "SS1/B1 환경 동일성과 재현성을 보장하지 못한다"
+    },
+    {
+      "option": "Controller exact Python을 Worker PATH에 고정하고 필요한 distribution을 zero-turn preflight에서 검증한다",
+      "decision": "adopted",
+      "reason": "Cell claim과 model turn 전에 실제 Worker 명령환경을 exact Evidence로 확정한다"
+    },
+    {
+      "option": "R10 public Check를 Fake runtime 기반 create-to-seal export/verify·tamper 행동검사로 교체한다",
+      "decision": "adopted",
+      "reason": "symbol 존재만으로 v22의 누락 구현이 통과한 경로를 직접 차단한다"
+    },
+    {
+      "option": "동일 uncertainty와 불변 workspace가 연속되면 no-progress로 중단한다",
+      "decision": "adopted",
+      "reason": "호출 횟수 상한 없이도 관측 가능한 무진전 반복을 멈춘다"
+    },
+    {
+      "option": "Worker와 Judge 결과를 구조화된 node로 합성한다",
+      "decision": "adopted",
+      "reason": "제품·환경·혼합·미확인 실패를 분리하고 비교 가능성을 명시한다"
+    }
+  ],
+  "resolution": "새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀는 통과했지만 새 live runtime과 candidate가 아직 없어 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.",
+  "affected_files": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py",
+    "tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_ss1_adapter.py::test_completion_deadline_mode_stops_repeated_review_without_workspace_progress",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py::test_worker_process_environment_pins_controller_python_and_strips_overrides",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py::test_default_codex_client_receives_the_pinned_worker_environment",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_live.py::test_zero_turn_preflight_never_starts_thread_or_turn",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_worker_environment_and_judge_product_failures_are_preserved_as_mixed",
+    "benchmarks/artifacts/profile-r-task-pack-q6/qualification.json incident regression v22-r10-missing-run-all"
+  ],
+  "verification": [
+    "Task Pack q6 positive transition 13/13, cumulative public Check 104/104, negative mutation 13/13 rejected",
+    "v22-r10-missing-run-all incident regression rejected by r10_contract as PRODUCT_ASSERTION",
+    "서로 다른 TEMP root의 q6 연속 두 생성이 qualification SHA-256 1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471로 일치",
+    "환경·수렴·finalizer·reference/q6 핵심 pytest 73 passed, 2 skipped",
+    "완료시간·Phase F·B1·Docker port·SS1 pytest 37 passed, 3 skipped",
+    "model turn 0, SDK thread/start 0, 실제 Docker workload 0"
+  ],
+  "remaining_risks": [
+    "현재 C:\\lao-v21-runtime은 새 Worker dependency probe를 통과하지 못하므로 새 exact Python runtime을 준비해야 한다.",
+    "q6 이후 fresh Docker Judge qualification, 새 candidate, acceptance 2회와 readiness가 아직 없다.",
+    "실제 SDK preflight와 Docker smoke/dry-run은 별도 Environment Closure 전까지 실행하지 않았다."
+  ],
   "related_commits": [],
   "source_references": [
     "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md",
     "docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md"
   ]
 }

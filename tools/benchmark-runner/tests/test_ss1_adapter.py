@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Literal
 
 import pytest
@@ -286,6 +287,47 @@ def test_second_review_request_hits_task_cap_without_third_turn(tmp_path) -> Non
         }
     ]
     assert evidence.normalized_metrics["resource_ceiling_reached"] is True
+
+
+def test_completion_deadline_mode_stops_repeated_review_without_workspace_progress(
+    tmp_path,
+) -> None:
+    task = _task("task-stalled-review")
+    runtime = FakeSdkRuntime(
+        tmp_path,
+        {
+            task.task_id: (
+                FakeTurnScript(
+                    effects=(),
+                    result=_result(review=True, reason="public_check_uncertainty"),
+                ),
+                FakeTurnScript(
+                    effects=(),
+                    result=_result(review=True, reason="public_check_uncertainty"),
+                ),
+                FakeTurnScript(effects=(), result=_result()),
+            )
+        },
+    )
+    adapter = SS1PersistentAdapter(
+        SS1PersistentConfig(
+            tasks=(task,),
+            contract=_contract(),
+            runtime=runtime,
+            observer=_observation,
+            task_extra_turn_ceiling=None,
+            variant_extra_turn_ceiling=None,
+            completion_deadline_monotonic=time.monotonic() + 60,
+        )
+    )
+
+    evidence = adapter.run(CONTEXT)
+
+    assert evidence.outcome_state == "failed"
+    assert evidence.failure_kind == "ss1_review_no_progress"
+    assert len(runtime.turns) == 2
+    assert evidence.raw_payload["turns"][-1]["review_progress"] == "stalled"
+    assert evidence.raw_payload["ceiling_denials"] == []
 
 
 def test_variant_cap_denies_third_task_review_without_transferring_reserve(

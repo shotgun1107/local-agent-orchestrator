@@ -10,6 +10,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
+import subprocess
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +41,7 @@ from benchmark_runner.realistic_phase_f_sdk import (
     PHASE_F_PINNED_MODEL,
     PHASE_F_PINNED_SDK_VERSION,
     build_phase_f_config_overrides,
+    build_phase_f_worker_process_environment,
 )
 from benchmark_runner.realistic_routing import canonical_sha256
 from benchmark_runner.realistic_phase_f_ss1 import (
@@ -51,13 +55,22 @@ from benchmark_runner.realistic_routing import (
     SecretScanObservation,
 )
 from benchmark_runner.sdk_baselines import SS1ObserverContext
+from benchmark_runner.runner import sha256_file
 from orchestrator.verify import VerificationError, validate_external_check_temp_root
 
 
 AppServerPortFactory = Callable[
-    [Path, tuple[str, ...]],
+    [Path, tuple[str, ...], Mapping[str, str]],
     PhaseFAppServerPort,
 ]
+
+
+_PHASE_F_WORKER_DISTRIBUTION_MAJORS = {
+    "pytest": 8,
+    "pydantic": 2,
+    "PyYAML": 6,
+    "jsonschema": 4,
+}
 
 
 def _external_environment_root(root: Path, *forbidden_roots: Path) -> Path:
@@ -176,8 +189,155 @@ class PolicyAttestedPhaseFBoundaryTelemetry:
         )
 
 
-class PhaseFZeroTurnPreflightEvidence(StrictModel):
+class PhaseFWorkerDistributionEvidence(StrictModel):
+    version: str
+    file_count: int
+    aggregate_sha256: Sha256
+
+
+class PhaseFWorkerPythonEvidence(StrictModel):
     schema_version: Literal[1] = 1
+    command: Literal["python"] = "python"
+    executable: str
+    executable_path_sha256: Sha256
+    executable_sha256: Sha256
+    python_version: str
+    distributions: dict[str, PhaseFWorkerDistributionEvidence]
+    evidence_sha256: Sha256
+
+    @model_validator(mode="after")
+    def evidence_is_canonical(self) -> "PhaseFWorkerPythonEvidence":
+        if set(self.distributions) != set(_PHASE_F_WORKER_DISTRIBUTION_MAJORS):
+            raise ValueError("Phase F Worker distribution set differs")
+        payload = self.model_dump(mode="json", exclude={"evidence_sha256"})
+        if self.evidence_sha256 != canonical_sha256(payload):
+            raise ValueError("Phase F Worker Python Evidence hash differs")
+        return self
+
+
+def probe_phase_f_worker_python(
+    environment: Mapping[str, str],
+    *,
+    expected_executable: Path | None = None,
+) -> PhaseFWorkerPythonEvidence:
+    """Run the exact Worker ``python`` command and bind its required packages."""
+
+    expected = Path(expected_executable or sys.executable).resolve(strict=True)
+    selected = shutil.which("python", path=environment.get("PATH"))
+    if selected is None:
+        raise PhaseFSS1BackendError("Phase F Worker python command is unavailable")
+    selected_executable = Path(selected).resolve(strict=True)
+    if selected_executable != expected:
+        raise PhaseFSS1BackendError(
+            "Phase F Worker python does not resolve to the Controller interpreter"
+        )
+    script = r'''
+import hashlib
+import importlib.metadata
+import json
+import pathlib
+import platform
+import sys
+
+import jsonschema
+import pydantic
+import pytest
+import yaml
+
+
+def distribution(name):
+    value = importlib.metadata.distribution(name)
+    digest = hashlib.sha256()
+    count = 0
+    for item in sorted(value.files or (), key=lambda path: str(path).replace("\\", "/")):
+        relative = str(item).replace("\\", "/")
+        path = pathlib.Path(value.locate_file(item))
+        if not path.is_file():
+            raise RuntimeError(f"distribution file is unavailable: {name}:{relative}")
+        payload = path.read_bytes()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(hashlib.sha256(payload).digest())
+        count += 1
+    if count == 0:
+        raise RuntimeError(f"distribution file set is empty: {name}")
+    return {
+        "version": value.version,
+        "file_count": count,
+        "aggregate_sha256": digest.hexdigest(),
+    }
+
+
+print(json.dumps({
+    "executable": str(pathlib.Path(sys.executable).resolve()),
+    "python_version": platform.python_version(),
+    "distributions": {
+        name: distribution(name)
+        for name in ("pytest", "pydantic", "PyYAML", "jsonschema")
+    },
+}, sort_keys=True, separators=(",", ":")))
+'''
+    try:
+        result = subprocess.run(
+            [str(selected_executable), "-I", "-B", "-c", script],
+            env=dict(environment),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise PhaseFSS1BackendError(
+            "Phase F Worker Python probe could not run"
+        ) from exc
+    if result.returncode != 0:
+        raise PhaseFSS1BackendError(
+            "Phase F Worker Python or required distributions are unavailable"
+        )
+    try:
+        observed = json.loads(result.stdout)
+        executable = Path(observed["executable"]).resolve(strict=True)
+        distributions = observed["distributions"]
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise PhaseFSS1BackendError("Phase F Worker Python Evidence is invalid") from exc
+    if executable != expected or not isinstance(distributions, dict):
+        raise PhaseFSS1BackendError(
+            "Phase F Worker python does not resolve to the Controller interpreter"
+        )
+    for name, expected_major in _PHASE_F_WORKER_DISTRIBUTION_MAJORS.items():
+        value = distributions.get(name)
+        try:
+            major = int(str(value["version"]).split(".", 1)[0])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise PhaseFSS1BackendError(
+                f"Phase F Worker distribution Evidence is invalid: {name}"
+            ) from exc
+        if major != expected_major:
+            raise PhaseFSS1BackendError(
+                f"Phase F Worker distribution major differs: {name}"
+            )
+    values = {
+        "schema_version": 1,
+        "command": "python",
+        "executable": str(executable),
+        "executable_path_sha256": hashlib.sha256(
+            str(executable).encode("utf-8")
+        ).hexdigest(),
+        "executable_sha256": sha256_file(executable),
+        "python_version": str(observed["python_version"]),
+        "distributions": distributions,
+    }
+    return PhaseFWorkerPythonEvidence(
+        **values,
+        evidence_sha256=canonical_sha256(values),
+    )
+
+
+class PhaseFZeroTurnPreflightEvidence(StrictModel):
+    schema_version: Literal[2] = 2
     kind: Literal["phase_f_zero_turn_live_preflight"] = (
         "phase_f_zero_turn_live_preflight"
     )
@@ -190,6 +350,7 @@ class PhaseFZeroTurnPreflightEvidence(StrictModel):
     config_sha256: Sha256
     actual_model_turns: Literal[0] = 0
     thread_started: Literal[False] = False
+    worker_python: PhaseFWorkerPythonEvidence
     evidence_sha256: Sha256
 
     @model_validator(mode="after")
@@ -210,10 +371,12 @@ class ProfileRPhaseFLiveStack:
 def _default_app_server_port_factory(
     workspace: Path,
     overrides: tuple[str, ...],
+    process_environment: Mapping[str, str],
 ) -> PhaseFAppServerPort:
     return CodexPhaseFAppServerPort(
         workspace,
         config_overrides=overrides,
+        process_environment=process_environment,
     )
 
 
@@ -229,9 +392,17 @@ def run_profile_r_phase_f_zero_turn_preflight(
         raise PhaseFSS1BackendError("API key environment names are present")
     workspace = workspace.resolve(strict=True)
     overrides = build_phase_f_config_overrides(workspace)
+    worker_environment = build_phase_f_worker_process_environment(
+        environ,
+        python_executable=Path(sys.executable),
+    )
+    worker_python = probe_phase_f_worker_python(
+        worker_environment,
+        expected_executable=Path(sys.executable),
+    )
     runtime = PhaseFSdkRuntimeV2(
         workspace,
-        port=app_server_port_factory(workspace, overrides),
+        port=app_server_port_factory(workspace, overrides, worker_environment),
         environ=environ,
     )
     try:
@@ -241,7 +412,7 @@ def run_profile_r_phase_f_zero_turn_preflight(
     finally:
         runtime.close()
     values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "phase_f_zero_turn_live_preflight",
         "sdk_version": PHASE_F_PINNED_SDK_VERSION,
         "auth_method": "chatgpt",
@@ -250,6 +421,7 @@ def run_profile_r_phase_f_zero_turn_preflight(
         "config_sha256": canonical_sha256(list(overrides)),
         "actual_model_turns": 0,
         "thread_started": False,
+        "worker_python": worker_python.model_dump(mode="json"),
     }
     return PhaseFZeroTurnPreflightEvidence(
         **values,
@@ -293,11 +465,15 @@ def build_profile_r_phase_f_live_stack(
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
+    worker_environment = build_phase_f_worker_process_environment(
+        environ,
+        python_executable=Path(sys.executable),
+    )
 
     def runtime_factory(workspace: Path) -> PhaseFSdkRuntimeV2:
         overrides = build_phase_f_config_overrides(workspace)
         telemetry.bind(workspace, overrides)
-        port = app_server_port_factory(workspace, overrides)
+        port = app_server_port_factory(workspace, overrides, worker_environment)
         return PhaseFSdkRuntimeV2(
             workspace,
             port=port,
@@ -382,11 +558,15 @@ def build_profile_r_phase_f_b1_live_stack(
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
+    worker_environment = build_phase_f_worker_process_environment(
+        environ,
+        python_executable=Path(sys.executable),
+    )
 
     def runtime_factory(workspace: Path) -> PhaseFB1RuntimeV2:
         overrides = build_phase_f_config_overrides(workspace)
         telemetry.bind(workspace, overrides)
-        port = app_server_port_factory(workspace, overrides)
+        port = app_server_port_factory(workspace, overrides, worker_environment)
         return PhaseFB1RuntimeV2(
             workspace,
             port=port,

@@ -474,13 +474,100 @@ def _measurement(
     final_tree = adapter_payload.get("worker_tree_final_sha256")
     if not isinstance(final_tree, str) or len(final_tree) != 64:
         raise PhaseFFinalizationError("Phase F final Worker tree hash is invalid")
-    outcome_state = worker.outcome_state
-    failure_kind = adapter_payload.get("adapter_failure_kind")
-    if outcome_state == "completed" and not judge.check_success:
-        outcome_state = "failed"
-        failure_kind = "independent_judge_failed"
-    elif outcome_state == "completed":
+    adapter_failure_kind = adapter_payload.get("adapter_failure_kind")
+    worker_failed = worker.outcome_state != "completed"
+    worker_environment_failure = (
+        worker.outcome_state == "infrastructure_error"
+        or adapter_failure_kind
+        in {
+            "sdk_terminal_failed",
+            "ss1_setup_failed",
+            "ss1_task_resolution_failed",
+            "ss1_runtime_dispatch_failed",
+            "ss1_observer_failed",
+            "ss1_common_safety_stop",
+            "check_environment",
+            "check_mixed",
+            "check_unknown",
+        }
+    )
+    worker_product_failure = worker_failed and not worker_environment_failure
+    judge_product_failure = judge.status == "CHECKS_FAILED"
+    judge_environment_failure = judge.status in {
+        "JUDGE_RUNTIME_ERROR",
+        "CHALLENGE_INVALID",
+    }
+    product_failure_present = worker_product_failure or judge_product_failure
+    environment_failure_present = (
+        worker_environment_failure or judge_environment_failure
+    )
+    unknown_failure_present = (
+        worker.outcome_state
+        not in {"completed", "failed", "blocked", "interrupted", "infrastructure_error"}
+        or (not judge.check_success and not judge_product_failure and not judge_environment_failure)
+    )
+    failure_classification = (
+        "UNKNOWN"
+        if unknown_failure_present
+        else "MIXED_PRODUCT_AND_ENVIRONMENT"
+        if product_failure_present and environment_failure_present
+        else "PRODUCT_ASSERTION"
+        if product_failure_present
+        else "ENVIRONMENT"
+        if environment_failure_present
+        else None
+    )
+    failure_nodes = [
+        {
+            "node_id": "worker",
+            "passed": not worker_failed,
+            "classification": (
+                None
+                if not worker_failed
+                else "ENVIRONMENT"
+                if worker_environment_failure
+                else "PRODUCT_ASSERTION"
+                if worker_product_failure
+                else "UNKNOWN"
+            ),
+            "reason_code": (
+                "PASSED"
+                if not worker_failed
+                else str(adapter_failure_kind or worker.outcome_state)
+            ),
+        },
+        {
+            "node_id": "judge",
+            "passed": judge.check_success,
+            "classification": (
+                None
+                if judge.check_success
+                else "PRODUCT_ASSERTION"
+                if judge_product_failure
+                else "ENVIRONMENT"
+                if judge_environment_failure
+                else "UNKNOWN"
+            ),
+            "reason_code": judge.status,
+        },
+    ]
+    if failure_classification is None:
+        outcome_state = "completed"
         failure_kind = None
+    elif failure_classification == "PRODUCT_ASSERTION":
+        outcome_state = "failed"
+        failure_kind = (
+            str(adapter_failure_kind)
+            if worker_product_failure and adapter_failure_kind is not None
+            else "independent_judge_failed"
+        )
+    else:
+        outcome_state = "infrastructure_error"
+        failure_kind = {
+            "ENVIRONMENT": "environment_failure",
+            "MIXED_PRODUCT_AND_ENVIRONMENT": "mixed_product_and_environment",
+            "UNKNOWN": "unknown_failure_classification",
+        }[failure_classification]
     return Measurement(
         created_at=utc_now(),
         identity=MeasurementIdentity(
@@ -613,6 +700,22 @@ def _measurement(
                 "judge_model_turns": judge.actual_model_turns,
                 "judge_observation_sha256": judge.observation_sha256,
                 "failed_property_ids": judge.failed_property_ids,
+                "failure_classification": failure_classification,
+                "comparison_valid": not (
+                    environment_failure_present or unknown_failure_present
+                ),
+                "product_failure_present": product_failure_present,
+                "environment_failure_present": environment_failure_present,
+                "failure_diagnostic": {
+                    "schema_version": 1,
+                    "classification": failure_classification,
+                    "comparison_valid": not (
+                        environment_failure_present or unknown_failure_present
+                    ),
+                    "product_failure_present": product_failure_present,
+                    "environment_failure_present": environment_failure_present,
+                    "nodes": failure_nodes,
+                },
                 "automatic_continuation": False,
             },
         ),

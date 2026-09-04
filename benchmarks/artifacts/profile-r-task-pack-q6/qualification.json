@@ -1,0 +1,1195 @@
+{
+  "benchmark_run_sha256": "3c9f4bfcbfdf0263ddafc43789e29eececedd37f2ba8dcc3f30511318624eafe",
+  "change_surface_sha256": "57d53c4773b6a244b753df0c2232ed233544b3ce36e6ae17652f7c425f9357a7",
+  "incident_regressions": [
+    {
+      "contract_rejected": true,
+      "regression_id": "v22-r10-missing-run-all",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "db0d9237acdc9535df73d80ad4df5163865b391c2a97aa5ab0f665749de13fda",
+      "task_id": "R10"
+    }
+  ],
+  "incident_regressions_sha256": "05107f8336d86be5d09db1d613d9c0e0bf4a78b72bf62fe6b4170567137bd8ce",
+  "model_turns": 0,
+  "negative_mutation_ids": [
+    "r-p01-source-boundary",
+    "r-p02-discriminator",
+    "r-p03-config-fixture",
+    "r-p04-incident-fixture",
+    "r-p05-manifest-binding",
+    "r-p06-plan-binding",
+    "r-p07-routing-policy",
+    "r-p08-lifecycle-reuse",
+    "r-p09-status-posthoc",
+    "r-p10-export-verify",
+    "r-p11-s2-e2e",
+    "r-p12-s1-portability",
+    "r-p13-operator-semantics"
+  ],
+  "positive_transitions": [
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R01"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R01"
+        }
+      ],
+      "task_id": "R01",
+      "tree": "0bf399386545d5c8f340d64f5fb94e63b7560160"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R02"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R02"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R02"
+        }
+      ],
+      "task_id": "R02",
+      "tree": "746a14d0ecc9088d9debe6b00233a92eac5be6d2"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R03"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R03"
+        }
+      ],
+      "task_id": "R03",
+      "tree": "42e1b24b656aff2cc50d96e2b873dc86a3185a0d"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R04"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R04"
+        }
+      ],
+      "task_id": "R04",
+      "tree": "b29afa27ea8fab1f9a8ae25dfe53736f6f27173d"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R05"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R05"
+        }
+      ],
+      "task_id": "R05",
+      "tree": "357803b227ceef4e32cec27cf7215a901914b16b"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R06"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R06"
+        }
+      ],
+      "task_id": "R06",
+      "tree": "cff407aac5ce81faed8888150c64891cd875a1b3"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R07"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R07"
+        }
+      ],
+      "task_id": "R07",
+      "tree": "e733499e4874c0b9b6e2ce95cd47295a800cbfaf"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R08"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R08"
+        }
+      ],
+      "task_id": "R08",
+      "tree": "362ac3517f9a0b1733939b85bf4e45aacbc44727"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9fd0cd00e66fb4b3bc880500e95e311849d2eff5582263e3d6186f7f7bccb203",
+          "task_id": "R09"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R09"
+        }
+      ],
+      "task_id": "R09",
+      "tree": "4d13d21af888453a5c47305f54144eeb91736395"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9fd0cd00e66fb4b3bc880500e95e311849d2eff5582263e3d6186f7f7bccb203",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "6a7c9a13ed9f4b197876d6890e945959846659b9d1e79e52cd57d9b79521960f",
+          "task_id": "R10"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R10"
+        }
+      ],
+      "task_id": "R10",
+      "tree": "be2646b2fa166fd49d3894993ebc201cb346c22f"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9fd0cd00e66fb4b3bc880500e95e311849d2eff5582263e3d6186f7f7bccb203",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "6a7c9a13ed9f4b197876d6890e945959846659b9d1e79e52cd57d9b79521960f",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "81852202fa55c2df8d9f22897fc0e2f8d8ca232585868e0bf35dd6bdc5f14891",
+          "task_id": "R11"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R11"
+        }
+      ],
+      "task_id": "R11",
+      "tree": "9b956ae1844f23b8f93856151c123832654c513a"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9fd0cd00e66fb4b3bc880500e95e311849d2eff5582263e3d6186f7f7bccb203",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "6a7c9a13ed9f4b197876d6890e945959846659b9d1e79e52cd57d9b79521960f",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "81852202fa55c2df8d9f22897fc0e2f8d8ca232585868e0bf35dd6bdc5f14891",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "r12_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "db340e649a864f5035ff24a9f217f46dc6641f57920c727bd0abff53821c50ac",
+          "task_id": "R12"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R12"
+        }
+      ],
+      "task_id": "R12",
+      "tree": "c95789f2af284fa34e90026ed06e5bc3f0c3441c"
+    },
+    {
+      "checks": [
+        {
+          "check_name": "r01_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "7cb1f45102d8b89cf5f92c59a4d43e306a43f50d352fa0f7bde84ab67463e29a",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r02_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9ac5879604dec8d1e8f687a9abb21d9695ff8250d327c490e0da3d27ea307518",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r03_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "e570385d5c87663ca1b0a7d74fe1aac28f104f8a932d91efe3a9c0e3090d891c",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r04_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "cb200a5602dd5e9e6394d1d66d15a8596f1abd5f6489e67bd31b690da119ed21",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r05_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "3b4487590bb53a89fb2f5c8511ad5cf4a9343ba0b6d80f57f2f3bc25d95cbbac",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r06_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0c16d4e0d19d96dad97d38e826d330deeb9a8af799a58fc2493f9deff07a1d79",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r07_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "0203a0126c0fe6c4ebf1c56d409fe5a99c4e19d971af62da4bc873c57f9f883b",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r08_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "c37839e52800835ed890dc38592348fc8cdde2165350c4698754e0b503c511a1",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r09_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "9fd0cd00e66fb4b3bc880500e95e311849d2eff5582263e3d6186f7f7bccb203",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r10_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "6a7c9a13ed9f4b197876d6890e945959846659b9d1e79e52cd57d9b79521960f",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r11_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "81852202fa55c2df8d9f22897fc0e2f8d8ca232585868e0bf35dd6bdc5f14891",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r12_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "db340e649a864f5035ff24a9f217f46dc6641f57920c727bd0abff53821c50ac",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "r13_contract",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "2f0b24a28d3a621dbea714107cd569acec7baff6102617978f3d2fc573a8f059",
+          "task_id": "R13"
+        },
+        {
+          "check_name": "diff_check",
+          "passed": true,
+          "return_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_projection": "portable_semantic_v1",
+          "stdout_sha256": "bf415fba9ad2b3dd29f220288497316d57230cca0b625f1675f037bc0a63d47e",
+          "task_id": "R13"
+        }
+      ],
+      "task_id": "R13",
+      "tree": "a65f83eecce0ba62136e5bcb1e2b91a571136ab9"
+    }
+  ],
+  "profile": "R",
+  "property_ids": [
+    "R-P01-SOURCE-BOUNDARY",
+    "R-P02-DISCRIMINATOR",
+    "R-P03-CONFIG-FIXTURE",
+    "R-P04-INCIDENT-FIXTURE",
+    "R-P05-MANIFEST-BINDING",
+    "R-P06-PLAN-BINDING",
+    "R-P07-ROUTING-POLICY",
+    "R-P08-LIFECYCLE-REUSE",
+    "R-P09-STATUS-POSTHOC",
+    "R-P10-EXPORT-VERIFY",
+    "R-P11-S2-E2E",
+    "R-P12-S1-PORTABILITY",
+    "R-P13-OPERATOR-SEMANTICS"
+  ],
+  "public_negative_matrix": [
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p01-source-boundary",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "765db881c8d434fbe7a4b4ac4d6ec5a4897aa20a371b5608d3b7d695bc8643ce",
+      "task_id": "R01"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p02-discriminator",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "249a6a436d1636ac0460cdfc17d30b6062fa64cdcd6f052bd24464768837cfb2",
+      "task_id": "R02"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p03-config-fixture",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e00b95f308f34b0b12a67fcb5e052a5dc60218dae096870d0460761b550ae1aa",
+      "task_id": "R03"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p04-incident-fixture",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "7e4d6c9948178af2dd3e155779164f864ee8f07e55ddd44362b6712c8e9a23ef",
+      "task_id": "R04"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p05-manifest-binding",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "8908e5e3e4334ca6d18b70a20c87cdfe9edbd0974e7d2f14e3b1bf1759843a9b",
+      "task_id": "R05"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p06-plan-binding",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "9924ae2fa866fca7ef1a4d596a75389bfbb3db9314aea4ba835d323ba3c819f8",
+      "task_id": "R06"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p07-routing-policy",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2936c5171649813f66aff56096ebe8c311c73fad5025e47c18ae40eb8fdf1824",
+      "task_id": "R07"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p08-lifecycle-reuse",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "7d959dbeb05671e99122fbe69bccd35ea5e7569f56d68fae77d387031e9a6a8c",
+      "task_id": "R08"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p09-status-posthoc",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5df3d6eece3240642249c9a48a2b99e55b4482d39278fe01e3dda5f5d866de5e",
+      "task_id": "R09"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p10-export-verify",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "db0d9237acdc9535df73d80ad4df5163865b391c2a97aa5ab0f665749de13fda",
+      "task_id": "R10"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p11-s2-e2e",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "1e4de8a69ab629c99749099b32c7de446918567d876591cbb64e62ee88867db2",
+      "task_id": "R11"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p12-s1-portability",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "09523c097dbb4ecc8d1a3e73207805e47163851c7246381c3c385137441c5ce6",
+      "task_id": "R12"
+    },
+    {
+      "contract_rejected": true,
+      "mutation_id": "r-p13-operator-semantics",
+      "return_code": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4e0d5ab32ec0e8d542cf9d4b5c09d9f4f683d5ce3bf8a19696ea8cf7b5d2c458",
+      "task_id": "R13"
+    }
+  ],
+  "public_negative_matrix_sha256": "fe9ba805c03e4bc78b3e3bb8ec20d99f8b134231065dfe8cc5b50ea577aecc94",
+  "qualification_id": "profile-r-task-pack-q6",
+  "reference_chain_seal_sha256": "bc2a7f4b5f29cd7b812292ee932058ba1e6c8d33eac2e636df56f056e203b246",
+  "reference_chain_sha256": "d6bdf3471774f4fde838c3fe401a89b1e6ef8979799812d6e48c85b50cc84355",
+  "schema_version": 1,
+  "seal_sha256": "6e2a6bbc3b8e5478b22207fd06ec176c4206d06b07bd2858e1cd57038322f5bd",
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "TASK_PACK_READY",
+  "task_ids": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+  ],
+  "worker_information_boundary_passed": true,
+  "worker_manifest_sha256": "89b5534baed130a786a0bae8bbe9e59da825564b324cae6d082f04c9f4a1c931",
+  "worker_tree_aggregate_sha256": "ec4096cf3815671b3ee9106ff810a2f9a4f1a96d3281d85c3db4ace648728638"
+}

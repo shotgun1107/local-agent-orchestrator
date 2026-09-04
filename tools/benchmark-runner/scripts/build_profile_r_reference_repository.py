@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -322,6 +323,7 @@ def main() -> int:
     parser.add_argument("--chain-output", type=Path, required=True)
     parser.add_argument("--seal-output", type=Path, required=True)
     parser.add_argument("--bundle-output", type=Path)
+    parser.add_argument("--manifest-output", type=Path)
     args = parser.parse_args()
     chain, seal = build_reference_repository(
         args.repository,
@@ -350,6 +352,61 @@ def main() -> int:
             str(args.bundle_output.resolve()),
             "--all",
             environment=environment,
+        )
+    if args.manifest_output is not None:
+        if args.bundle_output is None:
+            parser.error("reference manifest requires --bundle-output")
+        if args.manifest_output.exists():
+            raise RuntimeError("reference manifest output must be fresh")
+        chain_bytes = args.chain_output.read_bytes()
+        seal_bytes = args.seal_output.read_bytes()
+        bundle_bytes = args.bundle_output.read_bytes()
+        final_commit = str(chain["tasks"][-1]["commit"])
+        final_tree = _git(
+            args.output_repository.resolve(strict=True),
+            "rev-parse",
+            f"{final_commit}^{{tree}}",
+            environment=_git_environment(),
+        )
+        manifest: dict[str, object] = {
+            "schema_version": 1,
+            "profile": "R",
+            "snapshot_id": "realistic-compat-migration-001",
+            "status": "SEALED_REFERENCE_REPOSITORY",
+            "format": "git_bundle_v2",
+            "git_object_format": "sha1",
+            "commit_count": 14,
+            "base_commit": chain["base_commit"],
+            "final_commit": final_commit,
+            "final_tree": final_tree,
+            "bundle": {
+                "path": "reference-r01-r13.bundle",
+                "size": len(bundle_bytes),
+                "sha256": hashlib.sha256(bundle_bytes).hexdigest(),
+            },
+            "chain": {
+                "path": "reference-task-chain.json",
+                "sha256": hashlib.sha256(chain_bytes).hexdigest(),
+            },
+            "chain_seal": {
+                "path": "reference-chain-seal.json",
+                "sha256": hashlib.sha256(seal_bytes).hexdigest(),
+                "seal_sha256": seal["seal_sha256"],
+            },
+            "worker_visible": False,
+        }
+        manifest["seal_sha256"] = hashlib.sha256(
+            canonical_json(manifest)
+        ).hexdigest()
+        args.manifest_output.parent.mkdir(parents=True, exist_ok=True)
+        args.manifest_output.write_bytes(
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                sort_keys=True,
+                indent=2,
+            ).encode("utf-8")
+            + b"\n"
         )
     print(canonical_json({"status": "REFERENCE_CHAIN_BUILT", **chain}).decode("utf-8"), end="")
     return 0

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -31,6 +32,10 @@ PROFILE_RELATIVE = Path(
     "benchmarks/fixtures/routing-realistic-high-difficulty-v1/"
     "realistic-compat-migration-001"
 )
+_ENVIRONMENT_EVIDENCE_PREFIX = "CHECK_ENVIRONMENT_EVIDENCE:"
+_DIAGNOSTIC_RESULT_PREFIX = "CHECK_DIAGNOSTIC_RESULT:"
+_ENVIRONMENT_DIAGNOSTIC_PREFIX = "CHECK_ENVIRONMENT_DIAGNOSTIC:"
+_WORKER_FEEDBACK_PREFIX = "WORKER_FEEDBACK:"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -160,6 +165,90 @@ def _initialize_worker_git(worker: Path) -> None:
         raise RuntimeError("Worker Git baseline commit failed")
 
 
+def _public_check_stdout_projection(stdout: bytes) -> dict[str, object]:
+    """Seal semantic Check output without transient TEMP path bytes."""
+
+    lines = stdout.decode("utf-8", errors="replace").splitlines()
+    records: list[object] = []
+    feedback_count = 0
+    for line in lines:
+        if line.startswith(_ENVIRONMENT_EVIDENCE_PREFIX):
+            evidence = json.loads(line[len(_ENVIRONMENT_EVIDENCE_PREFIX) :])
+            pytest_counts = evidence.get("pytest")
+            growth_path_length = evidence.get("growth_probe_path_length")
+            probe_repository_length = evidence.get("probe_repository_path_length")
+            if (
+                not isinstance(pytest_counts, dict)
+                or isinstance(growth_path_length, bool)
+                or not isinstance(growth_path_length, int)
+                or isinstance(probe_repository_length, bool)
+                or not isinstance(probe_repository_length, int)
+                or isinstance(evidence.get("growth_margin"), bool)
+                or not isinstance(evidence.get("growth_margin"), int)
+            ):
+                raise RuntimeError("public Check environment Evidence is invalid")
+            records.append(
+                {
+                    "kind": "environment_evidence",
+                    "schema_version": 1,
+                    "pytest": pytest_counts,
+                    "growth_margin": evidence["growth_margin"],
+                    "growth_probe_minimum_path_length": 261,
+                    "growth_probe_minimum_satisfied": growth_path_length >= 261,
+                    "probe_repository_shorter_than_growth_path": (
+                        probe_repository_length < growth_path_length
+                    ),
+                }
+            )
+        elif line.startswith(_DIAGNOSTIC_RESULT_PREFIX):
+            records.append(
+                {
+                    "kind": "diagnostic_result",
+                    "value": json.loads(line[len(_DIAGNOSTIC_RESULT_PREFIX) :]),
+                }
+            )
+        elif line.startswith(_ENVIRONMENT_DIAGNOSTIC_PREFIX):
+            diagnostic = json.loads(line[len(_ENVIRONMENT_DIAGNOSTIC_PREFIX) :])
+            records.append(
+                {
+                    "kind": "environment_diagnostic",
+                    "schema_version": diagnostic.get("schema_version"),
+                    "stage": diagnostic.get("stage"),
+                    "command_ordinal": diagnostic.get("command_ordinal"),
+                    "return_code": diagnostic.get("return_code"),
+                    "safe_error_code": diagnostic.get("safe_error_code"),
+                    "stderr_sha256": diagnostic.get("stderr_sha256"),
+                }
+            )
+        elif line.startswith(_WORKER_FEEDBACK_PREFIX):
+            feedback_count += 1
+        else:
+            records.append({"kind": "literal", "value": line})
+    return {
+        "schema_version": 1,
+        "records": records,
+        "worker_feedback_present": feedback_count > 0,
+    }
+
+
+def _remove_top_level_function(path: Path, name: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    matches = [
+        node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == name
+    ]
+    if len(matches) != 1 or matches[0].end_lineno is None:
+        raise RuntimeError(f"incident mutation function is unavailable: {name}")
+    node = matches[0]
+    start = min([node.lineno, *(item.lineno for item in node.decorator_list)]) - 1
+    lines = text.splitlines(keepends=True)
+    del lines[start : node.end_lineno]
+    path.write_text("".join(lines), encoding="utf-8", newline="\n")
+
+
 def _run_public_check(
     worker: Path,
     *,
@@ -191,12 +280,14 @@ def _run_public_check(
             check=False,
         )
     expected_codes = list(check_spec["expected_exit_codes"])
+    stdout_projection = _public_check_stdout_projection(completed.stdout)
     return {
         "task_id": task_id,
         "check_name": check_name,
         "passed": completed.returncode in expected_codes,
         "return_code": completed.returncode,
-        "stdout_sha256": sha256(completed.stdout),
+        "stdout_sha256": sha256(canonical_json(stdout_projection)),
+        "stdout_projection": "portable_semantic_v1",
         "stderr_sha256": sha256(completed.stderr),
         "stdout_lines": completed.stdout.decode(
             "utf-8", errors="replace"
@@ -338,6 +429,41 @@ def qualify_full(
                     "stderr_sha256": result["stderr_sha256"],
                 }
             )
+        incident_worker = temporary / "incident-v22-r10-missing-run-all"
+        shutil.copytree(final_worker, incident_worker)
+        _remove_top_level_function(
+            incident_worker
+            / "tools/benchmark-runner/src/benchmark_runner/routing_suite.py",
+            "run_all_routing_s2_nonlive_cells",
+        )
+        incident_result = _run_public_check(
+            incident_worker,
+            task_id="R10",
+            check_name="r10_contract",
+            check_spec=checks["r10_contract"],
+        )
+        incident_rejected = (
+            incident_result["return_code"] == 1
+            and incident_result["stdout_lines"][:2]
+            == [
+                "R10_PUBLIC_CONTRACT_FAILED",
+                "CHECK_FAILURE_CLASS:PRODUCT_ASSERTION",
+            ]
+        )
+        if not incident_rejected:
+            raise RuntimeError(
+                "R10 public contract accepted the v22 missing run-all regression"
+            )
+        incident_regressions = [
+            {
+                "regression_id": "v22-r10-missing-run-all",
+                "task_id": "R10",
+                "contract_rejected": True,
+                "return_code": incident_result["return_code"],
+                "stdout_sha256": incident_result["stdout_sha256"],
+                "stderr_sha256": incident_result["stderr_sha256"],
+            }
+        ]
     payload: dict[str, object] = {
         **{
             key: value
@@ -351,6 +477,10 @@ def qualify_full(
         "positive_transitions": positive,
         "public_negative_matrix": negative,
         "public_negative_matrix_sha256": sha256(canonical_json(negative)),
+        "incident_regressions": incident_regressions,
+        "incident_regressions_sha256": sha256(
+            canonical_json(incident_regressions)
+        ),
     }
     payload["seal_sha256"] = sha256(canonical_json(payload))
     return payload

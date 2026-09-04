@@ -107,10 +107,10 @@
       "provenance": "public_requirement",
       "source_blob_oid": null,
       "source_path": "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
-      "source_sha256": "fa73eb2e9cf052793694c1202235807a166d9a61241e66c1b2e66447230c84ef",
-      "source_size": 102918,
-      "worker_sha256": "fa73eb2e9cf052793694c1202235807a166d9a61241e66c1b2e66447230c84ef",
-      "worker_size": 102918
+      "source_sha256": "0f83a0f761eeb1d0cd07ecace33d8a9d776816ae12d363884596ba64698f7c28",
+      "source_size": 113005,
+      "worker_sha256": "0f83a0f761eeb1d0cd07ecace33d8a9d776816ae12d363884596ba64698f7c28",
+      "worker_size": 113005
     },
     {
       "mapping_ids": [],
@@ -1659,9 +1659,9 @@
   "source_allowlist_sha256": "028d0d3c7691980705315b781ebfcc0343d2e0bfb4466a275cf43414f2665aaf",
   "source_authority": "git_object_database",
   "source_commit": "dbd84422a315b8bc34d0fc2583862f5add8c7c44",
-  "source_total_bytes": 1266781,
+  "source_total_bytes": 1276868,
   "source_tree": "0dd961f9d9067c043e93f26675f3719576c3c8ee",
   "status": "ANONYMIZED_WORKER_TASK_PACK_CANDIDATE",
-  "worker_total_bytes": 1266766,
-  "worker_tree_aggregate_sha256": "6a168df72fb798b7ea61f7f27b300815a5a733467d200f6a0268263948746eff"
+  "worker_total_bytes": 1276853,
+  "worker_tree_aggregate_sha256": "ec4096cf3815671b3ee9106ff810a2f9a4f1a96d3281d85c3db4ace648728638"
 }

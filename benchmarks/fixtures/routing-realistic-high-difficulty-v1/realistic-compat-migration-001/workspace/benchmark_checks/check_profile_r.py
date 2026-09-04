@@ -11,8 +11,11 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
+from types import SimpleNamespace
 from typing import Any, get_args
 
 import yaml
@@ -851,6 +854,9 @@ def check_r09() -> None:
 def check_r10() -> None:
     routing = _import_runner_module("routing_suite")
     for name in (
+        "build_routing_s2_plan",
+        "initialize_routing_s2_experiment",
+        "run_all_routing_s2_nonlive_cells",
         "export_routing_s2_nonlive",
         "verify_routing_s2_nonlive_export",
     ):
@@ -885,6 +891,231 @@ def check_r10() -> None:
         or "s2-intermediate" not in constants
     ):
         raise PublicContractError("S2 export verifier accepts the wrong stage identity")
+    _check_r10_export_behavior(routing)
+
+
+def _check_r10_export_behavior(routing: Any) -> None:
+    """Exercise the public create-to-seal export path before R11 adds tests."""
+
+    from benchmark_runner.contract import ArtifactIdentity
+    from benchmark_runner.sdk_baselines import SdkBaselineAdapter, SdkBaselineConfig
+    from benchmark_runner.sdk_cells import runner_source_sha256
+    from benchmark_runner.sdk_common import FakeSdkRuntime, FakeTurnScript, WorkerContract
+    from benchmark_runner.workspace import FrozenFixtureSpec
+
+    suite_relative = Path("benchmarks/suites/sdk-routing-v1/suite.yaml")
+    stage_relative = Path("benchmarks/suites/sdk-routing-v1/stages/s2-intermediate.yaml")
+    manifest_relative = Path("benchmarks/manifests/sdk-routing-s2-intermediate.yaml")
+    fixture_root = Path("benchmarks/fixtures/routing-v1/intermediate")
+    executable = shutil.which("git")
+    if executable is None:
+        raise PublicContractError(
+            "Git is unavailable for the R10 public behavior Check",
+            failure_classification="ENVIRONMENT",
+        )
+    completed_result = {
+        "schema_version": 1,
+        "status_claim": "completed",
+        "summary": "public R10 fake-runtime result",
+        "artifacts": [],
+        "changed_paths": [],
+        "checks_run_by_worker": [],
+        "assumptions": [],
+        "warnings": [],
+        "requested_followup": None,
+    }
+    contract = WorkerContract(
+        render_prompt=lambda task: f"public R10 task {task.task_id}",
+        result_schema=lambda: {"title": "ResultEnvelope", "type": "object"},
+        validate_result=lambda value: value,
+        semantics_sha256=lambda task: hashlib.sha256(
+            str(task.task_id).encode("utf-8")
+        ).hexdigest(),
+    )
+    try:
+        with tempfile.TemporaryDirectory(prefix="profile-r-r10-public-") as raw:
+            temporary = Path(raw)
+            source = temporary / "source"
+            for fixture_id in (
+                "three-stage-config-migration",
+                "three-stage-incident-analysis",
+            ):
+                destination = source / fixture_root / fixture_id
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(ROOT / fixture_root / fixture_id, destination)
+            git_environment = {
+                **os.environ,
+                "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_CONFIG_GLOBAL": os.devnull,
+                "GIT_AUTHOR_NAME": "profile-r-public",
+                "GIT_AUTHOR_EMAIL": "profile-r@test",
+                "GIT_COMMITTER_NAME": "profile-r-public",
+                "GIT_COMMITTER_EMAIL": "profile-r@test",
+                "GIT_AUTHOR_DATE": "2001-01-01T00:00:00+00:00",
+                "GIT_COMMITTER_DATE": "2001-01-01T00:00:00+00:00",
+            }
+
+            def run_git(*arguments: str) -> str:
+                result = subprocess.run(
+                    [
+                        executable,
+                        "-c",
+                        "core.autocrlf=false",
+                        "-c",
+                        "core.filemode=false",
+                        "-c",
+                        "core.longpaths=true",
+                        "-C",
+                        str(source),
+                        *arguments,
+                    ],
+                    env=git_environment,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=60,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    raise OSError(f"R10 Git command failed: {arguments[0]}")
+                return result.stdout.strip()
+
+            run_git("init", "-q", "-b", "main")
+            run_git("add", "-A")
+            run_git("commit", "-q", "-m", "public R10 fixture")
+            commit = run_git("rev-parse", "HEAD")
+            manifest = yaml.safe_load((ROOT / manifest_relative).read_text(encoding="utf-8"))
+            for fixture in manifest["fixtures"]:
+                fixture_id = str(fixture["id"])
+                relative = (fixture_root / fixture_id).as_posix()
+                fixture["commit"] = commit
+                fixture["git_tree"] = run_git("rev-parse", f"HEAD:{relative}")
+            manifest_path = source / manifest_relative
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text(
+                yaml.safe_dump(manifest, sort_keys=False),
+                encoding="utf-8",
+                newline="\n",
+            )
+            suite_path = source / suite_relative
+            stage_path = source / stage_relative
+            suite_path.parent.mkdir(parents=True, exist_ok=True)
+            stage_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / suite_relative, suite_path)
+            stage = yaml.safe_load((ROOT / stage_relative).read_text(encoding="utf-8"))
+            frozen = {
+                str(value["id"]): FrozenFixtureSpec.model_validate(value)
+                for value in manifest["fixtures"]
+            }
+            for profile in stage["profiles"]:
+                fixture_id = str(profile["fixture_id"])
+                declared = profile["complexity"]
+                profile["complexity"] = routing.compute_fixture_complexity(
+                    source,
+                    frozen[fixture_id],
+                    expected_write_files=declared["expected_write_files"],
+                    verification_kind=declared["verification_kind"],
+                    failure_profile=declared["failure_profile"],
+                    solution_ambiguity=declared["solution_ambiguity"],
+                ).model_dump(mode="json")
+            stage_path.write_text(
+                yaml.safe_dump(stage, sort_keys=False),
+                encoding="utf-8",
+                newline="\n",
+            )
+            plan = routing.build_routing_s2_plan(
+                repository_root=source,
+                suite_path=suite_path,
+                stage_path=stage_path,
+                runner=ArtifactIdentity(
+                    artifact_id="benchmark-runner",
+                    version="public-r10",
+                    sha256=runner_source_sha256(),
+                ),
+                variants=[
+                    ArtifactIdentity(
+                        artifact_id="c2",
+                        version="public-r10",
+                        sha256="2" * 64,
+                    ),
+                    ArtifactIdentity(
+                        artifact_id="b1",
+                        version="public-r10",
+                        sha256="3" * 64,
+                    ),
+                ],
+                environment_fingerprint={"runtime": "fake", "actual_model_turns": "0"},
+                created_at=datetime(2099, 8, 8, tzinfo=timezone.utc),
+            )
+            experiment_dir = routing.initialize_routing_s2_experiment(
+                temporary / "state",
+                plan,
+            )
+
+            def adapter_factory(cell: Any, prepared: Any) -> SdkBaselineAdapter:
+                tasks = tuple(
+                    SimpleNamespace(task_id=f"public-r10-{number}")
+                    for number in range(1, 4)
+                )
+                scripts = {
+                    str(task.task_id): FakeTurnScript(
+                        effects=(),
+                        result=completed_result,
+                    )
+                    for task in tasks
+                }
+                return SdkBaselineAdapter(
+                    SdkBaselineConfig(
+                        variant_id=cell.variant_id,
+                        tasks=tasks,
+                        contract=contract,
+                        runtime=FakeSdkRuntime(prepared.workspace, scripts),
+                    )
+                )
+
+            results = routing.run_all_routing_s2_nonlive_cells(
+                repository_root=source,
+                suite_path=suite_path,
+                stage_path=stage_path,
+                experiment_dir=experiment_dir,
+                adapter_factory=adapter_factory,
+                benchmark_python=Path(sys.executable),
+                git_executable=Path(executable),
+            )
+            if len(results) != 4 or any(
+                result.cell_state != "SEALED" or result.check_success is not True
+                for result in results
+            ):
+                raise PublicContractError("R10 did not seal four successful S2 Cells")
+            exported = routing.export_routing_s2_nonlive(
+                repository_root=source,
+                suite_path=suite_path,
+                stage_path=stage_path,
+                experiment_dir=experiment_dir,
+                results_root=temporary / "results",
+            )
+            export_root = Path(exported["results_root"])
+            verified = routing.verify_routing_s2_nonlive_export(export_root)
+            if verified["export_sha256"] != exported["export_sha256"]:
+                raise PublicContractError("R10 export roundtrip hash differs")
+            summary_path = export_root / "summary.json"
+            summary_path.write_bytes(summary_path.read_bytes() + b"\n")
+            try:
+                routing.verify_routing_s2_nonlive_export(export_root)
+            except routing.RoutingSuiteError:
+                pass
+            else:
+                raise PublicContractError("R10 verifier accepted a tampered export")
+    except PublicContractError:
+        raise
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise PublicContractError(
+            "R10 public behavior environment failed",
+            failure_classification="ENVIRONMENT",
+        ) from exc
+    except Exception as exc:
+        raise PublicContractError("R10 public export behavior failed") from exc
 
 
 def _test_module_tree(path: Path) -> ast.Module:
