@@ -136,17 +136,17 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 4
     assert stage.profiles[0].qualification_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v22/qualification.json"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v23/qualification.json"
     )
     assert stage.profiles[0].docker_environment_path == (
-        "benchmarks/artifacts/profile-r-docker-judge-qualification-v22/"
+        "benchmarks/artifacts/profile-r-docker-judge-qualification-v23/"
         "docker-environment.json"
     )
     assert stage.profiles[0].task_pack_qualification_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q5/qualification.json"
+        "benchmarks/artifacts/profile-r-task-pack-q6/qualification.json"
     )
     assert stage.profiles[0].task_budget_path == (
-        "benchmarks/artifacts/profile-r-task-pack-q5/task-budget.json"
+        "benchmarks/artifacts/profile-r-task-pack-q6/task-budget.json"
     )
     assert stage.profiles[0].task_count == 13
     assert stage.profiles[1].docker_environment_path is None
@@ -781,19 +781,25 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
     assert bindings.schema_version == 4
     profile_r = bindings.profiles[0]
     assert profile_r.qualification_sha256 == (
-        "c756c9051ecd833fedf72740d3113c3aa89876555b9bde83dea39b26a20df58e"
+        "20e0a0ad13f9e02e78b55375c95555fcf74406c309409c04fc0e6a72e2a27385"
+    )
+    assert profile_r.qualification_seal_sha256 == (
+        "3c23f3f30182e584f346b5750d1bf72f848a2297dab25a4877c4517452d47e9e"
+    )
+    assert profile_r.docker_environment_sha256 == (
+        "e0eb7dd86424d83151b86b8d17edd4019441b3a219a6f2a8f2c74f54061b0c41"
     )
     assert profile_r.task_pack_qualification_sha256 == (
-        "f102e3ef48b5f10f173c282a98ce0b21cacfb7a164d716124cdee357d9c13fa5"
+        "1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471"
     )
     assert profile_r.task_pack_qualification_seal_sha256 == (
-        "32d4327d728288d08242b8a3779eff35b8e41b556f634a9007951e8be0b06a97"
+        "6e2a6bbc3b8e5478b22207fd06ec176c4206d06b07bd2858e1cd57038322f5bd"
     )
     assert profile_r.task_budget_sha256 == (
-        "366c260dfb412623d02838a5cf7a78a95a71f6ba6a7ccfbbbbb7e319cb7046be"
+        "088d010ae3e50579beb87fc3c0d4f85c17e2d1e7b9a0fe836168cf9dc2d00a1f"
     )
     assert profile_r.task_budget_seal_sha256 == (
-        "4d5076cabe4df5553b24850d5d0fe1e5a2097fd8b6b505932d9c367c116ce758"
+        "d601a8a565b91cd26970746baa098523d34e971b9127d9e478c3f1332efc1132"
     )
     assert plan.decision_policy["budget_mode"] == "cell_completion_deadline"
     assert plan.decision_policy["cell_completion_deadline_seconds"] == 9000
