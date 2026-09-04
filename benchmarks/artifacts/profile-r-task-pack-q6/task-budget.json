@@ -1,0 +1,41 @@
+{
+  "budget_mode": "cell_completion_deadline",
+  "cell_completion_deadline_seconds": 9000,
+  "deadline_scope": "from_cell_claim_acceptance_through_terminal_cell_seal",
+  "hard_limit_fields": [
+    "cell_completion_deadline_seconds"
+  ],
+  "measurement_only_fields": [
+    "actual_model_turns",
+    "actual_sdk_calls",
+    "actual_sessions",
+    "actual_retries",
+    "actual_resumes",
+    "model_active_seconds",
+    "wall_clock_seconds"
+  ],
+  "model_turns": 0,
+  "profile": "R",
+  "schema_version": 2,
+  "seal_sha256": "d601a8a565b91cd26970746baa098523d34e971b9127d9e478c3f1332efc1132",
+  "snapshot_id": "realistic-compat-migration-001",
+  "ss1_b1_identical": true,
+  "status": "PROFILE_R_TASK_BUDGET_SEALED",
+  "task_ids": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+  ],
+  "task_pack_qualification_seal_sha256": "6e2a6bbc3b8e5478b22207fd06ec176c4206d06b07bd2858e1cd57038322f5bd",
+  "task_pack_qualification_sha256": "1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471"
+}

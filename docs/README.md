@@ -4,7 +4,7 @@
 
 ## 먼저 읽을 문서
 
-1. [Profile R 전체 완료시간 단일 제한 계약](./design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md) — 다음 revision은 Cell당 9000초만 hard limit으로 사용하고 Task·호출·재시도 횟수 제한을 제거
+1. [Profile R v22 실패 교정·Task Pack q6 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md) — Worker Python 고정, R10 행동검사, 무진전 review 중단과 혼합 실패 분류를 model-free로 검증; Live는 NO-GO
 2. [Profile R Phase F 시험환경 축소 교정 명세](./design/sdk-routing-realistic-high-difficulty-phase-f-environment-remediation-spec.md) — 현재 `LIVE_NO_GO`와 다음 model-free 구현·검증 관문
 3. [범용 로컬 세션 오케스트레이터 설계](./design/general-local-session-orchestrator-design.md) — 전체 목적·경계·검증 전략
 4. [B1 최소 오케스트레이터 구현 명세](./design/b1-minimum-orchestrator-implementation-spec.md) — 동결된 B1 구현 기준
@@ -65,6 +65,7 @@ docs/
 - [Profile R SS1→B1 회사 v21 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v21-result.md) — 두 Cell의 제품 실패, B1 R10 timeout·public/hidden 검사 간극과 Cell 3·4 중단 기록
 - [Profile R v21 첫 pair model-free 실패 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md) — timeout retry 우회와 R03·R04·R07 공개/hidden 계약 불일치 재현 및 최소 수정 범위
 - [Profile R 단일 완료시간 계약·Task Pack q5 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md) — Task·호출 횟수 상한을 제거하고 Cell 9000초만 남긴 source·reference·q5 model-free 검증 결과
+- [Profile R v22 실패 교정·Task Pack q6 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md) — R10 누락을 행동검사로 차단하고 Worker Python·수렴·혼합 분류를 교정한 새 q6
 - [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [현실 고난도 Phase E candidate v22](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md) — q25·q5와 Cell 9000초 계약을 schema v4 Plan에 결합한 0-turn 후보
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행

@@ -67,6 +67,8 @@ def main() -> int:
     )
     parser.add_argument("--task-pack-qualification", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--artifact-manifest", type=Path)
+    parser.add_argument("--reference-repository-manifest", type=Path)
     args = parser.parse_args()
     result = build_budget(args.task_pack_qualification.resolve(strict=True))
     payload = json.dumps(
@@ -77,6 +79,65 @@ def main() -> int:
     ) + "\n"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(payload, encoding="utf-8", newline="\n")
+    if args.artifact_manifest is not None:
+        if args.reference_repository_manifest is None:
+            parser.error(
+                "--artifact-manifest requires --reference-repository-manifest"
+            )
+        qualification, qualification_bytes = _load(
+            args.task_pack_qualification.resolve(strict=True)
+        )
+        reference, _ = _load(
+            args.reference_repository_manifest.resolve(strict=True)
+        )
+        budget_bytes = args.output.read_bytes()
+        if (
+            reference.get("status") != "SEALED_REFERENCE_REPOSITORY"
+            or not isinstance(reference.get("seal_sha256"), str)
+            or not isinstance(reference.get("chain_seal"), dict)
+            or not isinstance(reference["chain_seal"].get("seal_sha256"), str)
+        ):
+            raise RuntimeError("reference repository manifest is not sealed")
+        manifest: dict[str, object] = {
+            "schema_version": 1,
+            "profile": "R",
+            "snapshot_id": "realistic-compat-migration-001",
+            "status": "TASK_PACK_READY",
+            "model_turns": 0,
+            "qualification": {
+                "path": "qualification.json",
+                "size": len(qualification_bytes),
+                "sha256": sha256(qualification_bytes),
+                "seal_sha256": qualification["seal_sha256"],
+            },
+            "task_budget": {
+                "path": "task-budget.json",
+                "size": len(budget_bytes),
+                "sha256": sha256(budget_bytes),
+                "seal_sha256": result["seal_sha256"],
+            },
+            "reference_repository": {
+                "manifest_path": (
+                    "../../reference-source/sdk-routing-realistic-high-difficulty-v1/"
+                    "realistic-compat-migration-001/reference-repository-manifest.json"
+                ),
+                "manifest_seal_sha256": reference["seal_sha256"],
+                "chain_seal_sha256": reference["chain_seal"]["seal_sha256"],
+            },
+        }
+        manifest["seal_sha256"] = sha256(canonical_json(manifest))
+        args.artifact_manifest.parent.mkdir(parents=True, exist_ok=True)
+        args.artifact_manifest.write_text(
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                sort_keys=True,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
     print(payload, end="")
     return 0
 

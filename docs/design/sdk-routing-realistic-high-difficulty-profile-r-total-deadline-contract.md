@@ -190,3 +190,32 @@ model-free acceptance 두 회차와 readiness v11 원본·ZIP 해제본 검증�
 사용했지만 R11 Worker Python의 `pytest`·`pydantic` 결손으로 blocked됐고 Judge R-P10~R-P13이
 실패했다. 기존 Cell은 진단 자료로만 보존하며 다음 관문은 Worker 환경 preflight와 혼합 실패
 분류의 최소 수정 범위를 확정하는 것이다.
+
+## 10. v22 실패 뒤 수정 계약
+
+v22 SS1은 호출 횟수 제한 때문에 실패한 것이 아니다. R10 구현 결함을 공개 Check가 놓쳤고,
+R11에서는 실제 Worker 셸의 `python`이 Controller가 검증한 Python과 달라 `pytest`와
+`pydantic`을 사용할 수 없었다. 이후 같은 `public_check_uncertainty`가 작업공간의 진전 없이
+반복됐다. 다음 revision은 아래 네 조건을 함께 만족해야 한다.
+
+1. app-server가 실행하는 Worker process의 `PATH` 맨 앞을 Controller의 exact Python
+   디렉터리로 고정한다. `PYTHONHOME`과 `PYTHONPATH`는 상속하지 않는다.
+2. Environment Closure와 실행 직전 검사는 실제 Worker 명령인 `python`으로
+   `pytest`, `pydantic`, `PyYAML`, `jsonschema`를 import하고, 해석된 executable·version·hash와
+   각 distribution의 version·file aggregate hash를 Evidence에 기록한다. 하나라도 다르면
+   Cell claim과 model turn 전에 `NO-GO`다.
+3. R10 public Check는 symbol·AST 존재만 보지 않는다. 공개 fixture와 Fake runtime으로
+   S2 네 Cell을 생성·봉인하고 export/verify 왕복 및 변조 거부를 직접 실행한다.
+4. 호출 횟수 상한은 다시 도입하지 않는다. 대신 같은 Task의 연속 self-review가 같은
+   uncertainty를 반환하고 작업공간 tree도 변하지 않으면 `ss1_review_no_progress`로 즉시
+   종료한다. 이는 시간·횟수 budget이 아니라 관측 가능한 진전 조건이다.
+
+최종 Measurement는 Worker와 Judge의 구조화된 결과를 각각 node로 남기고
+`PRODUCT_ASSERTION`, `ENVIRONMENT`, `MIXED_PRODUCT_AND_ENVIRONMENT`, `UNKNOWN` 중 하나로
+집계한다. 환경 실패가 하나라도 있으면 `comparison_valid=false`이고 terminal state는
+`infrastructure_error`다. 제품 실패도 함께 있으면 `product_failure_present=true`를 유지해
+환경 상태에 가리지 않는다. Judge의 `checker_error`, runtime error와 challenge invalid도
+제품 실패로 오인하지 않는다.
+
+기존 v22 state·raw·Measurement·seal은 이 새 분류로 고쳐 쓰지 않는다. 수정은 새 source,
+새 Task Pack/Judge qualification, 새 candidate와 새 experiment에만 적용한다.

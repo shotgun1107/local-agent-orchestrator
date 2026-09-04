@@ -3482,6 +3482,28 @@ Environment Closure와 Live는 `NO-GO`다.
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
 
+## Profile R v22 실패 교정·Task Pack q6
+
+- 작업일: 2026-09-04. v22 봉인 자료는 그대로 두고 R10 공개검사, Worker Python 환경,
+  SS1 self-review 수렴과 finalizer 실패 분류를 새 source에서 교정했다.
+- R10 직접 재현에서 `run_all_routing_s2_nonlive_cells` 누락을 확인했다. 새 R10 공개 Check는
+  S2 네 Cell create-to-seal, export/verify와 변조 거부를 실제로 실행한다.
+- Worker process는 Controller exact Python을 PATH 첫 항목으로 받고, zero-turn preflight는
+  `pytest`, `pydantic`, `PyYAML`, `jsonschema`의 import·version·file aggregate를 봉인한다.
+- 호출 횟수 제한은 다시 도입하지 않았다. 같은 uncertainty와 불변 workspace가 연속되면
+  `ss1_review_no_progress`로 끝낸다. Measurement는 Worker/Judge node를 제품·환경·혼합·미확인으로
+  집계하고 환경 실패가 있으면 비교 무효로 남긴다.
+- q6는 positive `13/13`, cumulative public Check `104/104`, negative `13/13`과 v22 R10
+  incident regression 거부를 통과했다. qualification/seal은 `1d9aa74b...68471` /
+  `6e2a6bbc...2f5bd`, Worker tree는 `ec4096cf...28638`이다. 서로 다른 TEMP root의 연속
+  생성 두 회차도 qualification file SHA `1d9aa74b...68471`로 일치했다.
+- 관련 핵심 회귀는 `73 passed, 2 skipped`, 넓은 Phase F/B1 회귀는
+  `37 passed, 3 skipped`, q6 artifact·portable projection 회귀는 `16 passed`다.
+  model·SDK turn·실제 Docker workload는 0이다.
+
+현재 기존 live Python은 새 dependency probe를 통과하지 못하므로 Live는 `NO-GO`다. 다음
+관문은 source commit 뒤 새 exact Python runtime 준비와 fresh Docker Judge qualification이다.
+
 ## Profile R v22 SS1 Cell 1 봉인·Worker 환경 결손
 
 - 작업일: 2026-09-03. 별도 Environment Closure GO와 다음 사용자 승인 뒤 experiment

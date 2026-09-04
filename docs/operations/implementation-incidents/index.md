@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 74건
-- 해결: 72건
+- 전체: 75건
+- 해결: 73건
 - 조사 중: 1건
 - 미해결: 1건
 - 위험 수용: 0건
@@ -87,6 +87,7 @@
 | DEV-20260903-001 | resolved | phase-f-profile-r-v22-acceptance | test | Profile R v22 acceptance 하네스가 null budget field를 absent로 오판함 |
 | DEV-20260903-002 | resolved | phase-f-profile-r-v22-readiness | tooling | Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함 |
 | DEV-20260903-003 | open | phase-f-profile-r-v22-ss1 | integration | Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨 |
+| DEV-20260904-001 | resolved | profile-r-task-pack-q6 | tooling | Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -4913,27 +4914,113 @@ R01~R10 뒤 R11이 pytest와 pydantic 부재로 behavioral check를 실행하지
 
 ### 근본 원인
 
-미확인
+R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routing_s2_nonlive_cells가 없는 구현을 통과시켰다. 동시에 app-server Worker process가 Controller Python이 아닌 PATH의 사용자 Python을 선택했고, Environment Closure는 그 실제 python 명령과 pytest·pydantic import를 검사하지 않았다. 완료시간 전용 모드에는 동일 uncertainty와 불변 workspace를 감지하는 수렴 조건도 없었다. finalizer는 Worker와 Judge의 제품·환경 실패를 구조화해 집계하지 않았다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `rejected` R11에 고정 turn 상한을 다시 둔다 — R01~R13 전체 완료시간만 제한한다는 현재 계약과 충돌하고 진전 있는 복구까지 임의 횟수로 막는다
+- `rejected` Worker가 필요할 때 임의 Python이나 임시 가상환경을 찾게 둔다 — SS1/B1 환경 동일성과 재현성을 보장하지 못한다
+- `adopted` Controller exact Python을 Worker PATH에 고정하고 필요한 distribution을 zero-turn preflight에서 검증한다 — Cell claim과 model turn 전에 실제 Worker 명령환경을 exact Evidence로 확정한다
+- `adopted` R10 public Check를 Fake runtime 기반 create-to-seal export/verify·tamper 행동검사로 교체한다 — symbol 존재만으로 v22의 누락 구현이 통과한 경로를 직접 차단한다
+- `adopted` 동일 uncertainty와 불변 workspace가 연속되면 no-progress로 중단한다 — 호출 횟수 상한 없이도 관측 가능한 무진전 반복을 멈춘다
+- `adopted` Worker와 Judge 결과를 구조화된 node로 합성한다 — 제품·환경·혼합·미확인 실패를 분리하고 비교 가능성을 명시한다
 
 ### 채택한 해결
 
-미해결
+새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀는 통과했지만 새 live runtime과 candidate가 아직 없어 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
 
 ### 수정 파일
 
-- 기록 없음
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_live.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py
+- tools/benchmark-runner/src/benchmark_runner/sdk_baselines.py
 
 ### 회귀시험
 
-- 기록 없음
+- tools/benchmark-runner/tests/test_ss1_adapter.py::test_completion_deadline_mode_stops_repeated_review_without_workspace_progress
+- tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py::test_worker_process_environment_pins_controller_python_and_strips_overrides
+- tools/benchmark-runner/tests/test_realistic_phase_f_sdk.py::test_default_codex_client_receives_the_pinned_worker_environment
+- tools/benchmark-runner/tests/test_realistic_phase_f_live.py::test_zero_turn_preflight_never_starts_thread_or_turn
+- tools/benchmark-runner/tests/test_realistic_phase_f_finalize.py::test_worker_environment_and_judge_product_failures_are_preserved_as_mixed
+- benchmarks/artifacts/profile-r-task-pack-q6/qualification.json incident regression v22-r10-missing-run-all
 
 ### 검증 결과
 
-- 기록 없음
+- Task Pack q6 positive transition 13/13, cumulative public Check 104/104, negative mutation 13/13 rejected
+- v22-r10-missing-run-all incident regression rejected by r10_contract as PRODUCT_ASSERTION
+- 서로 다른 TEMP root의 q6 연속 두 생성이 qualification SHA-256 1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471로 일치
+- 환경·수렴·finalizer·reference/q6 핵심 pytest 73 passed, 2 skipped
+- 완료시간·Phase F·B1·Docker port·SS1 pytest 37 passed, 3 skipped
+- model turn 0, SDK thread/start 0, 실제 Docker workload 0
+
+### 남은 위험
+
+- 현재 C:\lao-v21-runtime은 새 Worker dependency probe를 통과하지 못하므로 새 exact Python runtime을 준비해야 한다.
+- q6 이후 fresh Docker Judge qualification, 새 candidate, acceptance 2회와 readiness가 아직 없다.
+- 실제 SDK preflight와 Docker smoke/dry-run은 별도 Environment Closure 전까지 실행하지 않았다.
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
+- 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
+
+## DEV-20260904-001 — Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함
+
+- 상태: `resolved`
+- 단계: `profile-r-task-pack-q6`
+- 분류: `tooling`
+- 발견: 2026-09-04T00:10:00Z / q6 qualification 연속 생성 SHA-256 대조
+- 해결: 2026-09-04T00:27:18Z
+
+### 증상
+
+같은 source, reference와 mutation으로 q6 qualification을 반복 생성했지만 R03·R11·R12 Check stdout hash와 최종 qualification hash가 달라졌다.
+
+### 재현
+
+- 같은 reference repository와 public negative mutation으로 profile-r-task-pack-q6 qualification을 생성한다.
+- 서로 다른 TEMP root에서 같은 명령을 다시 실행해 qualification JSON SHA-256을 비교한다.
+
+### 증거
+
+- `reproducible-test`: 교정 전 연속 생성에서 R03·R11·R12 관련 stdout SHA와 qualification seal이 달랐다.
+- `source-inspection`: qualify_profile_r_task_pack.py가 TEMP absolute path를 포함하는 raw public Check stdout 전체를 직접 SHA-256 처리했다.
+- `reproducible-test`: 교정 후 서로 다른 TEMP root의 연속 두 생성은 qualification file SHA-256 1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471로 일치했다.
+
+### 근본 원인
+
+과거 Judge bundle에서는 public Check Evidence를 portable projection으로 바꾸도록 교정했지만 새 Task Pack qualification script가 그 규칙을 재사용하지 않고 raw stdout hash를 새로 구현했다.
+
+### 검토한 해결안
+
+- `rejected` TEMP directory 이름을 고정한다 — 동시 실행 충돌을 만들고 절대경로에 결합된 identity 문제를 해결하지 못한다
+- `rejected` public Check stdout hash를 전부 제거한다 — 성공 marker와 구조화 실패 분류의 출력 계약을 잃는다
+- `adopted` 구조화 진단, pytest 수와 긴 경로 조건만 portable semantic projection으로 봉인한다 — 검사 의미와 출력 계약은 보존하면서 transient 경로를 identity에서 제외한다
+
+### 채택한 해결
+
+Task Pack qualification이 공개 Check stdout을 literal marker, structured diagnostic, portable environment Evidence와 feedback 존재 여부로 projection한 뒤 canonical hash하도록 변경했다. v22 R10 incident regression도 같은 projection을 사용한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py
+- benchmarks/artifacts/profile-r-task-pack-q6/qualification.json
+- benchmarks/artifacts/profile-r-task-pack-q6/task-budget.json
+- benchmarks/artifacts/profile-r-task-pack-q6/artifact-manifest.json
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_profile_r_redesign.py::test_task_pack_stdout_projection_excludes_transient_temp_paths
+- 서로 다른 TEMP root에서 profile-r-task-pack-q6 full qualification을 연속 두 번 생성하고 전체 파일 SHA-256 비교
+
+### 검증 결과
+
+- 연속 두 q6 qualification file SHA-256이 1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471로 일치
+- positive transition 13/13, cumulative Check 104/104, negative mutation 13/13과 v22 incident regression 거부 유지
 
 ### 남은 위험
 
@@ -4942,5 +5029,5 @@ R01~R10 뒤 R11이 pytest와 pydantic 부재로 behavioral check를 실행하지
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
-- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
-- 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
+- 출처: docs/operations/implementation-incidents/entries/DEV-20260815-003.json
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md

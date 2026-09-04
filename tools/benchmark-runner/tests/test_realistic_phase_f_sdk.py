@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -18,11 +20,32 @@ from benchmark_runner.realistic_phase_f_sdk import (
     PhaseFSdkContractError,
     PhaseFSdkRuntimeV2,
     PhaseFThreadStartObservation,
+    build_phase_f_worker_process_environment,
     phase_f_thread_start_params,
     phase_f_turn_start_params,
     validate_phase_f_config_overrides,
     verify_phase_f_thread_start,
 )
+
+
+def test_worker_process_environment_pins_controller_python_and_strips_overrides() -> None:
+    environment = build_phase_f_worker_process_environment(
+        {
+            "PATH": os.pathsep.join(("synthetic-bin", str(Path(sys.executable).parent))),
+            "PYTHONHOME": "forbidden-home",
+            "PYTHONPATH": "forbidden-path",
+        },
+        python_executable=Path(sys.executable),
+    )
+
+    assert Path(environment["PATH"].split(os.pathsep)[0]) == Path(
+        sys.executable
+    ).resolve().parent
+    assert "PYTHONHOME" not in environment
+    assert "PYTHONPATH" not in environment
+    assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert environment["PYTHONIOENCODING"] == "utf-8"
+    assert environment["PYTHONUTF8"] == "1"
 
 
 @dataclass
@@ -403,6 +426,48 @@ def test_concrete_port_uses_raw_profile_request_and_injected_turn_handle(
     assert "sandboxPolicy" not in raw_turn["params"]
     assert result.terminal_status == "completed"
     assert runtime.actual_model_turns == 1
+
+
+def test_default_codex_client_receives_the_pinned_worker_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import benchmark_runner.realistic_phase_f_sdk as sdk_module
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    client = FakeRawClient(workspace)
+    captured: dict[str, str] = {}
+
+    def client_factory(
+        path: Path,
+        overrides: tuple[str, ...],
+        *,
+        process_environment: Mapping[str, str],
+    ) -> FakeRawClient:
+        assert path == workspace.resolve()
+        assert overrides == _config_overrides()
+        captured.update(process_environment)
+        return client
+
+    monkeypatch.setattr(
+        sdk_module,
+        "_recording_codex_client_factory",
+        client_factory,
+    )
+    port = CodexPhaseFAppServerPort(
+        workspace,
+        config_overrides=_config_overrides(),
+        process_environment={"PATH": "synthetic-tail"},
+    )
+
+    port.open()
+    port.close()
+
+    assert Path(captured["PATH"].split(os.pathsep)[0]) == Path(
+        sys.executable
+    ).resolve().parent
+    assert captured["PYTHONDONTWRITEBYTECODE"] == "1"
 
 
 def test_concrete_port_scopes_thread_notification_to_each_request(

@@ -171,7 +171,14 @@ def test_live_stack_construction_is_side_effect_free_and_binds_runtime_policy(
 ) -> None:
     calls: list[tuple[Path, tuple[str, ...]]] = []
 
-    def port_factory(workspace: Path, overrides: tuple[str, ...]) -> DormantPort:
+    def port_factory(
+        workspace: Path,
+        overrides: tuple[str, ...],
+        worker_environment: Mapping[str, str],
+    ) -> DormantPort:
+        assert Path(worker_environment["PATH"].split(os.pathsep)[0]) == Path(
+            sys.executable
+        ).resolve().parent
         calls.append((workspace.resolve(), overrides))
         return DormantPort()
 
@@ -249,7 +256,7 @@ def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
                 else {}
             ),
         },
-        app_server_port_factory=lambda workspace, overrides: DormantPort(),
+        app_server_port_factory=lambda workspace, overrides, environment: DormantPort(),
     )
 
     worker = stack.backend.worker_backend
@@ -275,7 +282,7 @@ def test_b1_live_stack_rejects_environment_root_overlapping_phase_f_state(
             source_commit="a" * 40,
             environ={},
             source_environment={"PATH": str(GIT_EXECUTABLE.parent)},
-            app_server_port_factory=lambda workspace, overrides: DormantPort(),
+            app_server_port_factory=lambda workspace, overrides, environment: DormantPort(),
         )
 
 
@@ -297,7 +304,7 @@ def test_b1_live_stack_rejects_environment_root_without_path_headroom(
             source_commit="a" * 40,
             environ={},
             source_environment={"PATH": str(GIT_EXECUTABLE.parent)},
-            app_server_port_factory=lambda workspace, overrides: DormantPort(),
+            app_server_port_factory=lambda workspace, overrides, environment: DormantPort(),
         )
 
 
@@ -309,7 +316,7 @@ def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None
     evidence = run_profile_r_phase_f_zero_turn_preflight(
         workspace,
         environ={},
-        app_server_port_factory=lambda _workspace, _overrides: port,
+        app_server_port_factory=lambda _workspace, _overrides, _environment: port,
     )
 
     assert evidence.actual_model_turns == 0
@@ -317,6 +324,17 @@ def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None
     assert evidence.auth_method == "chatgpt"
     assert evidence.model == "gpt-5.6-sol"
     assert evidence.permission_profile == "runtime-boundary-worker"
+    assert Path(evidence.worker_python.executable) == Path(sys.executable).resolve()
+    assert set(evidence.worker_python.distributions) == {
+        "pytest",
+        "pydantic",
+        "PyYAML",
+        "jsonschema",
+    }
+    assert all(
+        item.file_count > 0
+        for item in evidence.worker_python.distributions.values()
+    )
     assert port.open_count == 1
     assert port.close_count == 1
 

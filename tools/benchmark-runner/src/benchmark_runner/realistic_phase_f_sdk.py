@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import threading
 from collections.abc import Callable, Sequence
 import time
@@ -39,6 +40,45 @@ PHASE_F_THREAD_NOTIFICATION_TIMEOUT_SECONDS = 2.0
 
 class PhaseFSdkContractError(RuntimeError):
     """Raised before or at the exact SDK boundary when v2 is violated."""
+
+
+def build_phase_f_worker_process_environment(
+    environ: Mapping[str, str] | None,
+    *,
+    python_executable: Path | None = None,
+) -> dict[str, str]:
+    """Make the Worker shell resolve ``python`` to the Controller interpreter."""
+
+    source = os.environ if environ is None else environ
+    present = present_api_key_environment_names(source)
+    if present:
+        raise PhaseFSdkContractError(
+            "API key environment names are present: " + ", ".join(present)
+        )
+    executable = Path(python_executable or sys.executable).resolve(strict=True)
+    environment = {str(name): str(value) for name, value in source.items()}
+    environment.pop("PYTHONHOME", None)
+    environment.pop("PYTHONPATH", None)
+    python_directory = str(executable.parent)
+    existing = [
+        value
+        for value in environment.get("PATH", "").split(os.pathsep)
+        if value and Path(value).resolve(strict=False) != executable.parent
+    ]
+    environment["PATH"] = os.pathsep.join([python_directory, *existing])
+    virtual_environment = executable.parent.parent
+    if (virtual_environment / "pyvenv.cfg").is_file():
+        environment["VIRTUAL_ENV"] = str(virtual_environment)
+    else:
+        environment.pop("VIRTUAL_ENV", None)
+    environment.update(
+        {
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUTF8": "1",
+        }
+    )
+    return environment
 
 
 def build_phase_f_config_overrides(workspace: Path) -> tuple[str, ...]:
@@ -175,6 +215,8 @@ def validate_phase_f_config_overrides(overrides: Sequence[str]) -> tuple[str, ..
 def _recording_codex_client_factory(
     workspace: Path,
     config_overrides: tuple[str, ...],
+    *,
+    process_environment: Mapping[str, str],
 ) -> PhaseFRawCodexClient:
     """Create the real pinned SDK client lazily; construction makes no turn."""
 
@@ -236,7 +278,7 @@ def _recording_codex_client_factory(
         launch_args_override=None,
         config_overrides=config_overrides,
         cwd=str(workspace),
-        env=None,
+        env=dict(process_environment),
         experimental_api=True,
     )
     return RecordingCodexClient(
@@ -275,12 +317,25 @@ class CodexPhaseFAppServerPort:
         workspace: Path,
         *,
         config_overrides: Sequence[str],
-        client_factory: RawClientFactory = _recording_codex_client_factory,
+        process_environment: Mapping[str, str] | None = None,
+        client_factory: RawClientFactory | None = None,
         turn_handle_factory: TurnHandleFactory = _default_turn_handle_factory,
     ) -> None:
         self.workspace = Path(workspace).resolve()
         self.config_overrides = validate_phase_f_config_overrides(config_overrides)
-        self._client_factory = client_factory
+        worker_environment = build_phase_f_worker_process_environment(
+            process_environment,
+            python_executable=Path(sys.executable),
+        )
+        self._client_factory = (
+            client_factory
+            if client_factory is not None
+            else lambda path, overrides: _recording_codex_client_factory(
+                path,
+                overrides,
+                process_environment=worker_environment,
+            )
+        )
         self._turn_handle_factory = turn_handle_factory
         self._client: PhaseFRawCodexClient | None = None
         self._account_type = "unknown"

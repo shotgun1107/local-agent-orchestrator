@@ -1,28 +1,28 @@
 {
-  "schema_version": 1,
-  "profile": "R",
-  "snapshot_id": "realistic-compat-migration-001",
-  "status": "SEALED_REFERENCE_REPOSITORY",
-  "format": "git_bundle_v2",
-  "git_object_format": "sha1",
-  "commit_count": 14,
-  "base_commit": "302d432d69c21539e58093e7b6a06e783fe5185a",
-  "final_commit": "5cf5fdf69522d0278ec6c87225ca10c4ece4bcce",
-  "final_tree": "1de4d9d95a4d2a598f5948b0ca9f37636d30cf0f",
+  "base_commit": "f0e728c3c8ad72f3947f18b7e4bbb0621fe634cf",
   "bundle": {
     "path": "reference-r01-r13.bundle",
-    "size": 371623,
-    "sha256": "057d552735599ed44d85de91cf9db726515e1bea331333218b49e84cda892f87"
+    "sha256": "9fbdce4aa2fe54f2a76b1729572d9f5b39196d579ceafe8e3f6b2e422a90544b",
+    "size": 373801
   },
   "chain": {
     "path": "reference-task-chain.json",
-    "sha256": "649eb812af773c10f21f9d19128c06d0a00754de691d97faef6446bff5c9a5be"
+    "sha256": "1ff7e569c641ba49255f5ed6b42698292888c97cee9fe92644c328e234744634"
   },
   "chain_seal": {
     "path": "reference-chain-seal.json",
-    "sha256": "1005f0a96992be480cbe0d24d0d0f9c8e49517de5e0795295e9dc8676a2ed608",
-    "seal_sha256": "817e12ec9c5eb40b8ec3e00c56260eb4e5de6c7820d0aa279d8fb8180fe2393d"
+    "seal_sha256": "bc2a7f4b5f29cd7b812292ee932058ba1e6c8d33eac2e636df56f056e203b246",
+    "sha256": "d6bdf3471774f4fde838c3fe401a89b1e6ef8979799812d6e48c85b50cc84355"
   },
-  "worker_visible": false,
-  "seal_sha256": "d44283a2b1184f354a6fe15ccaf0b4224960576dd1d1c94cebde5204eb1512a8"
+  "commit_count": 14,
+  "final_commit": "bece0bbf2d1d014d8ce3980468d693286119f706",
+  "final_tree": "a65f83eecce0ba62136e5bcb1e2b91a571136ab9",
+  "format": "git_bundle_v2",
+  "git_object_format": "sha1",
+  "profile": "R",
+  "schema_version": 1,
+  "seal_sha256": "6986f6438c70ffdaf0313800f869eaca446da1eb5e2539a4c995c4bd8c1af2a4",
+  "snapshot_id": "realistic-compat-migration-001",
+  "status": "SEALED_REFERENCE_REPOSITORY",
+  "worker_visible": false
 }

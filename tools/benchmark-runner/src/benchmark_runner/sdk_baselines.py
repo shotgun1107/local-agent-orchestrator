@@ -520,6 +520,7 @@ class SS1PersistentAdapter:
                 )
             task_turn_ordinal = 0
             next_kind: Literal["initial", "ss1_self_review"] = "initial"
+            review_progress_signature: tuple[str, str] | None = None
             while True:
                 global_turn_ordinal += 1
                 task_turn_ordinal += 1
@@ -756,6 +757,38 @@ class SS1PersistentAdapter:
 
                 if not needs_review:
                     break
+                review_reason = str(validated["additional_review_reason"])
+                turn_payload["additional_review_reason"] = review_reason
+                current_progress_signature = (
+                    review_reason,
+                    observation.workspace_tree_after_sha256,
+                )
+                if (
+                    self.config.completion_deadline_monotonic is not None
+                    and next_kind == "ss1_self_review"
+                    and current_progress_signature == review_progress_signature
+                ):
+                    turn_payload["review_progress"] = "stalled"
+                    return self._evidence(
+                        context=context,
+                        outcome_state="failed",
+                        failure_kind="ss1_review_no_progress",
+                        turns=turns,
+                        boundary_records=boundary_records,
+                        ceiling_denials=ceiling_denials,
+                        total_usage=total_usage,
+                        usage_status=usage_status,
+                        model_active_seconds=model_active_seconds,
+                        extra_turns_used=variant_extra_turns_used,
+                        session_count=session_count,
+                    )
+                turn_payload["review_progress"] = (
+                    "workspace_changed"
+                    if review_progress_signature is not None
+                    and current_progress_signature != review_progress_signature
+                    else "first_request"
+                )
+                review_progress_signature = current_progress_signature
                 if self.config.completion_deadline_monotonic is None:
                     if next_kind == "ss1_self_review":
                         ceiling_denials.append(

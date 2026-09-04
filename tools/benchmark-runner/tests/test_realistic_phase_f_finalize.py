@@ -207,6 +207,8 @@ def test_fake_ss1_judge_measurement_and_seal_complete_only_cell_one(
     assert measurement.resource.turn_count.value == 13
     assert measurement.resource.session_count.value == 1
     assert measurement.variant_metrics.values["actual_model_turns"] == 0
+    assert measurement.variant_metrics.values["failure_classification"] is None
+    assert measurement.variant_metrics.values["comparison_valid"] is True
     assert measurement.variant_metrics.values["automatic_continuation"] is False
     assert (
         cell_root
@@ -234,6 +236,124 @@ def test_fake_ss1_judge_measurement_and_seal_complete_only_cell_one(
         / second["cell_id"]
         / PHASE_F_CLAIM_FILENAME
     ).exists()
+
+
+def test_judge_product_failure_is_structured_and_comparison_remains_valid(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        state_root=tmp_path / "state",
+    )
+    backend = _backend(tmp_path, [], FakePhaseFJudgePort(check_success=False))
+
+    result = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+    cell_root = tmp_path / "backend" / result.executed_cell_id
+    seal_path = (
+        cell_root
+        / PHASE_F_FINAL_DIRECTORY
+        / PHASE_F_SEALED_DIRECTORY
+        / PHASE_F_CELL_SEAL_FILENAME
+    )
+    measurement = verify_phase_f_cell_finalization(
+        cell_root,
+        expected_seal_file_sha256=sha256_file(seal_path),
+    )
+
+    assert measurement.outcome.state == "failed"
+    assert measurement.outcome.failure_kind == "independent_judge_failed"
+    assert measurement.variant_metrics.values["failure_classification"] == (
+        "PRODUCT_ASSERTION"
+    )
+    assert measurement.variant_metrics.values["comparison_valid"] is True
+    assert measurement.variant_metrics.values["product_failure_present"] is True
+    assert measurement.variant_metrics.values["environment_failure_present"] is False
+
+
+def test_worker_environment_and_judge_product_failures_are_preserved_as_mixed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    experiment_dir = initialize_phase_f_execution(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        state_root=tmp_path / "state",
+    )
+
+    def broken_runtime(workspace: Path) -> FakeSdkRuntime:
+        return FakeSdkRuntime(
+            workspace,
+            {
+                "R01": FakeTurnScript(
+                    effects=(),
+                    result=_completed_result("R01"),
+                    terminal_status="failed",
+                    error_kind="SyntheticRuntimeFailure",
+                )
+            },
+        )
+
+    worker = ProfileRPhaseFSS1Backend(
+        repository=REPOSITORY,
+        artifact_root=tmp_path / "backend",
+        runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+        runtime_factory=broken_runtime,
+        telemetry=ModelFreeClearBoundaryTelemetry(),
+        environ={},
+    )
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        worker_backend=worker,
+        judge=FakePhaseFJudgePort(check_success=False),
+    )
+
+    result = run_next_phase_f_cell(
+        repository=REPOSITORY,
+        candidate_root=CANDIDATE_ROOT,
+        experiment_dir=experiment_dir,
+        backend=backend,
+        expected_execution_ordinal=1,
+        confirm_cell_dispatch=True,
+        confirm_model_usage=False,
+    )
+    cell_root = tmp_path / "backend" / result.executed_cell_id
+    seal_path = (
+        cell_root
+        / PHASE_F_FINAL_DIRECTORY
+        / PHASE_F_SEALED_DIRECTORY
+        / PHASE_F_CELL_SEAL_FILENAME
+    )
+    measurement = verify_phase_f_cell_finalization(
+        cell_root,
+        expected_seal_file_sha256=sha256_file(seal_path),
+    )
+
+    assert measurement.outcome.state == "infrastructure_error"
+    assert measurement.outcome.failure_kind == "mixed_product_and_environment"
+    diagnostic = measurement.variant_metrics.values["failure_diagnostic"]
+    assert diagnostic["classification"] == "MIXED_PRODUCT_AND_ENVIRONMENT"
+    assert diagnostic["comparison_valid"] is False
+    assert diagnostic["product_failure_present"] is True
+    assert diagnostic["environment_failure_present"] is True
+    assert [node["classification"] for node in diagnostic["nodes"]] == [
+        "ENVIRONMENT",
+        "PRODUCT_ASSERTION",
+    ]
 
 
 def test_over_budget_worker_result_is_rejected_before_judge(
@@ -665,9 +785,12 @@ def test_fake_ss1_real_docker_measurement_seals_only_cell_one(
         cell_root,
         expected_seal_file_sha256=sha256_file(seal_path),
     )
-    assert measurement.outcome.state == "completed"
+    assert measurement.outcome.state == "failed"
     assert measurement.outcome.check_success is False
     assert measurement.outcome.failure_kind == "independent_judge_failed"
+    assert measurement.variant_metrics.values["failure_classification"] == (
+        "PRODUCT_ASSERTION"
+    )
     assert measurement.variant_metrics.values["judge_kind"] == "docker_property"
     assert measurement.variant_metrics.values["judge_docker_executed"] is True
     assert measurement.variant_metrics.values["judge_model_turns"] == 0
