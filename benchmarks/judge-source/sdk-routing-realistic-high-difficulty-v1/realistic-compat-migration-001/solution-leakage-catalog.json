@@ -2,6 +2,7 @@
   "forbidden_worker_literals": [
     "reference.patch",
     "negative-mutations/",
+    "equivalent-implementations/",
     "check_properties.py",
     "56c91334fb32c4699d11ef80769831f14a0431d6"
   ],

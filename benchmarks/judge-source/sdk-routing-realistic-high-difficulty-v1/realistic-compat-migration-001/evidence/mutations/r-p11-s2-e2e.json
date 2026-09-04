@@ -3,8 +3,8 @@
   "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
   "cell_id": "r-p11-s2-e2e",
   "checker_run_status": "completed",
-  "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
-  "envelope_sha256": "8687064a380c6b95f70f9e3b9e78b1a2abd0c69e03379f187f603a482a446101",
+  "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
+  "envelope_sha256": "9b3781077e469b040b711d5c613d177b83e8e6fb5c0240cc77a52c95bbbe891e",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -35,7 +35,7 @@
   },
   "properties": [
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The legacy bytes and projected R01-R13 source boundary are exact.",
       "evidence_refs": [
         {
@@ -70,7 +70,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "S1 and S2 stage bytes are accepted only by their exact Schema branch.",
       "evidence_refs": [
         {
@@ -97,7 +97,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The configuration fixture parses, serializes, and executes its CLI contract behaviorally.",
       "evidence_refs": [
         {
@@ -120,7 +120,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The incident fixture preserves evidence, uncertainty, timeline, claim, action, and report relationships.",
       "evidence_refs": [
         {
@@ -139,7 +139,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The S2 fixture manifest binds both exact fixture identities and budgets.",
       "evidence_refs": [
         {
@@ -154,7 +154,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The S2 Plan binds the declared source, stage, cell order, and turn budgets.",
       "evidence_refs": [
         {
@@ -173,7 +173,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "B1 retry and resume turns consume only the independent three-turn reserve.",
       "evidence_refs": [
         {
@@ -188,7 +188,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "S2 extends the shared routing lifecycle without a parallel Controller or Judge.",
       "evidence_refs": [
         {
@@ -207,7 +207,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "S2 status and deterministic post-hoc evaluation remain on the shared implementation path.",
       "evidence_refs": [
         {
@@ -226,7 +226,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The model-free create, status, seal, export, and verify path preserves the exact S2 identity.",
       "evidence_refs": [
         {
@@ -249,12 +249,12 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The exact four S2 Cells require explicit effects, successful Checks, Measurements, and seals.",
       "evidence_refs": [
         {
           "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "5215ccbf9ff3b644172f914c8830ebbd4071abac74098ec43662eb2c8a9b6afd"
+          "sha256": "d49304357569642c7f300b0cb98bad92e69148f00b72126b86fa93c3523c792a"
         }
       ],
       "prerequisite_ids": [],
@@ -264,7 +264,7 @@
       "status": "fail"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "Legacy S1 regressions rebuild deterministic local Git identities without historical objects.",
       "evidence_refs": [
         {
@@ -279,7 +279,7 @@
       "status": "pass"
     },
     {
-      "checker_sha256": "68818c5b8bde646527753d2a0eb1e2b0c1c0c013f69dc95e5bd7e1a440b76da1",
+      "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
       "description": "The structured command, state, failure, and stop relations match the public operator surface.",
       "evidence_refs": [
         {
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "a27c4beadf205c982ecad679ca1e3f269366a88e54b41463cc46763af62e3df6",
-  "workspace_before_sha256": "a27c4beadf205c982ecad679ca1e3f269366a88e54b41463cc46763af62e3df6",
+  "workspace_after_sha256": "3c353c575d62e8ca0a45bd668c5c8c2d990628bfc122f8e863d34e07114ac142",
+  "workspace_before_sha256": "3c353c575d62e8ca0a45bd668c5c8c2d990628bfc122f8e863d34e07114ac142",
   "workspace_mutated": false
 }

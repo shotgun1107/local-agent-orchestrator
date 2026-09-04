@@ -1,10 +1,10 @@
 {
-  "aggregate_status": "fail",
+  "aggregate_status": "pass",
   "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
-  "cell_id": "r-p04-incident-fixture",
+  "cell_id": "r13-equivalent-operator-vocabulary",
   "checker_run_status": "completed",
   "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
-  "envelope_sha256": "0e41ffd63102599b2f65d5a0d5c164aa4688bffe9a68c9fac79f5b6d0d929dac",
+  "envelope_sha256": "a6b3939a6de0af245fe791fd62576f2eefe230272afa0e1eff560e77a01cc9b3",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -134,9 +134,9 @@
       ],
       "prerequisite_ids": [],
       "property_id": "R-P04-INCIDENT-FIXTURE",
-      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_FAILED",
+      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_VALID",
       "severity": "critical",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
@@ -149,9 +149,9 @@
       ],
       "prerequisite_ids": [],
       "property_id": "R-P05-MANIFEST-BINDING",
-      "reason_code": "MANIFEST_IDENTITIES_DRIFTED",
+      "reason_code": "MANIFEST_IDENTITIES_BOUND",
       "severity": "critical",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
@@ -284,7 +284,7 @@
       "evidence_refs": [
         {
           "path": "profile-r/work/operator-contract.json",
-          "sha256": "529c4b9f91566bc5f4a48900d7182bf0b0341709616562e5a308606cf59258f3"
+          "sha256": "70935353aaf0226e9ac7c96465c5d8af4ad550822b80cf443399187208f91d6b"
         },
         {
           "path": "tools/benchmark-runner/README.md",
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
-  "workspace_before_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
+  "workspace_after_sha256": "ae44211650ea04c32c002e37c5107548c36e167f43835a46258e3e9792557206",
+  "workspace_before_sha256": "ae44211650ea04c32c002e37c5107548c36e167f43835a46258e3e9792557206",
   "workspace_mutated": false
 }

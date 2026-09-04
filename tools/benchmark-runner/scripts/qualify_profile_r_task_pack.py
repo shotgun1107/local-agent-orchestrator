@@ -249,6 +249,36 @@ def _remove_top_level_function(path: Path, name: str) -> None:
     path.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
+def _make_r11_equivalent_write_effects(worker: Path) -> None:
+    path = worker / "tools/benchmark-runner/tests/test_routing_s2.py"
+    text = path.read_text(encoding="utf-8")
+    before = '{"type": "write_file", "path": path, "content": content}'
+    after = 'dict(type="write_file", path=path, content=content)'
+    if text.count(before) != 1:
+        raise RuntimeError("R11 equivalent write-effect anchor differs")
+    path.write_text(text.replace(before, after, 1), encoding="utf-8", newline="\n")
+
+
+def _make_r13_equivalent_operator_vocabulary(worker: Path) -> None:
+    path = worker / "profile-r/work/operator-contract.json"
+    value = _load_json(path)
+    for command in value["commands"]:
+        command_id = str(command["command_id"])
+        command["argv"] = [command_id, "--public-contract"]
+        command["precondition"] = f"public precondition for {command_id}"
+        command["failure_map"] = {
+            "1": f"public failure semantics for {command_id}"
+        }
+        command["allowed_source_states"] = [f"{command_id.upper()}_SOURCE"]
+        command["allowed_terminal_states"] = [f"{command_id.upper()}_TERMINAL"]
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 def _run_public_check(
     worker: Path,
     *,
@@ -429,6 +459,47 @@ def qualify_full(
                     "stderr_sha256": result["stderr_sha256"],
                 }
             )
+        equivalent_implementations = []
+        for equivalent_id, task_id, transform in (
+            (
+                "r11-equivalent-write-effects",
+                "R11",
+                _make_r11_equivalent_write_effects,
+            ),
+            (
+                "r13-equivalent-operator-vocabulary",
+                "R13",
+                _make_r13_equivalent_operator_vocabulary,
+            ),
+        ):
+            equivalent = temporary / f"public-equivalent-{equivalent_id}"
+            shutil.copytree(final_worker, equivalent)
+            transform(equivalent)
+            check_name = f"{task_id.lower()}_contract"
+            result = _run_public_check(
+                equivalent,
+                task_id=task_id,
+                check_name=check_name,
+                check_spec=checks[check_name],
+            )
+            if (
+                result["passed"] is not True
+                or f"{task_id}_PUBLIC_CONTRACT_OK"
+                not in result["stdout_lines"]
+            ):
+                raise RuntimeError(
+                    f"{task_id} rejected a public-equivalent implementation"
+                )
+            equivalent_implementations.append(
+                {
+                    "equivalent_id": equivalent_id,
+                    "task_id": task_id,
+                    "contract_accepted": True,
+                    "return_code": result["return_code"],
+                    "stdout_sha256": result["stdout_sha256"],
+                    "stderr_sha256": result["stderr_sha256"],
+                }
+            )
         incident_worker = temporary / "incident-v22-r10-missing-run-all"
         shutil.copytree(final_worker, incident_worker)
         _remove_top_level_function(
@@ -477,6 +548,10 @@ def qualify_full(
         "positive_transitions": positive,
         "public_negative_matrix": negative,
         "public_negative_matrix_sha256": sha256(canonical_json(negative)),
+        "public_equivalent_implementations": equivalent_implementations,
+        "public_equivalent_implementations_sha256": sha256(
+            canonical_json(equivalent_implementations)
+        ),
         "incident_regressions": incident_regressions,
         "incident_regressions_sha256": sha256(
             canonical_json(incident_regressions)

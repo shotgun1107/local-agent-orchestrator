@@ -16,8 +16,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
+
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError, ValidationError
 
 
 BUNDLE_ROOT = Path(__file__).resolve().parents[1]
@@ -666,16 +669,63 @@ def _cross_checkout(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
 
 
 def _operator_contract(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
-    expected = _load_json(BUNDLE_ROOT / "operator-contract.json")
     actual_path = root / "profile-r/work/operator-contract.json"
+    schema_path = root / "profile-r/requirements/operator-contract-schema.json"
     readme_path = root / "tools/benchmark-runner/README.md"
+    expected_ids = ("create", "status", "run-next", "export", "verify")
+    expected_symbols = {
+        "create": "routing_suite:initialize_routing_s2_experiment",
+        "status": "routing_suite:routing_s2_nonlive_status",
+        "run-next": "routing_suite:run_next_routing_s2_nonlive_cell",
+        "export": "routing_suite:export_routing_s2_nonlive",
+        "verify": "routing_suite:verify_routing_s2_nonlive_export",
+    }
+    expected_stops = {
+        "create": True,
+        "status": False,
+        "run-next": True,
+        "export": True,
+        "verify": True,
+    }
+
+    def public_schema_exists(value: object) -> bool:
+        if not isinstance(value, str):
+            return False
+        relative = PurePosixPath(value)
+        return (
+            not relative.is_absolute()
+            and all(part not in {"", ".", ".."} for part in relative.parts)
+            and root.joinpath(*relative.parts).is_file()
+        )
+
     try:
         actual = _load_json(actual_path)
+        schema = _load_json(schema_path)
+        Draft202012Validator.check_schema(schema)
+        Draft202012Validator(schema).validate(actual)
+        commands = actual["commands"]
+        command_ids = tuple(command["command_id"] for command in commands)
         readme = readme_path.read_text(encoding="utf-8")
-        passed = actual == expected and all(
-            f"`{command['command_id']}`" in readme for command in expected["commands"]
-        ) and "<!-- profile-r-operator-contract:start -->" in readme and "<!-- profile-r-operator-contract:end -->" in readme
-    except (KeyError, OSError, ValueError):
+        passed = (
+            set(actual) == {"schema_version", "commands"}
+            and actual["schema_version"] == 1
+            and command_ids == expected_ids
+            and all(
+                command["implementation_symbol"]
+                == expected_symbols[command["command_id"]]
+                and command["stop_before_next_dispatch"]
+                is expected_stops[command["command_id"]]
+                and bool(command["argv"])
+                and bool(command["success_exit_codes"])
+                and bool(command["failure_map"])
+                and public_schema_exists(command["public_schema"])
+                for command in commands
+            )
+            and all(f"`{command_id}`" in readme for command_id in expected_ids)
+            and "<!-- profile-r-operator-contract:start -->" in readme
+            and "<!-- profile-r-operator-contract:end -->" in readme
+        )
+    except (KeyError, OSError, SchemaError, TypeError, ValidationError, ValueError):
         passed = False
     return _outcome(
         root,
@@ -699,9 +749,10 @@ def _s2_e2e(root: Path, _catalog: dict[str, Any]) -> dict[str, object]:
                 "cell_s2_a_1_b1",
                 "cell_s2_b_1_b1",
                 "cell_s2_b_1_c2",
-                '"type": "write_file"',
                 "cell_state",
                 "check_success",
+                "sealed_measurement_sha256",
+                "actual_model_turns",
             )
         ) and _run_protected_check(
             root,

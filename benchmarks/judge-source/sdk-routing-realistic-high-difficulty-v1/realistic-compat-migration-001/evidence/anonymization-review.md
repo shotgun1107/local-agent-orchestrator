@@ -6,6 +6,7 @@
 - Negative mutation contracts: pass
 - Adversarial Worker test-oracle contracts: pass
 - Exact public R11/R12 projected-reference runs: pass
+- Public/hidden equivalent implementation cases: pass
 - Forbidden Worker literal hits: 0
 - The public S2 regression consumes current fixture outputs and never reads the hidden golden tree.
 - This source bundle does not claim the protected Judge runtime filesystem/no-network boundary.

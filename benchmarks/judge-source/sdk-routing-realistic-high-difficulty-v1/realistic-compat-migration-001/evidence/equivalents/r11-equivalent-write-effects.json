@@ -1,10 +1,10 @@
 {
-  "aggregate_status": "fail",
+  "aggregate_status": "pass",
   "catalog_sha256": "57c1d6abd6b377d20fa34436a106d0beb3a6e1fcce807b88077fa4f7444759aa",
-  "cell_id": "r-p04-incident-fixture",
+  "cell_id": "r11-equivalent-write-effects",
   "checker_run_status": "completed",
   "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
-  "envelope_sha256": "0e41ffd63102599b2f65d5a0d5c164aa4688bffe9a68c9fac79f5b6d0d929dac",
+  "envelope_sha256": "596da89e6f86ef51f8659df42084c5f36398a4102eba315565f48d025079c3b4",
   "experiment_id": "phase-d-profile-r",
   "fixture_id": "realistic-compat-migration-001",
   "ordered_property_ids": [
@@ -134,9 +134,9 @@
       ],
       "prerequisite_ids": [],
       "property_id": "R-P04-INCIDENT-FIXTURE",
-      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_FAILED",
+      "reason_code": "INCIDENT_FIXTURE_SEMANTICS_VALID",
       "severity": "critical",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
@@ -149,9 +149,9 @@
       ],
       "prerequisite_ids": [],
       "property_id": "R-P05-MANIFEST-BINDING",
-      "reason_code": "MANIFEST_IDENTITIES_DRIFTED",
+      "reason_code": "MANIFEST_IDENTITIES_BOUND",
       "severity": "critical",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "checker_sha256": "2dfbac6ad7bdc849fc17b8924698f88d5916abbc118ba6cc8b0afaa9ab5b3f5b",
@@ -254,7 +254,7 @@
       "evidence_refs": [
         {
           "path": "tools/benchmark-runner/tests/test_routing_s2.py",
-          "sha256": "8ba9142812bd647c6263ee8d7b64a454a88e0432e5b3718cf5485f0b6ca01274"
+          "sha256": "e6c64c0de162387058d350c73071c1d9ee444f7f3156ad3a86325dfd2c6bf02a"
         }
       ],
       "prerequisite_ids": [],
@@ -299,7 +299,7 @@
     }
   ],
   "schema_version": 1,
-  "workspace_after_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
-  "workspace_before_sha256": "4ecc4035d9cc0b8a665eb591a2bbbf5b82e05948b14c7b4d22cb65276ebf57e8",
+  "workspace_after_sha256": "510568fd3346270818c1b53cc3802cd8e79ab9fb014aa87d0af93886c72f72bf",
+  "workspace_before_sha256": "510568fd3346270818c1b53cc3802cd8e79ab9fb014aa87d0af93886c72f72bf",
   "workspace_mutated": false
 }

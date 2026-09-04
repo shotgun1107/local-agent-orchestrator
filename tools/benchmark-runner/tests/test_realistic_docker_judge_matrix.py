@@ -9,6 +9,7 @@ import pytest
 
 from benchmark_runner.realistic_docker_judge import DockerJudgeManifest, DockerJudgeResult
 from benchmark_runner.realistic_docker_judge_matrix import (
+    EQUIVALENT_TARGETS,
     MUTATION_TARGETS,
     GitPatchBackend,
     MatrixVariantPlan,
@@ -39,6 +40,16 @@ def _plan(variant_id: str) -> tuple[MatrixVariantPlan, dict[str, object]]:
         patches = ["reference.patch"]
         evidence = "evidence/reference.json"
         ordinal = 1
+    elif variant_id in dict(EQUIVALENT_TARGETS):
+        targets = dict(EQUIVALENT_TARGETS)
+        kind = "positive_equivalent"
+        target = targets[variant_id]
+        patches = [
+            "reference.patch",
+            f"equivalent-implementations/{variant_id}.patch",
+        ]
+        evidence = f"evidence/equivalents/{variant_id}.json"
+        ordinal = [item[0] for item in EQUIVALENT_TARGETS].index(variant_id) + 2
     else:
         targets = dict(MUTATION_TARGETS)
         kind = "negative_mutation"
@@ -81,7 +92,11 @@ def _docker_objects(
     )
     result = DockerJudgeResult.model_construct(
         run_id=plan.run_id,
-        status="CHECKS_PASSED" if plan.kind == "reference" else "CHECKS_FAILED",
+        status=(
+            "CHECKS_FAILED"
+            if plan.kind == "negative_mutation"
+            else "CHECKS_PASSED"
+        ),
         checker_payload=payload,
         result_sha256="a" * 64,
     )
@@ -101,6 +116,16 @@ def test_registered_reference_and_mutation_expectations_are_strict() -> None:
         assert set(statuses.values()) <= {"pass", "fail"}
 
 
+def test_registered_public_equivalents_are_all_pass() -> None:
+    assert len(EQUIVALENT_TARGETS) == 2
+    for variant_id, target in EQUIVALENT_TARGETS:
+        plan, _ = _plan(variant_id)
+        assert plan.kind == "positive_equivalent"
+        assert plan.target_property_id == target
+        assert plan.expected_aggregate_status == "pass"
+        assert {item.status for item in plan.expected_properties} == {"pass"}
+
+
 def test_variant_plan_records_independent_cofailures() -> None:
     plan, _ = _plan("r-p05-manifest-binding")
     properties = [item.model_copy() for item in plan.expected_properties]
@@ -117,7 +142,14 @@ def test_variant_plan_records_independent_cofailures() -> None:
     assert sum(item.status == "fail" for item in changed.expected_properties) >= 2
 
 
-@pytest.mark.parametrize("variant_id", ["reference", "r-p01-source-boundary"])
+@pytest.mark.parametrize(
+    "variant_id",
+    [
+        "reference",
+        "r11-equivalent-write-effects",
+        "r-p01-source-boundary",
+    ],
+)
 def test_comparator_accepts_exact_registered_result(variant_id: str) -> None:
     plan, payload = _plan(variant_id)
     manifest, result = _docker_objects(plan, payload)

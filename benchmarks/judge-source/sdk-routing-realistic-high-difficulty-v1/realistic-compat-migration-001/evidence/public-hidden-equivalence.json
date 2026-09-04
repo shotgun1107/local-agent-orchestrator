@@ -1,0 +1,85 @@
+{
+  "cases": [
+    {
+      "aggregate_status": "pass",
+      "all_hidden_properties_passed": true,
+      "equivalent_id": "r11-equivalent-write-effects",
+      "public_contract": {
+        "contract_ok_marker": true,
+        "entrypoint": "benchmark_checks/check_profile_r.py R11",
+        "evidence_projection": {
+          "growth_margin": 32,
+          "growth_probe_minimum_path_length": 261,
+          "growth_probe_minimum_satisfied": true,
+          "probe_repository_shorter_than_growth_path": true,
+          "pytest": {
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+            "tests": 7,
+            "warnings": 0
+          },
+          "schema_version": 1
+        },
+        "evidence_projection_sha256": "7444e301c5b23c597a5336966192e49faea64fdbdc30e51c10fab5e2d811ab21",
+        "outer_timeout_seconds": 1020,
+        "passed": true,
+        "return_code": 0,
+        "schema_version": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_contract": "one diagnostic line, one environment Evidence line, and one Task OK line"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P11-S2-E2E",
+      "task_id": "R11"
+    },
+    {
+      "aggregate_status": "pass",
+      "all_hidden_properties_passed": true,
+      "equivalent_id": "r13-equivalent-operator-vocabulary",
+      "public_contract": {
+        "contract_ok_marker": true,
+        "entrypoint": "benchmark_checks/check_profile_r.py R13",
+        "outer_timeout_seconds": 240,
+        "passed": true,
+        "return_code": 0,
+        "schema_version": 1,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "a221b9afbfdfaee675289ddc8f17626a340eea6afb589a606b81bfd6326e91d8"
+      },
+      "statuses": {
+        "R-P01-SOURCE-BOUNDARY": "pass",
+        "R-P02-DISCRIMINATOR": "pass",
+        "R-P03-CONFIG-FIXTURE": "pass",
+        "R-P04-INCIDENT-FIXTURE": "pass",
+        "R-P05-MANIFEST-BINDING": "pass",
+        "R-P06-PLAN-BINDING": "pass",
+        "R-P07-ROUTING-POLICY": "pass",
+        "R-P08-LIFECYCLE-REUSE": "pass",
+        "R-P09-STATUS-POSTHOC": "pass",
+        "R-P10-EXPORT-VERIFY": "pass",
+        "R-P11-S2-E2E": "pass",
+        "R-P12-S1-PORTABILITY": "pass",
+        "R-P13-OPERATOR-SEMANTICS": "pass"
+      },
+      "target_property_id": "R-P13-OPERATOR-SEMANTICS",
+      "task_id": "R13"
+    }
+  ],
+  "profile": "R",
+  "schema_version": 1
+}

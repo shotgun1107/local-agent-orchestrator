@@ -786,7 +786,9 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
     assert eligibility["challenge_ready"] is False
     records = manifest["files"]
     assert eligibility["public_r11_r12_reference_verified"] is True
-    assert manifest["file_count_excluding_manifest"] == len(records) == 47
+    assert eligibility["public_hidden_equivalent_case_count"] == 2
+    assert eligibility["public_hidden_equivalence_verified"] is True
+    assert manifest["file_count_excluding_manifest"] == len(records) == 52
     for record in records:
         payload = (JUDGE_SOURCE_ROOT / record["path"]).read_bytes()
         assert len(payload) == record["size"]
@@ -826,6 +828,26 @@ def test_profile_r_judge_source_bundle_manifest_and_evidence_are_closed() -> Non
         assert public["evidence_projection_sha256"] == hashlib.sha256(
             (json.dumps(projection, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
         ).hexdigest()
+
+    equivalence = json.loads(
+        (JUDGE_SOURCE_ROOT / "evidence/public-hidden-equivalence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert [item["equivalent_id"] for item in equivalence["cases"]] == [
+        "r11-equivalent-write-effects",
+        "r13-equivalent-operator-vocabulary",
+    ]
+    for item in equivalence["cases"]:
+        assert item["aggregate_status"] == "pass"
+        assert item["all_hidden_properties_passed"] is True
+        assert item["public_contract"]["passed"] is True
+        assert set(item["statuses"].values()) == {"pass"}
+        assert (
+            JUDGE_SOURCE_ROOT
+            / "equivalent-implementations"
+            / f"{item['equivalent_id']}.patch"
+        ).stat().st_size > 0
 
 
 def test_profile_r_negative_mutations_fail_only_target_or_block_dependents() -> None:

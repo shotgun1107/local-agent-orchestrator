@@ -6,6 +6,8 @@
   "pristine_aggregate_status": "fail",
   "profile": "R",
   "profile_i_status": "not_applicable",
+  "public_hidden_equivalence_verified": true,
+  "public_hidden_equivalent_case_count": 2,
   "public_r11_r12_reference_verified": true,
   "reference_aggregate_status": "pass",
   "schema_version": 1,
