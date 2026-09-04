@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 76건
-- 해결: 74건
+- 전체: 77건
+- 해결: 76건
 - 조사 중: 1건
-- 미해결: 1건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -88,7 +88,8 @@
 | DEV-20260903-002 | resolved | phase-f-profile-r-v22-readiness | tooling | Profile R readiness v11 조립기가 Git bytes·한글 경로·credential fixture를 오판함 |
 | DEV-20260903-003 | resolved | phase-f-profile-r-v22-ss1 | integration | Profile R v22 SS1 R11이 Worker Python 의존성 결손에서 52회 self-review 후 blocked됨 |
 | DEV-20260904-001 | resolved | profile-r-task-pack-q6 | tooling | Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함 |
-| DEV-20260904-002 | open | phase-f-profile-r-v23-b1 | test | Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함 |
+| DEV-20260904-002 | resolved | phase-f-profile-r-v23-b1 | test | Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함 |
+| DEV-20260904-003 | resolved | profile-r-docker-judge-q27 | tooling | Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5059,11 +5060,11 @@ Task Pack qualification이 공개 Check stdout을 literal marker, structured dia
 
 ## DEV-20260904-002 — Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함
 
-- 상태: `open`
+- 상태: `resolved`
 - 단계: `phase-f-profile-r-v23-b1`
 - 분류: `test`
 - 발견: 2026-09-04T05:26:02Z / Profile R v23 B1 Cell 2 live와 public/hidden checker source inspection
-- 해결: 미해결
+- 해결: 2026-09-04T06:53:10Z
 
 ### 증상
 
@@ -5094,7 +5095,7 @@ R-P11과 R-P13 hidden Judge가 공개 계약보다 더 좁은 구현 표현을 �
 
 ### 채택한 해결
 
-미해결
+R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미인 네 Cell ID, SEALED 상태, Check 성공, Measurement seal과 model turn 0 표식을 독립 protected behavior와 함께 검사하도록 바꿨다. R-P13은 비공개 operator JSON 전체 equality를 제거하고 공개 Schema, 명령 순서, 필수 관계, 구현 symbol, stop flag와 README binding을 독립 검증한다. Judge source qualification과 Task Pack q7에 R11 helper 표현과 R13 대체 vocabulary의 public-valid positive 사례를 추가했다. Docker q27은 reference 1개, public-equivalent positive 2개와 negative mutation 13개를 exact image에서 16/16 expectation 일치로 봉인했다. 기존 v23 pair는 수정하거나 재판정하지 않는다.
 
 ### 수정 파일
 
@@ -5103,6 +5104,7 @@ R-P11과 R-P13 hidden Judge가 공개 계약보다 더 좁은 구현 표현을 �
 - benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py
 - tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py
 - tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py
 
 ### 회귀시험
 
@@ -5115,16 +5117,81 @@ R-P11과 R-P13 hidden Judge가 공개 계약보다 더 좁은 구현 표현을 �
 - 기존 v23 SS1/B1 state, raw, Measurement와 seal을 변경하지 않고 lifecycle SEALED, SEALED, PLANNED, PLANNED를 유지했다
 - B1 public Check 104/104 PASSED와 hidden Judge 11/13 pass를 외부 봉인 Evidence에서 독립 확인했다
 - R-P11 literal source 조건, R-P13 exact oracle equality와 q26/q6 qualification 판정 로직을 source에서 확인했다
+- Judge source는 canonical reference 1개와 public-equivalent 2개를 hidden 13/13 pass로, negative mutation 13개를 담당 property fail로 검증했다
+- Task Pack q7은 positive 13/13, 누적 Check 104/104, negative 13/13 거부, equivalent 2/2 수용으로 두 번 동일 hash를 생성했다
+- Docker q27은 exact image에서 16/16 expectation match와 CHALLENGE_READY를 봉인했다
 
 ### 남은 위험
 
-- R11/R13과 qualification을 교정한 새 candidate가 봉인될 때까지 Profile R의 공식 routing 비교를 재개할 수 없다
-- 다른 property에도 공개 계약보다 좁은 hidden-only 구현 표현이 남아 있을 수 있다
+- q27과 Task Pack q7을 직접 결합한 새 candidate, acceptance와 readiness가 아직 없으므로 Live는 계속 NO-GO다
+- 등록한 public-equivalent 사례는 R11과 R13 결함의 회귀를 막지만 가능한 모든 구현 표현을 열거하는 증명은 아니다
 
 ### 추적 정보
 
-- 관련 커밋: 376c01c250bb82463442d87abeeaff9519fae536, 6bb678bee093bc5b868217bccd1ee417681761b9
+- 관련 커밋: 376c01c250bb82463442d87abeeaff9519fae536, 6bb678bee093bc5b868217bccd1ee417681761b9, 85ce0c7a0959f9bf434e31614155d4cf8f3c1d5f, d5268e62ab1015266152e4ffdd6cdf30357d2b6a
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md
+
+## DEV-20260904-003 — Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨
+
+- 상태: `resolved`
+- 단계: `profile-r-docker-judge-q27`
+- 분류: `tooling`
+- 발견: 2026-09-04T06:42:47Z / Profile R q27 public-equivalent Docker matrix preparation
+- 해결: 2026-09-04T06:53:10Z
+
+### 증상
+
+짧은 reference variant는 준비됐지만 이름이 긴 r11-equivalent-write-effects variant의 Worker에 reference.patch를 적용하는 precheck가 Filename too long으로 중단됐다. Docker container와 Judge workload는 시작되지 않았다.
+
+### 재현
+
+- Windows에서 긴 base root와 profile-r-judge-q27-company-r01-r13-equivalence-02-r11-equivalent-write-effects run directory를 만든다.
+- GitPatchBackend로 긴 fixture 경로를 포함한 reference.patch를 적용하고 core.longpaths 설정 부재에서 precheck가 Filename too long을 반환하는지 확인한다.
+
+### 증거
+
+- `direct-observation`: q27-r2는 두 번째 variant 준비 중 frozen patch precheck failed로 종료됐고 worker의 긴 fixture 파일들에 Filename too long이 재현됐다.
+- `source-inspection`: GitPatchBackend는 core.autocrlf와 core.safecrlf만 지정했고 repository의 다른 Git 경로에서 사용하는 core.longpaths=true가 빠져 있었다.
+- `reproducible-test`: core.longpaths=true 추가 뒤 같은 긴 run token의 q27-r3가 16개 variant를 모두 준비·실행하고 CHALLENGE_READY로 봉인됐다.
+
+### 근본 원인
+
+Docker matrix 전용 Git patch backend가 Windows long-path 계약을 상속하지 않아 variant 이름이 길어지면 같은 patch도 경로 길이에 따라 성공 여부가 달라졌다.
+
+### 검토한 해결안
+
+- `rejected` q27 run token과 variant 이름만 줄인다 — 현재 실행은 우회할 수 있지만 다른 base root에서 같은 비결정적 실패가 반복된다
+- `adopted` Git patch precheck와 apply 모두 core.longpaths=true를 고정한다 — source extraction과 다른 Git helper가 이미 사용하는 Windows 경로 계약과 일치한다
+
+### 채택한 해결
+
+GitPatchBackend의 공통 base command에 -c core.longpaths=true를 추가하고 precheck 명령 조립을 명시적인 base_command + --check + stdin 형태로 바꿨다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge_matrix.py
+- tools/benchmark-runner/tests/test_realistic_docker_judge_matrix.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_realistic_docker_judge_matrix.py
+- Profile R Docker Judge q27 16-case exact-image matrix
+
+### 검증 결과
+
+- GitPatchBackend unit regression 8 passed
+- q27 raw independent verifier CHALLENGE_READY, 16/16 expectation match
+- exact Docker image requirements.lock 16/16 일치와 residual container 0
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: d5268e62ab1015266152e4ffdd6cdf30357d2b6a
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md

@@ -3876,3 +3876,30 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`에서 멈췄고 잔여 process/container는 0이다.
   Cell 3·4는 실행하지 않았다. 다음 관문은 R11/R13 Judge와 qualification 수용 영역을 공개
   계약에 맞춘 새 model-free revision이다.
+
+## Profile R R11·R13 계약 교정, Task Pack q7과 Docker Judge q27
+
+- 작업일: 2026-09-04. R-P11의 exact `"type": "write_file"` source 조건과 R-P13의 비공개
+  operator JSON 전체 equality를 제거했다. R11은 공개 의미 표식과 Judge 소유 S2 행동검사를,
+  R13은 공개 Schema·명령 순서·implementation symbol·stop flag·README binding을 검사한다.
+- canonical reference 외에 표현만 다른 R11·R13 public-equivalent positive를 Judge source
+  qualification에 추가했다. 두 사례 모두 public contract와 hidden 13 properties 전체를 통과했고,
+  13개 known-bad와 7개 Worker test-oracle 공격도 expectation과 일치했다. source bundle은 52 files,
+  `PROFILE_R_SOURCE_BUNDLE_VERIFIED`다.
+- Task Pack q7은 positive transition 13/13, cumulative Check 104/104, negative 13/13 거부,
+  public-equivalent 2/2 수용과 v22 R10 regression 거부를 통과했다. 서로 다른 출력 경로의
+  qualification file SHA는 모두 `553d7c4b...242bc`로 같았다.
+- clean source commit `85ce0c7a0959f9bf434e31614155d4cf8f3c1d5f`에서 관련 46 passed와 Phase E 포함
+  넓은 회귀 88 passed를 확인했다.
+- 첫 q27 입력은 abbreviated commit을 잘못 확장해 Git 검증 전에 중단됐다. 두 번째는 긴 variant
+  경로에서 Git patch backend의 `core.longpaths=true` 누락을 발견해 Docker 전에 중단됐다.
+  두 경로는 삭제·재사용하지 않았다. long-path 결함은 `DEV-20260904-003`으로 기록하고 commit
+  `d5268e62ab1015266152e4ffdd6cdf30357d2b6a`에서 교정했다.
+- 새 `C:\q27-r3`의 Docker q27은 reference 1, public-equivalent 2, negative 13의 16개를 exact
+  image `ba83a183...330ab`, network none에서 실행해 16/16 expectation 일치와
+  `CHALLENGE_READY`를 봉인했다. raw independent verifier, installed distribution/lock 16/16,
+  residual container 0을 확인했다.
+- q27 projection file SHA는 `1d73e90e...2223a`, raw seal self는 `952bfdfd...e6fc3`다.
+  actual model turn과 SDK thread/turn은 0이며 기존 v23 state/raw/Measurement/seal은 변경하지 않았다.
+- `DEV-20260904-002`는 해결됐다. 기존 v23 pair의 `DIAGNOSTIC_ONLY_NO_ROUTE`는 그대로다. 다음
+  관문은 q7·q27을 exact hash로 결합한 새 Phase E candidate이며 Live와 Cell 3·4는 계속 NO-GO다.
