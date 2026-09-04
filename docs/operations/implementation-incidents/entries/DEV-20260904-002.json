@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260904-002",
+  "title": "Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함",
+  "status": "open",
+  "stage": "phase-f-profile-r-v23-b1",
+  "category": "test",
+  "discovered_at": "2026-09-04T05:26:02Z",
+  "resolved_at": null,
+  "discovered_by": "Profile R v23 B1 Cell 2 live와 public/hidden checker source inspection",
+  "symptom": "B1이 R01~R13을 각 1회에 완료하고 누적 public Check 104/104를 통과했지만 Docker hidden Judge는 R-P11과 R-P13을 실패시켜 Cell을 failed로 봉인했다.",
+  "reproduction": [
+    "공개 R11 계약을 만족하되 write effect를 literal JSON 조각이 아닌 helper와 객체로 표현한 뒤 public r11_contract와 hidden R-P11을 각각 실행한다.",
+    "공개 operator Schema, 명령 순서, 필수 필드, stop flag와 README 표식을 만족하되 비공개 oracle과 다른 유효한 상태·argv 표현을 사용한 뒤 public r13_contract와 hidden R-P13을 각각 실행한다."
+  ],
+  "evidence": [
+    {
+      "kind": "direct-observation",
+      "detail": "B1 adapter는 R01~R13 SUCCEEDED, 13 turns, 13 sessions, retry/resume 0을 기록했고 누적 public Check result 104개는 모두 PASSED였다."
+    },
+    {
+      "kind": "direct-observation",
+      "detail": "봉인 Measurement는 independent_judge_failed와 failed property R-P11-S2-E2E, R-P13-OPERATOR-SEMANTICS를 기록했으며 runtime comparison_valid=true, environment_failure_present=false였다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "hidden R-P11은 실제 protected behavior 외에 test_routing_s2.py source에 정확한 문자열 \"type\": \"write_file\"이 존재하도록 요구한다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "hidden R-P13은 Worker operator-contract.json을 Judge bundle의 비공개 operator-contract.json과 객체 전체 exact equality로 비교하지만 public R13은 공개 Schema와 의미 필드만 검사한다."
+    },
+    {
+      "kind": "source-inspection",
+      "detail": "q26과 q6 qualification은 canonical positive와 property별 known-bad mutation 거부를 검사하지만 public-pass인 복수의 의미 동등 구현이 hidden-pass인지 검사하지 않는다."
+    }
+  ],
+  "root_cause": "R-P11과 R-P13 hidden Judge가 공개 계약보다 더 좁은 구현 표현을 정답으로 고정했다. q26/q6 qualification은 canonical reference positive와 준비된 negative mutation만 검증해 public contract와 hidden Judge의 수용 영역이 같은지 확인하지 않았다.",
+  "considered_options": [
+    {
+      "option": "B1 결과를 그대로 제품 실패로 인정하고 SS1/B1 route를 발행한다",
+      "decision": "rejected",
+      "reason": "공개 정보만으로 통과할 수 없는 hidden-only 조건이 최종 판정을 결정했으므로 공정한 비교가 아니다"
+    },
+    {
+      "option": "기존 v23 state나 B1 workspace를 고쳐 같은 Cell을 다시 봉인한다",
+      "decision": "rejected",
+      "reason": "봉인 Evidence 불변성과 실패 후 재실행 금지 계약을 위반한다"
+    },
+    {
+      "option": "현재 pair를 진단 자료로 보존하고 R11/R13 Judge 및 qualification의 계약 일치 검사를 교정한 새 revision과 experiment를 만든다",
+      "decision": "adopted",
+      "reason": "관측 사실을 보존하면서 다음 비교가 공개 계약만으로 통과 가능하도록 만든다"
+    }
+  ],
+  "resolution": "",
+  "affected_files": [
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/check_properties.py",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/checker/protected_behavior_checks.py",
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-compat-migration-001/worker-public-overlay/benchmark_checks/check_profile_r.py",
+    "tools/benchmark-runner/scripts/build_profile_r_judge_bundle.py",
+    "tools/benchmark-runner/scripts/qualify_profile_r_task_pack.py"
+  ],
+  "regression_tests": [
+    "R-P11은 literal JSON source 표현 없이 같은 four-Cell write-effect behavior를 구현한 public-pass 대안을 통과시켜야 한다",
+    "R-P13은 공개 Schema와 의미 invariant를 만족하는 서로 다른 유효 operator contract 두 개 이상을 통과시켜야 한다",
+    "모든 Profile R property에서 public contract pass 표본이 해당 hidden Judge도 pass하는지 교차 검증해야 한다"
+  ],
+  "verification": [
+    "기존 v23 SS1/B1 state, raw, Measurement와 seal을 변경하지 않고 lifecycle SEALED, SEALED, PLANNED, PLANNED를 유지했다",
+    "B1 public Check 104/104 PASSED와 hidden Judge 11/13 pass를 외부 봉인 Evidence에서 독립 확인했다",
+    "R-P11 literal source 조건, R-P13 exact oracle equality와 q26/q6 qualification 판정 로직을 source에서 확인했다"
+  ],
+  "remaining_risks": [
+    "R11/R13과 qualification을 교정한 새 candidate가 봉인될 때까지 Profile R의 공식 routing 비교를 재개할 수 없다",
+    "다른 property에도 공개 계약보다 좁은 hidden-only 구현 표현이 남아 있을 수 있다"
+  ],
+  "related_commits": [
+    "376c01c250bb82463442d87abeeaff9519fae536",
+    "6bb678bee093bc5b868217bccd1ee417681761b9"
+  ],
+  "source_references": [
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-b1-company-v23-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v23-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md"
+  ]
+}

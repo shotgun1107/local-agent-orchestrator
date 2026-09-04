@@ -3851,3 +3851,28 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 
 현재 lifecycle은 `SEALED, PLANNED, PLANNED, PLANNED`다. 다음 관문은 같은 pair의 B1 Cell 2를
 실행할지에 대한 별도 사용자 승인이다. 이번 턴에서는 B1과 Cell 3·4를 실행하지 않았다.
+
+## Profile R v23 B1 Cell 2와 hidden Judge 계약 결함 진단
+
+- 작업일: 2026-09-04. SS1 결과를 확인한 뒤 별도 사용자 승인으로 같은 pair의 B1 Cell 2
+  하나만 실행했다. 실행 직전 HEAD는 `6bb678bee093bc5b868217bccd1ee417681761b9`였고 candidate,
+  source, Worker Python, Docker image, state와 claim을 다시 대조했다.
+- B1은 13개 독립 세션에서 R01~R13을 각 1 turn에 완료했다. retry/resume은 0이고 누적 public
+  Check 104개가 모두 PASSED였다. 13 turns, 21,547,910 tokens, model-active 4,669.828초,
+  total wall 4,953.609초다.
+- Docker Judge는 R-P01~R-P10과 R-P12를 통과했지만 R-P11과 R-P13을 실패시켰다. Cell은 봉인
+  계약에 따라 `failed / independent_judge_failed / PRODUCT_ASSERTION`으로 기록됐고 state,
+  raw, Measurement와 seal은 수정하지 않았다.
+- 후속 source inspection에서 R-P11은 실제 행동검사 외에 테스트 소스의 정확한
+  `"type": "write_file"` 문자열을 요구했고, R-P13은 공개 Schema가 허용한 결과가 아니라
+  Judge 내부 JSON과 객체 전체 equality를 요구함을 확인했다. B1은 R11의 실제 pytest 7개와
+  R13 public contract를 통과했으므로 두 hidden 실패를 제품 결함으로 해석할 수 없다.
+- q26/q6은 canonical positive와 property별 known-bad mutation만 검사했으며 public-pass인
+  다른 의미 동등 구현의 hidden-pass 여부는 검사하지 않았다. 이 누락을
+  `DEV-20260904-002`로 열었다.
+- SS1은 17 turns로 R09에서 멈췄고 B1은 13 turns로 R13까지 완주했다. B1은 turn과 완주에서는
+  우세했지만 total wall이 2,121.718초 길고 tokens가 2,107,283 많았다. hidden 계약 결함 때문에
+  공식 routing 판정은 `DIAGNOSTIC_ONLY_NO_ROUTE`다.
+- lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`에서 멈췄고 잔여 process/container는 0이다.
+  Cell 3·4는 실행하지 않았다. 다음 관문은 R11/R13 Judge와 qualification 수용 영역을 공개
+  계약에 맞춘 새 model-free revision이다.
