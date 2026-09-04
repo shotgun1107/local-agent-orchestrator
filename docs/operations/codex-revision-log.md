@@ -3923,3 +3923,22 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 기존 v23 candidate와 실제 pair는 수정하거나 재판정하지 않았다. 다음 관문은 candidate v24의
   독립 model-free acceptance run 1과 run 2다. readiness, Environment Closure, Live와 Cell 3·4는
   계속 NO-GO다.
+
+## Profile R candidate v24 acceptance run 1
+
+- 작업일: 2026-09-04. acceptance 하네스를 candidate v24로 갱신한 clean checkout
+  `90565291a1ff21b39019ae39003499a60cc65d92`에서 parameter `[1]` 하나만 실행했다.
+- 새 `C:\pf-v24-acceptance-company-run1\acceptance-1`과 `C:\pfa24r1` 경로에서
+  `1 passed in 264.63s`로 통과했다. SS1 Cell 1과 B1 Cell 2만 명시 dispatch했고 lifecycle은
+  `SEALED, SEALED, PLANNED, PLANNED`다.
+- R01~R13 고유 public contract 13/13, cumulative Check 104/104, R11 7 tests, R12 5 tests,
+  SS1/B1 simulated turn-start receipt 13/13을 확인했다. automatic continuation과 actual model
+  turn은 0이다.
+- 별도 verifier가 14-file exact set, manifest 12/12, JUnit, Phase F state와
+  execution→SS1→B1 anchor chain, 두 Cell seal self-hash와 Measurement file hash를 통과했다.
+  attestation/file manifest/JUnit SHA는 `4299bf39...a79d7` / `fa8399f1...20a9` /
+  `e89e18ee...03c2`다.
+- source change, generated candidate, secret, external Check TEMP, child process와 active lock
+  residue는 0이며 model·실제 SDK thread/turn·Docker workload도 0이다.
+- 이 결과는 run 1만 통과시킨다. 다음 관문은 겹치지 않는 새 경로의 acceptance run 2다.
+  readiness, Environment Closure, Live와 Cell 3·4는 계속 NO-GO다.

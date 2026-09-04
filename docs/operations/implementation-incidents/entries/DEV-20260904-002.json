@@ -78,7 +78,7 @@
     "Phase E candidate v24가 q27 16-case 구조와 q7 public-equivalent 2-case Evidence를 의미 검증하고 exact file SHA로 직접 결합했다"
   ],
   "remaining_risks": [
-    "candidate v24의 독립 acceptance 두 회차와 readiness가 아직 없으므로 Live는 계속 NO-GO다",
+    "candidate v24 acceptance run 2와 readiness가 아직 없으므로 Live는 계속 NO-GO다",
     "등록한 public-equivalent 사례는 R11과 R13 결함의 회귀를 막지만 가능한 모든 구현 표현을 열거하는 증명은 아니다"
   ],
   "related_commits": [
@@ -93,6 +93,7 @@
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q26-company-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md",
     "docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md",
-    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md"
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md",
+    "docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v19-run1-result.md"
   ]
 }
