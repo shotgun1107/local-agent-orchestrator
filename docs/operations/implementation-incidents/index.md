@@ -4927,7 +4927,7 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 
 ### 채택한 해결
 
-새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀는 통과했지만 새 live runtime과 candidate가 아직 없어 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
+새 source에서 app-server Worker PATH를 Controller exact Python으로 고정하고 zero-turn dependency probe를 추가했다. R10 public Check는 네 Cell export/verify와 변조 거부를 실제 실행하며, 동일 uncertainty와 불변 workspace의 연속 self-review는 ss1_review_no_progress로 끝난다. finalizer는 Worker/Judge node를 제품·환경·혼합·미확인으로 집계한다. Task Pack q6와 model-free 회귀를 통과한 뒤 C:\lao-v23-runtime에 새 exact Worker Python을 별도로 준비해 dependency probe를 통과시켰다. Docker qualification과 새 candidate 이후까지 incident는 open으로 유지한다. 기존 v22 Evidence는 수정하지 않는다.
 
 ### 수정 파일
 
@@ -4953,19 +4953,22 @@ R10 public Check가 export API symbol과 wrapper AST만 검사해 run_all_routin
 - 서로 다른 TEMP root의 q6 연속 두 생성이 qualification SHA-256 1d9aa74b70b407a07624de9768f9483532c8884dffa1568fddf1e10b0c168471로 일치
 - 환경·수렴·finalizer·reference/q6 핵심 pytest 73 passed, 2 skipped
 - 완료시간·Phase F·B1·Docker port·SS1 pytest 37 passed, 3 skipped
+- C:\lao-v23-runtime Worker Python 3.12.10 dependency probe self seal 2429f0ca4d485c162c0c4abb87bb7686f89903b3df93b165eedfc06b075db90c
+- 새 Worker runtime에서 환경 고정·Phase F live-stack pytest 25 passed, 1 skipped
 - model turn 0, SDK thread/start 0, 실제 Docker workload 0
 
 ### 남은 위험
 
-- 현재 C:\lao-v21-runtime은 새 Worker dependency probe를 통과하지 못하므로 새 exact Python runtime을 준비해야 한다.
 - q6 이후 fresh Docker Judge qualification, 새 candidate, acceptance 2회와 readiness가 아직 없다.
+- 새 Worker Python은 실제 SDK preflight와 새 candidate에 아직 결합되지 않았다.
 - 실제 SDK preflight와 Docker smoke/dry-run은 별도 Environment Closure 전까지 실행하지 않았다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: fe7aa3d369e54430f1a14a59620c4c03da6ee51d
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v22-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-worker-python-v23-company-result.md
 - 출처: docs/design/sdk-routing-realistic-high-difficulty-profile-r-total-deadline-contract.md
 
 ## DEV-20260904-001 — Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함

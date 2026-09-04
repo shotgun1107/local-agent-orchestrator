@@ -66,6 +66,7 @@ docs/
 - [Profile R v21 첫 pair model-free 실패 진단](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-v21-model-free-failure-diagnostic-result.md) — timeout retry 우회와 R03·R04·R07 공개/hidden 계약 불일치 재현 및 최소 수정 범위
 - [Profile R 단일 완료시간 계약·Task Pack q5 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-task-pack-q5-company-result.md) — Task·호출 횟수 상한을 제거하고 Cell 9000초만 남긴 source·reference·q5 model-free 검증 결과
 - [Profile R v22 실패 교정·Task Pack q6 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-v22-remediation-task-pack-q6-company-result.md) — R10 누락을 행동검사로 차단하고 Worker Python·수렴·혼합 분류를 교정한 새 q6
+- [Profile R Worker Python v23 준비 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-worker-python-v23-company-result.md) — 기존 v21 환경을 보존하고 새 Worker Python·필수 배포판 identity를 model-free로 검증한 결과
 - [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [현실 고난도 Phase E candidate v22](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md) — q25·q5와 Cell 9000초 계약을 schema v4 Plan에 결합한 0-turn 후보
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행

@@ -3482,6 +3482,22 @@ Environment Closure와 Live는 `NO-GO`다.
 다음 관문은 별도 Environment Closure 턴이다. GO여도 그 턴에서 Live를 실행하지 않고 사용자에게
 제어권을 돌려준다.
 
+## Profile R v23 Worker Python 실행환경 준비
+
+- 작업일: 2026-09-04. 기존 `C:\lao-v21-runtime`은 보존하고 source commit
+  `fe7aa3d369e54430f1a14a59620c4c03da6ee51d`에서 별도 `C:\lao-v23-runtime`을 만들었다.
+- Python은 3.12.10, executable SHA-256은 `0b471133...fc14`다. Docker Judge 고정 lock과
+  `openai-codex==0.144.4`를 설치하고 B1·Benchmark Runner는 clean source에서 만든 wheel을
+  non-editable로 설치했다. `pip check`는 통과했다.
+- 실제 Worker `python -I -B` dependency probe가 `pytest 8.4.2`, `pydantic 2.13.4`,
+  `PyYAML 6.0.3`, `jsonschema 4.26.0`의 파일 aggregate를 계산했고 Evidence self seal은
+  `2429f0ca...db90c`다.
+- 새 runtime의 환경 고정·Phase F live-stack 회귀는 `25 passed, 1 skipped`다. skip은 명시적
+  실제 SDK zero-turn preflight로 이번 단계에서는 app-server, SDK thread/turn, model, Docker와
+  Controller state를 사용하지 않았다.
+- 아직 새 Docker Judge qualification, candidate, acceptance 2회와 readiness가 없으므로 Live는
+  `NO-GO`다. 다음 관문은 현재 source의 Docker Judge qualification이다.
+
 ## Profile R v22 실패 교정·Task Pack q6
 
 - 작업일: 2026-09-04. v22 봉인 자료는 그대로 두고 R10 공개검사, Worker Python 환경,
