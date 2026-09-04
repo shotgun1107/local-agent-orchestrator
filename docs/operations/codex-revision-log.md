@@ -3776,3 +3776,20 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   전체 회귀는 `42 passed`다.
 - 다음 관문은 candidate v23 independent model-free acceptance run 1과 run 2다. readiness,
   Environment Closure와 Live는 계속 `NO-GO`다.
+
+## Profile R candidate v23 acceptance run 1
+
+- 작업일: 2026-09-04. acceptance 하네스를 candidate v23에 결합한 checkout
+  `c42158e6c5617c02635c98ea6e7dbda11bd8cc71`에서 parameter `[1]`만 실행했다.
+- 첫 경로는 사용자 중단으로 SS1 봉인, B1 claim 상태에서 종료됐다. process는 종료했으며
+  partial state는 수정·삭제·재사용하지 않고 별도 보존했다.
+- 새 공식 경로 `C:\pf-v23-acceptance-company-official-run1-r2\acceptance-1`에서
+  `1 passed in 239.64s`로 통과했다. lifecycle은 `SEALED, SEALED, PLANNED, PLANNED`다.
+- public contract `13/13`, cumulative Check `104/104`, R11/R12 nested pytest `7/7`, `5/5`,
+  simulated turn-start receipt SS1/B1 `13/13`, `13/13`을 확인했다.
+- 14개 Evidence와 12-record manifest, state/anchor chain, 두 Cell seal과 JUnit을 독립
+  재검증했다. attestation/file manifest/JUnit SHA-256은 `81cc00f9...df249` /
+  `b06de137...a59dd` / `4cd54017...27615`다.
+- source change, generated candidate, Check TEMP, child process와 active lock residue는 0이고
+  model·SDK thread/turn·Docker workload도 0이다. 다음 관문은 다른 빈 경로의 acceptance run 2다.
+  readiness, Environment Closure와 Live는 계속 `NO-GO`다.
