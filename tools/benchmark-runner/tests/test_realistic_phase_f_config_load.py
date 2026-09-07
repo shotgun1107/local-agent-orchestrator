@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.parametrize("case", ["valid", "feature_table", "invalid_integer", "valid_drift", "project_invalid"])
+@pytest.mark.parametrize("case", ["valid", "feature_table", "unsupported_feature_table", "invalid_integer", "valid_drift", "project_invalid"])
 def test_pinned_cli_parses_config_before_any_thread(case: str, tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -35,6 +35,8 @@ def test_pinned_cli_parses_config_before_any_thread(case: str, tmp_path: Path) -
     content = valid
     if case == "feature_table":
         content = '[features.context_management]\nexperimental_mode = true\n'
+    elif case == "unsupported_feature_table":
+        content = '[features.future_unsupported_option]\nenabled = true\n'
     elif case == "invalid_integer":
         content = 'model_context_window = "synthetic-private-config-value"\n'
     elif case == "project_invalid":
@@ -73,7 +75,7 @@ def test_pinned_cli_parses_config_before_any_thread(case: str, tmp_path: Path) -
     )
     try:
         port.open()
-        if case in {"feature_table", "invalid_integer", "project_invalid"}:
+        if case in {"unsupported_feature_table", "invalid_integer", "project_invalid"}:
             with pytest.raises(PhaseFSdkContractError, match=r"configuration validation failed \(config/read\)") as captured:
                 port.validate_configuration(str(workspace))
             formatted = "".join(traceback.format_exception(captured.value))
@@ -103,7 +105,7 @@ def test_pinned_cli_parses_config_before_any_thread(case: str, tmp_path: Path) -
     ]
     assert set(methods) <= {"initialize", "initialized", "config/read"}
     assert methods.count("config/read") >= 1
-    if case in {"feature_table", "invalid_integer", "project_invalid"}:
+    if case in {"unsupported_feature_table", "invalid_integer", "project_invalid"}:
         parser_errors = [
             frame.get("error", {}).get("message", "")
             for direction, frame in clients[0].transcript()

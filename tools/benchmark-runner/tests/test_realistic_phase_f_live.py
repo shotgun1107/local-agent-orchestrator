@@ -6,9 +6,17 @@ import shutil
 import sys
 from collections.abc import Iterator, Mapping
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+import benchmark_runner.realistic_phase_f_live as phase_f_live_module
+from benchmark_runner.realistic_phase_e import (
+    PHASE_E_STAGE_RELATIVE,
+    PhaseERuntimeContract,
+    PhaseEStageManifest,
+    phase_e_configuration_compatibility_identity,
+)
 from pydantic import ValidationError
 
 from benchmark_runner.realistic_phase_f_live import (
@@ -38,6 +46,21 @@ CANDIDATE_ROOT = (
     / "artifacts"
     / "sdk-routing-realistic-high-difficulty-phase-e-v1"
 )
+
+
+def _bind_compatible_candidate(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
+    stage = PhaseEStageManifest.model_validate_json(
+        (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_text(encoding="utf-8")
+    )
+    snapshot = SimpleNamespace(
+        seal=SimpleNamespace(source_commit="a" * 40),
+        stage=stage,
+        plan=SimpleNamespace(environment_fingerprint=phase_e_configuration_compatibility_identity(stage.runtime_contract)),
+    )
+    monkeypatch.setattr(
+        phase_f_live_module, "load_verified_phase_f_candidate", lambda _repo, _root: snapshot
+    )
+    return snapshot
 
 
 class DormantPort(PhaseFAppServerPort):
@@ -161,7 +184,8 @@ def test_config_builder_grants_only_exact_workspace_write(tmp_path: Path) -> Non
 
     overrides = build_phase_f_config_overrides(workspace)
 
-    assert len(overrides) == 5
+    assert len(overrides) == 6
+    assert overrides[-1] == "features.context_management=false"
     filesystem = overrides[2]
     assert '":root"="deny"' in filesystem
     assert f'{json.dumps(str(workspace.resolve()), ensure_ascii=False)}="write"' in filesystem
@@ -200,7 +224,9 @@ def test_policy_telemetry_scans_changed_worker_files_and_keeps_js_unexposed(
 
 def test_live_stack_construction_is_side_effect_free_and_binds_runtime_policy(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _bind_compatible_candidate(monkeypatch)
     calls: list[tuple[Path, tuple[str, ...]]] = []
 
     def port_factory(
@@ -266,7 +292,9 @@ def test_live_stack_rejects_api_key_name_without_reading_value(tmp_path: Path) -
 
 def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _bind_compatible_candidate(monkeypatch)
     environment_root = Path(tmp_path.anchor) / "lao-pf-live-b1"
 
     stack = build_profile_r_phase_f_b1_live_stack(
@@ -297,6 +325,43 @@ def test_b1_live_stack_threads_one_explicit_external_check_temp_root(
     assert not environment_root.exists()
 
 
+@pytest.mark.parametrize("builder", [build_profile_r_phase_f_live_stack, build_profile_r_phase_f_b1_live_stack])
+@pytest.mark.parametrize("mutation", ["legacy", "source", "version", "sha256", "override"])
+def test_live_stack_rejects_unbound_configuration_before_open_or_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, builder, mutation: str
+) -> None:
+    snapshot = _bind_compatible_candidate(monkeypatch)
+    if mutation == "legacy":
+        payload = snapshot.stage.runtime_contract.model_dump(mode="json")
+        payload.pop("configuration_compatibility")
+        snapshot.stage = snapshot.stage.model_copy(update={
+            "runtime_contract": PhaseERuntimeContract.model_validate(payload)
+        })
+    elif mutation == "source":
+        snapshot.seal.source_commit = "b" * 40
+    else:
+        snapshot.plan.environment_fingerprint["configuration_compatibility_" + mutation] = "different"
+    calls = []
+    with pytest.raises(Exception, match="configuration compatibility binding differs"):
+        builder(
+            repository=REPOSITORY,
+            candidate_root=CANDIDATE_ROOT,
+            artifact_root=tmp_path / "backend",
+            docker_raw_root=tmp_path / "docker-raw",
+            docker_executable=Path(sys.executable),
+            git_executable=GIT_EXECUTABLE,
+            execution_environment_root=Path(tmp_path.anchor) / "lao-pf-compat-test",
+            experiment_state_root=(tmp_path / "phase-f-state").resolve(),
+            source_commit="a" * 40,
+            environ={},
+            source_environment={},
+            app_server_port_factory=lambda *args: calls.append(args),
+        )
+    assert calls == []
+    assert not (tmp_path / "backend").exists()
+    assert not (tmp_path / "phase-f-state").exists()
+
+
 def test_b1_live_stack_rejects_environment_root_overlapping_phase_f_state(
     tmp_path: Path,
 ) -> None:
@@ -321,7 +386,9 @@ def test_b1_live_stack_rejects_environment_root_overlapping_phase_f_state(
 @pytest.mark.skipif(os.name != "nt", reason="Windows path budget contract")
 def test_b1_live_stack_rejects_environment_root_without_path_headroom(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _bind_compatible_candidate(monkeypatch)
     too_long = Path(tmp_path.anchor) / ("x" * 205)
     with pytest.raises(Exception, match="exact Windows path headroom"):
         build_profile_r_phase_f_b1_live_stack(

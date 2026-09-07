@@ -5267,11 +5267,13 @@ Environment Closure가 AGENTS.md의 thread/start 금지 경계를 지키면서�
 - SDK/live 모형 회귀 62 passed, 1 real SDK opt-in deselected
 - 실제 CLI의 합성 config home 다섯 사례 5 passed; 허용 요청은 initialize/initialized/config/read뿐
 - 새 probe가 실제 실행 계정·Worker 경로에서 NO-GO 반환; 개인 config와 FAILED state hash 불변
+- 후속 CLI 호환 정책 v1은 프로세스에 features.context_management=false만 추가하며 실제 source-bound schema 3 preflight가 개인 config 변경 없이 통과
+- 호환 정책 SDK/live 모형 75 passed 및 실제 CLI 합성 검사 6 passed
 
 ### 남은 위험
 
-- 현재 개인 config는 최신 공식 설정 형식을 사용하지만 고정 CLI 0.144.4와 호환되지 않아 Live NO-GO다
-- 호환성 조치, 새 source binding과 별도 새 experiment 승인 전 실제 실행은 금지한다
+- 호환 정책 v1이 없는 고정 CLI는 현재 개인 config 형식과 충돌한다. 새 runtime은 개인 파일 수정 대신 정책을 candidate에 결합한다
+- 새 source binding의 candidate, acceptance, readiness와 Environment Closure 전 실제 실행은 금지한다
 - Controller 직접 호출은 Environment Closure를 대체하지 않으며 claim 뒤 발견되는 drift도 같은 Cell 재실행 없이 중단해야 한다
 
 ### 추적 정보
@@ -5279,3 +5281,4 @@ Environment Closure가 AGENTS.md의 thread/start 금지 경계를 지키면서�
 - 관련 커밋: 기록 없음
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-cli-compatibility-v1-result.md

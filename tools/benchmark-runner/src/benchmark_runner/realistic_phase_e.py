@@ -117,6 +117,35 @@ class PhaseERuntimeContract(StrictModel):
     active_profile_provenance_required: Literal[True]
 
 
+class PhaseEConfigurationCompatibilityContract(StrictModel):
+    version: Literal[1]
+    sdk_version: Literal[PINNED_SDK_VERSION]
+    cli_version: Literal[PINNED_SDK_VERSION]
+    process_config_override: Literal["features.context_management=false"]
+    user_config_mutation: Literal[False]
+
+
+class PhaseECompatibleRuntimeContract(PhaseERuntimeContract):
+    """Add the explicit process policy without changing historical v2 bytes."""
+
+    configuration_compatibility: PhaseEConfigurationCompatibilityContract
+
+
+def phase_e_configuration_compatibility_identity(
+    runtime_contract: PhaseERuntimeContract | PhaseECompatibleRuntimeContract,
+) -> dict[str, str]:
+    if not isinstance(runtime_contract, PhaseECompatibleRuntimeContract):
+        return {}
+    policy = runtime_contract.configuration_compatibility
+    return {
+        "configuration_compatibility_version": str(policy.version),
+        "configuration_compatibility_sha256": canonical_sha256(
+            policy.model_dump(mode="json")
+        ),
+        "configuration_compatibility_override": policy.process_config_override,
+    }
+
+
 class PhaseEProfileSpec(StrictModel):
     profile_id: Literal[
         "repository-wide-compatibility-migration",
@@ -272,7 +301,7 @@ class PhaseEStageManifest(StrictModel):
     api_key_environment_names_forbidden: list[
         Literal["CODEX_API_KEY", "OPENAI_API_KEY"]
     ]
-    runtime_contract: PhaseERuntimeContract
+    runtime_contract: PhaseERuntimeContract | PhaseECompatibleRuntimeContract
     profiles: list[PhaseEProfileSpec] = Field(min_length=2, max_length=2)
     cell_order: list[PhaseECellSpec] = Field(min_length=4, max_length=4)
     budget: PhaseEBudget | PhaseECompletionDeadlineBudget
@@ -1404,6 +1433,7 @@ def build_phase_e_plan(
         "runtime_contract_version": str(stage.runtime_contract.version),
         "permission_profile_id": stage.runtime_contract.permission_profile_id,
         "legacy_sandbox_arguments": "false",
+        **phase_e_configuration_compatibility_identity(stage.runtime_contract),
         **_docker_environment_identity(bindings),
         **_profile_r_redesign_identity(bindings),
     }

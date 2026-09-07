@@ -5,6 +5,7 @@ import subprocess
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
+from shutil import copytree
 from typing import Any
 
 import pytest
@@ -16,11 +17,14 @@ from benchmark_runner.realistic_phase_e import (
     PHASE_E_STAGE_RELATIVE,
     PINNED_MODEL,
     PhaseECandidateError,
+    PhaseECompatibleRuntimeContract,
     PhaseEPreflightEvidence,
+    PhaseERuntimeContract,
     PhaseEStageManifest,
     _git_source_tree_sha256,
     build_phase_e_plan,
     create_phase_e_candidate,
+    phase_e_configuration_compatibility_identity,
     verify_phase_e_candidate,
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
@@ -135,6 +139,19 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert stage.budget.hard_limit_fields == ["cell_completion_deadline_seconds"]
     assert stage.dispatch.automatic_continuation is False
     assert stage.schema_version == 4
+    assert isinstance(stage.runtime_contract, PhaseECompatibleRuntimeContract)
+    assert stage.runtime_contract.version == 2
+    compatibility = {
+        "version": 1,
+        "sdk_version": "0.144.4",
+        "cli_version": "0.144.4",
+        "process_config_override": "features.context_management=false",
+        "user_config_mutation": False,
+    }
+    assert stage.runtime_contract.configuration_compatibility.model_dump(mode="json") == compatibility
+    assert stage.model_dump(mode="json")["runtime_contract"][
+        "configuration_compatibility"
+    ] == compatibility
     assert stage.profiles[0].qualification_path == (
         "benchmarks/artifacts/profile-r-docker-judge-qualification-v24/qualification.json"
     )
@@ -160,6 +177,102 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
         "model_active_seconds",
         "wall_clock_seconds",
     ]
+
+
+@pytest.mark.parametrize("version", range(1, 25))
+def test_historical_runtime_contract_serialization_is_unchanged(version: int) -> None:
+    candidate = (
+        REPOSITORY / "benchmarks/artifacts"
+        / f"sdk-routing-realistic-high-difficulty-phase-e-v{version}"
+    )
+    raw = json.loads((candidate / "stage-manifest.json").read_bytes())
+    stage = PhaseEStageManifest.model_validate(raw)
+    assert type(stage.runtime_contract) is PhaseERuntimeContract
+    assert stage.runtime_contract.model_dump(mode="json") == raw["runtime_contract"]
+    assert phase_e_configuration_compatibility_identity(stage.runtime_contract) == {}
+    plan = json.loads((candidate / "execution-plan.json").read_bytes())
+    assert not any(
+        name.startswith("configuration_compatibility_")
+        for name in plan["environment_fingerprint"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("version", 2),
+        ("sdk_version", "0.144.5"),
+        ("cli_version", "0.144.5"),
+        ("process_config_override", "features.context_management=true"),
+        ("process_config_override", "features.context_management=false.extra"),
+        ("user_config_mutation", True),
+    ],
+)
+def test_stage_rejects_changed_configuration_compatibility_policy(
+    field: str, value: object,
+) -> None:
+    raw = json.loads((REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes())
+    raw["runtime_contract"]["configuration_compatibility"][field] = value
+    with pytest.raises(ValueError):
+        PhaseEStageManifest.model_validate(raw)
+
+
+def test_configuration_compatibility_changes_source_binding_and_plan_fingerprint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_commit = "9fb80ac887620c1990f9a76c2244aa70c5cb93f0"
+    created_at = datetime(2026, 9, 4, tzinfo=timezone.utc)
+    historical_plan, historical_bindings = build_phase_e_plan(
+        REPOSITORY, source_commit=source_commit, created_at=created_at,
+    )
+    stage_bytes = (REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes()
+    stage = PhaseEStageManifest.model_validate_json(stage_bytes)
+    original_git_bytes = phase_e._git_bytes
+
+    def git_bytes(repository: Path, commit: str, relative: str) -> bytes:
+        if commit == source_commit and relative == PHASE_E_STAGE_RELATIVE:
+            return stage_bytes
+        return original_git_bytes(repository, commit, relative)
+
+    monkeypatch.setattr(phase_e, "_git_bytes", git_bytes)
+    compatible_plan, compatible_bindings = build_phase_e_plan(
+        REPOSITORY, source_commit=source_commit, created_at=created_at,
+    )
+    expected = phase_e_configuration_compatibility_identity(stage.runtime_contract)
+    assert expected["configuration_compatibility_version"] == "1"
+    assert expected["configuration_compatibility_override"] == "features.context_management=false"
+    assert expected["configuration_compatibility_sha256"] == canonical_sha256(
+        stage.runtime_contract.configuration_compatibility.model_dump(mode="json")
+    )
+    assert {
+        name: compatible_plan.environment_fingerprint[name] for name in expected
+    } == expected
+    assert not any(name in historical_plan.environment_fingerprint for name in expected)
+    assert compatible_bindings.stage_manifest_sha256 == sha256(stage_bytes).hexdigest()
+    assert compatible_bindings.bindings_sha256 != historical_bindings.bindings_sha256
+    assert compatible_plan.plan_fingerprint != historical_plan.plan_fingerprint
+    assert compatible_plan.cells == historical_plan.cells
+    assert compatible_plan.decision_policy == historical_plan.decision_policy
+    assert compatible_plan.environment_fingerprint["runtime_contract_version"] == "2"
+
+
+def test_historical_candidate_cannot_relabel_configuration_compatibility(
+    tmp_path: Path,
+) -> None:
+    candidate = tmp_path / "historical-candidate-copy"
+    copytree(
+        REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v24",
+        candidate,
+    )
+    historical_stage = json.loads((candidate / "stage-manifest.json").read_bytes())
+    current_stage = json.loads((REPOSITORY / PHASE_E_STAGE_RELATIVE).read_bytes())
+    historical_stage["runtime_contract"]["configuration_compatibility"] = current_stage[
+        "runtime_contract"
+    ]["configuration_compatibility"]
+    (candidate / "stage-manifest.json").write_bytes(canonical_json_bytes(historical_stage))
+    _reseal_candidate(candidate)
+    with pytest.raises(PhaseECandidateError, match="copied stage manifest differs"):
+        verify_phase_e_candidate(REPOSITORY, candidate)
 
 
 def test_v2_stage_requires_only_profile_r_qualification_sibling() -> None:

@@ -38,6 +38,19 @@ PHASE_F_APPROVAL_POLICY_WIRE = "never"
 PHASE_F_APPROVAL_MODE = "deny_all"
 PHASE_F_THREAD_NOTIFICATION_TIMEOUT_SECONDS = 2.0
 PHASE_F_CONFIGURATION_TIMEOUT_SECONDS = 15.0
+PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE = "features.context_management=false"
+
+
+def phase_f_configuration_compatibility_policy() -> dict[str, JsonValue]:
+    """Source-bound process policy; the desktop user's config is never edited."""
+
+    return {
+        "version": 1,
+        "sdk_version": PHASE_F_PINNED_SDK_VERSION,
+        "cli_version": PHASE_F_PINNED_SDK_VERSION,
+        "process_config_override": PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE,
+        "user_config_mutation": False,
+    }
 
 
 class PhaseFSdkContractError(RuntimeError):
@@ -125,6 +138,7 @@ def build_phase_f_config_overrides(workspace: Path) -> tuple[str, ...]:
             "permissions.runtime-boundary-worker.filesystem=" + filesystem,
             "permissions.runtime-boundary-worker.network.enabled=false",
             'windows.sandbox="elevated"',
+            PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE,
         )
     )
 
@@ -215,7 +229,7 @@ TurnHandleFactory = Callable[[PhaseFRawCodexClient, str, str], PhaseFTurnHandle]
 
 
 def validate_phase_f_config_overrides(overrides: Sequence[str]) -> tuple[str, ...]:
-    """Validate the five runtime-v2 app-server overrides before launch."""
+    """Validate v2 permissions and the versioned CLI compatibility override."""
 
     values = tuple(overrides)
     required_prefixes = (
@@ -224,11 +238,14 @@ def validate_phase_f_config_overrides(overrides: Sequence[str]) -> tuple[str, ..
         "permissions.runtime-boundary-worker.filesystem=",
         "permissions.runtime-boundary-worker.network.enabled=false",
         'windows.sandbox="elevated"',
+        PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE,
     )
     if len(values) != len(required_prefixes) or len(set(values)) != len(values):
-        raise PhaseFSdkContractError("Phase F requires exactly five config overrides")
+        raise PhaseFSdkContractError("Phase F requires exactly six config overrides")
     for index, prefix in enumerate(required_prefixes):
-        if not values[index].startswith(prefix):
+        if (index == 2 and not values[index].startswith(prefix)) or (
+            index != 2 and values[index] != prefix
+        ):
             raise PhaseFSdkContractError(
                 f"Phase F config override {index + 1} differs"
             )
@@ -493,6 +510,18 @@ class CodexPhaseFAppServerPort:
                 if layer["name"].get("type") == "user":
                     user_layers.append(layer)
             if len(user_layers) != 1:
+                raise ValueError
+            features = config.get("features")
+            session_layers = [
+                layer for layer in layers if layer["name"].get("type") == "sessionFlags"
+            ]
+            if (
+                not isinstance(features, Mapping)
+                or features.get("context_management") is not False
+                or len(session_layers) != 1
+                or not isinstance(session_layers[0]["config"].get("features"), Mapping)
+                or session_layers[0]["config"]["features"].get("context_management") is not False
+            ):
                 raise ValueError
             user_layer = user_layers[0]
             user_file = user_layer["name"].get("file")
