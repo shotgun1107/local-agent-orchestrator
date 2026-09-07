@@ -3942,3 +3942,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   residue는 0이며 model·실제 SDK thread/turn·Docker workload도 0이다.
 - 이 결과는 run 1만 통과시킨다. 다음 관문은 겹치지 않는 새 경로의 acceptance run 2다.
   readiness, Environment Closure, Live와 Cell 3·4는 계속 NO-GO다.
+
+## Profile R candidate v24 acceptance run 2
+
+- 작업일: 2026-09-07. 원격과 일치하는 clean checkout
+  `016add19ae3194a65ab43d9148987c349cd8bff9`에서 parameter `[2]` 하나만 실행했다.
+- 새 `C:\pf-v24-acceptance-company-run2\acceptance-2`와 `C:\pfa24r2` 경로에서
+  `1 passed in 253.78s`로 통과했다. SS1 Cell 1과 B1 Cell 2만 명시 dispatch했고 lifecycle은
+  `SEALED, SEALED, PLANNED, PLANNED`다.
+- run 2는 R12 내부 Git 저장소를 더 깊은 대체 경로에 만들었다. R01~R13 고유 public contract
+  13/13, cumulative Check 104/104, public result 91/91, R11 7 tests와 R12 5 tests를 확인했다.
+- 별도 verifier가 14-file exact set, manifest 12/12, JUnit, Phase F state와
+  execution→SS1→B1 anchor chain, 두 Cell seal과 Measurement hash를 통과했다.
+  attestation/file manifest/JUnit SHA는 `daf08cf3...d2a66` / `e2090961...a53cb` /
+  `4c0c9805...34f99`다.
+- source change, generated candidate, secret, external Check TEMP, child process와 active lock
+  residue는 0이다. automatic continuation, actual model turn, 실제 SDK thread/turn과 Docker
+  workload도 0이다.
+- candidate v24의 독립 acceptance 두 회차가 모두 통과했다. 다음 관문은 q27·q7·candidate
+  v24와 두 acceptance를 직접 결합하는 새 readiness다. Environment Closure, Live와 Cell 3·4는
+  계속 NO-GO다.
