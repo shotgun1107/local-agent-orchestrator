@@ -3982,3 +3982,24 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - actual model turn, SDK thread/turn과 Docker workload는 0이다. seal은
   `environment_closure_required=true`, `current_docker_runtime_verified=false`,
   `live_authorized=false`다. 다음 관문은 별도 Environment Closure 턴이다.
+
+## Profile R v24 Environment Closure와 SS1 Cell 1 환경 실패
+
+- 작업일: 2026-09-07. readiness v13 뒤 별도 Environment Closure에서 candidate, Git,
+  state, Python/SDK, ChatGPT 인증, exact Docker image와 동일경로 model-free rehearsal을
+  통과해 `GO`를 보고했다. 그 다음 사용자 승인에서 SS1 Cell 1 하나만 exactly once 실행했다.
+- 실행 HEAD/tree는 `a4f534196d91926b0091a314b6aaff60a18be98b` /
+  `b909c090901d48b0fef3f08b0e15340cdd82586e`, experiment는
+  `exp_20260904_b4d482cf_1`, 외부 root는
+  `C:\lao-phase-f-live-b4d482cf-v24-company-pair-1`이다.
+- Cell 1은 SDK `thread/start`에서 `config.toml:86:1: invalid type: map, expected a boolean`을
+  반환해 `FAILED / InvalidRequestError`가 됐다. call stack은 `turn/start`, Worker와 Judge 전에
+  중단됐다. state의 actual model turn은 `null`이고 완료된 model response Evidence는 없다.
+- Cell seal, Measurement, adapter/backend/Judge result는 생성되지 않았다. lifecycle은
+  `FAILED, PLANNED, PLANNED, PLANNED`, automatic continuation은 false다. B1과 Cell 3·4는
+  실행하지 않았고 같은 Cell을 재실행하지 않는다.
+- 직접 구조 검사에서 현재 config의 `features.context_management`는 table이지만 CLI 0.144.4는
+  boolean을 기대했다. 기존 zero-turn preflight는 이 config를 실제 thread/start와 같은 schema로
+  parse하지 않아 Closure의 `GO`가 dispatch 경로보다 약했다. `DEV-20260907-001`로 등록했다.
+- 실패한 state/claim은 보존하고 개인 config는 수정하지 않았다. thread를 만들지 않는 exact
+  config load 검증과 회귀시험, 별도 config 교정과 새 experiment 승인 전까지 Live는 `NO-GO`다.
