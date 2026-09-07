@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 77건
+- 전체: 78건
 - 해결: 76건
-- 조사 중: 1건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -90,6 +90,7 @@
 | DEV-20260904-001 | resolved | profile-r-task-pack-q6 | tooling | Task Pack q6 qualification이 공개 Check의 TEMP 절대경로 stdout을 직접 hash함 |
 | DEV-20260904-002 | resolved | phase-f-profile-r-v23-b1 | test | Profile R v23 B1의 공개 계약 통과 구현을 hidden Judge가 숨은 표현 조건으로 거부함 |
 | DEV-20260904-003 | resolved | profile-r-docker-judge-q27 | tooling | Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨 |
+| DEV-20260907-001 | investigating | phase-f-profile-r-environment-closure | integration | Environment Closure가 thread/start의 Codex config schema 오류를 놓침 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5202,3 +5203,64 @@ GitPatchBackend의 공통 base command에 -c core.longpaths=true를 추가하고
 
 - 관련 커밋: d5268e62ab1015266152e4ffdd6cdf30357d2b6a
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-r11-r13-contract-alignment-q7-q27-company-result.md
+
+## DEV-20260907-001 — Environment Closure가 thread/start의 Codex config schema 오류를 놓침
+
+- 상태: `investigating`
+- 단계: `phase-f-profile-r-environment-closure`
+- 분류: `integration`
+- 발견: 2026-09-07T07:54:44Z / Profile R candidate v24 SS1 Cell 1 live dispatch
+- 해결: 미해결
+
+### 증상
+
+Environment Closure가 GO였지만 SS1 Cell 1의 SDK thread/start가 config.toml line 86의 features.context_management table을 boolean으로 읽지 못해 InvalidRequestError로 중단됐다. turn/start, Worker와 Judge에는 도달하지 않았다.
+
+### 재현
+
+- 격리된 시험 config fixture에 [features.context_management] table을 두고 기존 zero-turn preflight와 같은 검사 범위를 실행해 통과하는지 확인한다.
+- 같은 fixture를 SDK/CLI 0.144.4의 실제 config decoder와 동일한 model-free parse 경로에 넣어 invalid type: map, expected a boolean을 반환하는지 확인한다. SDK thread와 실제 Live Cell은 시작하지 않는다.
+
+### 증거
+
+- `direct-observation`: Cell 1 call stack은 runtime.start_thread에서 client._request_raw("thread/start", params)를 호출한 직후 JSON-RPC -32600 config load 오류를 반환했다.
+- `source-inspection`: 비밀값을 읽지 않은 구조 검사에서 config.toml line 86은 [features.context_management] table이고 SDK/CLI 오류는 같은 위치에서 map 대신 boolean을 기대했다.
+- `inference`: Closure zero-turn preflight는 runtime preflight와 인증·model·identity 검사를 통과했지만 thread/start-compatible config schema parse를 수행하지 않아 실제 dispatch보다 약한 경로였다.
+
+### 근본 원인
+
+Environment Closure가 AGENTS.md의 thread/start 금지 경계를 지키면서도 실제 SDK/CLI가 사용하는 schema로 현재 Codex config 전체를 load·parse하는 동등 검사를 구현하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` 실패한 Cell 1을 config 수정 뒤 재실행한다 — dispatch claim과 FAILED state가 이미 보존됐고 같은 Cell 재실행 금지 계약을 위반한다
+- `rejected` Environment Closure에서 실제 SDK thread/start를 호출한다 — Environment Closure 턴의 SDK thread/start 금지 규칙과 state·thread 0 계약을 위반한다
+- `deferred` thread를 만들지 않는 exact CLI config load·schema parse를 Closure에 추가한다 — SDK/CLI 0.144.4와 동일한 parsing 경로인지 먼저 source·regression으로 입증해야 한다
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 실패 뒤 Cell 1 FAILED, Cell 2~4 PLANNED와 automatic_continuation=false를 직접 확인
+- Cell seal, Measurement, backend result와 Judge result가 생성되지 않았음을 확인
+- 실행 뒤 experiment 관련 잔여 process와 Docker container 0 확인
+
+### 남은 위험
+
+- 현재 Environment Closure는 같은 형태의 config schema 불일치를 Live dispatch 전에 차단하지 못한다
+- 개인 config와 Closure 검증 경로가 교정되기 전 새 Live experiment는 NO-GO다
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md
