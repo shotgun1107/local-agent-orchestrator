@@ -193,12 +193,16 @@ class FakeRawClient:
         self.phase_f_cli_binary_sha256 = canonical_sha256("fake-cli")
         self.configuration_error: Exception | None = None
         self.configuration_result: Any = {
-            "config": {"model": PHASE_F_PINNED_MODEL, "features": {"context_management": True}},
+            "config": {"model": PHASE_F_PINNED_MODEL, "features": {"context_management": False}},
             "origins": {},
             "layers": [{
                 "name": {"type": "user", "file": str((Path.home() / ".codex" / "config.toml").resolve())},
                 "version": "fixture-user-v1",
                 "config": {"features": {"context_management": True}},
+            }, {
+                "name": {"type": "sessionFlags"},
+                "version": "fixture-session-v1",
+                "config": {"features": {"context_management": False}},
             }],
         }
 
@@ -291,6 +295,7 @@ def _config_overrides() -> tuple[str, ...]:
         'permissions.runtime-boundary-worker.filesystem={":minimal"="read",":root"="deny"}',
         "permissions.runtime-boundary-worker.network.enabled=false",
         'windows.sandbox="elevated"',
+        "features.context_management=false",
     )
 
 
@@ -679,7 +684,7 @@ def test_configuration_drift_blocks_immediate_thread_request(tmp_path: Path, mut
         if mutation == "parse_error":
             client.configuration_error = RuntimeError("invalid type: map, expected a boolean")
         elif mutation == "config":
-            client.configuration_result["config"]["features"]["context_management"] = False
+            client.configuration_result["config"]["model_reasoning_effort"] = "medium"
         elif mutation == "layer":
             client.configuration_result["layers"][0]["version"] = "fixture-user-v2"
         elif mutation == "origin":
@@ -699,7 +704,7 @@ def test_configuration_drift_blocks_immediate_thread_request(tmp_path: Path, mut
 
 @pytest.mark.parametrize(
     "mutation",
-    ["missing_config", "bad_config", "missing_origins", "empty_layers", "bad_layer", "bad_name", "bad_version", "bad_layer_config", "missing_user", "duplicate_user", "wrong_user", "relative_user", "disabled_user", "profile", "missing_cli_hash", "bad_cli_hash"],
+    ["missing_config", "bad_config", "missing_origins", "empty_layers", "bad_layer", "bad_name", "bad_version", "bad_layer_config", "missing_user", "duplicate_user", "wrong_user", "relative_user", "disabled_user", "profile", "missing_cli_hash", "bad_cli_hash", "effective_compatibility", "session_compatibility", "missing_session"],
 )
 def test_configuration_provenance_fails_closed(tmp_path: Path, mutation: str) -> None:
     runtime, _port, client = _concrete_runtime(tmp_path)
@@ -735,6 +740,12 @@ def test_configuration_provenance_fails_closed(tmp_path: Path, mutation: str) ->
         user["name"]["profile"] = "different-profile"
     elif mutation == "missing_cli_hash":
         del client.phase_f_cli_binary_sha256
+    elif mutation == "effective_compatibility":
+        result["config"]["features"]["context_management"] = True
+    elif mutation == "session_compatibility":
+        result["layers"][1]["config"]["features"]["context_management"] = True
+    elif mutation == "missing_session":
+        result["layers"] = [user]
     else:
         client.phase_f_cli_binary_sha256 = "invalid-hash"
     try:

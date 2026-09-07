@@ -4022,3 +4022,20 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   preflight에 새 gate가 들어간다. Controller 직접 호출로 이 관문을 생략할 수는 없다.
 - 검증 누락만 resolved이며 현재 config/CLI 호환성은 미해결이다. 새 candidate/experiment를
   생성하지 않았고 v24의 비교 무효·재실행 금지는 유지한다.
+
+## Phase F CLI 설정 호환 정책 v1
+
+- 작업일: 2026-09-08. 사용자 진행 지시에 따라 프로세스 전용
+  `features.context_management=false` override를 채택했다. 개인 config·CODEX_HOME·인증·
+  SDK/CLI 설치는 변경하지 않았다.
+- stage는 버전 1 정책과 exact override를 기록하고 새 Plan fingerprint에 그 identity를
+  넣는다. permission contract v2·Cell 9000초·자동 진행 금지는 유지한다.
+- 공통 port는 유효 설정과 sessionFlags의 false 값을 확인한다. live stack은 source commit과
+  candidate의 새 policy binding이 없거나 다르면 port를 열기 전에 거부한다.
+- SDK/live 모형 회귀 75 passed, 실제 CLI 합성 검사 6 passed, Phase E 표적 52 passed다.
+  v1~v24 serialization/과거 candidate 검증과 outer seal을 다시 계산한 v24 재라벨 거부도
+  통과했다.
+- 실제 계정·저장소 source를 고정한 schema 3 zero-turn preflight가 통과했고 개인 config hash는
+  같았다. 처음 bare import가 반환한 설치본 schema 2 결과는 이번 구현 증거에서 제외했다.
+- 기존 v24 state와 raw를 보존하고 model·SDK thread/turn·Judge workload는 실행하지 않았다.
+  다음 입력은 새 source를 결합한 candidate와 독립 acceptance 두 회차다.

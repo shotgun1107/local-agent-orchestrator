@@ -33,6 +33,7 @@ from benchmark_runner.realistic_phase_f_docker import (
 from benchmark_runner.realistic_phase_f_finalize import (
     ProfileRPhaseFCellFinalizerBackend,
 )
+from benchmark_runner.realistic_phase_f import load_verified_phase_f_candidate
 from benchmark_runner.realistic_phase_f_sdk import (
     CodexPhaseFAppServerPort,
     PhaseFAppServerPort,
@@ -43,6 +44,7 @@ from benchmark_runner.realistic_phase_f_sdk import (
     PHASE_F_PINNED_SDK_VERSION,
     build_phase_f_config_overrides,
     build_phase_f_worker_process_environment,
+    phase_f_configuration_compatibility_policy,
 )
 from benchmark_runner.realistic_routing import canonical_sha256
 from benchmark_runner.realistic_phase_f_ss1 import (
@@ -372,6 +374,26 @@ class ProfileRPhaseFLiveStack:
     runtime_factory: Callable[[Path], object]
 
 
+def _validate_live_configuration_binding(
+    repository: Path, candidate_root: Path, source_commit: str
+) -> None:
+    """Historical candidates remain verifiable but cannot launch a changed policy."""
+
+    snapshot = load_verified_phase_f_candidate(repository, candidate_root)
+    policy = getattr(snapshot.stage.runtime_contract, "configuration_compatibility", None)
+    expected = phase_f_configuration_compatibility_policy()
+    fingerprint = snapshot.plan.environment_fingerprint
+    if (
+        snapshot.seal.source_commit != source_commit
+        or policy is None
+        or policy.model_dump(mode="json") != expected
+        or fingerprint.get("configuration_compatibility_version") != str(expected["version"])
+        or fingerprint.get("configuration_compatibility_sha256") != canonical_sha256(expected)
+        or fingerprint.get("configuration_compatibility_override") != expected["process_config_override"]
+    ):
+        raise PhaseFSS1BackendError("Phase F candidate configuration compatibility binding differs")
+
+
 def _default_app_server_port_factory(
     workspace: Path,
     overrides: tuple[str, ...],
@@ -473,6 +495,7 @@ def build_profile_r_phase_f_live_stack(
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
+    _validate_live_configuration_binding(repository, candidate_root, source_commit)
     worker_environment = build_phase_f_worker_process_environment(
         environ,
         python_executable=Path(sys.executable),
@@ -566,6 +589,7 @@ def build_profile_r_phase_f_b1_live_stack(
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
     telemetry = PolicyAttestedPhaseFBoundaryTelemetry(repository)
+    _validate_live_configuration_binding(repository, candidate_root, source_commit)
     worker_environment = build_phase_f_worker_process_environment(
         environ,
         python_executable=Path(sys.executable),

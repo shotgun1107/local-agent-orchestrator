@@ -604,3 +604,27 @@ live candidate의 Plan에는 `manifest_sha256`, `result_sha256`, `bundle_sha256`
 - actual model turns 0 강제
 - Phase B 실패 시 Phase C 중단
 - probe 코드·실행·SDK·model turn 0회 유지
+
+## 10. Phase F 설정 호환 정책 v1 — 2026-09-08
+
+이 추가 계약은 새 Phase E candidate의 `runtime_contract.configuration_compatibility`가
+명시한 Phase F 실행에만 적용한다. §1~§9의 Phase B/P015 과거 probe와 봉인 bytes를 변경하지
+않으며 permission runtime contract version은 2로 유지한다.
+
+- SDK와 CLI는 0.144.4, model과 reasoning은 기존 stage 값으로 고정한다.
+- 기존 다섯 permission override 뒤에 정확히 `features.context_management=false`를 추가한다.
+  추가·누락·다른 값은 거부한다. SS1과 B1은 동일한 여섯 값을 사용한다.
+- override는 해당 CLI process의 sessionFlags에만 적용한다. 개인 config, CODEX_HOME,
+  credential 파일, SDK/CLI 설치를 바꾸지 않는다.
+- `config/read`는 실제 workspace에서 사용자·프로젝트 layer를 읽어 검증하고, effective
+  config와 sessionFlags의 context_management 값이 모두 boolean false인지 확인한다.
+- 정책은 version 1, SDK/CLI 0.144.4, exact override와 user_config_mutation=false를 포함한다.
+  stage와 Plan environment fingerprint는 policy version·SHA-256·override를 결합한다.
+- 새 live stack은 전달 source commit, candidate의 정책과 Plan fingerprint가 일치할 때만
+  구성한다. 과거 candidate는 역사 검증은 가능하지만 새 정책의 Live 입력으로 재라벨하지 않는다.
+- config validation Evidence와 thread 직전 재검증은 같은 native CLI parser를 사용한다.
+  다른 사용자, 타입 오류, 누락 Evidence와 config drift는 fail-closed한다.
+- Cell 9000초 범위, Worker scope, Judge image, 승인/자동 진행과 실패 보존 규칙은 바뀌지 않는다.
+
+검증·구현 기록은
+`docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-cli-compatibility-v1-result.md`다.

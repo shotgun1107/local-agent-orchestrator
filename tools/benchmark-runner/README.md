@@ -409,3 +409,14 @@ initialization/claim and retain AGENTS.md's separate execution-approval turn.
 homes only when `LAO_PHASE_F_CONFIG_LOAD_PREFLIGHT=1`. It allowlists initialization
 and config/read requests; no credentials or real thread are needed. See
 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md`.
+
+Phase F configuration compatibility policy v1 adds the exact process-only override
+`features.context_management=false` to the five permission overrides. The personal
+config and authentication stay in place. A new candidate must bind this policy and
+source commit; both live stack factories reject missing or mismatched bindings
+before opening an SDK port. The permission contract remains v2 and the Cell deadline
+remains 9000 seconds. Historical candidates are still verifiable as historical input.
+
+For source-bound probes, invoke the checked-in scripts or explicitly select the
+repository's Runner/B1 source paths. Bare Python imports may load the older installed
+Runner and return schema 2, which is not evidence for the updated preflight.

@@ -20,7 +20,14 @@
     "legacy_sandbox_settings_present": false,
     "approval_mode": "deny_all",
     "approval_policy_wire_value": "never",
-    "active_profile_provenance_required": true
+    "active_profile_provenance_required": true,
+    "configuration_compatibility": {
+      "version": 1,
+      "sdk_version": "0.144.4",
+      "cli_version": "0.144.4",
+      "process_config_override": "features.context_management=false",
+      "user_config_mutation": false
+    }
   },
   "profiles": [
     {
