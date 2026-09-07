@@ -384,3 +384,28 @@ The verified 63-file export is at
 SHA-256 `16fcfddf337dc0b9244b99c816c4026414798543490e47f0194b33887b06adce`.
 The frozen termination rule forbids an opposite-order pair, further synthetic
 repetition, or S4 for this result. See `docs/experiments/sdk-routing-s3-live-result.md`.
+
+### Phase F configuration validation (zero threads)
+
+The Phase F zero-turn preflight now requires schema-3 configuration Evidence from
+the pinned CLI's `config/read`, including the expected user config path and layered
+config hashes. SS1 and B1 repeat the comparison immediately before `thread/start`.
+An older schema-2 preflight is historical evidence, not a current config gate.
+
+The standalone configuration probe takes an existing workspace and prints only
+hashes, request methods, and a result. It does not create a thread or Phase F state:
+
+```powershell
+& $python -B tools/benchmark-runner/scripts/probe_phase_f_configuration.py `
+  --workspace '<existing-exact-worker-workspace>'
+```
+
+Run it under the actual execution account: a sandbox may resolve a different user
+config. `CONFIG_VALIDATED_NOT_LIVE_AUTHORIZED` validates only configuration, not the
+complete Environment Closure. Run the complete zero-turn preflight before state
+initialization/claim and retain AGENTS.md's separate execution-approval turn.
+
+`test_realistic_phase_f_config_load.py` uses the real pinned CLI with synthetic config
+homes only when `LAO_PHASE_F_CONFIG_LOAD_PREFLIGHT=1`. It allowlists initialization
+and config/read requests; no credentials or real thread are needed. See
+`docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md`.

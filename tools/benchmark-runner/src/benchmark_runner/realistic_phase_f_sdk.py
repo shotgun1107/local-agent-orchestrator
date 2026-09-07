@@ -11,6 +11,7 @@ Worker workspace, run SS1, invoke a Judge, or continue to another Cell.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -19,11 +20,11 @@ from collections.abc import Callable, Sequence
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Protocol
+from typing import Any, Literal, Mapping, Protocol
 
-from pydantic import JsonValue
+from pydantic import JsonValue, model_validator
 
-from benchmark_runner.contract import present_api_key_environment_names
+from benchmark_runner.contract import Sha256, StrictModel, present_api_key_environment_names
 from benchmark_runner.realistic_routing import canonical_sha256
 from benchmark_runner.sdk_common import SdkRuntime, SdkThread, SdkTurnResult, SdkUsage
 
@@ -36,10 +37,34 @@ PHASE_F_PERMISSION_PROFILE = "runtime-boundary-worker"
 PHASE_F_APPROVAL_POLICY_WIRE = "never"
 PHASE_F_APPROVAL_MODE = "deny_all"
 PHASE_F_THREAD_NOTIFICATION_TIMEOUT_SECONDS = 2.0
+PHASE_F_CONFIGURATION_TIMEOUT_SECONDS = 15.0
 
 
 class PhaseFSdkContractError(RuntimeError):
     """Raised before or at the exact SDK boundary when v2 is violated."""
+
+
+class PhaseFConfigurationValidationEvidence(StrictModel):
+    """Only hashes of config/read payloads; never config values or diagnostics."""
+
+    schema_version: Literal[1] = 1
+    source_method: Literal["config/read"] = "config/read"
+    sdk_version: Literal[PHASE_F_PINNED_SDK_VERSION] = PHASE_F_PINNED_SDK_VERSION
+    cli_version: Literal[PHASE_F_PINNED_SDK_VERSION] = PHASE_F_PINNED_SDK_VERSION
+    cli_binary_sha256: Sha256
+    cwd_sha256: Sha256
+    config_overrides_sha256: Sha256
+    effective_config_sha256: Sha256
+    config_layers_sha256: Sha256
+    user_config_path_sha256: Sha256
+    evidence_sha256: Sha256
+
+    @model_validator(mode="after")
+    def evidence_is_canonical(self) -> "PhaseFConfigurationValidationEvidence":
+        payload = self.model_dump(mode="json", exclude={"evidence_sha256"})
+        if self.evidence_sha256 != canonical_sha256(payload):
+            raise ValueError("Phase F configuration validation hash differs")
+        return self
 
 
 def build_phase_f_worker_process_environment(
@@ -127,6 +152,8 @@ class PhaseFAppServerPort(Protocol):
 
     def open(self) -> None: ...
 
+    def validate_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence: ...
+
     def account_type(self) -> str: ...
 
     def visible_model_ids(self) -> tuple[str, ...]: ...
@@ -152,6 +179,8 @@ class PhaseFAppServerPort(Protocol):
 
 class PhaseFRawCodexClient(Protocol):
     """The tested subset of ``openai_codex.client.CodexClient``."""
+
+    phase_f_cli_binary_sha256: str
 
     def start(self) -> None: ...
 
@@ -221,11 +250,21 @@ def _recording_codex_client_factory(
     """Create the real pinned SDK client lazily; construction makes no turn."""
 
     try:
+        from importlib.metadata import version
+        from codex_cli_bin import bundled_codex_path
         from openai_codex.client import CodexClient, CodexConfig
     except ImportError as exc:
         raise PhaseFSdkContractError(
             "install openai-codex==0.144.4 for the Phase F live port"
         ) from exc
+
+    if (
+        version("openai-codex") != PHASE_F_PINNED_SDK_VERSION
+        or version("openai-codex-cli-bin") != PHASE_F_PINNED_SDK_VERSION
+    ):
+        raise PhaseFSdkContractError("Phase F installed SDK/CLI version differs")
+    cli_binary = Path(bundled_codex_path()).resolve(strict=True)
+    cli_binary_sha256 = hashlib.sha256(cli_binary.read_bytes()).hexdigest()
 
     class RecordingCodexClient(CodexClient):  # type: ignore[misc, valid-type]
         def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -234,6 +273,15 @@ def _recording_codex_client_factory(
                 tuple[str, Mapping[str, JsonValue]]
             ] = []
             self._phase_f_condition = threading.Condition()
+            self.phase_f_cli_binary_sha256 = cli_binary_sha256
+
+        def start(self) -> None:
+            if (
+                Path(bundled_codex_path()).resolve(strict=True) != cli_binary
+                or hashlib.sha256(cli_binary.read_bytes()).hexdigest() != cli_binary_sha256
+            ):
+                raise PhaseFSdkContractError("Phase F CLI changed before launch")
+            super().start()
 
         def _record(self, direction: str, payload: Mapping[str, JsonValue]) -> None:
             frozen = json.loads(json.dumps(payload, sort_keys=True))
@@ -320,13 +368,21 @@ class CodexPhaseFAppServerPort:
         process_environment: Mapping[str, str] | None = None,
         client_factory: RawClientFactory | None = None,
         turn_handle_factory: TurnHandleFactory = _default_turn_handle_factory,
+        configuration_timeout_seconds: float = PHASE_F_CONFIGURATION_TIMEOUT_SECONDS,
     ) -> None:
+        if configuration_timeout_seconds <= 0:
+            raise ValueError("Phase F configuration timeout must be positive")
+        self._configuration_timeout_seconds = configuration_timeout_seconds
         self.workspace = Path(workspace).resolve()
         self.config_overrides = validate_phase_f_config_overrides(config_overrides)
         worker_environment = build_phase_f_worker_process_environment(
             process_environment,
             python_executable=Path(sys.executable),
         )
+        self._expected_user_config = (
+            Path(worker_environment.get("CODEX_HOME") or Path.home() / ".codex")
+            / "config.toml"
+        ).resolve()
         self._client_factory = (
             client_factory
             if client_factory is not None
@@ -340,6 +396,7 @@ class CodexPhaseFAppServerPort:
         self._client: PhaseFRawCodexClient | None = None
         self._account_type = "unknown"
         self._models: tuple[str, ...] = ()
+        self._configuration_evidence: PhaseFConfigurationValidationEvidence | None = None
 
     def _require_client(self) -> PhaseFRawCodexClient:
         if self._client is None:
@@ -353,47 +410,131 @@ class CodexPhaseFAppServerPort:
         try:
             client.start()
             client.initialize()
-            account = client.account_read({})
-            account_value = _attribute_or_key(account, "account")
-            root = _attribute_or_key(account_value, "root")
-            account_type = _attribute_or_key(root, "type")
-            self._account_type = str(
-                _attribute_or_key(account_type, "value") or account_type or "none"
-            )
-            model_response = client.model_list(include_hidden=True)
-            model_items = (
-                _attribute_or_key(model_response, "data")
-                or _attribute_or_key(model_response, "models")
-                or ()
-            )
-            self._models = tuple(
-                sorted(
-                    {
-                        str(
-                            _attribute_or_key(item, "model")
-                            or _attribute_or_key(item, "id")
-                            or ""
-                        )
-                        for item in model_items  # type: ignore[union-attr]
-                        if (
-                            _attribute_or_key(item, "model")
-                            or _attribute_or_key(item, "id")
-                        )
-                    }
-                )
-            )
         except Exception:
             client.close()
-            raise
+            raise PhaseFSdkContractError("Phase F app-server preflight startup failed") from None
         self._client = client
 
     def account_type(self) -> str:
-        self._require_client()
+        account = self._require_client().account_read({})
+        account_value = _attribute_or_key(account, "account")
+        root = _attribute_or_key(account_value, "root")
+        account_type = _attribute_or_key(root, "type")
+        self._account_type = str(
+            _attribute_or_key(account_type, "value") or account_type or "none"
+        )
         return self._account_type
 
     def visible_model_ids(self) -> tuple[str, ...]:
-        self._require_client()
+        response = self._require_client().model_list(include_hidden=True)
+        items = _attribute_or_key(response, "data") or _attribute_or_key(response, "models") or ()
+        self._models = tuple(sorted({
+            str(_attribute_or_key(item, "model") or _attribute_or_key(item, "id"))
+            for item in items  # type: ignore[union-attr]
+            if _attribute_or_key(item, "model") or _attribute_or_key(item, "id")
+        }))
         return self._models
+
+    def _read_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence:
+        if Path(cwd).resolve() != self.workspace:
+            raise PhaseFSdkContractError("Phase F config validation workspace differs")
+        client = self._require_client()
+        # The pinned server parses its own layered ConfigToml here without
+        # thread/start. A Python TOML syntax check is not an equivalent gate.
+        results: list[Any] = []
+        failed = threading.Event()
+        finished = threading.Event()
+
+        def read() -> None:
+            try:
+                results.append(client._request_raw(
+                    "config/read", {"cwd": str(self.workspace), "includeLayers": True}
+                ))
+            except Exception:
+                failed.set()
+            finally:
+                finished.set()
+
+        reader = threading.Thread(target=read, name="phase-f-config-read", daemon=True)
+        reader.start()
+        if not finished.wait(self._configuration_timeout_seconds):
+            self.close()
+            reader.join(timeout=2.0)
+            raise PhaseFSdkContractError("Phase F configuration validation timed out")
+        if failed.is_set() or not results:
+            # Config decoder errors can quote raw TOML values. Do not chain them.
+            raise PhaseFSdkContractError(
+                "Phase F configuration validation failed (config/read)"
+            ) from None
+        result = results[0]
+        try:
+            if not isinstance(result, Mapping):
+                raise ValueError
+            config = result.get("config")
+            layers = result.get("layers")
+            origins = result.get("origins")
+            if (
+                not isinstance(config, Mapping)
+                or not isinstance(origins, Mapping)
+                or not isinstance(layers, list)
+                or not layers
+            ):
+                raise ValueError
+            user_layers = []
+            for layer in layers:
+                if (
+                    not isinstance(layer, Mapping)
+                    or not isinstance(layer.get("name"), Mapping)
+                    or not isinstance(layer.get("config"), Mapping)
+                    or not isinstance(layer.get("version"), str)
+                    or not layer["version"]
+                ):
+                    raise ValueError
+                if layer["name"].get("type") == "user":
+                    user_layers.append(layer)
+            if len(user_layers) != 1:
+                raise ValueError
+            user_layer = user_layers[0]
+            user_file = user_layer["name"].get("file")
+            if (
+                not isinstance(user_file, str)
+                or not Path(user_file).is_absolute()
+                or Path(user_file).resolve() != self._expected_user_config
+                or user_layer.get("disabledReason") is not None
+                or user_layer["name"].get("profile") is not None
+            ):
+                raise ValueError
+            values = {
+                "schema_version": 1,
+                "source_method": "config/read",
+                "sdk_version": PHASE_F_PINNED_SDK_VERSION,
+                "cli_version": PHASE_F_PINNED_SDK_VERSION,
+                "cli_binary_sha256": client.phase_f_cli_binary_sha256,
+                "cwd_sha256": canonical_sha256(str(self.workspace)),
+                "config_overrides_sha256": canonical_sha256(list(self.config_overrides)),
+                "effective_config_sha256": canonical_sha256(dict(config)),
+                "config_layers_sha256": canonical_sha256(
+                    {"layers": layers, "origins": origins}
+                ),
+                "user_config_path_sha256": canonical_sha256(str(self._expected_user_config)),
+            }
+            return PhaseFConfigurationValidationEvidence(
+                **values, evidence_sha256=canonical_sha256(values)
+            )
+        except Exception:
+            # Response validation errors may also contain raw config values.
+            raise PhaseFSdkContractError(
+                "Phase F configuration provenance is invalid or from a different user"
+            ) from None
+
+    def validate_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence:
+        baseline = self._configuration_evidence
+        self._configuration_evidence = None
+        current = self._read_configuration(cwd)
+        if baseline is not None and current != baseline:
+            raise PhaseFSdkContractError("Phase F configuration changed after preflight")
+        self._configuration_evidence = current
+        return current
 
     def permission_profiles(
         self,
@@ -420,6 +561,9 @@ class CodexPhaseFAppServerPort:
         notification_timeout_seconds: float,
     ) -> PhaseFThreadStartObservation:
         client = self._require_client()
+        if self._configuration_evidence is None:
+            raise PhaseFSdkContractError("Phase F configuration preflight is required")
+        self.validate_configuration(str(self.workspace))
         transcript_offset = len(client.transcript())
         result = client._request_raw("thread/start", params)
         if not isinstance(result, Mapping):
@@ -469,6 +613,7 @@ class CodexPhaseFAppServerPort:
         self._client = None
         self._account_type = "unknown"
         self._models = ()
+        self._configuration_evidence = None
         if client is not None:
             client.close()
 
@@ -575,6 +720,7 @@ class PhaseFSdkRuntimeV2(SdkRuntime):
         self.interrupt_grace_seconds = interrupt_grace_seconds
         self._opened = False
         self._preflight_complete = False
+        self._configuration_evidence: PhaseFConfigurationValidationEvidence | None = None
         self._thread: SdkThread | None = None
         self._actual_model_turns = 0
         self._thread_start_evidence: dict[str, JsonValue] | None = None
@@ -586,6 +732,10 @@ class PhaseFSdkRuntimeV2(SdkRuntime):
     @property
     def thread_start_evidence(self) -> dict[str, JsonValue] | None:
         return dict(self._thread_start_evidence) if self._thread_start_evidence else None
+
+    @property
+    def configuration_validation_evidence(self) -> PhaseFConfigurationValidationEvidence | None:
+        return self._configuration_evidence
 
     def _assert_environment(self) -> None:
         present = present_api_key_environment_names(self.environ)
@@ -599,12 +749,17 @@ class PhaseFSdkRuntimeV2(SdkRuntime):
             )
 
     def preflight(self) -> None:
+        self._preflight_complete = False
+        self._configuration_evidence = None
         self._assert_environment()
         if self.port.sdk_version != PHASE_F_PINNED_SDK_VERSION:
             raise PhaseFSdkContractError("Phase F SDK version differs")
         if not self._opened:
             self.port.open()
             self._opened = True
+        self._configuration_evidence = self.port.validate_configuration(str(self.workspace))
+        if not isinstance(self._configuration_evidence, PhaseFConfigurationValidationEvidence):
+            raise PhaseFSdkContractError("Phase F configuration validation Evidence is missing")
         if self.port.account_type() != "chatgpt":
             raise PhaseFSdkContractError("Phase F requires ChatGPT authentication")
         if PHASE_F_PINNED_MODEL not in self.port.visible_model_ids():
@@ -759,4 +914,5 @@ class PhaseFSdkRuntimeV2(SdkRuntime):
             self.port.close()
         self._opened = False
         self._preflight_complete = False
+        self._configuration_evidence = None
         self._thread = None

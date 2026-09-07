@@ -33,6 +33,7 @@ from benchmark_runner.realistic_phase_f_sdk import (
     PHASE_F_PINNED_SDK_VERSION,
     PHASE_F_PERMISSION_PROFILE,
     PhaseFAppServerPort,
+    PhaseFConfigurationValidationEvidence,
     phase_f_thread_start_params,
     phase_f_turn_start_params,
     verify_phase_f_thread_start,
@@ -158,6 +159,7 @@ class PhaseFB1RuntimeV2(RuntimePort):
         return tuple(dict(value) for value in self._thread_evidence)
 
     def preflight(self) -> None:
+        self._preflight_complete = False
         if present_api_key_environment_names(self.environ):
             raise PhaseFB1BackendError("API key environment names are present")
         if self.port.sdk_version != PHASE_F_PINNED_SDK_VERSION:
@@ -165,6 +167,9 @@ class PhaseFB1RuntimeV2(RuntimePort):
         if not self._opened:
             self.port.open()
             self._opened = True
+        configuration = self.port.validate_configuration(str(self.workspace))
+        if not isinstance(configuration, PhaseFConfigurationValidationEvidence):
+            raise PhaseFB1BackendError("Phase F B1 configuration validation Evidence is missing")
         if self.port.account_type() != "chatgpt":
             raise PhaseFB1BackendError("Phase F B1 requires ChatGPT authentication")
         if PHASE_F_PINNED_MODEL not in self.port.visible_model_ids():

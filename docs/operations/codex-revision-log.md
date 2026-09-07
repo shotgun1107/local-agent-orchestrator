@@ -4003,3 +4003,22 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   parse하지 않아 Closure의 `GO`가 dispatch 경로보다 약했다. `DEV-20260907-001`로 등록했다.
 - 실패한 state/claim은 보존하고 개인 config는 수정하지 않았다. thread를 만들지 않는 exact
   config load 검증과 회귀시험, 별도 config 교정과 새 experiment 승인 전까지 Live는 `NO-GO`다.
+
+## Phase F config-load 검증 누락 교정
+
+- 작업일: 2026-09-08. `DEV-20260907-001`의 검증 누락을 교정했다. 동일 SDK/CLI 0.144.4의
+  `config/read`가 현재 feature table 타입 오류를 thread 없이 재현했다.
+- sandbox-local config 성공이 실제 실행 계정이 아닌 CodexSandboxOffline의 설정을 읽은
+  결과임을 확인해, 예상 user config 경로와 active layer까지 gate에 결합했다.
+- 공통 port는 config를 인증·model 조회 전에 검증하고 실제 thread 직전 같은 hash인지 다시
+  검사한다. SS1/B1 preflight 성공 latch, config/read timeout·오류 redaction과 schema 3의
+  필수 configuration Evidence를 보강했다.
+- 모형 SDK/live 회귀 `62 passed, 1 deselected`, 실제 CLI의 합성 config 다섯 사례 `5 passed`다.
+  실제 CLI 검사는 initialize/initialized/config/read만 허용하고 process 종료와 session 부재를
+  확인했다. decoder의 원문과 합성 비밀값은 사용자 출력에 나오지 않는다.
+- 실제 실행 계정과 기존 v24 Worker 경로에서 새 probe는 `NO-GO`, thread/turn 요청 0을
+  반환했다. 개인 config와 실패 state hash는 검사 전후 같았다.
+- claim과 9000초 측정 계약은 변경하지 않았다. 기존 launch의 state 초기화 전 zero-turn
+  preflight에 새 gate가 들어간다. Controller 직접 호출로 이 관문을 생략할 수는 없다.
+- 검증 누락만 resolved이며 현재 config/CLI 호환성은 미해결이다. 새 candidate/experiment를
+  생성하지 않았고 v24의 비교 무효·재실행 금지는 유지한다.
