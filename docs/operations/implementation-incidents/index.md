@@ -5122,10 +5122,11 @@ R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미
 - Docker q27은 exact image에서 16/16 expectation match와 CHALLENGE_READY를 봉인했다
 - Phase E candidate v24가 q27 16-case 구조와 q7 public-equivalent 2-case Evidence를 의미 검증하고 exact file SHA로 직접 결합했다
 - candidate v24의 서로 겹치지 않는 model-free acceptance 두 회차가 모두 public Check 104/104와 Evidence chain 검증을 통과했다
+- readiness v13이 q27, q7, candidate v24와 acceptance 두 회차의 exact hash chain을 750-file package로 결합하고 원본과 ZIP 해제본 검증을 통과했다
 
 ### 남은 위험
 
-- candidate v24 readiness가 아직 없으므로 Live는 계속 NO-GO다
+- readiness v13은 현재 Docker runtime과 인증을 검증하지 않았으므로 별도 Environment Closure 전 Live는 계속 NO-GO다
 - 등록한 public-equivalent 사례는 R11과 R13 결함의 회귀를 막지만 가능한 모든 구현 표현을 열거하는 증명은 아니다
 
 ### 추적 정보
@@ -5139,6 +5140,7 @@ R-P11에서 exact write_file JSON 문자열 조건을 제거하고 공개 의미
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v24-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v19-run1-result.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v20-run2-result.md
+- 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v13-package-result.md
 
 ## DEV-20260904-003 — Docker Judge matrix의 Git patch 적용이 긴 Windows 경로에서 중단됨
 

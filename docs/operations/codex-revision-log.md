@@ -3962,3 +3962,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - candidate v24의 독립 acceptance 두 회차가 모두 통과했다. 다음 관문은 q27·q7·candidate
   v24와 두 acceptance를 직접 결합하는 새 readiness다. Environment Closure, Live와 Cell 3·4는
   계속 NO-GO다.
+
+## Profile R Live readiness v13
+
+- 작업일: 2026-09-07. clean package record commit
+  `a8ea342e8fff75309399e98f7d29a1a7a97f6dfd`에서 q27·q7·candidate v24와 acceptance
+  v19·v20을 직접 결합했다.
+- package `profile-r-live-readiness-v13-a8ea342`은 750 files, payload 748,
+  manifest records 749다. payload aggregate는 `248a97a4...79a1`, readiness self-seal은
+  `0fc0828d...af1b`다.
+- ZIP은 3,738,624 bytes, 750 files이며 SHA-256은
+  `1bfc86f99eccb6fbfe7d4e926a29bca343a221111a305352f920493558cd659a`다.
+- 원본과 새 ZIP 해제본 verifier가 같은 aggregate와 seal을 반환했고 750-file exact equality,
+  missing·extra·hash mismatch, unsafe path, duplicate, CRC failure는 모두 0이다.
+- 패키지 내부 q27은 다시 `CHALLENGE_READY`, 16/16을 반환했고 readiness canonical regression
+  13개가 통과했다. credential finding은 0, known-fake marker file은 2다.
+- seal 전 설명 문구에서 q27 batch의 `-equivalence` 누락과 과거 v21 제외 표기를 발견해
+  생성기와 package를 고친 뒤 입력 검증을 다시 통과시켰다.
+- actual model turn, SDK thread/turn과 Docker workload는 0이다. seal은
+  `environment_closure_required=true`, `current_docker_runtime_verified=false`,
+  `live_authorized=false`다. 다음 관문은 별도 Environment Closure 턴이다.
