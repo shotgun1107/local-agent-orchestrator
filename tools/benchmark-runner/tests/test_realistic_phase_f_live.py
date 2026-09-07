@@ -9,9 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from benchmark_runner.realistic_phase_f_live import (
     PolicyAttestedPhaseFBoundaryTelemetry,
+    PhaseFZeroTurnPreflightEvidence,
     build_profile_r_phase_f_b1_live_stack,
     build_profile_r_phase_f_live_stack,
     run_profile_r_phase_f_zero_turn_preflight,
@@ -19,10 +21,12 @@ from benchmark_runner.realistic_phase_f_live import (
 from benchmark_runner.realistic_phase_f_sdk import (
     PHASE_F_PINNED_SDK_VERSION,
     PhaseFAppServerPort,
+    PhaseFConfigurationValidationEvidence,
+    PhaseFSdkContractError,
     build_phase_f_config_overrides,
 )
 from benchmark_runner.realistic_phase_f_ss1 import materialize_profile_r_workspace
-from benchmark_runner.realistic_routing import Ss1TaskRequest
+from benchmark_runner.realistic_routing import Ss1TaskRequest, canonical_sha256
 from benchmark_runner.sdk_baselines import SS1ObserverContext
 
 
@@ -51,6 +55,9 @@ class DormantPort(PhaseFAppServerPort):
     def permission_profiles(self, cwd: str) -> tuple[Mapping[str, Any], ...]:
         raise AssertionError(cwd)
 
+    def validate_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence:
+        raise AssertionError(cwd)
+
     def start_thread(self, params: Mapping[str, Any], **kwargs: Any) -> Any:
         raise AssertionError((params, kwargs))
 
@@ -70,6 +77,9 @@ class FakePreflightPort(DormantPort):
     def __init__(self) -> None:
         self.open_count = 0
         self.close_count = 0
+        self.configuration_requests: list[str] = []
+        self.configuration_error: Exception | None = None
+        self.configuration_evidence: PhaseFConfigurationValidationEvidence | None = None
 
     def open(self) -> None:
         self.open_count += 1
@@ -83,6 +93,28 @@ class FakePreflightPort(DormantPort):
     def permission_profiles(self, cwd: str) -> tuple[Mapping[str, Any], ...]:
         assert Path(cwd).is_dir()
         return ({"id": "runtime-boundary-worker", "allowed": True},)
+
+    def validate_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence:
+        self.configuration_requests.append(cwd)
+        if self.configuration_error is not None:
+            raise self.configuration_error
+        workspace = Path(cwd).resolve()
+        values = {
+            "schema_version": 1,
+            "source_method": "config/read",
+            "sdk_version": PHASE_F_PINNED_SDK_VERSION,
+            "cli_version": PHASE_F_PINNED_SDK_VERSION,
+            "cli_binary_sha256": canonical_sha256("fake-cli"),
+            "cwd_sha256": canonical_sha256(str(workspace)),
+            "config_overrides_sha256": canonical_sha256(list(build_phase_f_config_overrides(workspace))),
+            "effective_config_sha256": canonical_sha256({"model": "gpt-5.6-sol"}),
+            "config_layers_sha256": canonical_sha256("fake-layers"),
+            "user_config_path_sha256": canonical_sha256("fake-user-config"),
+        }
+        self.configuration_evidence = PhaseFConfigurationValidationEvidence(
+            **values, evidence_sha256=canonical_sha256(values)
+        )
+        return self.configuration_evidence
 
     def close(self) -> None:
         self.close_count += 1
@@ -320,6 +352,10 @@ def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None
     )
 
     assert evidence.actual_model_turns == 0
+    assert evidence.schema_version == 3
+    assert evidence.configuration_validation == port.configuration_evidence
+    assert evidence.configuration_validation.config_overrides_sha256 == evidence.config_sha256
+    assert port.configuration_requests == [str(workspace.resolve())]
     assert evidence.thread_started is False
     assert evidence.auth_method == "chatgpt"
     assert evidence.model == "gpt-5.6-sol"
@@ -335,6 +371,53 @@ def test_zero_turn_preflight_never_starts_thread_or_turn(tmp_path: Path) -> None
         item.file_count > 0
         for item in evidence.worker_python.distributions.values()
     )
+    assert port.open_count == 1
+    assert port.close_count == 1
+
+    payload = evidence.model_dump(mode="json")
+    payload["configuration_validation"]["effective_config_sha256"] = canonical_sha256("tampered")
+    with pytest.raises(ValidationError, match="configuration validation hash differs"):
+        PhaseFZeroTurnPreflightEvidence.model_validate(payload)
+
+    missing = evidence.model_dump(mode="json")
+    missing.pop("configuration_validation")
+    with pytest.raises(ValidationError, match="configuration_validation"):
+        PhaseFZeroTurnPreflightEvidence.model_validate(missing)
+
+    legacy = evidence.model_dump(mode="json")
+    legacy["schema_version"] = 2
+    legacy["evidence_sha256"] = canonical_sha256({key: value for key, value in legacy.items() if key != "evidence_sha256"})
+    with pytest.raises(ValidationError, match="schema_version"):
+        PhaseFZeroTurnPreflightEvidence.model_validate(legacy)
+
+    rebound = evidence.model_dump(mode="json")
+    validation = rebound["configuration_validation"]
+    validation["config_overrides_sha256"] = canonical_sha256("different-overrides")
+    validation["evidence_sha256"] = canonical_sha256({
+        key: value for key, value in validation.items() if key != "evidence_sha256"
+    })
+    rebound["evidence_sha256"] = canonical_sha256({
+        key: value for key, value in rebound.items() if key != "evidence_sha256"
+    })
+    with pytest.raises(ValidationError, match="config/override binding differs"):
+        PhaseFZeroTurnPreflightEvidence.model_validate(rebound)
+
+
+def test_zero_turn_configuration_failure_closes_port(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    port = FakePreflightPort()
+    port.configuration_error = PhaseFSdkContractError("configuration validation failed")
+
+    with pytest.raises(PhaseFSdkContractError, match="configuration validation failed"):
+        run_profile_r_phase_f_zero_turn_preflight(
+            workspace,
+            environ={},
+            app_server_port_factory=lambda _workspace, _overrides, _environment: port,
+        )
+
+    assert port.configuration_requests == [str(workspace.resolve())]
+    assert port.configuration_evidence is None
     assert port.open_count == 1
     assert port.close_count == 1
 

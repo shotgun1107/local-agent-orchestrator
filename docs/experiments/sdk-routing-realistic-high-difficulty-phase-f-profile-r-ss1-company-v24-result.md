@@ -117,3 +117,10 @@ Environment Closure 턴에서 `thread/start`를 금지하므로, Closure는 thre
 3. 왜 Closure가 잡지 못했는지와 새 검사 범위를 검증한 뒤 incident를 해결한다.
 4. 개인 config 교정과 새 experiment 생성은 별도 사용자 결정으로 분리한다.
 5. 기존 v24 Cell 1은 다시 claim하거나 실행하지 않고, B1도 이 pair에서 실행하지 않는다.
+
+## 2026-09-08 사전검증 보강
+
+동일 pinned CLI의 `config/read`로 thread를 만들지 않고 이 오류를 재현하고, 사용자 설정 경로와
+config hash까지 대조하는 gate를 추가했다. 모형 회귀 62개와 실제 CLI의 합성 config 검사 5개가
+통과했다. 현재 공식 설정 형식과 고정 CLI의 호환성 충돌은 남아 있으며, 개인 config와 이 실패
+state는 변경하지 않았다. 상세는 [config-load 교정 결과](./sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md)에 기록했다.

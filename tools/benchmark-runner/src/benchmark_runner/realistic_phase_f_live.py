@@ -36,6 +36,7 @@ from benchmark_runner.realistic_phase_f_finalize import (
 from benchmark_runner.realistic_phase_f_sdk import (
     CodexPhaseFAppServerPort,
     PhaseFAppServerPort,
+    PhaseFConfigurationValidationEvidence,
     PhaseFSdkRuntimeV2,
     PHASE_F_PERMISSION_PROFILE,
     PHASE_F_PINNED_MODEL,
@@ -337,7 +338,7 @@ print(json.dumps({
 
 
 class PhaseFZeroTurnPreflightEvidence(StrictModel):
-    schema_version: Literal[2] = 2
+    schema_version: Literal[3] = 3
     kind: Literal["phase_f_zero_turn_live_preflight"] = (
         "phase_f_zero_turn_live_preflight"
     )
@@ -348,6 +349,7 @@ class PhaseFZeroTurnPreflightEvidence(StrictModel):
         PHASE_F_PERMISSION_PROFILE
     )
     config_sha256: Sha256
+    configuration_validation: PhaseFConfigurationValidationEvidence
     actual_model_turns: Literal[0] = 0
     thread_started: Literal[False] = False
     worker_python: PhaseFWorkerPythonEvidence
@@ -355,6 +357,8 @@ class PhaseFZeroTurnPreflightEvidence(StrictModel):
 
     @model_validator(mode="after")
     def evidence_is_canonical(self) -> "PhaseFZeroTurnPreflightEvidence":
+        if self.configuration_validation.config_overrides_sha256 != self.config_sha256:
+            raise ValueError("Phase F zero-turn config/override binding differs")
         payload = self.model_dump(mode="json", exclude={"evidence_sha256"})
         if self.evidence_sha256 != canonical_sha256(payload):
             raise ValueError("Phase F zero-turn preflight hash differs")
@@ -386,7 +390,7 @@ def run_profile_r_phase_f_zero_turn_preflight(
     environ: Mapping[str, str] | None = None,
     app_server_port_factory: AppServerPortFactory = _default_app_server_port_factory,
 ) -> PhaseFZeroTurnPreflightEvidence:
-    """Verify auth/model/profile through app-server without starting a thread."""
+    """Validate layered config and auth/model/profile without starting a thread."""
 
     if present_api_key_environment_names(environ):
         raise PhaseFSS1BackendError("API key environment names are present")
@@ -409,16 +413,20 @@ def run_profile_r_phase_f_zero_turn_preflight(
         runtime.preflight()
         if runtime.actual_model_turns != 0 or runtime.thread_start_evidence is not None:
             raise PhaseFSS1BackendError("zero-turn preflight crossed the thread boundary")
+        configuration_validation = runtime.configuration_validation_evidence
+        if configuration_validation is None:
+            raise PhaseFSS1BackendError("zero-turn preflight lacks configuration validation")
     finally:
         runtime.close()
     values = {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": "phase_f_zero_turn_live_preflight",
         "sdk_version": PHASE_F_PINNED_SDK_VERSION,
         "auth_method": "chatgpt",
         "model": PHASE_F_PINNED_MODEL,
         "permission_profile": PHASE_F_PERMISSION_PROFILE,
         "config_sha256": canonical_sha256(list(overrides)),
+        "configuration_validation": configuration_validation.model_dump(mode="json"),
         "actual_model_turns": 0,
         "thread_started": False,
         "worker_python": worker_python.model_dump(mode="json"),
