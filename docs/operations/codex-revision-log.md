@@ -4065,3 +4065,16 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   기록은 acceptance v21 run1·v22 run2 결과 문서다. 다음은 로컬 readiness 봉인이다.
 - 원격 push는 내부 경로·진단을 포함한 새 payload의 구체적 전송 승인 부족으로 자동 안전
   검토가 보류했다. 우회하지 않았으며 로컬 검증과 원격 전달 상태를 분리한다.
+
+## Profile R CLI 호환 readiness v14 봉인
+
+- 작업일: 2026-09-08 KST. record `dabbce26b3a326c60049afb83272574709dde368`의
+  q27·q7·candidate v25·독립 acceptance 두 회차와 CLI 호환 정책 v1을 묶었다.
+- payload 766, manifest 767, 전체 768파일이며 원본·새 ZIP 해제본 verifier와 exact byte
+  대조가 통과했다. 누락·추가·hash 불일치·unsafe path·CRC failure는 0이다.
+- seal은 `5d1907e0...5cc97`, ZIP은 3,804,552 bytes / SHA
+  `65b3df271ce266e27bb6e01a3a5a963c47696241ca1f8dc32018944db3811f95`다.
+- policy dict·Plan의 세 fingerprint field·runtime source equality·Git ancestry·acceptance
+  해시 연결을 조립 전에 검증했다. canonical 회귀 13개, credential finding 0이다.
+- model·SDK thread/turn·Docker workload 0, `live_authorized=false`다. 현재 호스트 검증은
+  다음 Environment Closure에서 수행하며 원격 push 미반영을 준비 완료로 숨기지 않는다.
