@@ -4110,3 +4110,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 기존 v24 실패 파일 662개, v25 r1·r2·r3의 각 332개 파일과 production module 25개는
   보존됐다. 같은 Cell 재실행이나 산출물 수정·재봉인 없이 다음 별도 B1 Closure를 대기한다.
 - 상세: [v25 SS1 실행 결과](../experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v25-result.md).
+
+## Phase F Profile R B1 회사 v25 단일 Cell 실행 및 사후 격리
+
+- 작업일: 2026-09-08 KST. 별도 B1 Closure r1 GO 뒤 새 사용자 승인으로 HEAD `a040043`에서
+  기존 experiment의 B1 Cell 2만 exactly once 실행했다. claim 직전 동일경로 preflight bytes는
+  GO 저장본과 일치했고 SS1 predecessor를 검증했다. Cell 3·4 및 새 experiment는 실행하지 않았다.
+- R01은 성공했고 R02는 `PhaseFSdkContractError`로 `dispatch_uncertain` 상태에서 중단됐다.
+  실제 model 1 turn·1 session·2 attempts, wall clock 329.297초, 최종 Judge 1 pass / 12 fail이다.
+  Cell은 `SEALED`이나 Measurement outcome은 `failed / b1_blocked`다.
+- 첫 SDK thread의 B1 workspace trust 등록만으로 config 내용/layer hash가 바뀌었다.
+  model/thread/claim 0회 사후 진단에서 GO baseline을 대조하면 config-change guard 오류가 재현됐다.
+  R02 원본 기록은 예외 종류만 보존하므로 정확한 원본 throw 지점은 직접 관측하지 못했다.
+- 앞선 SS1에서 관측한 trust 변화가 B1의 Task별 새 thread 검증에 미칠 영향을 준비 단계에서
+  검토하지 못했다. 또한 `dispatch_uncertain` → `b1_blocked` 축약 때문에 봉인 분류는
+  `PRODUCT_ASSERTION / comparison_valid=true`가 됐다. 이를 정상 비교의 증거로 사용하지 않는다.
+- 봉인 값은 그대로 보존하고 사후 운영 판단에서 이번 pair를 정식 비교 자료로부터 격리했다.
+  재실행·state/raw/Measurement 수정·재봉인·성공 재분류는 없다. 후속 Live는 NO-GO다.
+- 독립 verifier가 B1 seal·anchor·turn 수, 총 claim 2개, 기존 SS1 포함 1,100개 보호 파일과
+  이전 v24/v25 root·production source 31개 보존을 확인했다. runtime 수정은 이번 턴에서 하지 않았다.
+- 상세: [v25 B1 결과와 사후 격리](../experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-company-v25-result.md).
