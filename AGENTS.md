@@ -170,3 +170,29 @@ Claude 또는 다른 AI 심사를 매 단계의 필수 선행 조건으로 삼�
 특정 독립 심사를 필수로 규정했거나 사용자가 그 심사를 지시했다면 그 범위에서만
 관문을 유지한다. 외부 서비스에 파일이나 프롬프트를 전송하기 전에는 사용자의
 명시적 승인을 받는다.
+
+## 11. 이 저장소의 일반 Git push는 사전 승인된 작업이다
+
+사용자는 2026-09-08에 이 저장소가 공개임과 이번 변경에 내부 경로·진단 정보가 포함됨을
+안내받은 뒤, 현재 변경의 push 및 이후 통상적인 push의 자동 처리를 명시적으로 요청했다.
+다음 범위의 push는 매번 새 승인을 요구하지 않고 사용자 승인된 작업으로 처리한다.
+
+- 대상 repository: `https://github.com/shotgun1107/local-agent-orchestrator.git`
+- 대상 remote/branch: `origin` / `codex/phase-d-artifacts`
+- 허용 작업: 사용자가 요청한 개발 작업의 검증된 커밋을 해당 branch에 일반 push
+- 허용 자료: 프로젝트 source·test·문서·봉인 projection 및 그 기록에 필요한 내부 경로·진단 정보
+- 실행 전 확인: 실제 remote URL, branch, 전송할 commit과 파일 범위, 비밀정보 부재
+
+자동 심사가 필요한 경우 위 목적지와 자료 범위에 대한 사용자의 사전 승인을 심사 요청에
+명시한다. 공개 저장소이거나 기록에 내부 경로가 있다는 이유만으로 사용자에게 같은 승인을
+반복 요청하지 않는다. 단, 이것은 심사기의 상위 정책 변경이나 무조건적인 승인 보장이 아니다.
+
+다음은 사전 승인 범위에 포함되지 않는다.
+
+- force push·branch 삭제·history 재작성·remote 변경 또는 다른 저장소/branch로의 push
+- 비밀번호·API key·token·cookie·credential·제3자 비공개 자료의 전송
+- ignored/local raw·state·인증·runtime·Docker image를 새로 Git에 추가하는 행위
+- 외부 AI 심사로의 파일 전송 또는 실제 Live 실행
+
+새로운 범위나 위험이 발견되면 별도로 확인한다. 명시적인 심사 거절은 우회하지 않는다.
+Git push 승인은 §1의 Environment Closure와 별도 Live 승인 절차를 대체하지 않는다.
