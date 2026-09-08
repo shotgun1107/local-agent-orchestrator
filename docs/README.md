@@ -4,7 +4,7 @@
 
 ## 먼저 읽을 문서
 
-현재 입력은 [Phase E candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)다. 개인 설정을 유지하는 CLI 호환 정책과 새 source를 결합했고, clean source 회귀 77개와 zero-turn preflight·별도 후보 검증을 통과했다. 실제 Live 전에는 acceptance·readiness·Environment Closure가 필요하다.
+현재 입력은 [Phase E candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)다. 개인 설정을 유지하는 CLI 호환 정책과 새 source를 결합했고, clean source 회귀 77개와 zero-turn preflight·별도 후보 검증을 통과했다. 독립 acceptance [run 1](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v21-run1-result.md)·[run 2](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v22-run2-result.md)도 각각 Check 104/104·모델 0회로 통과했다. 실제 Live 전에는 readiness·Environment Closure가 필요하다.
 
 1. [Profile R v24 SS1 실제 환경 실패 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md) — thread/start config schema 오류, Cell 1 FAILED·비교 무효·재실행 금지 기록
 2. [Profile R Live readiness v13 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v13-package-result.md) — q27·q7·candidate v24·독립 acceptance 2회의 exact chain 봉인

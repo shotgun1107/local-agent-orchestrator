@@ -4050,3 +4050,18 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   q27 qualification v24, q7 Task Pack·budget, Worker/Judge bytes와 9000초 계약은 유지했다.
 - 별도 process verifier가 같은 seal을 반환했다. acceptance 하네스의 대상은 v25로 바꾼다.
   기존 v24 실패 state와 raw를 보존했으며 새 Live state·thread·model은 만들지 않았다.
+
+## Phase E v25 독립 acceptance 2회
+
+- 작업일: 2026-09-08 KST. candidate/harness checkout
+  `4fe11b4b4abb086917e599ba04cf7215c47b6e8e`와 tree
+  `5a3cbbcee92066425ec638d514cc885839eea039`를 고정하고 서로 다른 process·외부 경로에서
+  parameter 1·2를 각각 실행했다. 결과는 `1 passed in 243.75s` / `1 passed in 256.53s`다.
+- 매 회차 SS1/B1 Fake Task 각각 13개, B1 Check 104/104, initial 4 PLANNED에서
+  `SEALED, SEALED, PLANNED, PLANNED`, model·실제 SDK thread/turn·Docker workload 0이다.
+- 14-file exact set, 12-record manifest, JUnit과 Pydantic/hash chain을 별도 verifier로
+  확인했다. 두 run의 state/anchor/artifact/workspace/TEMP identity는 겹치지 않는다.
+- scope·Evidence hash true, secret·TEMP/process/active lock residue 0, 자동 진행 false다.
+  기록은 acceptance v21 run1·v22 run2 결과 문서다. 다음은 로컬 readiness 봉인이다.
+- 원격 push는 내부 경로·진단을 포함한 새 payload의 구체적 전송 승인 부족으로 자동 안전
+  검토가 보류했다. 우회하지 않았으며 로컬 검증과 원격 전달 상태를 분리한다.
