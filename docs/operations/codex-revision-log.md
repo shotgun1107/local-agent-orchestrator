@@ -4078,3 +4078,15 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   해시 연결을 조립 전에 검증했다. canonical 회귀 13개, credential finding 0이다.
 - model·SDK thread/turn·Docker workload 0, `live_authorized=false`다. 현재 호스트 검증은
   다음 Environment Closure에서 수행하며 원격 push 미반영을 준비 완료로 숨기지 않는다.
+
+## v25 Closure 사전 Git 가독성 점검
+
+- 실행 계정의 첫 Closure는 실제 SDK·Docker·외부 root 생성 전에 Git status 경고로 멈췄다.
+  원인은 sandbox 테스트 계정이 만든 pytest cache 3개를 실행 계정에서 읽지 못한 것이다.
+- 캐시 소유 계정에서 14개 파일·reparse point 0·tracked file 0을 직접 확인했다. 모든 파일은
+  각 cache의 자동 생성 `.gitignore` `*` 규칙으로 이미 ignored였다. 실행 계정은 하위
+  `.gitignore`까지 읽지 못하므로 root `.gitignore`에 그 세 디렉터리만 명시해 같은 제외를
+  두 계정에 적용했다. 캐시 내용·ACL·실패 state·raw는 수정하거나 삭제하지 않았다.
+- 첫 검증은 `base_root_created=false`, SDK thread/model/Cell claim 0에서 종료됐으므로
+  Cell 재실행이 아니다. unknown Git 경고를 허용하는 예외 대신 exact cache 제외를 고정했고,
+  runtime source·candidate·readiness bytes를 바꾸지 않았다. 새 HEAD에서 Closure를 검증한다.
