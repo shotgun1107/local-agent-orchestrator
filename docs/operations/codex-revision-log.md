@@ -4090,3 +4090,23 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 첫 검증은 `base_root_created=false`, SDK thread/model/Cell claim 0에서 종료됐으므로
   Cell 재실행이 아니다. unknown Git 경고를 허용하는 예외 대신 exact cache 제외를 고정했고,
   runtime source·candidate·readiness bytes를 바꾸지 않았다. 새 HEAD에서 Closure를 검증한다.
+
+## Phase F Profile R SS1 회사 v25 단일 Cell 실행
+
+- 작업일: 2026-09-08 KST. HEAD `34d0c439d8f1a90a65eed524485d532257d37718`에서 별도
+  Environment Closure r4 GO 뒤 새 사용자 승인으로 SS1 Cell 1만 exactly once 실행했다.
+  candidate source는 `a2a3575`, experiment는 `exp_20260907_9546cf22_1`이다.
+- 모델 `gpt-5.6-sol` / `high`, ChatGPT 구독, SDK/CLI 0.144.4로 실제 10 turns·1 session을
+  실행했다. Measurement wall clock은 3952.234초이며 Cell 9000초 계약 안에서 종료했다.
+- R10이 이전 R02–R04 산출물의 형식 불일치와 현재 write scope 제한을 이유로 `blocked`를
+  반환했다. R11–R13 Task는 미배차다. 최종 Docker Judge는 property 9 pass / 4 fail이고
+  Measurement는 `failed / worker_blocked`, `PRODUCT_ASSERTION`, `comparison_valid=true`,
+  `environment_failure_present=false`로 봉인됐다. 봉인 완료를 과제 성공으로 분류하지 않는다.
+- state·anchor chain·단일 claim·Cell seal·봉인 파일 4개·turn accounting을 독립 프로세스에서
+  읽기 전용 재검증했다. 잔여 container/process 0이며 B1과 Cell 3·4는 `PLANNED`다.
+- 실제 SDK 시작 직후 개인 config에 이번 Worker 경로의 trust 기록 1개가 추가됐다.
+  그 테이블만 제외하면 기존 config SHA가 정확히 재현되며 다른 설정과 실제 10개 turn의
+  model·effort·보안 policy는 동일하다. config를 직접 편집하거나 복원하지 않았다.
+- 기존 v24 실패 파일 662개, v25 r1·r2·r3의 각 332개 파일과 production module 25개는
+  보존됐다. 같은 Cell 재실행이나 산출물 수정·재봉인 없이 다음 별도 B1 Closure를 대기한다.
+- 상세: [v25 SS1 실행 결과](../experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v25-result.md).
