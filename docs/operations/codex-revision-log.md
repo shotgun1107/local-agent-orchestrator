@@ -4039,3 +4039,14 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
   같았다. 처음 bare import가 반환한 설치본 schema 2 결과는 이번 구현 증거에서 제외했다.
 - 기존 v24 state와 raw를 보존하고 model·SDK thread/turn·Judge workload는 실행하지 않았다.
   다음 입력은 새 source를 결합한 candidate와 독립 acceptance 두 회차다.
+
+## Phase E CLI 호환 candidate v25
+
+- 작업일: 2026-09-08 KST. clean source `a2a3575a254f3cdded55df15a4068ff2d1992c79`에서
+  Phase E 전체 회귀 77 passed를 확인하고 실제 schema 3 zero-turn preflight 뒤 후보를 생성했다.
+- candidate v25의 experiment는 `exp_20260907_9546cf22_1`, Plan은 `9546cf22...2d911`,
+  candidate seal self/file은 `cb73b09d...c031b` / `d110402d...3835e`다.
+- 프로세스 전용 CLI 호환 정책 v1과 policy SHA `004189c1...d5ef`를 stage·Plan에 결합했다.
+  q27 qualification v24, q7 Task Pack·budget, Worker/Judge bytes와 9000초 계약은 유지했다.
+- 별도 process verifier가 같은 seal을 반환했다. acceptance 하네스의 대상은 v25로 바꾼다.
+  기존 v24 실패 state와 raw를 보존했으며 새 Live state·thread·model은 만들지 않았다.

@@ -1822,3 +1822,21 @@ def test_checked_in_profile_r_q27_q7_v24_candidate_verifies() -> None:
     assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == (
         "ef2996f758717e691ff77eee252de2a21f2b7fd20c8a0b0205a19af62aa9da2a"
     )
+
+
+def test_checked_in_profile_r_cli_compatible_v25_candidate_verifies() -> None:
+    candidate = REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v25"
+    snapshot = phase_e.verify_phase_e_candidate_snapshot(REPOSITORY, candidate)
+    assert snapshot.seal.source_commit == "a2a3575a254f3cdded55df15a4068ff2d1992c79"
+    assert snapshot.seal.experiment_id == "exp_20260907_9546cf22_1"
+    assert snapshot.seal.plan_fingerprint == "9546cf224f63ce06b5232f3a125b24340ae0c17a95dfb230df2a4cea3412d911"
+    assert snapshot.seal.seal_sha256 == "cb73b09da935bb48d0904404087394d7a955b96329d0b099024a19e3cd0c031b"
+    assert sha256((candidate / "candidate-seal.json").read_bytes()).hexdigest() == "d110402d149c263bb5e30d64357bd16edc5d978efbab6e4b92fd8a1e5803835e"
+    assert isinstance(snapshot.stage.runtime_contract, PhaseECompatibleRuntimeContract)
+    assert phase_e_configuration_compatibility_identity(snapshot.stage.runtime_contract) == {
+        "configuration_compatibility_version": "1",
+        "configuration_compatibility_sha256": "004189c150fa1ef9f20baa8f3d30603dd13efb659555157cc1a9316939fed5ef",
+        "configuration_compatibility_override": "features.context_management=false",
+    }
+    assert snapshot.seal.cell_completion_deadline_seconds == 9000
+    assert snapshot.seal.planned_model_turn_ceiling is None

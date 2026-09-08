@@ -4,7 +4,7 @@
 
 ## 먼저 읽을 문서
 
-현재 작업은 [Phase F CLI 설정 호환 정책 v1 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-cli-compatibility-v1-result.md)에 기록했다. 개인 설정을 유지하는 프로세스 전용 override와 새 candidate 결합을 구현했고, 저장소 source의 zero-turn preflight가 통과했다. 실제 Live 전에는 새 후보·acceptance·readiness·Environment Closure가 필요하다.
+현재 입력은 [Phase E candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)다. 개인 설정을 유지하는 CLI 호환 정책과 새 source를 결합했고, clean source 회귀 77개와 zero-turn preflight·별도 후보 검증을 통과했다. 실제 Live 전에는 acceptance·readiness·Environment Closure가 필요하다.
 
 1. [Profile R v24 SS1 실제 환경 실패 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md) — thread/start config schema 오류, Cell 1 FAILED·비교 무효·재실행 금지 기록
 2. [Profile R Live readiness v13 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v13-package-result.md) — q27·q7·candidate v24·독립 acceptance 2회의 exact chain 봉인
@@ -93,6 +93,7 @@ docs/
 - [Profile R v24 SS1 실제 환경 실패 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md) — Closure GO 뒤 thread/start config schema 오류로 Cell 1 FAILED; model 성능 미평가·B1 미실행·비교 무효
 - [Phase F config-load 사전검증 보강 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md) — 동일 CLI의 layered config 파싱·user 경로·drift 검증과 zero-turn Evidence schema 3
 - [Phase F CLI 설정 호환 정책 v1 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-cli-compatibility-v1-result.md) — 개인 설정 변경 없이 프로세스 전용 override를 적용하고 새 candidate 정책으로 결합
+- [Phase E candidate v25 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md) — q27·q7을 유지하고 CLI 호환 정책·새 source를 직접 결합한 0-turn 후보
 - [Profile R R01~R13 Docker Judge q25 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-r01-r13-docker-judge-q25-company-result.md) — 새 source의 reference+13 mutation을 exact image에서 14/14 검증한 qualification v22
 - [현실 고난도 Phase E candidate v22](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v22-result.md) — q25·q5와 Cell 9000초 계약을 schema v4 Plan에 결합한 0-turn 후보
 - [B1 Phase F 최종 판정](./experiments/b1-phase-f-final-assessment.md) — 과거 판정과 v8·환경 재심사 addendum; route는 계속 미발행
