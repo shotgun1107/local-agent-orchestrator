@@ -4130,3 +4130,20 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 독립 verifier가 B1 seal·anchor·turn 수, 총 claim 2개, 기존 SS1 포함 1,100개 보호 파일과
   이전 v24/v25 root·production source 31개 보존을 확인했다. runtime 수정은 이번 턴에서 하지 않았다.
 - 상세: [v25 B1 결과와 사후 격리](../experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-company-v25-result.md).
+
+## B1 workspace trust 검증 및 배차 실패 분류 수정
+
+- 작업일: 2026-09-08 KST. 사용자 승인으로 두 결함을 수정했고 코드 commit은 `cd305b4`다.
+- 자신의 검증된 SDK thread 이후 정확한 현재 workspace의 trust 추가와 그 user-layer origin
+  version 변화만 허용한다. 전체 나머지 설정·권한·출처는 exact 비교하며, 실패 port의
+  재검증으로 baseline을 바꾸지 못하게 했다. 원문 설정은 기록하지 않고 전이 hash만 보존한다.
+- 호환 정책 version 2를 source/Plan identity에 명시했다. 과거 v25의 policy 1 직렬화·봉인
+  검증은 유지하고, 새 runtime으로 그 candidate를 Live 실행하는 것은 차단한다.
+- `dispatch_uncertain` → `infrastructure_error / b1_dispatch_uncertain`으로 원인을 유지해
+  adapter와 Measurement 모두 환경 실패·비교 불가로 분류한다. 기존 봉인 값은 변경하지 않았다.
+- 최신 SDK 경계 시험 84개, 실제 CLI config-only 시험 6개, model-free 수용시험 2회차 통과.
+  전체 회귀는 668 passed / 2 failed / 12 skipped다. 실패 2건은 수정 전부터 있던 Profile I
+  source-intake CRLF/LF 바이트 불일치이며, builder·입력 불변과 수정 전 Git blob으로 확인했다.
+- 실제 실행 root 1,786파일, 기존 두 seal/anchor, 보호 파일 1,100개·이전 root 4개와 개인
+  config를 보존했다. 실제 model/thread/claim/state 변경 0, 새 정식 candidate/experiment 0이다.
+- 상세: [설정 전이·배차 분류 수정 결과](../experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md).
