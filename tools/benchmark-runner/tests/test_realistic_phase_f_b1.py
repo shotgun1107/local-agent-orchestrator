@@ -34,7 +34,9 @@ from benchmark_runner.realistic_phase_f_b1 import (
 from benchmark_runner.realistic_phase_f_finalize import (
     FakePhaseFJudgePort,
     ProfileRPhaseFCellFinalizerBackend,
+    verify_phase_f_cell_finalization,
 )
+from benchmark_runner.realistic_phase_f_sdk import PhaseFConfigurationDriftError
 from benchmark_runner.realistic_phase_f_ss1 import (
     ModelFreeClearBoundaryTelemetry,
 )
@@ -75,6 +77,57 @@ def test_b1_environment_failure_is_not_labeled_as_product_failure() -> None:
         "FAILED",
         {"tasks": [{"attempts": [{"failure_kind": "check_unknown"}]}]},
     ) == ("infrastructure_error", "check_unknown")
+    assert _b1_adapter_outcome(
+        "BLOCKED",
+        {"tasks": [{"attempts": [{"failure_kind": "dispatch_uncertain"}]}]},
+    ) == ("infrastructure_error", "b1_dispatch_uncertain")
+
+
+@pytest.mark.parametrize("judge_passes", [True, False])
+def test_config_dispatch_failure_remains_environment_failure_through_sealing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, judge_passes: bool,
+) -> None:
+    """Exercise scheduler -> adapter -> finalizer without a real SDK or live state."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    snapshot = load_verified_phase_f_candidate(REPOSITORY, CANDIDATE_ROOT)
+    planned = snapshot.plan.cells[1]
+    request = _request_for(plan=snapshot.plan, snapshot=snapshot, cell=planned,
+                          runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE)
+
+    class ConfigDriftRuntime(FakeRuntime):
+        def start_session(self, task_envelope, runtime_profile):
+            raise PhaseFConfigurationDriftError("Phase F configuration changed after preflight")
+
+    worker = ProfileRPhaseFB1Backend(
+        repository=REPOSITORY, artifact_root=tmp_path / "backend",
+        runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE,
+        runtime_factory=lambda workspace: ConfigDriftRuntime("complete", workspace=workspace),
+        telemetry=ModelFreeClearBoundaryTelemetry(), check_temp_root=tmp_path / "check-temp",
+        environ={}, git_executable=GIT_EXECUTABLE, source_environment=os.environ,
+    )
+    backend = ProfileRPhaseFCellFinalizerBackend(
+        repository=REPOSITORY, candidate_root=CANDIDATE_ROOT,
+        worker_backend=worker, judge=FakePhaseFJudgePort(check_success=judge_passes),
+    )
+    result = backend.run_one_cell(request)
+    root = tmp_path / "backend" / planned.cell_id
+    adapter = json.loads((root / PHASE_F_B1_EVIDENCE_FILENAME).read_bytes())
+    assert adapter["adapter_outcome_state"] == "infrastructure_error"
+    assert adapter["adapter_failure_kind"] == "b1_dispatch_uncertain"
+    metrics = adapter["adapter_normalized_metrics"]
+    assert metrics["environment_failure_present"] is True
+    assert metrics["comparison_valid"] is False and metrics["b1_invalid_environment"] is True
+    assert metrics["b1_retry_count"] == metrics["b1_resume_count"] == 0
+    attempts = adapter["adapter_raw_payload"]["report"]["tasks"][0]["attempts"]
+    assert len(attempts) == 1 and attempts[0]["failure_kind"] == "dispatch_uncertain"
+    assert result.actual_model_turns == adapter["actual_model_turns"] == 0
+    measurement = verify_phase_f_cell_finalization(root, expected_seal_file_sha256=result.sealed_artifact_sha256)
+    assert measurement.outcome.state == "infrastructure_error"
+    assert measurement.variant_metrics.values["failure_classification"] == (
+        "ENVIRONMENT" if judge_passes else "MIXED_PRODUCT_AND_ENVIRONMENT")
+    assert measurement.variant_metrics.values["comparison_valid"] is False
+    assert measurement.variant_metrics.values["environment_failure_present"] is True
 
 
 def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(

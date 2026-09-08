@@ -489,6 +489,7 @@ def _measurement(
             "check_environment",
             "check_mixed",
             "check_unknown",
+            "b1_dispatch_uncertain",
         }
     )
     worker_product_failure = worker_failed and not worker_environment_failure

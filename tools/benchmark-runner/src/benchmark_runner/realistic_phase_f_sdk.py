@@ -12,6 +12,7 @@ Worker workspace, run SS1, invoke a Judge, or continue to another Cell.
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 import os
 import sys
@@ -42,19 +43,24 @@ PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE = "features.context_management=fals
 
 
 def phase_f_configuration_compatibility_policy() -> dict[str, JsonValue]:
-    """Source-bound process policy; the desktop user's config is never edited."""
+    """Source-bound policy; the adapter never edits the desktop user's config."""
 
     return {
-        "version": 1,
+        "version": 2,
         "sdk_version": PHASE_F_PINNED_SDK_VERSION,
         "cli_version": PHASE_F_PINNED_SDK_VERSION,
         "process_config_override": PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE,
         "user_config_mutation": False,
+        "workspace_trust_transition": "verified_thread_start_exact_addition_only",
     }
 
 
 class PhaseFSdkContractError(RuntimeError):
     """Raised before or at the exact SDK boundary when v2 is violated."""
+
+
+class PhaseFConfigurationDriftError(PhaseFSdkContractError):
+    """A safe, specific error type that survives the scheduler's redaction."""
 
 
 class PhaseFConfigurationValidationEvidence(StrictModel):
@@ -151,6 +157,7 @@ class PhaseFThreadStartObservation:
     response: Mapping[str, JsonValue]
     notification: Mapping[str, JsonValue]
     transcript_sha256: str
+    configuration_transition: Mapping[str, JsonValue] | None = None
 
 
 class PhaseFTurnHandle(Protocol):
@@ -414,6 +421,12 @@ class CodexPhaseFAppServerPort:
         self._account_type = "unknown"
         self._models: tuple[str, ...] = ()
         self._configuration_evidence: PhaseFConfigurationValidationEvidence | None = None
+        # Private snapshots are comparison-only; never serialize configuration values.
+        self._configuration_payload: dict[str, Any] | None = None
+        self._last_configuration_payload: dict[str, Any] | None = None
+        self._workspace_trust_thread_id: str | None = None
+        self._unreported_configuration_transition: Mapping[str, JsonValue] | None = None
+        self._configuration_failed = False
 
     def _require_client(self) -> PhaseFRawCodexClient:
         if self._client is None:
@@ -547,9 +560,13 @@ class CodexPhaseFAppServerPort:
                 ),
                 "user_config_path_sha256": canonical_sha256(str(self._expected_user_config)),
             }
-            return PhaseFConfigurationValidationEvidence(
+            evidence = PhaseFConfigurationValidationEvidence(
                 **values, evidence_sha256=canonical_sha256(values)
             )
+            self._last_configuration_payload = copy.deepcopy({
+                "config": dict(config), "layers": layers, "origins": dict(origins),
+            })
+            return evidence
         except Exception:
             # Response validation errors may also contain raw config values.
             raise PhaseFSdkContractError(
@@ -557,13 +574,118 @@ class CodexPhaseFAppServerPort:
             ) from None
 
     def validate_configuration(self, cwd: str) -> PhaseFConfigurationValidationEvidence:
-        baseline = self._configuration_evidence
+        if self._configuration_failed:
+            raise PhaseFConfigurationDriftError("Phase F configuration validation is latched failed; close the port")
+        baseline, payload = self._configuration_evidence, self._configuration_payload
         self._configuration_evidence = None
-        current = self._read_configuration(cwd)
-        if baseline is not None and current != baseline:
-            raise PhaseFSdkContractError("Phase F configuration changed after preflight")
+        self._configuration_payload = None
+        self._last_configuration_payload = None
+        try:
+            current = self._read_configuration(cwd)
+            if baseline is not None and current != baseline:
+                if self._workspace_trust_thread_id is None or payload is None:
+                    raise PhaseFConfigurationDriftError("Phase F configuration changed after preflight")
+                self._unreported_configuration_transition = self._accept_workspace_trust_transition(
+                    baseline, current, payload, self._workspace_trust_thread_id,
+                )
+        except Exception:
+            self._configuration_failed = True
+            self._last_configuration_payload = None
+            self._unreported_configuration_transition = None
+            raise
         self._configuration_evidence = current
+        self._configuration_payload = self._last_configuration_payload
         return current
+
+    def _verify_workspace_trust_addition(
+        self, before: Mapping[str, Any], after: Mapping[str, Any],
+    ) -> None:
+        """Accept only one exact SDK trust addition, including its origin metadata."""
+        normalized = copy.deepcopy(dict(after))
+        old_layers, new_layers = before["layers"], normalized["layers"]
+        old_user = next(layer for layer in old_layers if layer["name"]["type"] == "user")
+        new_user = next(layer for layer in new_layers if layer["name"]["type"] == "user")
+        old_meta = {key: old_user[key] for key in ("name", "version")}
+        new_meta = {key: new_user[key] for key in ("name", "version")}
+
+        def remove_addition(old: Mapping[str, Any], new: dict[str, Any]) -> str:
+            old_projects = old.get("projects")
+            new_projects = new.get("projects")
+            if old_projects is not None and not isinstance(old_projects, dict):
+                raise ValueError
+            if not isinstance(new_projects, dict):
+                raise ValueError
+            old_projects = old_projects or {}
+            # No upgrade of an existing/untrusted record, aliases, parent, or sibling.
+            if any(Path(key) == self.workspace for key in old_projects):
+                raise ValueError
+            added = set(new_projects) - set(old_projects)
+            if len(added) != 1:
+                raise ValueError
+            key = next(iter(added))
+            if not Path(key).is_absolute() or Path(key) != self.workspace:
+                raise ValueError
+            if canonical_sha256(new_projects.pop(key)) != canonical_sha256({"trust_level": "trusted"}):
+                raise ValueError
+            if canonical_sha256(new_projects) != canonical_sha256(old_projects):
+                raise ValueError
+            if "projects" not in old:
+                new.pop("projects")
+            elif old["projects"] is None:
+                new["projects"] = None
+            return key
+
+        effective_key = remove_addition(before["config"], normalized["config"])
+        layer_key = remove_addition(old_user["config"], new_user["config"])
+        if (
+            effective_key != layer_key
+            or canonical_sha256(old_meta) == canonical_sha256(new_meta)
+        ):
+            raise ValueError
+        origin_key = f"projects.{layer_key}.trust_level"
+        old_origins, new_origins = before["origins"], normalized["origins"]
+        if (
+            origin_key in old_origins
+            or canonical_sha256(new_origins.pop(origin_key, None)) != canonical_sha256(new_meta)
+        ):
+            raise ValueError
+        for key, old_origin in old_origins.items():
+            if (
+                canonical_sha256(old_origin) == canonical_sha256(old_meta)
+                and canonical_sha256(new_origins.get(key)) == canonical_sha256(new_meta)
+            ):
+                new_origins[key] = copy.deepcopy(old_origin)
+        new_user["version"] = old_user["version"]
+        if canonical_sha256(normalized) != canonical_sha256(before):
+            raise ValueError
+
+    def _accept_workspace_trust_transition(
+        self, baseline: PhaseFConfigurationValidationEvidence,
+        current: PhaseFConfigurationValidationEvidence, payload: Mapping[str, Any], thread_id: str,
+    ) -> Mapping[str, JsonValue]:
+        try:
+            fixed = ("sdk_version", "cli_version", "cli_binary_sha256", "cwd_sha256",
+                     "config_overrides_sha256", "user_config_path_sha256")
+            if any(getattr(current, key) != getattr(baseline, key) for key in fixed):
+                raise ValueError
+            if self._last_configuration_payload is None:
+                raise ValueError
+            self._verify_workspace_trust_addition(payload, self._last_configuration_payload)
+        except Exception:
+            # Never propagate configuration values or validation diagnostics.
+            raise PhaseFConfigurationDriftError(
+                "Phase F configuration changed after preflight outside exact workspace trust registration"
+            ) from None
+        transition = {
+            "schema_version": 1, "kind": "phase_f_sdk_workspace_trust_registration",
+            "before_evidence_sha256": baseline.evidence_sha256,
+            "after_evidence_sha256": current.evidence_sha256,
+            "cwd_sha256": current.cwd_sha256,
+            "observed_after_thread_id_sha256": hashlib.sha256(thread_id.encode("utf-8")).hexdigest(),
+            "policy_sha256": canonical_sha256(phase_f_configuration_compatibility_policy()),
+        }
+        transition["evidence_sha256"] = canonical_sha256(transition)
+        return transition
 
     def permission_profiles(
         self,
@@ -614,13 +736,25 @@ class CodexPhaseFAppServerPort:
             time.sleep(0.01)
         if len(notifications) != 1:
             raise PhaseFSdkContractError("thread/started notification count differs")
-        return PhaseFThreadStartObservation(
+        observation = PhaseFThreadStartObservation(
             request=dict(params),
             response=dict(result),
             notification=dict(notifications[0]),
             transcript_sha256=canonical_sha256(
                 [[direction, dict(frame)] for direction, frame in frames]
             ),
+        )
+        thread_id = verify_phase_f_thread_start(observation, workspace=self.workspace)
+        # Registration may become visible immediately or before the next session.
+        # Never arm this exception before our own verified thread/start completes.
+        self._workspace_trust_thread_id = thread_id
+        self.validate_configuration(str(self.workspace))
+        transition = self._unreported_configuration_transition
+        self._unreported_configuration_transition = None
+        return PhaseFThreadStartObservation(
+            request=observation.request, response=observation.response,
+            notification=observation.notification, transcript_sha256=observation.transcript_sha256,
+            configuration_transition=transition,
         )
 
     def start_turn(
@@ -629,6 +763,8 @@ class CodexPhaseFAppServerPort:
         prompt: str,
         params: Mapping[str, JsonValue],
     ) -> PhaseFTurnHandle:
+        if self._configuration_evidence is None:
+            raise PhaseFSdkContractError("Phase F configuration preflight is required")
         client = self._require_client()
         started = client.turn_start(thread_id, prompt, params=dict(params))
         turn = _attribute_or_key(started, "turn")
@@ -643,6 +779,11 @@ class CodexPhaseFAppServerPort:
         self._account_type = "unknown"
         self._models = ()
         self._configuration_evidence = None
+        self._configuration_payload = None
+        self._last_configuration_payload = None
+        self._workspace_trust_thread_id = None
+        self._unreported_configuration_transition = None
+        self._configuration_failed = False
         if client is not None:
             client.close()
 
@@ -830,6 +971,8 @@ class PhaseFSdkRuntimeV2(SdkRuntime):
             "approval_policy_wire": PHASE_F_APPROVAL_POLICY_WIRE,
             "legacy_sandbox_arguments": False,
         }
+        if observation.configuration_transition is not None:
+            self._thread_start_evidence["configuration_transition"] = dict(observation.configuration_transition)
         return self._thread
 
     @staticmethod

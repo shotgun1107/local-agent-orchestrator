@@ -489,11 +489,12 @@ def test_zero_turn_configuration_failure_closes_port(tmp_path: Path) -> None:
     assert port.close_count == 1
 
 
-def test_new_candidate_policy_is_accepted_and_legacy_candidate_is_not_launchable() -> None:
-    new_candidate = REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v25"
-    phase_f_live_module._validate_live_configuration_binding(
-        REPOSITORY, new_candidate, "a2a3575a254f3cdded55df15a4068ff2d1992c79"
-    )
+def test_pre_trust_policy_candidates_are_not_launchable_with_changed_runtime() -> None:
+    v25_candidate = REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v25"
+    with pytest.raises(Exception, match="configuration compatibility binding differs"):
+        phase_f_live_module._validate_live_configuration_binding(
+            REPOSITORY, v25_candidate, "a2a3575a254f3cdded55df15a4068ff2d1992c79"
+        )
     old_candidate = REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v24"
     with pytest.raises(Exception, match="configuration compatibility binding differs"):
         phase_f_live_module._validate_live_configuration_binding(

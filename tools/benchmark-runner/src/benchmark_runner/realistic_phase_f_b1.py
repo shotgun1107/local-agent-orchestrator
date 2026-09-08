@@ -121,6 +121,8 @@ def _b1_adapter_outcome(
         return "infrastructure_error", "check_mixed"
     if "check_unknown" in failure_kinds:
         return "infrastructure_error", "check_unknown"
+    if "dispatch_uncertain" in failure_kinds:
+        return "infrastructure_error", "b1_dispatch_uncertain"
     outcome = {
         "COMPLETED": "completed",
         "FAILED": "failed",
@@ -220,6 +222,8 @@ class PhaseFB1RuntimeV2(RuntimePort):
                 "legacy_sandbox_arguments": False,
             }
         )
+        if observation.configuration_transition is not None:
+            self._thread_evidence[-1]["configuration_transition"] = dict(observation.configuration_transition)
         return SessionHandle(
             id=thread_id,
             raw=thread_id,
@@ -862,7 +866,7 @@ class ProfileRPhaseFB1Backend:
         )
         environment_failure_present = bool(
             report_failure_kinds.intersection(
-                {"check_environment", "check_mixed", "check_unknown"}
+                {"check_environment", "check_mixed", "check_unknown", "dispatch_uncertain"}
             )
         )
         token_usage = (
@@ -892,6 +896,7 @@ class ProfileRPhaseFB1Backend:
                 "check_environment",
                 "check_mixed",
                 "check_unknown",
+                "b1_dispatch_uncertain",
             },
             "comparison_valid": not environment_failure_present,
             "product_failure_present": product_failure_present,
