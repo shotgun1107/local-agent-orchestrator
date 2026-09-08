@@ -22,11 +22,12 @@
     "approval_policy_wire_value": "never",
     "active_profile_provenance_required": true,
     "configuration_compatibility": {
-      "version": 1,
+      "version": 2,
       "sdk_version": "0.144.4",
       "cli_version": "0.144.4",
       "process_config_override": "features.context_management=false",
-      "user_config_mutation": false
+      "user_config_mutation": false,
+      "workspace_trust_transition": "verified_thread_start_exact_addition_only"
     }
   },
   "profiles": [

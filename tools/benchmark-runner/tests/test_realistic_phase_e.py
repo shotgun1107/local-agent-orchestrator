@@ -142,11 +142,12 @@ def test_stage_manifest_has_exact_four_cell_contract() -> None:
     assert isinstance(stage.runtime_contract, PhaseECompatibleRuntimeContract)
     assert stage.runtime_contract.version == 2
     compatibility = {
-        "version": 1,
+        "version": 2,
         "sdk_version": "0.144.4",
         "cli_version": "0.144.4",
         "process_config_override": "features.context_management=false",
         "user_config_mutation": False,
+        "workspace_trust_transition": "verified_thread_start_exact_addition_only",
     }
     assert stage.runtime_contract.configuration_compatibility.model_dump(mode="json") == compatibility
     assert stage.model_dump(mode="json")["runtime_contract"][
@@ -200,12 +201,13 @@ def test_historical_runtime_contract_serialization_is_unchanged(version: int) ->
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("version", 2),
+        ("version", 3),
         ("sdk_version", "0.144.5"),
         ("cli_version", "0.144.5"),
         ("process_config_override", "features.context_management=true"),
         ("process_config_override", "features.context_management=false.extra"),
         ("user_config_mutation", True),
+        ("workspace_trust_transition", "ignore_all_config_drift"),
     ],
 )
 def test_stage_rejects_changed_configuration_compatibility_policy(
@@ -239,7 +241,7 @@ def test_configuration_compatibility_changes_source_binding_and_plan_fingerprint
         REPOSITORY, source_commit=source_commit, created_at=created_at,
     )
     expected = phase_e_configuration_compatibility_identity(stage.runtime_contract)
-    assert expected["configuration_compatibility_version"] == "1"
+    assert expected["configuration_compatibility_version"] == "2"
     assert expected["configuration_compatibility_override"] == "features.context_management=false"
     assert expected["configuration_compatibility_sha256"] == canonical_sha256(
         stage.runtime_contract.configuration_compatibility.model_dump(mode="json")

@@ -125,10 +125,23 @@ class PhaseEConfigurationCompatibilityContract(StrictModel):
     user_config_mutation: Literal[False]
 
 
+class PhaseEWorkspaceTrustCompatibilityContract(StrictModel):
+    """New source policy; historical version-1 candidates retain exact serialization."""
+
+    version: Literal[2]
+    sdk_version: Literal[PINNED_SDK_VERSION]
+    cli_version: Literal[PINNED_SDK_VERSION]
+    process_config_override: Literal["features.context_management=false"]
+    user_config_mutation: Literal[False]
+    workspace_trust_transition: Literal["verified_thread_start_exact_addition_only"]
+
+
 class PhaseECompatibleRuntimeContract(PhaseERuntimeContract):
     """Add the explicit process policy without changing historical v2 bytes."""
 
-    configuration_compatibility: PhaseEConfigurationCompatibilityContract
+    configuration_compatibility: (
+        PhaseEConfigurationCompatibilityContract | PhaseEWorkspaceTrustCompatibilityContract
+    )
 
 
 def phase_e_configuration_compatibility_identity(
