@@ -49,7 +49,9 @@ thread 직전 drift 검증은 유지한다.
   candidate 재라벨 거부 집중 검사도 통과했다. 기존 v1~v24 candidate는 역사 identity 그대로
   검증된다.
 - source commit 전 전체 Phase E 회귀는 `76 passed`였고 candidate 생성 시험 1개는 작업
-  tree가 dirty여서 정해진 clean-source 관문에서 중단됐다. source 고정 뒤 다시 검증한다.
+  tree가 dirty여서 정해진 clean-source 관문에서 중단됐다.
+- source `a2a3575a254f3cdded55df15a4068ff2d1992c79` 고정 뒤 전체 Phase E 회귀를 다시 실행해
+  clean tree에서 `77 passed in 147.03s`로 통과했다.
 - 실제 실행 계정에서 `config/read`의 effective 값과 sessionFlags override가 모두 false임을
   확인했다. 개인 config hash는 전후 같았고 CLI process도 종료됐다.
 - 저장소 source를 명시적으로 import한 전체 zero-turn preflight가 schema 3으로 통과했다.
