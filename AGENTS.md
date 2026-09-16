@@ -1,5 +1,17 @@
 # Codex 운영 안전 규칙
 
+## 회사 PC의 현재 작업 경로 — 2026-09-16
+
+이 회사 PC에서는 실제 저장소가 `C:\LAO\repo`, 개발 Python은
+`C:\LAO\env\v23\Scripts\python.exe`다. 작업을 시작하기 전에
+`docs/operations/company-pc-layout-20260916.md`를 읽는다.
+새 임시·실행·Evidence 폴더는 각각 `C:\LAO\tmp`, `C:\LAO\run`,
+`C:\LAO\evidence` 아래로 한정하며 C:\ 직속에 다시 분산 생성하지 않는다.
+`C:\LAO\history`는 이전 원본 보관소이며 과거 state/raw/Measurement/seal과
+고정 절대경로 스크립트를 수정하거나 그대로 재실행하지 않는다.
+폴더 통합과 개발 단위시험 통과는 Live GO가 아니며, 아래의 별도 환경 검증과
+사용자 실행 승인 관문은 그대로 유지한다.
+
 이 파일은 저장소 전체에 적용되는 Codex 작업 규칙이다. 특히 실제 model, SDK,
 Docker, Phase F state와 외부 실행환경을 다루는 모든 세션은 이 규칙을 다른 작업
 체크리스트보다 먼저 적용한다.
