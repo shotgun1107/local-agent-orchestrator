@@ -137,6 +137,8 @@ HTTP 206은 Range 요청에 대한 정상 부분 응답으로 처리했다. DOI�
 
 ### 작업 1. 확인된 사실 오류 정정
 
+> 후속 정정 — 2026-09-16: 아래의 당시 판본·표본 해석은 잘못됐다. arXiv v1부터 전체 응답 306개와 배포·파일럿 분석 대상 86개를 구분한다. 원래 작업 이력은 남기되 이를 현재의 사실 확인 완료 근거로 사용하지 않는다. 세부 근거는 아래의 2026-09-16 문서 검토 절과 연구 문서의 정정 부분을 따른다.
+
 - 완료.
 - §1의 `Measuring Agents in Production` 단일 판본 서술을 다음처럼 구분했다.
   - 확장판 `Characterizing Agents in Production`: ICML 2026 본회의, 실무자 306명.
@@ -4147,3 +4149,30 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 실제 실행 root 1,786파일, 기존 두 seal/anchor, 보호 파일 1,100개·이전 root 4개와 개인
   config를 보존했다. 실제 model/thread/claim/state 변경 0, 새 정식 candidate/experiment 0이다.
 - 상세: [설정 전이·배차 분류 수정 결과](../experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md).
+
+## 2026-09-16 문서 검토 — 현재 안내·인용 정정과 프로젝트 맥락 자료
+
+- 사용자 요청 범위는 남은 문서 수정 6개와 `docs/portfolio/`의 검토·처리까지다.
+  제품 코드 수정, 새 환경 Closure, 실제 model/SDK thread/Worker/Judge 실행, Cell claim,
+  state·raw·Measurement·seal 수정, 새 experiment 생성은 하지 않았다. 푸시도 하지 않는다.
+- 실제 12-Cell 결과, v25 SS1/B1 봉인과 pair 격리, 현행 소스의 policy 2 제한을
+  root README·문서 입구·과거 handoff의 현재성 안내에 반영했다. 과거 절의 원래 실행
+  기록은 보존하고 새 회사 PC 경로는 별도 인수인계 문서로 연결했다.
+- 감사 F13의 표본 오류를 arXiv [v1 §3.1](https://arxiv.org/html/2512.04123v1)과
+  [v4 §3.2·§5.2·Figure 7(a)·8](https://arxiv.org/html/2512.04123v4)에서 재대조했다.
+  전체 응답 306·분석 대상 86·심층 사례 20을 구분한다. 질문별 비율의 분모는
+  단계 수 60, 사람 평가 31(복수응답), 기성 모델 사례 20이며 문헌 전체 재검증은 아니다.
+  학회 표제는 [ICML 공식 목록](https://icml.cc/Downloads/2026)과
+  [ICLR 워크숍 PDF](https://openreview.net/attachment?id=AsvLggSOvS&name=pdf)로 보완 확인했다.
+  개별 ICML/OpenReview 웹 페이지의 접근 제한을 출처 부재로 판정하지 않았다.
+- DEV-20260823-002의 잘못된 commit 참조를 실제 `c4fb396c5546a204630937bc5ba781c5fdaa528b`
+  (`docs: record Profile R readiness v6 NO_GO`)로 정정하고 JSON 정본에서 인덱스를 재생성했다.
+  실제 구현이 새로 수정됐거나 실패 결과가 성공으로 바뀐 것은 아니다.
+- 프로젝트 맥락 학습 자료의 기술·수치·개인/AI 기여 경계를 관련 설계·실행 결과·감사 기록과
+  대조했다. 감사의 14건은 당시 발견 수이며 안내·인용 정정을 제품 코드 결함 해결로 세지 않는다.
+  ignored 감사 자료는 참조 위치만 적고 원문이나 개인 대화 자료를 Git에 추가하지 않았다.
+- 구현 기록 하네스 `check`는 정정 후 JSON 78건과 자동 index 일치를 확인했고,
+  하네스 회귀 `unittest` 10개가 통과했다. 이 검사를 제품·Live 전체 회귀 통과로 확대하지 않는다.
+- 앞선 폴더 통합은 별도 경로 문서와 commit `630f1e3`에 기록돼 있다. 그 뒤 중복 검증 사본
+  8개·빈 항목 1개·생성 캐시 11개를 영구 삭제했으며 원본은 보존했다. 상세 로컬 근거는
+  `C:\LAO\ops\cleanup-20260916-after-commit\README.md`이고 접근 제한 캐시 4곳은 보류했다.

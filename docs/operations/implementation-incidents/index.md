@@ -3924,7 +3924,7 @@ v2 Phase E stage/source binding/candidate seal 계약을 구현했다. builder�
 
 ### 추적 정보
 
-- 관련 커밋: 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9, c4fb396fd8fa4766851077c230835a05a09a259a, c7fde69d9e873bd8a8a3db8e73619660c1844883, e42eaa1fead16c82927a6cefe2b55ec13e9161ee, 70a9ea2add181d0cafb4712073823b2a495d5665, 592596e430fe2fb27dde6199c36b826ff3f08f66, 58726e20ecf6302246c71559262897d68eb25154, b22e2c309a1e2069b5d9d0f4a16b3dcdaecc2036
+- 관련 커밋: 86b1af04df9534f0f4bba29af40a5e115f8c0ed4, dd70c1c5b1e6b437b9fdbe1dd7417603273b72d9, c4fb396c5546a204630937bc5ba781c5fdaa528b, c7fde69d9e873bd8a8a3db8e73619660c1844883, e42eaa1fead16c82927a6cefe2b55ec13e9161ee, 70a9ea2add181d0cafb4712073823b2a495d5665, 592596e430fe2fb27dde6199c36b826ff3f08f66, 58726e20ecf6302246c71559262897d68eb25154, b22e2c309a1e2069b5d9d0f4a16b3dcdaecc2036
 - 출처: docs/prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v6.md
 - 출처: docs/reviews/benchmark-runner/chatgpt-pro-rereview-profile-r-live-readiness-v6.md
 - 출처: docs/experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v6-package-result.md
