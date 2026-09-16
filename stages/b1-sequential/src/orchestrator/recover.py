@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from .cancel import cancel_requested, request_cancel
 from .contract import AttemptState, CORE_VERSION, RunState, SessionState, TaskState, canonical_json, sha256_bytes, utc_now
 from .ledger import Ledger
 from .verify import ArtifactStore, scan_state_for_secrets
@@ -197,6 +198,9 @@ def backup_run(ledger: Ledger, state_root: Path, run_id: str) -> Path:
                 raise RuntimeError(f"Artifact hash mismatch during backup: {row['relative_path']}")
             copied.append({"path": f"artifacts/{row['relative_path']}", "sha256": actual})
         files = [{"path": "ledger.sqlite", "sha256": sha256_bytes(database.read_bytes())}, *copied]
+        if cancel_requested(state_root, run_id):
+            intent = request_cancel(temporary, run_id)
+            files.append({"path": intent.relative_to(temporary).as_posix(), "sha256": sha256_bytes(intent.read_bytes())})
         manifest = {
             "schema_version": 1,
             "run_id": run_id,

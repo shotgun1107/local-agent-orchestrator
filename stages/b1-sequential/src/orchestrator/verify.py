@@ -17,7 +17,7 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable, Iterator
+from typing import Any, Callable, Iterable, Iterator
 
 from pydantic import ValidationError
 
@@ -1362,6 +1362,12 @@ def _posix_process_group_has_members(process_group_id: int) -> bool:
         return False
 
 
+class CheckCancelled(Exception):
+    def __init__(self, stdout: str = "", stderr: str = "") -> None:
+        super().__init__("Check cancelled by user")
+        self.stdout, self.stderr = stdout, stderr
+
+
 def _run_bounded_check_process(
     argv: list[str],
     *,
@@ -1369,9 +1375,12 @@ def _run_bounded_check_process(
     environment: dict[str, str],
     timeout_seconds: float,
     termination_grace_seconds: float,
+    cancel_requested: Callable[[], bool] | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], bool]:
     """Run one Check in an isolated process group and reap its tree on timeout."""
 
+    if cancel_requested is not None and cancel_requested():
+        raise CheckCancelled()
     popen_options: dict[str, Any] = {}
     windows_job_handle: int | None = None
     if os.name == "nt":
@@ -1414,8 +1423,22 @@ def _run_bounded_check_process(
 
             if windows_job_handle is not None:
                 _assign_and_resume_windows_job(process, windows_job_handle)
+            cancelled = False
             try:
-                stdout, stderr = process.communicate(timeout=timeout_seconds)
+                deadline = time.monotonic() + timeout_seconds
+                while True:
+                    cancelled = cancel_requested is not None and cancel_requested()
+                    if cancelled or time.monotonic() >= deadline:
+                        raise subprocess.TimeoutExpired(argv, timeout_seconds)
+                    try:
+                        stdout, stderr = process.communicate(timeout=(
+                            min(0.05, max(0.0, deadline - time.monotonic()))
+                            if cancel_requested is not None else timeout_seconds
+                        ))
+                        break
+                    except subprocess.TimeoutExpired:
+                        if cancel_requested is None:
+                            raise
                 timed_out = False
             except subprocess.TimeoutExpired:
                 timed_out = True
@@ -1428,6 +1451,8 @@ def _run_bounded_check_process(
                     raise OSError(
                         "Check process streams did not close after tree termination"
                     ) from exc
+                if cancelled:
+                    raise CheckCancelled(stdout or "", stderr or "")
             if not timed_out:
                 active_descendants = (
                     windows_job_handle is not None
@@ -1526,6 +1551,7 @@ def run_command_check(
     temp_root: Path,
     termination_grace_seconds: float = DEFAULT_CHECK_TERMINATION_GRACE_SECONDS,
     timeout_seconds_override: float | None = None,
+    cancel_requested: Callable[[], bool] | None = None,
 ) -> CheckResult:
     cwd = (workspace.root / check.cwd).resolve()
     if workspace.root not in cwd.parents and cwd != workspace.root:
@@ -1554,6 +1580,7 @@ def run_command_check(
                     git_executable=workspace.git_executable,
                     git_safe_directory=workspace.root,
                 ),
+                **({"cancel_requested": cancel_requested} if cancel_requested is not None else {}),
             )
         if timed_out:
             return CheckResult(
@@ -1595,6 +1622,13 @@ def run_command_check(
             failure_classification_source=classification_source,
             temp_root=str(allocation.root),
             temp_allocation_id=allocation.allocation_id,
+        )
+    except CheckCancelled as exc:
+        return CheckResult(
+            check_name=check_name, state=CheckState.SKIPPED, argv=check.argv,
+            exit_code=None, stdout=exc.stdout, stderr=exc.stderr + "\ncheck cancelled by user",
+            started_at=started, ended_at=utc_now(), failure_classification_source="controller_runtime",
+            temp_root=str(allocation.root), temp_allocation_id=allocation.allocation_id,
         )
     except OSError as exc:
         return CheckResult(
