@@ -4,7 +4,7 @@
 
 ## 먼저 읽을 문서
 
-2026-09-08 감사 기준 제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. 이후 폴더 통합과 문서 정정을 했지만 완료 판정·입력·실행 프로필·취소·복구의 코드 결함 수정은 하지 않았으며, 아래의 실험 무결성 통과가 이를 대신하지 않는다.
+2026-09-08 감사 기준 제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. 이후 [F8·F9·F3 코드 교정](./operations/audit-f8-f9-f3-remediation-20260916.md)을 반영했고 집중 38개가 통과했다. 전체 B1은 129 passed / 기존 F5 1 failed이며 취소·삭제·backup 및 나머지 평가 결함은 아직 해결하지 않았다. 아래의 과거 실험 무결성 통과나 이번 부분 교정을 전체 제품 검증으로 확대하지 않는다.
 
 회사 PC의 현재 작업 위치는 `C:\LAO\repo`다. 새 세션은 [회사 PC 경로·인수인계](./operations/company-pc-layout-20260916.md)를 먼저 읽는다. 프로젝트를 외부 작성 도구에 설명할 때는 [프로젝트 맥락 학습 자료](./portfolio/local-agent-orchestrator-application-context.md)를 참고하되, 개인 기여·검증 한계를 함께 유지한다.
 

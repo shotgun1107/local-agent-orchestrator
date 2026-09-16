@@ -618,9 +618,42 @@ class GitWorkspace:
 
     def fingerprint_inputs(self, task: TaskSpec) -> InputFingerprint:
         scopes = [*task.read_scope, *(item.path for item in task.inputs)]
-        entries = [_file_entry(self.root, path) for path in self.list_files(scopes)]
+        entries_by_path = {path: _file_entry(self.root, path) for path in self.list_files(scopes)}
+        # Explicit inputs cannot disappear merely because Git ignores them.
+        for item in task.inputs:
+            entries_by_path[item.path] = self.required_file_entry(item.path)
+        entries = [entries_by_path[path] for path in sorted(entries_by_path)]
         manifest = [entry.model_dump(mode="json") for entry in entries]
         return InputFingerprint(manifest=entries, sha256=sha256_json(manifest))
+
+    def required_file_entry(self, relative: str) -> FingerprintEntry:
+        """Read an explicit repository-local regular file, without following links."""
+        try:
+            validate_relative_path(relative)
+            path = self.root
+            for component in PurePosixPath(relative).parts:
+                path = path / component
+                if _is_reparse_point(path):
+                    raise ValueError("links/reparse points are not valid inputs")
+            if self.root not in path.resolve().parents or not stat.S_ISREG(path.stat().st_mode):
+                raise ValueError("input is not a repository-local regular file")
+            return _file_entry(self.root, relative)
+        except (OSError, ValueError, VerificationError) as exc:
+            raise VerificationError(
+                "required_inputs", f"required file is unavailable or unsafe: {relative}", retryable=False,
+            ) from exc
+
+    def validate_required_inputs(self, task: TaskSpec) -> dict[str, FingerprintEntry]:
+        entries: dict[str, FingerprintEntry] = {}
+        for item in task.inputs:
+            entry = self.required_file_entry(item.path)
+            if item.sha256 is not None and (
+                re.fullmatch(r"[0-9a-fA-F]{64}", item.sha256) is None
+                or item.sha256.lower() != entry.sha256
+            ):
+                raise VerificationError("required_inputs", f"required input SHA-256 mismatch: {item.path}")
+            entries[item.path] = entry
+        return entries
 
 
 class ArtifactStore:

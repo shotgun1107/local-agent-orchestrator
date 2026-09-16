@@ -997,8 +997,13 @@ class Ledger:
                 ),
             )
             key = f"check:{values['attempt_id']}:{values['check_name']}:{values['input_fingerprint']}"
+            payload = {"state": target, "exit_code": values.get("exit_code")}
+            if values.get("verification_snapshot") is not None:
+                # Bind newly produced Check evidence without migrating or
+                # rewriting historical checks/events.
+                payload["verification_snapshot"] = values["verification_snapshot"]
             self._insert_event(
-                "check", check_id, "check_finished", {"state": target, "exit_code": values.get("exit_code")}, key
+                "check", check_id, "check_finished", payload, key
             )
             self.connection.commit()
         except Exception:
