@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260916-002",
+  "title": "감사 F5: 현재 Python 계약을 거부하는 공개 Schema·wheel export",
+  "status": "resolved",
+  "stage": "b1",
+  "category": "implementation",
+  "discovered_at": "2026-09-16T06:40:49Z",
+  "resolved_at": "2026-09-16T06:49:17Z",
+  "discovered_by": "기존 감사 F5와 소비자 JSON Schema 회귀 재현",
+  "symptom": "RunSpec의 own_check를 추가 속성으로 거부하고 TaskEnvelope의 remaining_attempts=null을 정수 형식 오류로 거부했다. 저장된 Schema를 복사하는 export와 wheel에도 같은 불일치가 전달됐다.",
+  "reproduction": [
+    "Python 모델이 승인한 own_check=null/문자열 RunSpec을 실제 export Schema로 검증한다.",
+    "remaining_attempts=null TaskEnvelope를 실제 export Schema로 검증한다.",
+    "저장된 공개 Schema 다섯 개를 현재 Pydantic 생성물과 개별 비교한다."
+  ],
+  "evidence": [
+    {"kind": "review-finding", "detail": "2026-09-08 독립 감사 F5 및 앞선 전체 B1 회귀의 지속적인 공개 Schema 불일치."},
+    {"kind": "reproducible-test", "detail": "수정 전 Schema 회귀 5 failed / 12 passed. 교정 후 전체 B1 145 passed / 0 failed, 이 안에 Schema 18개가 포함된다."},
+    {"kind": "direct-observation", "detail": "최종 새 QA wheel을 별도 경로에 설치하고 소스·wheel·설치본·export Schema 5개의 exact bytes·RECORD hash 및 설치본 모델 일치를 확인했다."}
+  ],
+  "root_cause": "Python 계약 변경 뒤 저장된 Schema 두 개가 재생성되지 않았다. export와 wheel은 저장 파일을 배포하므로 동작과 공개 계약이 갈라졌다. 기존 일치 시험은 첫 불일치에서 끝났고 실제 외부 소비자의 새 필드/null 입력 회귀가 없었다.",
+  "considered_options": [
+    {"option": "JSON의 additionalProperties나 자료형 제한을 임의 완화", "decision": "rejected", "reason": "현행 계약보다 넓은 잘못된 입력을 허용할 수 있다."},
+    {"option": "Python 계약을 오래된 Schema에 맞춰 되돌림", "decision": "rejected", "reason": "이미 도입된 own_check와 무제한 attempts 계약을 훼손한다."},
+    {"option": "기존 생성기로 현행 Schema를 재생성하고 실제 export·설치 wheel을 검증", "decision": "adopted", "reason": "현재 공개 계약을 일치시키면서 과거 동결 자료를 보존한다."}
+  ],
+  "resolution": "run-spec와 task-envelope Schema를 재생성했다. 5개 모델 일치 검사를 parameter화하고 실제 export를 Draft 2020-12 검증기로 검사하는 정상·과거·잘못된 입력 회귀를 추가했다. dev/all extra와 lock에 소비자 시험 의존성을 선언하고 별도 설치 wheel Schema 검사 도구를 추가했다.",
+  "affected_files": [
+    "stages/b1-sequential/schemas/v1/run-spec.schema.json",
+    "stages/b1-sequential/schemas/v1/task-envelope.schema.json",
+    "stages/b1-sequential/tests/contract/test_schemas.py",
+    "stages/b1-sequential/scripts/verify_schema_wheel.py",
+    "stages/b1-sequential/pyproject.toml",
+    "stages/b1-sequential/requirements.lock",
+    "config/workspace/requirements-dev.lock"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/contract/test_schemas.py: 18개",
+    "stages/b1-sequential/tests: 전체 145개",
+    "stages/b1-sequential/scripts/verify_schema_wheel.py: 별도 설치된 최종 QA wheel의 5개 Schema"
+  ],
+  "verification": [
+    "전체 B1 145 passed, 0 failed. 기존 F8·F9·F3 경계 시험도 포함한다.",
+    "최종 wheel SHA-256 169f5a53882daf0d31534c3dd689b3265e60a5c40b16e10aebd525a44fb89833, 설치본 import 경로와 Schema/RECORD/export 일치 PASS.",
+    "Python 3.12.10·의존성 lock 19종·현재 소스 경로·pip check PASS. 활성 개발 venv와 과거 wheel은 교체하지 않았다.",
+    "실제 모델·SDK thread·원본 state/claim·과거 seal 변경 0. 새 release/candidate/experiment 생성 없음."
+  ],
+  "remaining_risks": [
+    "JSON Schema는 Python의 모든 교차 필드·실행 전 업무 규칙을 표현하지 않는다.",
+    "이 검증은 다른 PC 전체 복원이나 실제 SDK/모델/Live GO를 뜻하지 않는다.",
+    "F10·F11·F12 및 F1·F2·F4·F6·F14는 이번 수정 범위 밖이다. 앞선 timeout 시간 변동의 원인을 해결한 것도 아니다.",
+    "QA wheel은 현재 작업 사본의 검증물이지 과거 봉인 wheel의 대체본이 아니다. 두 QA 빌드는 README 입력이 달라 동일 입력 반복 빌드 증거로 세지 않는다."
+  ],
+  "related_commits": ["759eba19a4538d1fda6a358dff528552915c2353"],
+  "source_references": [
+    "docs/operations/audit-f5-schema-remediation-20260916.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md",
+    "related_commits는 수정 전 기준이며 실제 전달 수정 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다."
+  ]
+}

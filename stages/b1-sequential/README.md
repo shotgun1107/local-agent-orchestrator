@@ -7,6 +7,7 @@ B1은 한 번에 하나의 Worker Session만 실행하고, 일반 코드가 원�
 ## 설치
 
 Python 3.12에서 실행한다.
+현재 연구 작업의 집·회사 공통 환경은 [workspace 복원 계약](../../docs/operations/workspace-portability.md)을 우선한다. 아래는 독립 package 설치 예시다.
 
 ```powershell
 py -3.12 -m venv .venv
@@ -23,6 +24,7 @@ Codex를 호출하지 않는 개발 설치는 `.[dev]`, 실제 Codex adapter를 
 - `templates/runtime-profiles.yaml.example`: 비밀값이 없는 사용자 runtime profile 예시
 - `requirements.lock`: Python 3.12에서 검증한 직접·전이 의존성 고정본
 - `scripts/export_schemas.py`: 공개 계약과 JSON Schema 동기화
+- `scripts/verify_schema_wheel.py`: 별도 설치한 QA wheel의 Schema·RECORD·export 검증
 - `tests/`: 단위·계약·통합 시험과 FakeRuntime 필수 scenario
 
 ## 기본 명령
@@ -43,7 +45,30 @@ lao recover backup RUN_ID
 
 `run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. 공개 Schema 5개는 wheel의 `orchestrator/_schemas/v1`에도 포함되며 `lao schema export`가 비어 있는 디렉터리로 exact file set·SHA-256과 함께 내보낸다. 따라서 외부 실행기는 source checkout, B1 내부 DB, B1 Python 모델을 읽지 않고 설치된 artifact만으로 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
 
-## 검증 상태
+## 공개 Schema 개발·패키지 검증
+
+공개 모델을 바꾸면 개발 환경에서 `python scripts/export_schemas.py`로 현행 Schema를 재생성하고
+`python -m pytest tests/contract/test_schemas.py`를 실행한다. `.[dev]`와 `.[all]`에는 외부 JSON Schema
+소비자 회귀를 위한 `jsonschema`가 포함된다. `requirements.lock`의 검증 버전을 사용한다.
+
+2026-09-16 F5 교정으로 `RunSpec`의 선택적 `own_check`와 `TaskEnvelope`의
+`remaining_attempts=null`/생략이 공개 Schema에도 반영됐다. 기존 유한 횟수·필드 생략 입력은 유지한다.
+음수 횟수·잘못된 자료형·빈 own_check는 허용하지 않는다. JSON Schema는 필드 형식 계약이며,
+Python의 모든 교차 필드·실행 전 검증 규칙을 대신하는 것은 아니다.
+
+새 wheel을 별도 빈 target에 설치한 뒤 저장소 루트에서 다음 도구로 검증할 수 있다.
+
+```powershell
+python -I stages/b1-sequential/scripts/verify_schema_wheel.py --wheel <QA-wheel> --installed-root <별도-설치-root> --schema-root stages/b1-sequential/schemas/v1 --export-root <새-export-root>
+```
+
+도구는 요청한 설치본에서만 import하고 소스·wheel·설치본·export의 Schema 5개와 wheel RECORD를 비교한다.
+설치·모델 호출·Run 생성은 하지 않는다. 과거 동결 wheel에 새 Schema를 덮어쓰지 않는다.
+이번 검증의 범위와 실제 결과는 [F5 교정 기록](../../docs/operations/audit-f5-schema-remediation-20260916.md)을 따른다.
+
+## 초기 구현의 검증 기록 — 과거 시점
+
+아래는 초기 구현 당시 기록이다. 현재 상태와 후속 제한은 저장소의 관리 문서 및 위 교정 기록을 우선한다.
 
 - 비라이브 단위·계약·통합 시험: 통과
 - 독립 code-change/document fixture의 FakeRuntime 관통: 통과

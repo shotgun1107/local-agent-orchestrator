@@ -171,6 +171,19 @@
           "title": "Key",
           "type": "string"
         },
+        "own_check": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Own Check"
+        },
         "read_scope": {
           "items": {
             "type": "string"

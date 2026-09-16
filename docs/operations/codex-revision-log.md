@@ -4190,3 +4190,14 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 실제 SDK/model/Worker/Judge workload, 원본 Controller state/Cell claim 및 과거 seal 변경은 0이다.
   새 candidate나 experiment를 만들지 않았으며 Live NO-GO를 유지한다.
 - 개발 기록 DEV-20260916-001과 [교정 상세](audit-f8-f9-f3-remediation-20260916.md)에 원인·대안·한계·증거를 연결했다.
+
+## 2026-09-16 감사 F5 — 공개 Schema와 실제 export·wheel 일치
+
+- 사용자 후속 승인으로 run-spec의 own_check와 task-envelope의 remaining_attempts null/생략을 현행 모델과 일치시켰다.
+  나머지 공개 Schema 3개와 contract.py는 Git 변경이 없다. 과거 동결 wheel·candidate·실행 자료는 보존했다.
+- 수정 전 소비자 회귀는 5 failed / 12 passed였다. 재생성 후 Schema·CLI 25개, 생략 사례 보강 후 전체 B1 145개가 통과했다.
+- 새 QA wheel을 별도 경로에 설치하고 소스→wheel→설치본→export의 Schema 5개 exact bytes와 RECORD·모델 일치를 확인했다.
+  package README까지 반영해 최종 QA를 다시 만들었으며 두 빌드는 동일 입력 재현성 시험으로 세지 않는다.
+- 소비자 시험용 jsonschema를 B1 dev/all extra 및 공통 lock에 선언했다. 활성 개발 패키지 버전과 개인 설정은 바꾸지 않았다.
+- 새 package 검사 도구·DEV-20260916-002 및 [교정 결과](audit-f5-schema-remediation-20260916.md)를 기록했다.
+  실제 모델·SDK thread·원본 state/claim·과거 seal 변경은 0이며 Live NO-GO다. 다음 후보는 F10·F11·F12다.
