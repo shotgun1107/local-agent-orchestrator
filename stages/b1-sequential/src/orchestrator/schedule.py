@@ -42,6 +42,7 @@ from .contract import (
     load_yaml_model,
     new_id,
     sha256_bytes,
+    sha256_json,
     utc_now,
 )
 from .ledger import IntegrityViolation, Ledger, LedgerError, StateConflict
@@ -149,6 +150,13 @@ def validate_run_against_project(spec: RunSpec, loaded: LoadedProject) -> None:
         profile = profiles[task.capability_profile]
         if profile.workspace_mode != task.workspace_mode:
             raise ConfigurationError(f"Task {task.key} workspace_mode differs from capability profile")
+        expected_sandbox = (
+            SandboxMode.READ_ONLY
+            if task.workspace_mode == WorkspaceMode.READ_ONLY
+            else SandboxMode.WORKSPACE_WRITE
+        )
+        if profile.sandbox != expected_sandbox:
+            raise ConfigurationError(f"Task {task.key} sandbox contradicts workspace_mode")
         missing = set(task.check_names) - checks.keys()
         if missing:
             raise ConfigurationError(f"Task {task.key} uses unknown Checks: {sorted(missing)}")
@@ -262,6 +270,11 @@ class Orchestrator:
         self.runtime_kind = runtime_kind
         self.runtime_profiles_path = runtime_profiles_path
         self.turn_boundary_observer = turn_boundary_observer
+        self._injected_runtime = runtime_port is not None
+        self._default_runtime_profile_name = loaded.pack.capabilities.profiles[
+            loaded.pack.project.default_capability_profile
+        ].runtime_profile
+        self._task_runtime_profiles: dict[str, RuntimeProfile] = {}
         if runtime_port is not None:
             if runtime_profile_override is None or auth_method_override is None:
                 raise ConfigurationError(
@@ -284,6 +297,7 @@ class Orchestrator:
             self.runtime_profile = load_runtime_profile(capability.runtime_profile, runtime_profiles_path)
             if self.runtime_profile.auth_method != "chatgpt":
                 raise ConfigurationError("B1 Codex runtime requires ChatGPT authentication")
+            self._task_runtime_profiles[self._default_runtime_profile_name] = self.runtime_profile
             self.runtime = CodexRuntime(
                 workspace=loaded.project_root,
                 interrupt_grace_seconds=self.policy.interrupt_grace_seconds,
@@ -291,6 +305,27 @@ class Orchestrator:
             self.auth_method = "chatgpt"
         else:
             raise ConfigurationError(f"unsupported runtime: {runtime_kind}")
+
+    def _runtime_profile_for(self, spec: TaskSpec) -> Any:
+        capability = self.loaded.pack.capabilities.profiles[spec.capability_profile]
+        if self._injected_runtime or self.runtime_kind == "fake":
+            # A singular injected override has exactly one named binding. Do not
+            # claim to have applied arbitrary Task-specific runtime profiles.
+            if capability.runtime_profile != self._default_runtime_profile_name:
+                raise ConfigurationError("single runtime profile override cannot cover a different Task profile")
+            return self.runtime_profile
+        if capability.runtime != "codex":
+            raise ConfigurationError("Task capability runtime differs from the selected Codex runtime")
+        name = capability.runtime_profile
+        if name not in self._task_runtime_profiles:
+            self._task_runtime_profiles[name] = load_runtime_profile(name, self.runtime_profiles_path)
+        return self._task_runtime_profiles[name]
+
+    def _validate_runtime_profiles(self, spec: RunSpec) -> None:
+        # Resolve every selected profile before creating a Run or dispatching its
+        # first Task; use that same immutable profile for the entire invocation.
+        for task in spec.tasks:
+            self._runtime_profile_for(task)
 
     @property
     def completion_deadline_mode(self) -> bool:
@@ -349,6 +384,7 @@ class Orchestrator:
 
     def start(self, spec: RunSpec, *, original_spec: str | None = None) -> str:
         validate_run_against_project(spec, self.loaded)
+        self._validate_runtime_profiles(spec)
         health = self.workspace.doctor()
         if not health.get("healthy"):
             raise ConfigurationError(f"workspace doctor failed: {health}")
@@ -408,6 +444,7 @@ class Orchestrator:
 
     def resume(self, run_id: str, spec: RunSpec) -> str:
         validate_run_against_project(spec, self.loaded)
+        self._validate_runtime_profiles(spec)
         preflight_check_environment(
             self.workspace,
             temp_root=self.check_temp_root,
@@ -572,6 +609,48 @@ class Orchestrator:
             ],
         }
 
+    def _validate_task_inputs(
+        self, ledger: Ledger, run_id: str, task: dict[str, Any], spec: TaskSpec,
+    ) -> dict[str, Any]:
+        entries = self.workspace.validate_required_inputs(spec)
+        for item in spec.inputs:
+            if item.artifact_id is None:
+                continue
+            row = ledger.connection.execute(
+                "SELECT * FROM artifacts WHERE artifact_id=?", (item.artifact_id,),
+            ).fetchone()
+            if row is None or row["run_id"] != run_id or row["kind"] != "project_file":
+                raise VerificationError("required_inputs", f"input Artifact is missing or belongs to another Run: {item.path}")
+            if row["task_id"] is None:
+                valid_owner = row["producer"] == "user" and row["attempt_id"] is None
+            else:
+                owner = ledger.connection.execute(
+                    """WITH RECURSIVE prerequisites(task_id) AS (
+                         SELECT depends_on_task_id FROM task_dependencies WHERE task_id=?
+                         UNION
+                         SELECT d.depends_on_task_id FROM task_dependencies d
+                         JOIN prerequisites p ON d.task_id=p.task_id)
+                       SELECT t.* FROM tasks t JOIN prerequisites p ON p.task_id=t.task_id
+                       WHERE t.task_id=? AND t.run_id=? AND t.state='SUCCEEDED'""",
+                    (task["task_id"], row["task_id"], run_id),
+                ).fetchone()
+                attempt = ledger.connection.execute(
+                    "SELECT * FROM attempts WHERE attempt_id=? AND task_id=? AND state='SUCCEEDED'",
+                    (row["attempt_id"], row["task_id"]),
+                ).fetchone()
+                valid_owner = owner is not None and attempt is not None and owner["requirements_version"] == task["requirements_version"]
+            entry = entries[item.path]
+            try:
+                valid_bytes = (
+                    row["sha256"] == entry.sha256 and row["size_bytes"] == entry.size
+                    and self.store.verify(row["relative_path"], row["sha256"])
+                )
+            except (OSError, ValueError, VerificationError):
+                valid_bytes = False
+            if not valid_owner or not valid_bytes:
+                raise VerificationError("required_inputs", f"input Artifact provenance or bytes do not match: {item.path}")
+        return entries
+
     def _execute_task(self, ledger: Ledger, run_id: str, task: dict[str, Any], spec: TaskSpec) -> None:
         run = ledger.get("run", run_id)
         self._assert_project_pack_unchanged(run["project_pack_sha256"])
@@ -584,8 +663,13 @@ class Orchestrator:
             task = ledger.get("task", task["task_id"])
             ledger.transition("task", task["task_id"], task["version"], TaskState.FAILED, "task_attempt_budget_exhausted", {})
             return
+        runtime_profile = self._runtime_profile_for(spec)
+        required_inputs = self._validate_task_inputs(ledger, run_id, task, spec)
         baseline = self.workspace.capture_baseline()
         fingerprint = self.workspace.fingerprint_inputs(spec)
+        fingerprint_entries = {entry.path: entry for entry in fingerprint.manifest}
+        if any(fingerprint_entries.get(path) != entry for path, entry in required_inputs.items()):
+            raise VerificationError("required_inputs", "required input changed before dispatch")
         attempt_id = new_id("attempt")
         envelope = build_task_envelope(
             spec,
@@ -621,7 +705,7 @@ class Orchestrator:
         )
         ledger.set_baseline_artifact(attempt_id, baseline_artifact["artifact_id"])
         try:
-            session_handle = self.runtime.start_session(envelope, self.runtime_profile)
+            session_handle = self.runtime.start_session(envelope, runtime_profile)
             session_handle.initial_feedback = retry_feedback
             capabilities = self.runtime.capabilities()
             capability_profile = self.loaded.pack.capabilities.profiles[spec.capability_profile]
@@ -940,6 +1024,79 @@ class Orchestrator:
                 attempt_id, AttemptState.FAILED, TaskState.FAILED, failure_kind, payload,
             )
 
+    def _check_snapshot(
+        self, ledger: Ledger, run_id: str, task: dict[str, Any], spec: TaskSpec,
+        attempt_id: str, result: ResultEnvelope, check: Any,
+    ) -> dict[str, Any]:
+        """Bind Check success to visible workspace bytes plus explicit files.
+
+        This is a local workspace observation, not an attestation of arbitrary
+        external services or of changes reverted between observations.
+        """
+        try:
+            paths = set(self.workspace.list_files())
+            paths.update(item.path for item in spec.inputs)
+            paths.update(item.path for item in result.artifacts)
+            entries = [self.workspace.required_file_entry(path) for path in sorted(paths)]
+            head = self.workspace.head_revision()
+        except (OSError, ValueError, VerificationError) as exc:
+            raise VerificationError("check_evidence", "Check workspace snapshot cannot be verified") from exc
+        return {
+            "schema_version": 1,
+            "run_id": run_id,
+            "task_id": task["task_id"],
+            "attempt_id": attempt_id,
+            "check_id": check["check_id"],
+            "check_name": check["check_name"],
+            "check_definition": self.loaded.pack.checks.checks[check["check_name"]].model_dump(mode="json"),
+            "project_pack_sha256": ledger.get("run", run_id)["project_pack_sha256"],
+            "task_spec_sha256": sha256_json(spec),
+            "result_sha256": sha256_json(result),
+            "head_revision": head,
+            "files": [entry.model_dump(mode="json") for entry in entries],
+        }
+
+    def _assert_check_evidence(
+        self, ledger: Ledger, run_id: str, task: dict[str, Any], spec: TaskSpec,
+        attempt_id: str, result: ResultEnvelope, check: Any, base: str,
+    ) -> None:
+        event = ledger.connection.execute(
+            "SELECT payload_json FROM events WHERE aggregate_id=? AND event_type='check_finished' ORDER BY seq DESC LIMIT 1",
+            (check["check_id"],),
+        ).fetchone()
+        try:
+            payload = json.loads(event["payload_json"]) if event is not None else {}
+            if not isinstance(payload, dict):
+                raise ValueError("invalid Check event payload")
+            binding = payload.get("verification_snapshot")
+            if (
+                not isinstance(binding, dict) or set(binding) != {"artifact_id", "sha256"}
+                or not isinstance(binding["artifact_id"], str)
+                or not isinstance(binding["sha256"], str)
+            ):
+                raise ValueError("no bound snapshot")
+            artifact = ledger.connection.execute(
+                "SELECT * FROM artifacts WHERE artifact_id=?", (binding["artifact_id"],),
+            ).fetchone()
+            expected_path = f"{base}/checks/{check['check_name']}/verification-snapshot.json"
+            if (
+                artifact is None or artifact["run_id"] != run_id
+                or artifact["task_id"] != task["task_id"] or artifact["attempt_id"] != attempt_id
+                or artifact["relative_path"] != expected_path or artifact["kind"] != "check_result"
+                or artifact["producer"] != "verifier" or artifact["sha256"] != binding["sha256"]
+                or not self.store.verify(expected_path, binding["sha256"])
+            ):
+                raise ValueError("snapshot Artifact binding does not match")
+            saved = json.loads(self.store.resolve(expected_path).read_text(encoding="utf-8"))
+            current = self._check_snapshot(ledger, run_id, task, spec, attempt_id, result, check)
+            if saved != {"schema_version": 1, "before": current, "after": current}:
+                raise ValueError("workspace or verification context changed since Check")
+        except (OSError, ValueError, TypeError, KeyError, VerificationError) as exc:
+            raise VerificationError(
+                "check_evidence", f"Check {check['check_name']} has no matching immutable verification snapshot",
+                retryable=False,
+            ) from exc
+
     def _verify_and_finish(
         self,
         ledger: Ledger,
@@ -976,6 +1133,14 @@ class Orchestrator:
             ]
             if corrupt:
                 raise VerificationError("artifact_integrity", f"Artifact hash mismatch: {corrupt}")
+            # Check recovered PASSED evidence before ordinary workspace inventory:
+            # missing/deleted snapshot files must block, not escape as an IO error.
+            for previous in ledger.connection.execute(
+                "SELECT * FROM checks WHERE attempt_id=? AND state='PASSED'", (attempt_id,),
+            ).fetchall():
+                if previous["check_name"] not in spec.check_names:
+                    raise VerificationError("check_evidence", "recovered Check is not in the current Task")
+                self._assert_check_evidence(ledger, run_id, task, spec, attempt_id, result, previous, base)
             changed = self.workspace.changed_paths(baseline)
             normalized_bytecode = self.workspace.normalize_untracked_python_bytecode(changed)
             if normalized_bytecode:
@@ -1026,6 +1191,7 @@ class Orchestrator:
                     "argv": definition.argv,
                 })
                 ledger.start_check(check_record["check_id"])
+                before_check = self._check_snapshot(ledger, run_id, task, spec, attempt_id, result, check_record)
                 check_result = run_command_check(
                     check_name,
                     definition,
@@ -1054,6 +1220,19 @@ class Orchestrator:
                     relative_path=f"{check_base}/result.json", value=check_result,
                     kind="check_result", producer="verifier",
                 )
+                snapshot_binding = None
+                if check_result.state == "PASSED":
+                    after_check = self._check_snapshot(ledger, run_id, task, spec, attempt_id, result, check_record)
+                    snapshot_path = f"{check_base}/verification-snapshot.json"
+                    if self.store.resolve(snapshot_path).exists():
+                        raise VerificationError("check_evidence", "Check snapshot already exists; refusing to overwrite")
+                    snapshot_artifact = self._persist(
+                        ledger, run_id=run_id, task_id=task["task_id"], attempt_id=attempt_id,
+                        relative_path=snapshot_path,
+                        value={"schema_version": 1, "before": before_check, "after": after_check},
+                        kind="check_result", producer="verifier",
+                    )
+                    snapshot_binding = {key: snapshot_artifact[key] for key in ("artifact_id", "sha256")}
                 ledger.finish_check(check_record["check_id"], {
                     "task_id": task["task_id"],
                     "attempt_id": attempt_id,
@@ -1067,6 +1246,7 @@ class Orchestrator:
                     "started_at": check_result.started_at,
                     "ended_at": check_result.ended_at,
                     "input_fingerprint": fingerprint.sha256,
+                    "verification_snapshot": snapshot_binding,
                 })
                 environment_diagnostic = extract_check_environment_diagnostic(
                     check_result
@@ -1119,6 +1299,13 @@ class Orchestrator:
                         },
                     )
                 passed.add(check_name)
+            # All successful Checks must still describe the final accepted bytes,
+            # including changes caused by a later Check in the same invocation.
+            for check_name in passed:
+                check = ledger.connection.execute(
+                    "SELECT * FROM checks WHERE attempt_id=? AND check_name=?", (attempt_id, check_name),
+                ).fetchone()
+                self._assert_check_evidence(ledger, run_id, task, spec, attempt_id, result, check, base)
             for criterion in spec.completion_criteria:
                 if not set(criterion.check_names).issubset(passed):
                     raise VerificationError("completion_criteria", f"criterion not proven: {criterion.id}")
@@ -1148,6 +1335,7 @@ class Orchestrator:
                 "project_pack": FailureKind.ARTIFACT_CORRUPT,
                 "declared_artifacts": FailureKind.ARTIFACT_CORRUPT,
                 "artifact_integrity": FailureKind.ARTIFACT_CORRUPT,
+                "check_evidence": FailureKind.ARTIFACT_CORRUPT,
             }.get(exc.stage, FailureKind.INTERNAL)
             if failure_kind in {FailureKind.SCOPE_VIOLATION, FailureKind.ARTIFACT_CORRUPT}:
                 ledger.finish_attempt(

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260916-001",
+  "title": "감사 F8·F9·F3: Task 실행 설정·필수 입력·Check 복구 증거의 연결 누락",
+  "status": "resolved",
+  "stage": "b1",
+  "category": "implementation",
+  "discovered_at": "2026-09-16T05:16:24Z",
+  "resolved_at": "2026-09-16T05:53:32Z",
+  "discovered_by": "2026-09-08 독립 감사의 세 항목을 2026-09-16 model-free 회귀로 재현",
+  "symptom": "Task가 기본 profile과 다른 선언을 해도 기본 설정으로 실행되고, 누락·잘못된 입력도 dispatch에 도달하며, 검사 후 바뀐 workspace에 이전 PASSED를 재사용할 수 있었다.",
+  "reproduction": [
+    "서로 다른 runtime profile 두 Task를 순차 실행하고 실제 start_session 인자와 session 기록을 대조한다. 모순 sandbox도 validation에 넣는다.",
+    "누락 파일·잘못된 SHA·디렉터리·없는 Artifact ID를 InputRef에 넣고 Attempt/세션 생성 여부를 확인한다.",
+    "실제 임시 Ledger의 Check PASSED commit 직후 중단하고 write scope 안 파일을 바꾼 뒤 resume한다. 정상·legacy·삭제·선언 Artifact도 대조한다."
+  ],
+  "evidence": [
+    {"kind": "review-finding", "detail": "기존 독립 감사 F8, F9, F3. 당시 보고서와 봉인 자료는 변경하지 않았다."},
+    {"kind": "reproducible-test", "detail": "수정 전 red2.xml: 12 failed / 3 passed. 수정 뒤 집중 38개는 B1 전체 회차에서 모두 통과했다."},
+    {"kind": "direct-observation", "detail": "전체 B1 첫 회차 127 passed / F5 1 failed, 보강 회차 128 passed / F5와 시간 조건 2 failed, 최종 관측 129 passed / F5 1 failed. 관련 model-free adapter 5 passed. 시간 조건 격리 관측 2 passed이며 원인 미확정 변동을 해결로 세지 않는다."}
+  ],
+  "root_cause": "전역 기본 runtime 설정과 Task 선언을 별개로 처리했고, Git read-scope fingerprint를 필수 InputRef 계약 검증으로 오인했으며, 허용 write scope의 freshness와 과거 Check 증거의 유효성을 구분하지 않았다. 기존 시험은 단일 profile·빈 inputs·Check 전 REPORTED 중단에 치우쳐 세 경계를 잡지 못했다.",
+  "considered_options": [
+    {"option": "Task profile을 명시적으로 해석하고 실행 인자로 전달", "decision": "adopted", "reason": "일반 Codex 경로에서 서로 다른 선언을 정확히 적용한다. 단일 injected override의 다른 이름은 차단한다."},
+    {"option": "Worker에게 입력 hash 확인을 맡김", "decision": "rejected", "reason": "비용 발생 전 결정론적 사전 관문을 대신하지 못한다."},
+    {"option": "과거 PASSED를 그대로 신뢰하거나 자동 Check 재실행", "decision": "rejected", "reason": "현재 bytes와 증거가 연결되지 않으며 과거 실패·완료 기록을 바꿀 수 있다."},
+    {"option": "새 Check 전후 snapshot과 terminal event hash 연결", "decision": "adopted", "reason": "migration·역사 Check를 바꾸지 않고 정상 복구와 drift·legacy 차단을 함께 유지한다."}
+  ],
+  "resolution": "선택된 profile을 사전 해석·고정하고 workspace mode/sandbox 모순을 거부했다. 필수 파일과 선택 SHA, Artifact의 Run·의존 Task·Attempt·저장 bytes를 dispatch 전에 검증한다. Check snapshot을 새 Artifact와 terminal event에 결합해 복구와 최종 채택 시 현재 파일·검증 문맥을 대조하고, 일치하지 않거나 증거가 없는 경우 BLOCKED로 둔다.",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "stages/b1-sequential/src/orchestrator/verify.py",
+    "stages/b1-sequential/src/orchestrator/ledger.py",
+    "stages/b1-sequential/tests/integration/test_audit_execution_gates.py"
+  ],
+  "regression_tests": [
+    "stages/b1-sequential/tests/integration/test_audit_execution_gates.py: profile·sandbox·입력·Artifact 소유·파일 drift·legacy·손상 event·Check 중 변경 등 38개",
+    "stages/b1-sequential/tests: 전체 B1 회귀에서 기존 F5 및 변동성 시간 실패를 분리",
+    "tools/benchmark-runner/tests/test_realistic_phase_f_b1.py: model-free adapter 5개"
+  ],
+  "verification": [
+    "최종 B1 회귀 129 passed / 기존 F5 1 failed. 이 안에 집중 38개 PASS가 포함된다. 관련 model-free adapter 5개 PASS. 전체 회귀를 무조건 PASS라고 보고하지 않는다.",
+    "초기 시험 모형 오류 및 구현 중 잘못된 hash 함수 호출을 각각 교정했고 중간 실패 기록은 보존했다.",
+    "실제 SDK thread/model turn, 실제 Worker/Judge workload, 원본 Controller state/Cell claim, 과거 seal 변경 0. 시험용 임시 Fake/SQLite 자료는 별도 경로 사용."
+  ],
+  "remaining_risks": [
+    "F5 공개 Schema 불일치 및 나머지 감사 결함은 이 항목의 해결 범위 밖이다.",
+    "전체 회귀의 timeout wall-clock 변동 1회는 원인 미확정이다. 안전 상태는 유지됐고 격리 관측은 통과했지만 시간 변동을 해결했다고 보지 않는다.",
+    "파일 snapshot은 외부 서비스·미선언 ignored 파일·관측 사이 변경 후 원복까지 증명하지 않는다. 동시 workspace 쓰기는 지원하지 않는다.",
+    "실제 SDK·새 wheel 설치·다른 PC·candidate-bound rehearsal은 미검증이며 Live NO-GO다."
+  ],
+  "related_commits": ["baea320306bd1e8e7f132a99fbf05ee9757662ca"],
+  "source_references": [
+    "docs/operations/audit-f8-f9-f3-remediation-20260916.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md",
+    "related_commits의 baea320은 수정 전 기준이며 실제 전달된 수정 commit은 동기화_인수인계.md의 최신 자동 블록에서 확인한다."
+  ]
+}

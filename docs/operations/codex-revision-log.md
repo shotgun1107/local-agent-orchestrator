@@ -4176,3 +4176,17 @@ q25·q5와 acceptance 두 회차를 직접 결합하는 readiness package다. En
 - 앞선 폴더 통합은 별도 경로 문서와 commit `630f1e3`에 기록돼 있다. 그 뒤 중복 검증 사본
   8개·빈 항목 1개·생성 캐시 11개를 영구 삭제했으며 원본은 보존했다. 상세 로컬 근거는
   `C:\LAO\ops\cleanup-20260916-after-commit\README.md`이고 접근 제한 캐시 4곳은 보류했다.
+
+## 2026-09-16 감사 F8·F9·F3 교정과 회귀
+
+- 사용자 승인 범위에서 B1 Task별 profile/sandbox, 필수 InputRef, PASSED Check 복구 경계를 수정했다.
+  중간 일시 정지 요청에 멈췄고 새 재개 지시 뒤 후속 검증을 마쳤다.
+- 최초 재현은 12 failed / 정상 대조 3 passed였다. 시험 모형 오류와 구현 중 hash 함수 오용은
+  별도 기록하고 제품 실패 수로 합산하지 않았다.
+- 최종 B1 관측은 129 passed / 기존 F5 공개 Schema 불일치 1 failed이며, 집중 38개를 포함한다.
+  관련 model-free adapter 5개, 로그 하네스 10개, 관리 문서 반영 도구 18개가 통과했다.
+- 중간 전체 회차의 timeout wall-clock 실패 1회는 원인 미확정이다. 안전한 BLOCKED/QUARANTINED
+  상태를 확인했고 격리 및 최종 전체 관측에서는 통과했으나 시간 변동을 해결한 것으로 보고하지 않는다.
+- 실제 SDK/model/Worker/Judge workload, 원본 Controller state/Cell claim 및 과거 seal 변경은 0이다.
+  새 candidate나 experiment를 만들지 않았으며 Live NO-GO를 유지한다.
+- 개발 기록 DEV-20260916-001과 [교정 상세](audit-f8-f9-f3-remediation-20260916.md)에 원인·대안·한계·증거를 연결했다.
