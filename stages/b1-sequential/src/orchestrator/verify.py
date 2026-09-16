@@ -489,9 +489,59 @@ def path_matches(path: str, patterns: Iterable[str]) -> bool:
     return False
 
 
-def _file_entry(root: Path, relative: str) -> FingerprintEntry:
-    data = (root / relative).read_bytes()
-    return FingerprintEntry(path=relative, sha256=sha256_bytes(data), size=len(data))
+def _file_identity(info: os.stat_result) -> tuple[int, ...]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _workspace_file_stat(root: Path, relative: str, *, allow_missing: bool = False) -> os.stat_result | None:
+    """Absence is allowed only during inventory, never as a catch-all IO fallback."""
+    try:
+        validate_relative_path(relative)
+        target = root.joinpath(*PurePosixPath(relative).parts)
+        if root not in target.parents:
+            raise ValueError("path escaped workspace")
+        parts = PurePosixPath(relative).parts
+        components = [root, *(root.joinpath(*parts[:i]) for i in range(1, len(parts) + 1))]
+        for path in components:
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                if allow_missing and path != root:
+                    return None
+                raise
+            if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+                raise ValueError("links/reparse points are not workspace files")
+            if path != target and not stat.S_ISDIR(info.st_mode):
+                raise ValueError("workspace parent is not a directory")
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("workspace entry is not a regular file")
+        return info
+    except (OSError, ValueError) as exc:
+        raise VerificationError("workspace_inventory", f"cannot inspect workspace file: {relative}", retryable=False) from exc
+
+
+def _file_entry(root: Path, relative: str, expected: tuple[int, ...] | None = None) -> FingerprintEntry:
+    try:
+        before = _workspace_file_stat(root, relative)
+        assert before is not None
+        identity = _file_identity(before)
+        if expected is not None and identity != expected:
+            raise ValueError("file changed after inventory")
+        with (root / relative).open("rb") as handle:
+            opened = _file_identity(os.fstat(handle.fileno()))
+            # Windows Python 3.12 can expose different ctime semantics through
+            # lstat/fstat. Compare ctime only within the same API; still bind the
+            # handle to device/inode/type/size/mtime from the path observation.
+            if opened[:-1] != identity[:-1]:
+                raise ValueError("opened a different file")
+            data = handle.read()
+            if _file_identity(os.fstat(handle.fileno())) != opened:
+                raise ValueError("file changed while reading")
+        if _file_identity(_workspace_file_stat(root, relative)) != identity or len(data) != before.st_size:
+            raise ValueError("file changed after reading")
+        return FingerprintEntry(path=relative, sha256=sha256_bytes(data), size=len(data))
+    except (OSError, ValueError) as exc:
+        raise VerificationError("workspace_inventory", f"cannot read stable workspace file: {relative}", retryable=False) from exc
 
 
 class GitWorkspace:
@@ -552,7 +602,7 @@ class GitWorkspace:
         lines = [line for line in result.stdout.splitlines() if line]
         return {"clean": not lines, "entries": lines}
 
-    def list_files(self, path_scopes: Iterable[str] | None = None) -> list[str]:
+    def _git_file_candidates(self, path_scopes: Iterable[str] | None = None) -> list[str]:
         result = subprocess.run(
             [str(self.git_executable), "ls-files", "-co", "--exclude-standard", "-z"],
             cwd=self.root,
@@ -561,16 +611,41 @@ class GitWorkspace:
             check=True,
             env=self.git_environment,
         )
-        files = sorted(
-            path.replace("\\", "/")
+        files = sorted({
+            path
             for path in result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
             if path
-        )
+        })
         scopes = list(path_scopes or [])
         return [path for path in files if not scopes or path_matches(path, scopes)]
 
+    def _inventory(self, path_scopes: Iterable[str] | None = None) -> dict[str, tuple[int, ...] | None]:
+        observed = {}
+        try:
+            candidates = self._git_file_candidates(path_scopes)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise VerificationError("workspace_inventory", "Git file inventory is unavailable", retryable=False) from exc
+        for path in candidates:
+            info = _workspace_file_stat(self.root, path, allow_missing=True)
+            observed[path] = _file_identity(info) if info is not None else None
+        return observed
+
+    def list_files(self, path_scopes: Iterable[str] | None = None) -> list[str]:
+        """Existing regular files, not every name retained in the Git index."""
+        return [path for path, identity in self._inventory(path_scopes).items() if identity is not None]
+
+    def _capture_entries(self, path_scopes: Iterable[str] | None = None) -> list[FingerprintEntry]:
+        scopes = list(path_scopes or [])
+        before = self._inventory(scopes)
+        entries = [_file_entry(self.root, path, identity) for path, identity in before.items() if identity is not None]
+        # Also recheck negative observations: an absent tracked file can reappear
+        # while another file is read. Never silently call that a stable deletion.
+        if self._inventory(scopes) != before:
+            raise VerificationError("workspace_inventory", "workspace changed during inventory", retryable=False)
+        return entries
+
     def capture_baseline(self, path_scopes: Iterable[str] | None = None) -> WorkspaceBaseline:
-        entries = [_file_entry(self.root, path) for path in self.list_files(path_scopes)]
+        entries = self._capture_entries(path_scopes)
         return WorkspaceBaseline(
             head_revision=self.head_revision(),
             files=entries,
@@ -618,7 +693,7 @@ class GitWorkspace:
 
     def fingerprint_inputs(self, task: TaskSpec) -> InputFingerprint:
         scopes = [*task.read_scope, *(item.path for item in task.inputs)]
-        entries_by_path = {path: _file_entry(self.root, path) for path in self.list_files(scopes)}
+        entries_by_path = {entry.path: entry for entry in self._capture_entries(scopes)}
         # Explicit inputs cannot disappear merely because Git ignores them.
         for item in task.inputs:
             entries_by_path[item.path] = self.required_file_entry(item.path)
@@ -629,14 +704,6 @@ class GitWorkspace:
     def required_file_entry(self, relative: str) -> FingerprintEntry:
         """Read an explicit repository-local regular file, without following links."""
         try:
-            validate_relative_path(relative)
-            path = self.root
-            for component in PurePosixPath(relative).parts:
-                path = path / component
-                if _is_reparse_point(path):
-                    raise ValueError("links/reparse points are not valid inputs")
-            if self.root not in path.resolve().parents or not stat.S_ISREG(path.stat().st_mode):
-                raise ValueError("input is not a repository-local regular file")
             return _file_entry(self.root, relative)
         except (OSError, ValueError, VerificationError) as exc:
             raise VerificationError(

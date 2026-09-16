@@ -79,7 +79,8 @@ class ControlledRuntime(FakeRuntime):
         if self.mode == "await_raises":
             raise RuntimeError("fake terminal consumer failure")
         return RuntimeOutcome(
-            terminal_status=TerminalStatus.COMPLETED if self.mode == "completed_race" else TerminalStatus.CANCELLED,
+            terminal_status={"completed_race": TerminalStatus.COMPLETED, "timed_out_race": TerminalStatus.TIMED_OUT,
+                             "failed_race": TerminalStatus.FAILED}.get(self.mode, TerminalStatus.CANCELLED),
             terminal_evidence={"notification": "turn_completed"},
         )
 
@@ -87,7 +88,7 @@ class ControlledRuntime(FakeRuntime):
         self.interrupt_calls += 1
         if self.mode == "fake":
             return super().interrupt(turn)
-        if self.mode in {"confirmed", "completed_race", "await_raises"}:
+        if self.mode in {"confirmed", "completed_race", "timed_out_race", "failed_race", "await_raises"}:
             self.release.set()
         if self.mode == "raises":
             raise RuntimeError("fake interrupt failure")
@@ -110,7 +111,7 @@ def start_background(app, spec):
     return thread, errors
 
 
-@pytest.mark.parametrize("mode", ["fake", "confirmed", "completed_race", "unsupported", "failed", "raises", "hangs", "no_terminal", "await_raises"])
+@pytest.mark.parametrize("mode", ["fake", "confirmed", "completed_race", "timed_out_race", "failed_race", "unsupported", "failed", "raises", "hangs", "no_terminal", "await_raises"])
 def test_owner_handles_request_and_never_adopts_or_retries(mode, tmp_path, project_factory, monkeypatch):
     root = project_factory(task_timeout=60)
     state = tmp_path / "state"
@@ -129,10 +130,11 @@ def test_owner_handles_request_and_never_adopts_or_retries(mode, tmp_path, proje
         assert not thread.is_alive(), "controller did not stop within the bounded cancellation window"
         assert errors == []
         result = snapshot(state, run_id)
-        confirmed = mode in {"fake", "confirmed", "completed_race"}
+        confirmed = mode in {"fake", "confirmed", "completed_race", "timed_out_race", "failed_race"}
         assert result["run"]["state"] == ("CANCELLED" if confirmed else "BLOCKED")
         assert result["tasks"][0]["attempts"][0]["state"] == ("CANCELLED" if confirmed else "QUARANTINED")
-        assert result["sessions"][0]["state"] == ("COMPLETED" if mode == "completed_race" else "CANCELLED" if confirmed else "QUARANTINED")
+        assert result["sessions"][0]["state"] == ({"completed_race": "COMPLETED", "timed_out_race": "TIMED_OUT",
+                                                "failed_race": "FAILED"}.get(mode, "CANCELLED" if confirmed else "QUARANTINED"))
         assert result["tasks"][1]["state"] == "CANCELLED"
         assert all(task["active_attempt_id"] is None for task in result["tasks"])
         assert result["checks"] == []

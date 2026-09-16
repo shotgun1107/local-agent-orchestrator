@@ -481,6 +481,7 @@ class Orchestrator:
             TerminalStatus.COMPLETED: SessionState.COMPLETED,
             TerminalStatus.CANCELLED: SessionState.CANCELLED,
             TerminalStatus.FAILED: SessionState.FAILED,
+            TerminalStatus.TIMED_OUT: SessionState.TIMED_OUT,
             TerminalStatus.UNKNOWN: SessionState.QUARANTINED,
         }[outcome.terminal_status]
         ledger.update_session_terminal(
@@ -1079,11 +1080,15 @@ class Orchestrator:
         external services or of changes reverted between observations.
         """
         try:
-            paths = set(self.workspace.list_files())
-            paths.update(item.path for item in spec.inputs)
-            paths.update(item.path for item in result.artifacts)
-            entries = [self.workspace.required_file_entry(path) for path in sorted(paths)]
-            head = self.workspace.head_revision()
+            observed = self.workspace.capture_baseline()
+            by_path = {entry.path: entry for entry in observed.files}
+            for path in sorted({item.path for item in spec.inputs} | {item.path for item in result.artifacts}):
+                entry = self.workspace.required_file_entry(path)
+                if path in by_path and by_path[path] != entry:
+                    raise ValueError("explicit file changed after inventory")
+                by_path[path] = entry
+            entries = [by_path[path] for path in sorted(by_path)]
+            head = observed.head_revision
         except (OSError, ValueError, VerificationError) as exc:
             raise VerificationError("check_evidence", "Check workspace snapshot cannot be verified") from exc
         return {
@@ -1390,8 +1395,9 @@ class Orchestrator:
                 "declared_artifacts": FailureKind.ARTIFACT_CORRUPT,
                 "artifact_integrity": FailureKind.ARTIFACT_CORRUPT,
                 "check_evidence": FailureKind.ARTIFACT_CORRUPT,
+                "required_inputs": FailureKind.ARTIFACT_CORRUPT,
             }.get(exc.stage, FailureKind.INTERNAL)
-            if failure_kind in {FailureKind.SCOPE_VIOLATION, FailureKind.ARTIFACT_CORRUPT}:
+            if failure_kind in {FailureKind.SCOPE_VIOLATION, FailureKind.ARTIFACT_CORRUPT} or exc.stage == "workspace_inventory":
                 ledger.finish_attempt(
                     attempt_id, AttemptState.BLOCKED, TaskState.BLOCKED, failure_kind,
                     failure_payload,

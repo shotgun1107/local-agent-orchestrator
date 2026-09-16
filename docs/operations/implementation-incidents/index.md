@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 81건
-- 해결: 80건
+- 전체: 83건
+- 해결: 82건
 - 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -94,6 +94,8 @@
 | DEV-20260916-001 | resolved | b1 | implementation | 감사 F8·F9·F3: Task 실행 설정·필수 입력·Check 복구 증거의 연결 누락 |
 | DEV-20260916-002 | resolved | b1 | implementation | 감사 F5: 현재 Python 계약을 거부하는 공개 Schema·wheel export |
 | DEV-20260916-003 | resolved | b1 | implementation | 감사 F10: 실행 controller의 잠금 때문에 취소 요청이 전달되지 않음 |
+| DEV-20260916-004 | resolved | b1 | implementation | 감사 F11: 삭제된 Git index 경로를 읽어 허용 삭제·rename 검증이 중단됨 |
+| DEV-20260916-005 | resolved | b1 | implementation | F10 후속: 취소와 TIMED_OUT terminal 경합에서 누락된 상태 매핑 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5507,3 +5509,136 @@ Run별 payload-free marker를 read-only CLI에서 publish하고 잠금 소유자
 - 출처: docs/operations/audit-f10-cancellation-remediation-20260916.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 - 출처: related_commits는 수정 전 기준이다. 실제 전송 작업 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다.
+
+## DEV-20260916-004 — 감사 F11: 삭제된 Git index 경로를 읽어 허용 삭제·rename 검증이 중단됨
+
+- 상태: `resolved`
+- 단계: `b1`
+- 분류: `implementation`
+- 발견: 2026-09-16T07:42:26Z / 독립 감사 F11 및 실제 disposable Git/FakeRuntime 재현
+- 해결: 2026-09-16T07:53:09Z
+
+### 증상
+
+tracked 파일이 작업 트리에서 삭제돼도 ls-files의 index 후보에 남아 있어 baseline·fingerprint·changed_paths가 FileNotFoundError로 중단됐다.
+
+### 재현
+
+- 임시 Git fixture의 tracked 파일을 지운 뒤 baseline 변경 목록을 계산한다.
+- FakeRuntime이 허용 write_scope 안 파일을 삭제하는 실제 B1 경로를 실행한다.
+
+### 증거
+
+- `reproducible-test`: 수정 전 red.xml 2 failed. F11 38개를 포함한 초기 전체 B1 213 passed / 0 failed.
+- `direct-observation`: 초기 교정은 Windows lstat/fstat ctime 차이로 29 failed / 11 passed였다. 같은 fixture에서 다른 identity 항목은 같고 ctime만 다름을 직접 확인한 뒤 동일 API끼리 비교하도록 고쳤다.
+- `reproducible-test`: rename 양쪽 scope, explicit input·declared artifact 삭제, dirty 사전 관문, 존재/부재 Check 증거 복구, 권한/IO/경합 및 no-retry를 검증했다.
+
+### 근본 원인
+
+Git의 후보 이름 목록을 현재 존재하는 일반 파일 목록과 동일시했다. 파일 관측 중 오류와 안정된 부재를 구분하지 않았으며 삭제가 write_scope·Check 증거 검증에 도달하지 못했다.
+
+### 검토한 해결안
+
+- `rejected` read_bytes의 모든 OSError를 무시 — 권한 오류·경합을 삭제로 숨겨 불완전한 snapshot을 채택한다.
+- `rejected` 삭제된 파일을 자동 restore — 사용자/Worker 변경을 덮어쓰고 실제 효과를 바꾼다.
+- `adopted` Git 후보와 실제 파일을 분리하고 두 inventory 및 안정된 핸들을 대조 — 공개 bytes snapshot 계약은 유지하면서 삭제와 읽기 오류를 구분한다.
+
+### 채택한 해결
+
+안정된 부재만 현재 inventory에서 제외해 baseline 차이에 삭제/rename을 포함한다. lstat 경로 검사, 열린 핸들 결합, 읽기 전후 identity와 전체 inventory 재관측을 수행한다. baseline/fingerprint/Check snapshot에 공통 경로를 사용하고 검증 불가와 필수 입력 삭제는 BLOCKED/no-retry로 처리한다. Windows ctime은 같은 API의 전후끼리 비교한다. 기존 F9 reparse 시험은 폐기된 private helper 대신 filesystem flag를 주입하도록 갱신했다.
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/tests/integration/test_workspace_deletions.py
+- stages/b1-sequential/tests/integration/test_audit_execution_gates.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/integration/test_workspace_deletions.py: 38개
+- stages/b1-sequential/tests: 초기 전체 213개, F10 후속 보정 포함 최종 215개
+
+### 검증 결과
+
+- F11 초기 전체 B1 213 passed / 0 failed. 기존 F8/F9/F3/F5/F10 회귀도 포함한다.
+- F10 후속 보정 포함 최종 B1 215 passed / 0 failed / 0 skipped. 환경 점검 PASS; 관리 도구 18개·로그 하네스 10개 통과.
+- 관련 model-free adapter 5개 통과. 실제 SDK/모델/Judge 연결은 사용하지 않았다.
+- 중간 green2.xml의 39 passed / 1 failed는 private reparse mock 경계 변경으로 교정했고 기존 no-dispatch 기대값은 유지했다.
+- focused.xml의 32 passed / 1 failed는 Windows CRLF fixture에 LF 크기 상수를 기대한 시험 오류였다. 실제 bytes 길이 비교로 교정했으며 fixture/source bytes는 정규화하지 않았다.
+- 기존 migration·공개 Schema·과거 state/seal 변경과 실제 모델/SDK/Worker/Judge/Cell 실행 0.
+
+### 남은 위험
+
+- 순변화 관측이지 원자적 filesystem snapshot 또는 관측 사이 삭제·동일 bytes 복원의 이력 증명이 아니다.
+- 악의적인 동시 writer와 OS별 metadata 의미 전체를 증명하지 않는다. 다른 OS와 대규모 repo 성능은 별도 실증이 필요하다.
+- symlink/reparse·submodule directory·일반 파일의 directory/type 전환은 부재로 취급하지 않고 차단한다.
+- F12, F1/F2/F4/F6/F14, 과거 timeout 변동 원인은 미해결이다. Live NO-GO를 유지한다.
+
+### 추적 정보
+
+- 관련 커밋: 61de49a1ea66674b5a734b5aa5c1dceba2dee9d7
+- 출처: docs/operations/audit-f11-workspace-deletion-remediation-20260916.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+- 출처: related_commits는 작업 전 기준이다. 전달 작업 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다.
+
+## DEV-20260916-005 — F10 후속: 취소와 TIMED_OUT terminal 경합에서 누락된 상태 매핑
+
+- 상태: `resolved`
+- 단계: `b1`
+- 분류: `implementation`
+- 발견: 2026-09-16T07:51:43Z / F11 controller 계약 검토 중 인접 F10 분기 확인
+- 해결: 2026-09-16T07:52:14Z
+
+### 증상
+
+취소 요청과 runtime의 명시적 TIMED_OUT terminal이 겹치면 상태 매핑의 KeyError로 controller 처리가 중단됐다.
+
+### 재현
+
+- 주입 runtime을 별도 CLI로 취소하고 await_terminal이 TIMED_OUT을 반환하게 한다.
+
+### 증거
+
+- `reproducible-test`: cancel-terminal-red.xml에서 TIMED_OUT 경합 1 failed, FAILED 경합 대조군 1 passed. 한 분기 보정 뒤 cancel-terminal-green.xml 2 passed.
+
+### 근본 원인
+
+TerminalStatus의 5개 값 중 TIMED_OUT이 취소 후 Session 상태 변환에서 빠졌고 기존 F10 회귀에도 이 조합이 없었다.
+
+### 검토한 해결안
+
+- `rejected` 모든 미지 terminal을 취소 완료로 분류 — UNKNOWN을 실제 중단 증거로 오인한다.
+- `adopted` 명시적 TIMED_OUT을 Session TIMED_OUT으로 매핑 — 확인된 terminal 사실을 보존하며 취소된 Attempt 결과는 채택하지 않는다.
+
+### 채택한 해결
+
+기존 변환에 TIMED_OUT 매핑 한 항목을 추가했다. TIMED_OUT 및 FAILED terminal과 취소의 경합 2개를 기존 실제 CLI/잠금 회귀에 추가했다.
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/tests/integration/test_cancel.py
+
+### 회귀시험
+
+- test_owner_handles_request_and_never_adopts_or_retries[timed_out_race]
+- test_owner_handles_request_and_never_adopts_or_retries[failed_race]
+
+### 검증 결과
+
+- 직접 재현 1 failed / 1 passed → 교정 뒤 2 passed. Session terminal 사실·Run/Attempt 취소·no-retry·보고서 일치를 확인했다.
+- F11 보정과 함께 최종 전체 B1 215 passed / 0 failed / 0 skipped.
+- 실제 SDK/model 호출은 없고 동결 enum·migration·원본 실행 자료를 수정하지 않았다.
+
+### 남은 위험
+
+- 실제 SDK timeout/interrupt의 동작 검증이 아니다. UNKNOWN runtime은 계속 격리한다.
+- F10의 이전 30개 회귀 통과를 모든 terminal 조합 완전 검증으로 확대할 수 없었다는 교훈을 보존한다.
+
+### 추적 정보
+
+- 관련 커밋: ce2e4c3dbd19eda4c707c6b0d2b396cbbcafce28
+- 출처: docs/operations/audit-f11-workspace-deletion-remediation-20260916.md
+- 출처: docs/operations/audit-f10-cancellation-remediation-20260916.md
+- 출처: related_commits는 결함이 들어간 이전 F10 commit이다. 후속 수정 전달 commit은 최신 인수인계 자동 블록을 따른다.

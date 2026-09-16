@@ -58,6 +58,15 @@ state root의 `cancel-requests`는 실행 제어 자료이므로 임의 삭제�
 
 `run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. 공개 Schema 5개는 wheel의 `orchestrator/_schemas/v1`에도 포함되며 `lao schema export`가 비어 있는 디렉터리로 exact file set·SHA-256과 함께 내보낸다. 따라서 외부 실행기는 source checkout, B1 내부 DB, B1 Python 모델을 읽지 않고 설치된 artifact만으로 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
 
+### 삭제·rename 관측
+
+허용된 write_scope 안의 일반 파일 삭제를 지원한다. rename은 삭제한 경로와 추가한 경로를 모두 검사한다.
+삭제된 tracked 경로가 Git index에 남아 있어도 현재 파일 목록에서 구분하며, 기본 clean-worktree 관문은 유지한다.
+explicit InputRef와 선언 Artifact의 삭제, 범위 밖 삭제, 권한/IO 오류·검증 중 관측된 파일 경합은 차단한다.
+이미 PASSED인 Check 뒤 파일의 부재/존재가 달라져도 증거를 재사용하지 않는다. 파일을 자동 복원하지 않는다.
+이는 원자적인 filesystem snapshot이나 모든 동시 변경 이력의 증명은 아니다.
+[F11 결과와 한계](../../docs/operations/audit-f11-workspace-deletion-remediation-20260916.md)를 확인한다.
+
 ## 공개 Schema 개발·패키지 검증
 
 공개 모델을 바꾸면 개발 환경에서 `python scripts/export_schemas.py`로 현행 Schema를 재생성하고
