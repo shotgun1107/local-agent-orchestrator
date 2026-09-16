@@ -42,9 +42,17 @@
       "additionalProperties": false,
       "properties": {
         "remaining_attempts": {
-          "minimum": 0,
-          "title": "Remaining Attempts",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remaining Attempts"
         },
         "timeout_seconds": {
           "exclusiveMinimum": 0,
@@ -53,8 +61,7 @@
         }
       },
       "required": [
-        "timeout_seconds",
-        "remaining_attempts"
+        "timeout_seconds"
       ],
       "title": "TaskLimits",
       "type": "object"
