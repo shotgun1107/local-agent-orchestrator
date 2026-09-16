@@ -268,8 +268,15 @@ def test_f9_reparse_input_is_rejected_without_dispatch(tmp_path, project_factory
     root = project_factory()
     spec = make_spec()
     spec.tasks[0] = spec.tasks[0].model_copy(update={"inputs": [InputRef(path="README.md")]})
-    real_probe = verify_module._is_reparse_point
-    monkeypatch.setattr(verify_module, "_is_reparse_point", lambda path: path == root / "README.md" or real_probe(path))
+    from types import SimpleNamespace
+
+    real_stat = Path.lstat
+    def reparse_stat(path, *args, **kwargs):
+        value = real_stat(path, *args, **kwargs)
+        if path == root / "README.md":
+            return SimpleNamespace(st_mode=value.st_mode, st_file_attributes=0x400)
+        return value
+    monkeypatch.setattr(Path, "lstat", reparse_stat)
     state = tmp_path / "state"
     app = Orchestrator(load_project(root), state_root=state, check_temp_root=tmp_path / "checks")
     try:
