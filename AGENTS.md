@@ -1,5 +1,21 @@
 # Codex 운영 안전 규칙
 
+## 연구 관리 공간과 실행 공간 — 2026-09-16
+
+이 프로젝트는 연구 중심이다. 총괄·계획·의사결정은 사용자의 기존 Documents 관리
+폴더에서, 실제 코드·시험·실험은 LAO/repo에서 한다. 폴더 분리는 저장소 분리가 아니다.
+`docs/management/README.md`, `STATUS.md`, `NEXT.md` 및
+`docs/operations/workspace-portability.md`를 먼저 읽는다.
+공유 관리 문서는 `docs/management`에 Git 추적하며, 사용자는 Documents의 실제
+관리 사본을 편집한다. `tools/workspace/management_sync.py status`로 양쪽 상태를
+확인하고, 송신 전 collect / 수신 후 refresh한다. 충돌·삭제는 자동 해결하지 않는다.
+기기 경로는 Git 밖 `LAO/local/machine.json`, 공유 요구사항은 `.sync.yml`과
+`config/workspace`에 둔다. 실행 보조 도구 정본은 `tools/workspace`다.
+sync의 유일한 최신 인수인계 대상은 `docs/operations/동기화_인수인계.md`의
+`SYNC:AUTO` 블록이다. 다른 과거 handoff의 실행 지시를 현재 승인으로 취급하지 않는다.
+회사에서 기본 관리 경로는 `C:\Users\SSAFY\Documents\간단한 ai 오케스트라 구축하기`다.
+관리 폴더가 Git이 아니라고 새 저장소를 만들지 않으며 실제 대상 repo 경로를 확인한다.
+
 ## 회사 PC의 현재 작업 경로 — 2026-09-16
 
 이 회사 PC에서는 실제 저장소가 `C:\LAO\repo`, 개발 Python은

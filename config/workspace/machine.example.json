@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "workspace_root": "C:/LAO",
+  "repo": "C:/LAO/repo",
+  "management_root": "C:/Users/CHANGE_ME/Documents/간단한 ai 오케스트라 구축하기",
+  "python": "C:/LAO/env/v23/Scripts/python.exe",
+  "note": "Copy outside Git to C:/LAO/local/machine.json. Paths only; never credentials."
+}

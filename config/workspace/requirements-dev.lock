@@ -1,0 +1,9 @@
+# Windows Python 3.12.10 development dependencies, observed 2026-09-16.
+# Version pins, NOT a wheel hash lock or a candidate runtime seal.
+# Project source is selected by enter.ps1; no archived project wheel is installed.
+-r ../../stages/b1-sequential/requirements.lock
+attrs==26.1.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==2026.6.3

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/shotgun1107/local-agent-orchestrator.git",
+  "branch": "codex/phase-d-artifacts",
+  "management_source": "docs/management",
+  "management_files": ["README.md", "AGENTS.md", "STATUS.md", "NEXT.md", "DECISIONS.md", "WORKFLOW.md"],
+  "python": "3.12.10",
+  "runtime": "env/v23",
+  "source_paths": ["stages/b1-sequential/src", "tools/benchmark-runner/src"],
+  "local_directories": ["env", "local", "tmp", "run", "evidence", "history", "ops"],
+  "live_ready": false
+}
