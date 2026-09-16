@@ -4,7 +4,13 @@
 
 ## 먼저 읽을 문서
 
-현재 입력은 [Phase E candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)와 [readiness v14](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v14-package-result.md)다. 개인 설정을 유지하는 CLI 호환 정책과 새 source를 결합했고, clean source 회귀 77개와 zero-turn preflight·별도 후보 검증을 통과했다. 독립 acceptance [run 1](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v21-run1-result.md)·[run 2](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-r01-r13-exact-candidate-acceptance-v22-run2-result.md)도 각각 Check 104/104·모델 0회로 통과했다. readiness 768-file 원본·ZIP 검증을 마쳤으며 실제 Live 전에는 Environment Closure와 별도 승인이 필요하다. v25 준비 자료 5개 커밋은 원격에 반영했고, 일반 push의 사전 승인 범위는 AGENTS.md §11을 따른다.
+2026-09-08 감사 기준 제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. 이후 폴더 통합과 문서 정정을 했지만 완료 판정·입력·실행 프로필·취소·복구의 코드 결함 수정은 하지 않았으며, 아래의 실험 무결성 통과가 이를 대신하지 않는다.
+
+회사 PC의 현재 작업 위치는 `C:\LAO\repo`다. 새 세션은 [회사 PC 경로·인수인계](./operations/company-pc-layout-20260916.md)를 먼저 읽는다. 프로젝트를 외부 작성 도구에 설명할 때는 [프로젝트 맥락 학습 자료](./portfolio/local-agent-orchestrator-application-context.md)를 참고하되, 개인 기여·검증 한계를 함께 유지한다.
+
+실행 이력의 최신 상태는 [v25 SS1 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v25-result.md), [v25 B1 결과와 pair 격리](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-company-v25-result.md), [설정 전이·배차 분류 수정 결과](./experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md)를 따른다. v25 Cell 1·2는 이미 봉인됐고 Cell 3·4는 미실행이다. 현행 소스의 policy 2 경계는 과거 policy 1의 [candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)를 Live 입력으로 받지 않는다. [readiness v14](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v14-package-result.md)와 acceptance 두 회차는 준비 당시의 역사 증거이며 새 Live 승인이 아니다. 기존 pair 재실행·재분류는 금지하고, 후속 실행이 필요할 때는 새 source와 candidate의 검증 후 Environment Closure와 별도 승인을 거친다.
+
+아래 목록은 상세 설계와 과거 실행의 탐색용이다. 오래된 제목의 준비 완료·GO 문구를 현재 관문으로 사용하지 않는다. 문서 정정과 정리의 범위는 [개정·검증 로그](./operations/codex-revision-log.md)의 2026-09-16 문서 검토 절을 따른다.
 
 1. [Profile R v24 SS1 실제 환경 실패 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v24-result.md) — thread/start config schema 오류, Cell 1 FAILED·비교 무효·재실행 금지 기록
 2. [Profile R Live readiness v13 결과](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v13-package-result.md) — q27·q7·candidate v24·독립 acceptance 2회의 exact chain 봉인
@@ -161,6 +167,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: v23 pair는 `DIAGNOSTIC_ONLY_NO_ROUTE`로 보존한다. R11·R13 계약 교정 뒤 candidate v24, 서로 겹치지 않는 독립 acceptance 두 회차와 readiness v13이 model-free로 통과했다. 기존 pair를 재판정하지 않는다. 다음 관문은 별도 Environment Closure 턴이며 실제 Live와 Cell 3·4는 계속 `NO-GO`다.
+- 현실 고난도 비교: v23·v24·v25 결과는 각 실행 당시 증거로 보존하며 v25 pair도 정식 비교에서 격리됐다. policy 2 수정과 전체 감사의 미해결 제품 결함을 과거 준비 완료 기록으로 덮지 않는다. 기존 candidate 재실행과 Cell 3·4는 `NO-GO`이며 후속 실행에는 새로 검증된 입력과 별도 승인이 필요하다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

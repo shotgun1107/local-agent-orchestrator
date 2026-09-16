@@ -2,6 +2,8 @@
 
 > 조사 기준일: 2026-08-03
 >
+> 부분 정정: §9.2와 관련 서지의 표본 해석을 2026-09-08 정정안에 따라 수정하고 2026-09-16 원문과 재대조했다. 문헌 전체의 사실·링크 전수 검증은 아니다.
+>
 > 문서 성격: 이론·실증·표준·인접 분야를 함께 읽는 연구 노트
 >
 > 관련 문서: [AI 오케스트레이션 실용 사례와 구축 방법론](./ai-orchestration-practical-cases-and-methods.md)
@@ -682,15 +684,17 @@ Google Research의 연구는 고정 계산 예산 아래 작업 구조와 조정
 
 ### 9.2 실제 운영 에이전트는 생각보다 짧고 사람 의존적이다
 
-이 조사는 판본이 둘이므로 인용할 때 구분해야 한다. 초기판 *Measuring Agents in Production*은 ICLR 2026 *Agentic AI in the Wild* 워크숍에 게재됐고 20개 사례, 86명의 실무자, 26개 도메인을 조사했다. 이후 확장판 *Characterizing Agents in Production*이 ICML 2026 본회의에 채택되면서 설문 규모가 306명으로 늘었다. 두 판본 모두 20개 심층 사례와 26개 도메인, 그리고 68%가 사람 개입 전 10단계 이하로 동작, 70%가 기성 모델의 프롬프팅 중심, 74%가 주로 사람 평가에 의존이라는 핵심 수치를 동일하게 보고하며, 신뢰성이 가장 큰 과제라는 결론도 같다. 따라서 위 비율은 확장판 기준으로도 유지되지만, **표본 수를 인용할 때는 어느 판본인지 밝혀야 한다.**
+이 연구는 제목·게재처와 통계의 분모를 구분해 인용해야 한다. *Measuring Agents in Production*의 arXiv v1부터 전체 유효 설문 응답은 306개이며, 그중 production/pilot 시스템을 명시한 86개를 본문 분석 대상으로 필터했다. 별도로 20개 심층 사례를 조사했다. v4도 같은 모집단·분석 대상 구분을 명시한다. 따라서 ICLR 워크숍의 *Measuring Agents in Production*과 ICML 본회의의 *Characterizing Agents in Production*에서 요약한 숫자가 다르다고 해서 표본이 86명에서 306명으로 확대됐다고 해석할 수 없다.
+
+사람 개입 전 10단계 이하 약 68%는 해당 설문 응답 60개, 사람 평가 사용 약 74%는 복수응답 질문의 응답 31개를 기준으로 한다(v4 Figure 7(a)·8). 기성 모델·프롬프팅 중심 70%는 심층 사례 20개 중 14개다(§5.2). 전체 응답 306개를 세 비율의 공통 분모로 쓰지 않는다. **2026-09-08 정정안·2026-09-16 원문 재대조:** 이전의 “판본 확장으로 표본 증가” 설명을 철회한다. 이 한 인용의 정정을 문헌 전체의 검증 완료로 확대하지 않는다.
 
 이는 데모의 장기 자율성과 실제 운영의 통제된 짧은 자율성 사이 차이를 보여준다. 생산화의 핵심은 자율 단계 수를 최대화하는 것이 아니라, 가치 있는 범위에서 안정적으로 자동화하고 불확실할 때 넘겨주는 것이다.
 
 출처:
 
-- [Pan et al., *Characterizing Agents in Production* (ICML, 2026)](https://icml.cc/virtual/2026/poster/61834) — 확장판(실무자 306명), 근거 A.
-- [Pan et al., *Measuring Agents in Production* (ICLR *Agentic AI in the Wild* 워크숍, 2026)](https://openreview.net/forum?id=AsvLggSOvS) — 초기판(실무자 86명), 근거 B.
-- [arXiv 사전출판본](https://arxiv.org/abs/2512.04123) — 근거 B.
+- [Pan et al., *Characterizing Agents in Production* (ICML, 2026)](https://icml.cc/virtual/2026/poster/61834) — 학회판, 근거 A. 제목·게재처 구분이며 설문 분모 구분을 대신하지 않는다.
+- [Pan et al., *Measuring Agents in Production* (ICLR *Agentic AI in the Wild* 워크숍, 2026)](https://openreview.net/forum?id=AsvLggSOvS) — 워크숍판, 근거 B.
+- [arXiv v1 §1·§3.1](https://arxiv.org/html/2512.04123v1) · [v4 §1·§3.2·§5.2](https://arxiv.org/html/2512.04123v4) — 모집단·필터·사례 수의 원문 대조 근거.
 
 > 조사 사례와 운영 수치 상세는 [실용 사례와 구축 방법론](./ai-orchestration-practical-cases-and-methods.md) §1 참조.
 
@@ -1175,7 +1179,7 @@ Reflexion과 MemGPT는 언어 피드백의 에피소드 기억과 계층형 외�
 37. Shen et al.(2025). *Understanding the Information Propagation Effects of Communication Topologies in LLM-based Multi-Agent Systems*. EMNLP 2025. [링크](https://aclanthology.org/2025.emnlp-main.623/) — 근거 A. 중간 희소 그래프의 정보·오류 전파 균형을 분석한다.
 38. Leong et al.(2025). *AMAS: Adaptively Determining Communication Topology for LLM-based Multi-agent System*. EMNLP 2025 Industry Track. [링크](https://aclanthology.org/2025.emnlp-industry.144/) — 근거 A. 입력별 통신 그래프 선택을 평가한다.
 39. Kim et al.(2025; rev. 2026). *Towards a Science of Scaling Agent Systems*. arXiv:2512.08296. [논문](https://arxiv.org/abs/2512.08296)·[Google 기술 요약](https://research.google/blog/towards-a-science-of-scaling-agent-systems-when-and-why-agent-systems-work/) — 근거 B/C. 논문판을 1차 출처로 두며 초기 R²=0.513과 v3 R²=0.373/0.413을 구분한다.
-40. Pan et al.(2026). *Characterizing Agents in Production*. ICML 2026. [링크](https://icml.cc/virtual/2026/poster/61834) — 근거 A. 실제 배포의 자율 단계·평가·신뢰성 문제를 조사한 확장판이며 실무자 306명을 설문했다. 초기판은 *Measuring Agents in Production*으로 ICLR 2026 *Agentic AI in the Wild* 워크숍([링크](https://openreview.net/forum?id=AsvLggSOvS), 근거 B, 실무자 86명)과 [arXiv:2512.04123](https://arxiv.org/abs/2512.04123)에 있다. 20개 사례·26개 도메인과 68%·70%·74% 수치는 두 판본이 동일하므로, 표본 수를 인용할 때만 판본을 구분하면 된다.
+40. Pan et al.(2026). *Characterizing Agents in Production*. ICML 2026. [링크](https://icml.cc/virtual/2026/poster/61834) — 근거 A. 워크숍판 *Measuring Agents in Production*은 [ICLR Agentic AI in the Wild](https://openreview.net/forum?id=AsvLggSOvS), 근거 B. [arXiv v1](https://arxiv.org/html/2512.04123v1)·[v4](https://arxiv.org/html/2512.04123v4)의 방법론상 전체 응답 306개, 본문 배포·파일럿 분석 대상 86개, 별도 심층 사례 20개를 구분한다. 86→306을 판본 간 표본 증가로 인용하지 않으며 수치별 분모는 §9.2를 따른다.
 41. Kapoor, Stroebl, Siegel, Nadgir & Narayanan(2025). *AI Agents That Matter*. Transactions on Machine Learning Research. [링크](https://openreview.net/forum?id=Zy4uFzMviZ) — 근거 A. 비용·재현성·기준선·오염을 포함한 평가를 요구한다.
 42. Yao, Shinn, Razavi & Narasimhan(2025). *τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains*. ICLR 2025. [링크](https://proceedings.iclr.cc/paper_files/paper/2025/hash/1b126cc38b8638e07bef37e7b2bb72bf-Abstract-Conference.html) — 근거 A. 다중 턴 상태와 `pass^k` 반복 신뢰성을 평가한다.
 43. Zhuge et al.(2025). *Agent-as-a-Judge: Evaluate Agents with Agents*. ICML 2025, PMLR 267. [링크](https://proceedings.mlr.press/v267/zhuge25a.html) — 근거 A. 결과와 중간 행동을 함께 보는 에이전트 평가를 제시한다.
