@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 80건
-- 해결: 79건
+- 전체: 81건
+- 해결: 80건
 - 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -93,6 +93,7 @@
 | DEV-20260907-001 | resolved | phase-f-profile-r-environment-closure | integration | Environment Closure가 thread/start의 Codex config schema 오류를 놓침 |
 | DEV-20260916-001 | resolved | b1 | implementation | 감사 F8·F9·F3: Task 실행 설정·필수 입력·Check 복구 증거의 연결 누락 |
 | DEV-20260916-002 | resolved | b1 | implementation | 감사 F5: 현재 Python 계약을 거부하는 공개 Schema·wheel export |
+| DEV-20260916-003 | resolved | b1 | implementation | 감사 F10: 실행 controller의 잠금 때문에 취소 요청이 전달되지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5431,3 +5432,78 @@ run-spec와 task-envelope Schema를 재생성했다. 5개 모델 일치 검사�
 - 출처: docs/operations/audit-f5-schema-remediation-20260916.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 - 출처: related_commits는 수정 전 기준이며 실제 전달 수정 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다.
+
+## DEV-20260916-003 — 감사 F10: 실행 controller의 잠금 때문에 취소 요청이 전달되지 않음
+
+- 상태: `resolved`
+- 단계: `b1`
+- 분류: `implementation`
+- 발견: 2026-09-16T07:09:32Z / 기존 감사 F10 및 실제 Windows lock/별도 CLI 회귀 재현
+- 해결: 2026-09-16T07:31:04Z
+
+### 증상
+
+start/resume이 잠금을 소유한 동안 run cancel도 같은 잠금을 요구해 exit 6으로 끝났으며 소유 controller에 interrupt 요청을 전달하지 못했다.
+
+### 재현
+
+- 격리된 state root에서 실제 ControllerLock을 잡고 별도 Python CLI로 run cancel을 실행한다.
+- 활성 turn, Check 자식 프로세스, dispatch 불확실성, ownerless와 terminal Run 경계를 비교한다.
+
+### 증거
+
+- `review-finding`: 2026-09-08 독립 감사 F10: 명세 §13의 안전한 interrupt 후 취소/격리와 구현 불일치.
+- `reproducible-test`: 수정 전 red.xml 1 failed: cancel CLI exit 6. 최종 전체 B1 175 passed / 0 failed, F10 전용 30개 포함.
+- `direct-observation`: 실제 Windows Check 자식 PID 종료, 전용 TEMP 정리, 경쟁 CLI의 Ledger 생성 금지와 요청 backup 보존 확인.
+
+### 근본 원인
+
+동일 writer lock을 취소 요청의 입구에도 적용하면서 별도 신호 경로와 owner의 확인 지점을 제공하지 않았다. ownerless 취소는 runtime terminal 증거 없이 Attempt를 CANCELLED로 바꾸었고 저장 보고서를 갱신하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` cancel에서 controller lock을 제거하고 원장을 직접 수정 — 실행 소유자와 경쟁하는 두 번째 writer가 생긴다.
+- `rejected` controller/runtime PID를 강제 종료 — durable Decision과 terminal 증거를 대신하지 못하며 소유하지 않은 프로세스까지 영향을 줄 수 있다.
+- `adopted` Run별 요청 marker와 owner의 bounded interrupt/terminal 확인 — 잠금과 단일 원장 writer를 유지하고 요청 접수와 종료 확정을 분리한다.
+
+### 채택한 해결
+
+Run별 payload-free marker를 read-only CLI에서 publish하고 잠금 소유자가 처리한다. terminal/dispatch/Check/재개/채택 경계를 확인하며 interrupt ACK만으로 완료 처리하지 않는다. 미확인은 격리하고 retry하지 않는다. Check 취소는 기존 소유 process-tree 정리 후 SKIPPED, 오류는 BLOCKED다. 요청을 새 backup에 포함하고 runtime 없이 최신 보고서를 생성한다. 동결 migration/상태 전이표는 유지했다.
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/cancel.py
+- stages/b1-sequential/src/orchestrator/cli.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/src/orchestrator/verify.py
+- stages/b1-sequential/src/orchestrator/recover.py
+- stages/b1-sequential/tests/integration/test_cancel.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/integration/test_cancel.py: 30개
+- stages/b1-sequential/tests: 175개
+- tools/benchmark-runner/tests/test_realistic_phase_f_b1.py: 관련 model-free adapter 5개
+
+### 검증 결과
+
+- 초기 집중 15개, 전체 160개, 보강 집중 26개, 경합 보강 전체 175개와 보고서 보강 뒤 최종 전체 175개가 각각 통과했다.
+- 실제 Windows lock/별도 CLI, FakeRuntime 중단, interrupt 실패/미지원/멈춤/terminal 미확인, dispatch와 완료 경합, no-retry, Check 정리 및 보고서 일치를 검증했다.
+- 개발 환경 점검 PASS; 관리 도구 18개와 구현 로그 하네스 10개 통과.
+- 관련 model-free adapter 초기·최종 회차가 각각 5 passed였다. 실제 SDK/모델 연결은 사용하지 않았다.
+- 실제 모델·SDK thread·Worker·Judge workload·원본 Controller state/Cell claim·과거 seal 변경 0. 새 experiment 없음.
+
+### 남은 위험
+
+- UNKNOWN은 runtime 종료 증명이 아니다. adapter 대기/interrupt thread 또는 외부 runtime이 남을 수 있어 격리하며 결과를 채택하지 않는다.
+- 반환하지 않는 dispatch RPC/동기 observer 중에는 요청이 pending일 수 있다. terminal 완료와 동시에 도착한 요청은 완료 상태를 되돌리지 않는다.
+- Windows model-free 검증이며 실제 SDK/model 중단·다른 OS의 process tree·다른 PC 전체 복원·Live GO 증거가 아니다.
+- marker는 기존 state-root ACL 신뢰 경계이며 악의적 동일 사용자/전원 손실 보장은 아니다. backup 수집 뒤 요청은 그 backup에 포함되지 않는다.
+- F11/F12 전체 교정, F1/F2/F4/F6/F14와 과거 timeout 변동 원인은 이번 범위 밖이다.
+
+### 추적 정보
+
+- 관련 커밋: f9c0208e0b8fa8b9c57cd129d1bdee0cb3ef6cb4
+- 출처: docs/operations/audit-f10-cancellation-remediation-20260916.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+- 출처: related_commits는 수정 전 기준이다. 실제 전송 작업 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다.

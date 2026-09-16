@@ -43,6 +43,19 @@ lao recover backup RUN_ID
 
 `require_clean_worktree=true`이므로 새 Run은 깨끗한 Git 저장소에서만 시작한다. 시험에서는 `LAO_STATE_ROOT`를 별도 임시 경로로 지정한다.
 
+### 실행 중 취소
+
+`lao run cancel RUN_ID`는 실행 소유 controller에 Run별 취소 요청을 남긴다.
+`cancel_requested=true, changed=false`와 exit 0은 요청 접수이며 **중단 완료가 아니다**.
+상태를 다시 확인한다. owner가 종료돼 요청이 남았으면 같은 명령을 재요청해 처리한다.
+실행 controller와 CLI 모두 현행 코드를 사용해야 한다. 오래된 controller는 새 요청 경로를 처리하지 않는다.
+
+terminal이 확인된 작업만 CANCELLED로 종료하며, 미확인 runtime은 QUARANTINED/BLOCKED로 보존한다.
+Check 취소는 소유한 프로세스 트리를 정리한 뒤 SKIPPED로 기록하며 검증 결과를 채택하지 않는다.
+정리 실패·dispatch 불확실성·기존 BLOCKED는 임의 성공이나 취소 완료로 바꾸지 않는다.
+state root의 `cancel-requests`는 실행 제어 자료이므로 임의 삭제하지 않는다. 새 backup에는 해당 Run의 marker도 포함된다.
+실제 검증 범위와 한계는 [F10 교정 기록](../../docs/operations/audit-f10-cancellation-remediation-20260916.md)을 따른다.
+
 `run status --json`과 `report --format json`은 각각 `RunStatusEnvelope`, `RunReportEnvelope` 공개 계약을 따른다. 공개 Schema 5개는 wheel의 `orchestrator/_schemas/v1`에도 포함되며 `lao schema export`가 비어 있는 디렉터리로 exact file set·SHA-256과 함께 내보낸다. 따라서 외부 실행기는 source checkout, B1 내부 DB, B1 Python 모델을 읽지 않고 설치된 artifact만으로 결과를 검증할 수 있다. report의 `usage_status=partial_or_unknown`일 때 `token_usage` 정수는 부분합이며 측정된 총합으로 사용하면 안 된다.
 
 ## 공개 Schema 개발·패키지 검증

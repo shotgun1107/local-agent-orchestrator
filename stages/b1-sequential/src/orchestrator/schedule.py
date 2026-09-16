@@ -13,6 +13,7 @@ from typing import Any, Callable
 import yaml
 from pydantic import ValidationError
 
+from .cancel import apply_cancel, await_cancellable_terminal, cancel_requested
 from .contract import (
     AttemptState,
     CapabilitiesConfig,
@@ -456,6 +457,9 @@ class Orchestrator:
                 run = ledger.get("run", run_id)
                 if run["state"] in {RunState.COMPLETED, RunState.FAILED, RunState.CANCELLED}:
                     return run_id
+                if self._cancel_pending(ledger, run_id):
+                    self.generate_report(ledger, run_id)
+                    return run_id
                 actions = reconcile(ledger, run_id, self.store)
                 if any(action["action"] in {"dispatch_uncertain", "quarantined", "blocked_artifact_corrupt"} for action in actions):
                     self.generate_report(ledger, run_id)
@@ -464,9 +468,35 @@ class Orchestrator:
                 self.generate_report(ledger, run_id)
                 return run_id
 
+    def _cancel_pending(self, ledger: Ledger, run_id: str) -> bool:
+        if not cancel_requested(self.state_root, run_id):
+            return False
+        apply_cancel(ledger, run_id)
+        return True
+
+    def _cancel_after_terminal(self, ledger: Ledger, run_id: str, session: dict, outcome: Any) -> bool:
+        if not cancel_requested(self.state_root, run_id):
+            return False
+        terminal = {
+            TerminalStatus.COMPLETED: SessionState.COMPLETED,
+            TerminalStatus.CANCELLED: SessionState.CANCELLED,
+            TerminalStatus.FAILED: SessionState.FAILED,
+            TerminalStatus.UNKNOWN: SessionState.QUARANTINED,
+        }[outcome.terminal_status]
+        ledger.update_session_terminal(
+            session["session_id"], terminal,
+            {**outcome.terminal_evidence, "cancel_requested": True},
+            outcome.usage_snapshot.status if outcome.usage_snapshot else "unknown", None,
+            interrupt_state="confirmed" if outcome.terminal_status == TerminalStatus.CANCELLED else None,
+        )
+        apply_cancel(ledger, run_id)
+        return True
+
     def _drive(self, ledger: Ledger, run_id: str, spec: RunSpec) -> None:
         specs = {task.key: task for task in spec.tasks}
         while True:
+            if self._cancel_pending(ledger, run_id):
+                return
             run = ledger.get("run", run_id)
             if run["state"] in {RunState.COMPLETED, RunState.FAILED, RunState.BLOCKED, RunState.CANCELLED}:
                 return
@@ -505,6 +535,8 @@ class Orchestrator:
                     run = ledger.get("run", run_id)
                     run = ledger.transition("run", run_id, run["version"], RunState.VERIFYING, "run_verifying", {})
                     self._assert_project_pack_unchanged(run["project_pack_sha256"])
+                    if self._cancel_pending(ledger, run_id):
+                        return
                     ledger.transition("run", run_id, run["version"], RunState.COMPLETED, "run_completed", {})
                 else:
                     run = ledger.get("run", run_id)
@@ -670,6 +702,8 @@ class Orchestrator:
         fingerprint_entries = {entry.path: entry for entry in fingerprint.manifest}
         if any(fingerprint_entries.get(path) != entry for path, entry in required_inputs.items()):
             raise VerificationError("required_inputs", "required input changed before dispatch")
+        if self._cancel_pending(ledger, run_id):
+            return
         attempt_id = new_id("attempt")
         envelope = build_task_envelope(
             spec,
@@ -720,6 +754,8 @@ class Orchestrator:
                 capabilities.model_dump(mode="json"),
                 "unknown" if capabilities.supports_usage else "unsupported",
             )
+            if self._cancel_pending(ledger, run_id):
+                return
             turn = self.runtime.start_turn(session_handle, envelope)
             ledger.mark_dispatched(attempt_id, session["session_id"], turn.id)
             self._persist(
@@ -776,13 +812,16 @@ class Orchestrator:
         turn_no = 1
         while True:
             ledger.increment_turns(run_id)
-            outcome = self.runtime.await_terminal(
+            outcome = await_cancellable_terminal(
+                self.runtime,
                 turn,
                 (
                     self.completion_deadline_monotonic
                     if self.completion_deadline_monotonic is not None
                     else time.monotonic() + self.policy.task_timeout_seconds
                 ),
+                lambda: cancel_requested(self.state_root, run_id),
+                self.policy.interrupt_grace_seconds,
             )
             usage = outcome.usage_snapshot.model_dump(mode="json") if outcome.usage_snapshot else None
             ledger.append_usage_snapshot(session["session_id"], turn.id, usage)
@@ -791,6 +830,8 @@ class Orchestrator:
                 relative_path=f"{base}/runtime/turns/{turn_no:03d}-terminal.json",
                 value=outcome.terminal_evidence, kind="terminal_evidence", producer="runtime",
             )
+            if self._cancel_after_terminal(ledger, run_id, session, outcome):
+                return
             if self.turn_boundary_observer is not None:
                 try:
                     observation = self.turn_boundary_observer(
@@ -838,6 +879,8 @@ class Orchestrator:
                         "boundary_observer",
                         f"B1 turn boundary observer failed: {type(exc).__name__}",
                     ) from exc
+            if self._cancel_after_terminal(ledger, run_id, session, outcome):
+                return
             if outcome.terminal_status != TerminalStatus.COMPLETED:
                 self._handle_runtime_outcome_failure(ledger, run_id, task, attempt, session, outcome)
                 return
@@ -891,6 +934,8 @@ class Orchestrator:
                         < ledger.get("run", run_id)["max_turns"]
                     )
                 ):
+                    if self._cancel_after_terminal(ledger, run_id, session, outcome):
+                        return
                     ledger.increment_resume(
                         attempt["attempt_id"],
                         (
@@ -1111,6 +1156,8 @@ class Orchestrator:
         external_changed_paths: list[str] | None = None,
     ) -> None:
         current_attempt = ledger.get("attempt", attempt_id)
+        if self._cancel_pending(ledger, run_id):
+            return
         current_task = ledger.get("task", task["task_id"])
         if current_attempt["state"] == AttemptState.REPORTED:
             ledger.transition(
@@ -1157,6 +1204,8 @@ class Orchestrator:
             validate_freshness(fingerprint, current_fingerprint, spec, changed)
             passed: set[str] = set()
             for check_name in spec.check_names:
+                if self._cancel_pending(ledger, run_id):
+                    return
                 existing = ledger.connection.execute(
                     "SELECT * FROM checks WHERE attempt_id=? AND check_name=?", (attempt_id, check_name)
                 ).fetchone()
@@ -1203,6 +1252,7 @@ class Orchestrator:
                         if self.completion_deadline_mode
                         else None
                     ),
+                    cancel_requested=lambda: cancel_requested(self.state_root, run_id),
                 )
                 check_base = f"{base}/checks/{check_name}"
                 stdout_artifact = self._persist(
@@ -1248,6 +1298,8 @@ class Orchestrator:
                     "input_fingerprint": fingerprint.sha256,
                     "verification_snapshot": snapshot_binding,
                 })
+                if self._cancel_pending(ledger, run_id):
+                    return
                 environment_diagnostic = extract_check_environment_diagnostic(
                     check_result
                 )
@@ -1309,6 +1361,8 @@ class Orchestrator:
             for criterion in spec.completion_criteria:
                 if not set(criterion.check_names).issubset(passed):
                     raise VerificationError("completion_criteria", f"criterion not proven: {criterion.id}")
+            if self._cancel_pending(ledger, run_id):
+                return
             ledger.finish_attempt(
                 attempt_id, AttemptState.SUCCEEDED, TaskState.SUCCEEDED, None,
                 {
@@ -1385,7 +1439,10 @@ class Orchestrator:
         base = artifact_base(run_id, task["external_key"], attempt["attempt_no"])
         self._verify_and_finish(ledger, run_id, task, spec, attempt["attempt_id"], result, baseline, fingerprint, base)
 
-    def generate_report(self, ledger: Ledger, run_id: str) -> dict[str, Any]:
+    @staticmethod
+    def generate_report(ledger: Ledger, run_id: str) -> dict[str, Any]:
+        # Reporting needs only the owned Ledger/store, never a runtime or login.
+        store = ArtifactStore(ledger.path.parent)
         snapshot = ledger.load_run_snapshot(run_id)
         run = snapshot["run"]
         token_totals = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -1423,7 +1480,7 @@ class Orchestrator:
         for artifact in terminal_artifacts:
             try:
                 terminal = json.loads(
-                    self.store.resolve(artifact["relative_path"]).read_text(
+                    store.resolve(artifact["relative_path"]).read_text(
                         encoding="utf-8"
                     )
                 )
@@ -1492,10 +1549,6 @@ class Orchestrator:
             ],
         ).model_dump(mode="json")
         base = f"runs/{run_id}/report"
-        self._persist(
-            ledger, run_id=run_id, relative_path=f"{base}/summary.json",
-            value=report, kind="report", media_type="application/json",
-        )
         lines = [
             f"# Run {run_id}",
             "",
@@ -1513,10 +1566,14 @@ class Orchestrator:
             *[f"- {task['key']}: {task['state']}" for task in report["tasks"]],
             "",
         ]
-        self._persist(
-            ledger, run_id=run_id, relative_path=f"{base}/summary.md",
-            value="\n".join(lines), kind="report", media_type="text/markdown",
-        )
+        for written, media_type in (
+            (store.write_json(f"{base}/summary.json", report), "application/json"),
+            (store.write_text(f"{base}/summary.md", "\n".join(lines)), "text/markdown"),
+        ):
+            ledger.register_artifact({
+                **written, "run_id": run_id, "kind": "report", "media_type": media_type,
+                "producer": "controller", "sensitivity": "project_local", "retention": "run",
+            })
         return report
 
 

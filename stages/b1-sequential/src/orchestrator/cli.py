@@ -14,12 +14,10 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
+from .cancel import TERMINAL_RUNS, apply_cancel, request_cancel
 from .contract import (
-    AttemptState,
     RunState,
     RunStatusEnvelope,
-    SessionState,
-    TaskState,
     canonical_json,
 )
 from .ledger import IntegrityViolation, Ledger, LedgerError, StateConflict
@@ -265,42 +263,29 @@ def _resume(run_id: str) -> dict[str, Any]:
 
 def _cancel(run_id: str) -> dict[str, Any]:
     root = find_state_root(run_id)
-    with ControllerLock(root):
+    # Ledger initialization is a writer (migrations/PRAGMA); do not open it while
+    # another controller owns the lock. Publish intent, not a forged terminal.
+    connection = sqlite3.connect((root / "ledger.sqlite").as_uri() + "?mode=ro", uri=True)
+    try:
+        state = connection.execute("SELECT state FROM runs WHERE run_id=?", (run_id,)).fetchone()[0]
+    finally:
+        connection.close()
+    if state in TERMINAL_RUNS:
+        return {"run_id": run_id, "state": state, "changed": False, "cancel_requested": False}
+    request_cancel(root, run_id)
+    lock = ControllerLock(root)
+    try:
+        lock.acquire()
+    except ControllerLockError:
+        return {"run_id": run_id, "state": state, "changed": False, "cancel_requested": True}
+    try:
         with Ledger(root / "ledger.sqlite") as ledger:
-            run = ledger.get("run", run_id)
-            if run["state"] in {RunState.COMPLETED, RunState.FAILED, RunState.CANCELLED}:
-                return {"run_id": run_id, "state": run["state"], "changed": False}
-            for attempt in ledger.nonterminal_attempts(run_id):
-                task = ledger.get("task", attempt["task_id"])
-                if attempt["session_id"]:
-                    session = ledger.get("session", attempt["session_id"])
-                    if session["state"] == SessionState.RUNNING:
-                        ledger.update_session_terminal(
-                            session["session_id"], SessionState.UNKNOWN,
-                            {"cancel": "runtime could not be reattached safely"}, "unknown", None,
-                        )
-                if attempt["state"] == AttemptState.DISPATCHING:
-                    ledger.finish_attempt(
-                        attempt["attempt_id"], AttemptState.DISPATCH_UNCERTAIN, TaskState.CANCELLED,
-                        "dispatch_uncertain", {"cancelled": True},
-                    )
-                elif attempt["state"] == AttemptState.RUNNING:
-                    ledger.finish_attempt(
-                        attempt["attempt_id"], AttemptState.CANCELLED, TaskState.CANCELLED,
-                        None, {"cancelled": True},
-                    )
-                elif attempt["state"] in {AttemptState.REPORTED, AttemptState.VERIFYING}:
-                    ledger.finish_attempt(
-                        attempt["attempt_id"], AttemptState.BLOCKED, TaskState.BLOCKED,
-                        None, {"cancelled_during_verification": True},
-                    )
-            for task in ledger.list_tasks(run_id):
-                if task["state"] in {TaskState.PENDING, TaskState.READY}:
-                    ledger.transition("task", task["task_id"], task["version"], TaskState.CANCELLED, "task_cancelled", {})
-            run = ledger.get("run", run_id)
-            ledger.record_decision({"run_id": run_id, "kind": "cancel", "actor": "user", "outcome": "recorded"})
-            ledger.transition("run", run_id, run["version"], RunState.CANCELLED, "run_cancelled", {})
-    return {"run_id": run_id, "state": "CANCELLED", "changed": True}
+            result = apply_cancel(ledger, run_id)
+            if result["changed"]:
+                Orchestrator.generate_report(ledger, run_id)
+            return result
+    finally:
+        lock.release()
 
 
 def _record_decision(run_id: str, path: Path) -> dict[str, Any]:

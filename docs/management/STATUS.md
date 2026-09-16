@@ -16,15 +16,20 @@
   취소·삭제·backup 및 나머지 평가 결함은 이번 수정 밖이다. 전체 회귀·제품·Live 통과로 확대하지 않는다.
   과거 감사 14개를 현재 미해결 수라고 단정하지 않는다. 문서 관련 일부는 앞서 교정됐다.
 - 이어서 승인받은 F5 공개 Schema 교정을 완료했다. own_check와 remaining_attempts null/생략을 현행 모델과 맞췄다.
-  최신 전체 B1은 **145 passed / 0 failed**이며 Schema 시험 18개와 기존 F8·F9·F3 회귀를 포함한다.
+  F5 완료 시 전체 B1은 **145 passed / 0 failed**이며 Schema 시험 18개와 기존 F8·F9·F3 회귀를 포함한다.
   새 QA wheel의 별도 설치·export에서 Schema 5개 exact bytes·RECORD·모델 일치도 확인했다.
   전체 감사의 잔여 결함이나 실제 Live 준비가 해결됐다는 뜻은 아니다.
+- 후속 F10 실행 중 취소를 교정했다. 잠금은 유지하고 Run별 요청을 소유 controller에 전달한다.
+  terminal 미확인은 격리하며 자동 재시도하지 않는다. Check 취소는 프로세스 트리를 정리하고 결과를 채택하지 않는다.
+  요청의 backup 보존과 취소 뒤 보고서 갱신도 연결했다. 최신 전체 B1은 **175 passed / 0 failed**이며 F10 회귀 30개를 포함한다.
+  실제 모델/SDK의 중단과 다른 OS의 process-tree 정리는 이번 Windows model-free 시험으로 검증하지 않았다.
 
 기술 근거는 저장소 `docs/README.md`,
 `docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md`,
 `docs/portfolio/local-agent-orchestrator-application-context.md`에서 확인한다.
 이번 코드 수정의 정본 결과는 `docs/operations/audit-f8-f9-f3-remediation-20260916.md`다.
 후속 F5 결과는 `docs/operations/audit-f5-schema-remediation-20260916.md`다.
+후속 F10 결과는 `docs/operations/audit-f10-cancellation-remediation-20260916.md`다.
 전체 감사 원본은 회사의 ignored 경로
 `benchmarks/.local-r6/independent-audit-20260908-01/report.md`에 있다.
 이 원본과 대화 원문은 Git으로 자동 전달되지 않는다.
@@ -44,7 +49,7 @@
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 현재 active candidate·실행 대상이 새로 승인되지 않았다. Docker exact image, 인증, 외부 state/seal, 새 경로의 candidate binding과 동일경로 예행연습은 미확인이다.
 - **Live NO-GO.** 이번 작업은 환경 검증 GO나 새 experiment·기존 실패 Cell 실행 승인이 아니다.
-- 다음 교정 후보는 F10·F11·F12 운영/복구 경계다. F1·F2·F4·F6·F14 평가 결함도 남아 있다.
+- 다음 교정 후보는 F11 삭제 파일·F12 불완전 backup 거부다. F1·F2·F4·F6·F14 평가 결함도 남아 있다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.
