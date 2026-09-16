@@ -1,0 +1,19 @@
+sync_schema: 1
+python: "3.12"
+commands:
+  - name: git
+git_config:
+  core.autocrlf: "true"
+  core.longpaths: "true"
+setup:
+  mode: check
+  items: []
+notes:
+  - "Windows development: exact Python 3.12.10; config/workspace/layout.json and requirements-dev.lock are the portable contract."
+  - "The venv is outside Git at the workspace root/env/v23; create it on each PC, never copy an old venv."
+  - "Use the SDK-bundled CLI 0.144.4, not the globally installed Codex CLI."
+  - "docs/operations/workspace-portability.md defines management capture/refresh, restore, and six-plane checks."
+  - "docs/operations/동기화_인수인계.md is the sole current sync handoff note; use its SYNC:AUTO block."
+  - "Collect management edits before outbound; inspect conflicts before inbound and refresh after receiving."
+  - "The historical Profile R image digest is documented, not an active candidate choice. Docker/auth/state remain separate and Live NO-GO."
+  - "New workspace/config/management files use explicit LF attributes; preserve historical sealed byte policies."
