@@ -112,6 +112,7 @@ def _parser() -> argparse.ArgumentParser:
     unlock.add_argument("--confirm-no-controller", action="store_true")
     verify = recover_sub.add_parser("verify-backup")
     verify.add_argument("path", type=Path)
+    verify.add_argument("--expected-run-id")
     return parser
 
 
@@ -409,7 +410,7 @@ def dispatch(args: argparse.Namespace) -> int:
         _print({"unlocked": True, "state_root": str(args.state_root.resolve())})
         return EXIT_OK
     if args.command == "recover" and args.recover_command == "verify-backup":
-        result = verify_backup(args.path)
+        result = verify_backup(args.path, expected_run_id=args.expected_run_id)
         _print(result)
         return EXIT_OK if result["ok"] else EXIT_INTEGRITY
     if args.command == "recover" and args.recover_command in {"check", "backup"}:
@@ -421,8 +422,9 @@ def dispatch(args: argparse.Namespace) -> int:
                     _print(result)
                     return EXIT_OK if result["ok"] else EXIT_INTEGRITY
                 destination = backup_run(ledger, root, args.run_id)
-                _print({"backup": str(destination), "verified": verify_backup(destination)["ok"]})
-                return EXIT_OK
+                verified = verify_backup(destination, expected_run_id=args.run_id)["ok"]
+                _print({"backup": str(destination), "verified": verified})
+                return EXIT_OK if verified else EXIT_INTEGRITY
     raise ConfigurationError("unhandled command")
 
 

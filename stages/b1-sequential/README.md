@@ -67,6 +67,15 @@ explicit InputRef와 선언 Artifact의 삭제, 범위 밖 삭제, 권한/IO 오
 이는 원자적인 filesystem snapshot이나 모든 동시 변경 이력의 증명은 아니다.
 [F11 결과와 한계](../../docs/operations/audit-f11-workspace-deletion-remediation-20260916.md)를 확인한다.
 
+### 백업 검증
+
+`lao recover verify-backup PATH --expected-run-id RUN_ID`로 받은 묶음의 기대 Run을 대조할 수 있다.
+검증기는 필수 DB·정확한 manifest/파일 집합·SQLite schema/무결성·Run/Artifact 소유와 hash/size를 확인한다.
+DB 파일을 쓰거나 migration/복원하지 않고, 해시를 확인한 메모리 사본만 검사한다. 실패는 exit 5다.
+새 backup도 임시 묶음 검증 후 게시한다. `scope=selected_run`은 선택 Run의 payload만 검증했다는 뜻이며,
+생성자 진위·최신성·다른 Run 전체 복원·실제 Live 준비를 보장하지 않는다. 외부 seal/출처 확인은 별도다.
+용량·형식 제한과 실제 시험 결과는 [F12 검증 기록](../../docs/operations/audit-f12-backup-verification-remediation-20260917.md)을 따른다.
+
 ## 공개 Schema 개발·패키지 검증
 
 공개 모델을 바꾸면 개발 환경에서 `python scripts/export_schemas.py`로 현행 Schema를 재생성하고

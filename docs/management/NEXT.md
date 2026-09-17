@@ -37,10 +37,16 @@ Check 트리 정리, 요청 backup 보존과 보고서 갱신을 교정했다. �
 인접 F10의 TIMED_OUT 취소 분기 누락도 알린 뒤 재현·보정했다. 최종 전체 B1 215개(F11 38개, F10 후속 2개 포함)가 통과했다.
 중간 실패와 한계는 `docs/operations/audit-f11-workspace-deletion-remediation-20260916.md`에서 인수한다.
 
+## 후속 F12 교정 완료 — 2026-09-17
+
+사용자가 F12 진행을 승인했다. 닫힌 backup의 형식·경로·DB·Run/Artifact를 교차 검증하며 원본을 migration/복원하지 않는다.
+F12 76개 포함 최종 B1 291개가 통과했다. 중간 timeout 시간 실패 1회와 분리 관측 결과도 보존한다.
+결과·지원 한계는 `docs/operations/audit-f12-backup-verification-remediation-20260917.md`에서 인수한다.
+
 ## 다음 개발 제안 — 별도 범위 선택 필요
 
-1. F12: 불완전 백업·잘못된 DB/Run/Artifact·안전하지 않은 경로를 검증기가 거부하게 한다.
-2. 비교를 재개하기 전 F1·F2·F4·F6·F14와 다음 연구 가설·판정 기준을 확인한다.
+1. F1: Profile R adapter가 같은 Attempt를 두 번 이상 resume할 때 turn ID가 중복되는 문제를 model-free로 교정한다.
+2. F2·F4·F6·F14와 다음 연구 가설·판정 기준을 확인한다. 시간 변동 원인 분석도 별도 범위로 남아 있다.
 
 이 목록은 제안이며 후속 개발·실험을 자동 승인하지 않는다.
 
@@ -48,9 +54,9 @@ Check 트리 정리, 요청 backup 보존과 보고서 갱신을 교정했다. �
 
 | 항목 | 현재 값 |
 |---|---|
-| 연구 질문·가설 | F11 삭제·rename을 정상 관측하고 부재·권한/IO 오류·경합을 구분하는가 |
-| 허용 변경 경로 | B1 workspace 관측·controller/Check 결합·회귀·수정/관리 기록, 인접 F10 TIMED_OUT 분기 보정 |
-| 검증 명령·기대 판정 | F11 회귀 38개와 F10 후속 2개 포함 최종 B1 215개 통과, 관련 model-free adapter 회귀 |
+| 연구 질문·가설 | F12가 정상 backup은 보존하고 불완전/잘못 연결된 묶음을 거부하는가 |
+| 허용 변경 경로 | B1 backup 검증·생성 경로/CLI·회귀·수정/관리 기록 |
+| 검증 명령·기대 판정 | F12 회귀 76개 포함 최종 B1 291개 통과, 원본 불변·CLI 실패 코드·관련 model-free adapter 회귀 |
 | 완료 조건 | 재현 근거·변경·회귀 결과·한계가 연결된 보고 |
 | 실제 모델 실행 | 미승인 |
 | 신규 experiment | 미승인 |

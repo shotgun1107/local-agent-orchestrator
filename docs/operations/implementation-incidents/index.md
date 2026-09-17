@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 83건
-- 해결: 82건
+- 전체: 84건
+- 해결: 83건
 - 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -96,6 +96,7 @@
 | DEV-20260916-003 | resolved | b1 | implementation | 감사 F10: 실행 controller의 잠금 때문에 취소 요청이 전달되지 않음 |
 | DEV-20260916-004 | resolved | b1 | implementation | 감사 F11: 삭제된 Git index 경로를 읽어 허용 삭제·rename 검증이 중단됨 |
 | DEV-20260916-005 | resolved | b1 | implementation | F10 후속: 취소와 TIMED_OUT terminal 경합에서 누락된 상태 매핑 |
+| DEV-20260917-001 | resolved | b1 | implementation | 감사 F12: 빈 목록·가짜 DB도 통과하는 백업 검증기 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5642,3 +5643,77 @@ TerminalStatus의 5개 값 중 TIMED_OUT이 취소 후 Session 상태 변환에�
 - 출처: docs/operations/audit-f11-workspace-deletion-remediation-20260916.md
 - 출처: docs/operations/audit-f10-cancellation-remediation-20260916.md
 - 출처: related_commits는 결함이 들어간 이전 F10 commit이다. 후속 수정 전달 commit은 최신 인수인계 자동 블록을 따른다.
+
+## DEV-20260917-001 — 감사 F12: 빈 목록·가짜 DB도 통과하는 백업 검증기
+
+- 상태: `resolved`
+- 단계: `b1`
+- 분류: `implementation`
+- 발견: 2026-09-17T00:11:24Z / 독립 감사 F12 및 닫힌 합성 backup bundle 재현
+- 해결: 2026-09-17T00:35:03Z
+
+### 증상
+
+manifest에 열거된 hash만 검사해 files=[] 또는 일반 텍스트 ledger.sqlite도 ok=true였다. 필수 DB·Run·Artifact·경로와 전체 묶음의 교차 검사가 없었다.
+
+### 재현
+
+- 빈 manifest.files와 가짜 SQLite 파일+자기 hash를 각각 verify_backup에 전달한다.
+- 정상 생성된 임시 묶음의 metadata·DB 관계·파일 집합·경로를 하나씩 손상시켜 거부 여부를 확인한다.
+
+### 증거
+
+- `reproducible-test`: red.xml 2 failed: 빈 목록과 가짜 DB를 실제 검증기가 승인함을 확인했다.
+- `reproducible-test`: 초기 집중 69개, 최종 F12 76개 포함 전체 B1 291개 통과. 원본 bytes/mtime 유지와 SQLite 메모리 연결만 사용하는 경계를 확인했다.
+- `direct-observation`: 중간 Windows 정상 파일 거부는 DirEntry.stat inode/dev/nlink=0과 Path.lstat 실제 값 차이였다. Path.lstat로 통일 후 정상/legacy/pending cancel 대조군이 통과했다.
+- `direct-observation`: 중간 전체 회차의 기존 timeout 시간 조건 실패는 원장에서 FAILED(timeout)/Session CANCELLED/active_attempt_id NULL이었다. 잘못된 결과 채택은 없었다.
+
+### 근본 원인
+
+열거된 파일 hash 일치를 복구 가능한 묶음 검증으로 확대했다. manifest 필수 계약, 전체 file set, 실제 SQLite schema/무결성, 선택 Run과 Artifact 참조의 결합이 없었다.
+
+### 검토한 해결안
+
+- `rejected` ledger.sqlite 이름과 hash만 추가 확인 — 가짜 DB·누락 Artifact·다른 Run·unsafe path가 여전히 통과한다.
+- `rejected` 입력 DB를 Ledger로 열고 자동 migration/복원 — 검사가 원본을 바꾸고 권한·범위를 확대한다.
+- `adopted` 엄격한 묶음과 고정 DB bytes의 메모리 검사 — 원본 파일에 SQLite 쓰기/sidecar를 만들지 않고 schema·소유 관계와 payload를 대조한다.
+
+### 채택한 해결
+
+backup_verify.py에 schema-1 strict manifest, portable 경로·link/별칭 거부, exact 파일/디렉터리 집합, bounded hash/size/identity 검사를 구현했다. 고정된 DB의 RAM 사본만 query_only/defensive로 조회하며 동결 DDL/migration, integrity/FK/state/소유·event 참조와 Run Artifact를 결합한다. F10 intent를 보존·검증하고 expected Run ID 옵션을 추가했다. 생성 전 경로 검증·게시 전 검증·게시 후 CLI 실패 코드도 연결했다.
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/backup_verify.py
+- stages/b1-sequential/src/orchestrator/recover.py
+- stages/b1-sequential/src/orchestrator/cli.py
+- stages/b1-sequential/tests/integration/test_backup_verification.py
+
+### 회귀시험
+
+- stages/b1-sequential/tests/integration/test_backup_verification.py: 76개
+- stages/b1-sequential/tests: 최종 291개
+- 기존 timeout 2개 분리 관측
+
+### 검증 결과
+
+- 초기 전체 285 passed. 중간 285 passed / timeout 시간 조건 1 failed. 최종 생성 경로 guard 포함 전체 291 passed / 0 failed / 0 skipped.
+- 중간 timeout_interrupt_supported는 약 3.563초로 2초 조건을 넘었다. 분리 관측 2 passed: supported start 1.5817초/terminal wait 1.0075초, unsupported start 1.3379초/wait 1.0131초. 원인은 미확정이며 실패를 통과 기록으로 대체하지 않았다.
+- 개발 환경 점검 PASS; 관리 도구 18개·로그 하네스 10개 통과.
+- 관련 model-free adapter 5개 통과. 실제 SDK/model/Judge 연결은 사용하지 않았다.
+- 원본 backup/state/raw/Measurement/seal 수정·복원·실제 SDK/model/Worker/Judge/Cell claim 0. 손상/삭제는 전용 임시 fixture에서만 수행했다.
+
+### 남은 위험
+
+- 선택 Run payload의 내부 일치 검사이며 전체 묶음을 함께 교체한 공격자의 진위·최신성·다른 Run 전체 복원은 증명하지 않는다. 외부 seal/출처 확인은 별도다.
+- WAL header 처리는 SQLite가 문서화한 deserialize용 RAM 사본에만 적용한다. 실제 원본 DB/header/hash는 변경하지 않는다.
+- 파일/용량/depth/SQL 한계 초과는 실패한다. 악의적 동시 filesystem 변경·native SQLite 취약점의 완전한 sandbox나 I/O 정지의 시간 상한은 아니다.
+- SQLite deserialize/defensive 미지원 플랫폼, 다른 PC 복원·실제 runtime 재연결은 미확인이다. Live NO-GO.
+- F1/F2/F4/F6/F14와 반복 관측된 timeout 시간 변동 원인은 남아 있다.
+
+### 추적 정보
+
+- 관련 커밋: e384f9d715c71517df0703634fd26d5235c3c1e6
+- 출처: docs/operations/audit-f12-backup-verification-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+- 출처: related_commits는 작업 전 기준이다. 전달 작업 commit은 기존 동기화_인수인계.md의 최신 자동 블록을 따른다.
