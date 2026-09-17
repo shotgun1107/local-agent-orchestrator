@@ -49,12 +49,16 @@ F12 76개 포함 최종 B1 291개가 통과했다. 중간 timeout 시간 실패 
 F1/F2/F4/F6을 교정했고 B1 전체 292개·관련 Runner 298개가 통과했다(실제 Docker 2개 skip).
 최신 결과는 `docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md`에서 인수한다.
 F14는 v1 새 실행/승격 차단과 v2 행동 검사·source bundle까지 구현했고 source 대조 39개가 통과했다.
-하지만 실제 isolated Judge qualification은 아직 미완료다. 다음 순서:
+후속으로 검토된 reference 전용 진단 연결부와 strict 결과 소비·preflight를 구현했고 관련 146개가 통과했다.
+결과는 `docs/operations/audit-f14-integration-preflight-20260917.md`에서 인수한다.
+Docker engine 연결 실패와 후보/oracle의 동일 Python 프로세스 공유 때문에 실제 qualification은 미완료다. 다음 순서:
 
-1. `tools/benchmark-runner/qualifications/profile-i-semantic-v2/README.md`를 읽고 새 source bundle·Worker/oracle/case-set·exact runtime 요구를 고정한다.
-2. 미검토 Worker를 호스트에서 실행하지 않는다. 정상 대안·mutation, hostile import/side effect/timeout 및 실제 격리경계를 검증할 환경을 준비한다.
-3. 실제 Judge workload는 Environment Closure 턴 A 결과를 보고한 후 별도 사용자 승인 턴 B까지 멈춘다.
-4. qualification 전까지 F14는 investigating, 새 Profile I candidate 생성은 차단이다. 과거 checker/reference/mutation/seal은 보존한다.
+1. `tools/benchmark-runner/qualifications/profile-i-semantic-v2/README.md`의 진단 전용 한계를 읽는다. 일반 Worker 평가로 확대하지 않는다.
+2. 회사 Docker의 사용 가능 상태를 확인한다. exact image는 engine 연결 불가로 미확인이며 없다고 단정하지 않는다.
+3. 기준 코드 진단을 이어갈 경우 새 clean source plan을 준비하고 exact image·동일경로 no-op의 턴 A 결과를 보고한다.
+   이전 plan은 HEAD/branch/origin/입력 변경 시 무효다. 실제 Judge workload는 별도 사용자 승인 턴 B까지 멈춘다.
+4. 일반 평가는 oracle/후보의 신뢰 경계 분리부터 설계한다. 실제 hostile import/side effect/timeout·정상 대안/mutation qualification이 필요하다.
+5. qualification 전까지 F14는 investigating, 새 Profile I candidate 생성은 차단이다. 과거 checker/reference/mutation/seal은 보존한다.
 
 안전한 감사 코드·검증·기록의 연속 진행은 승인됐지만 새 연구 가설·experiment·모델 사용은 아니다.
 이전 timeout 시간 변동의 근본 원인 분석은 별도 범위로 남아 있다.
@@ -65,7 +69,7 @@ F14는 v1 새 실행/승격 차단과 v2 행동 검사·source bundle까지 구�
 |---|---|
 | 연구 질문·가설 | 잔여 비교 경계가 실제 ID·실패 원인·시한·bytes·행동에 근거하는가 |
 | 허용 변경 경로 | 관련 B1/Runner 경계·새 v2 oracle/source bundle 도구·회귀·관리 기록 |
-| 검증 명령·기대 판정 | B1 292 passed, 관련 Runner 298 passed/2 skipped, F14 source 39 passed; 실제 격리 qualification은 미완료 |
+| 검증 명령·기대 판정 | 후속 F14 관련 146 passed. 앞선 B1 292·Runner 298/2skip과 중복 합산 금지. 실제 격리 qualification은 미완료 |
 | 완료 조건 | 재현 근거·변경·회귀 결과·한계가 연결된 보고 |
 | 실제 모델 실행 | 미승인 |
 | 신규 experiment | 미승인 |

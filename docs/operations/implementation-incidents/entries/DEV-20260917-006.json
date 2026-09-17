@@ -33,14 +33,17 @@
       "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
     }
   ],
-  "resolution": "기존 v1 새 matrix 실행/새 candidate 승격을 차단하고, 별도 v2 독립 행동 oracle와 공개 task selector·prerequisite/claim 검사·source bundle 조립을 구현했다. 실제 격리 qualification은 미완료다.",
+  "resolution": "기존 v1 새 matrix 실행/새 candidate 승격을 차단하고 별도 v2 행동 oracle와 공개 task/prerequisite/claim/source bundle을 구현했다. 후속으로 검토된 reference 전용 source/명령/결과 binding·preflight·1회 진단 연결을 구현했다. 동일 Python 프로세스의 oracle 신뢰 경계와 실제 격리 qualification은 미완료다.",
   "affected_files": [
     "tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py",
     "tools/benchmark-runner/qualifications/profile-i-semantic-v2/check_properties.py",
     "tools/benchmark-runner/scripts/build_profile_i_semantic_bundle.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_profile_i_docker_matrix.py",
-    "tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py"
+    "tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py",
+    "tools/benchmark-runner/tests/test_profile_i_semantic_execution.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json"
   ],
   "regression_tests": [
     "f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5",
@@ -48,17 +51,20 @@
   ],
   "verification": [
     "f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5",
-    "과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부"
+    "과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부",
+    "f14-integration-20260917/final.xml: 146 passed; 연결부 88, F14 39, Docker 단위 19. 기존 회차와 중복이며 실제 Docker 실행 증거가 아니다."
   ],
   "remaining_risks": [
     "아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.",
-    "v2 bundle의 실제 isolated execution·정상 대안/mutation matrix·hostile import/side-effect/timeout·exact runtime binding 및 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지."
+    "같은 Python 프로세스에서 후보와 oracle가 실행된다. 일반 Worker 평가는 신뢰 경계를 분리한 뒤 실제 qualification해야 한다. 이번 연결은 검토된 reference 진단 전용이다.",
+    "회사 Docker engine 연결 실패로 exact image/동일경로 no-op은 미확인이다. 실제 isolated execution·정상 대안/mutation·hostile import/side-effect/timeout와 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지."
   ],
   "related_commits": [
     "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9"
   ],
   "source_references": [
     "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
+    "docs/operations/audit-f14-integration-preflight-20260917.md",
     "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
   ]
 }

@@ -37,6 +37,13 @@ F14는 v1 새 실행/승격 차단 및 v2 행동 oracle/source bundle까지 **�
 실제 격리환경·hostile import/side effect/timeout·실행 qualification이 남아 investigating이며 Live NO-GO다.
 정본 결과: `docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md`.
 
+후속 F14 진단 연결: 검토된 reference만 대상으로 clean source/입력/명령/결과 hash를 묶고
+case·선행 조건·합계를 다시 검증하는 경로를 구현했다. 관련 **146 passed**(연결 88, F14 39, Docker 단위 19)다.
+실제 Docker engine은 named pipe 연결 실패이며 exact image와 동일경로 no-op은 미확인이다.
+**후보와 oracle가 같은 Python 프로세스를 공유하는 한계도 남았다.** Container 실행만으로 일반 Worker
+평가가 안전해지는 것은 아니므로 진단 전용이고 F14 investigating/Live NO-GO를 유지한다.
+정본 결과: `docs/operations/audit-f14-integration-preflight-20260917.md`.
+
 기술 근거는 저장소 `docs/README.md`,
 `docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md`,
 `docs/portfolio/local-agent-orchestrator-application-context.md`에서 확인한다.
@@ -64,7 +71,7 @@ F14는 v1 새 실행/승격 차단 및 v2 행동 oracle/source bundle까지 **�
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 현재 active candidate·실행 대상이 새로 승인되지 않았다. Docker exact image, 인증, 외부 state/seal, 새 경로의 candidate binding과 동일경로 예행연습은 미확인이다.
 - **Live NO-GO.** 이번 작업은 환경 검증 GO나 새 experiment·기존 실패 Cell 실행 승인이 아니다.
-- 이번 잔여 5항목 중 F1/F2/F4/F6은 교정했고 F14의 실제 격리환경 qualification이 남았다. 이전 timeout 시간 변동 원인도 미확정이다.
+- 이번 잔여 5항목 중 F1/F2/F4/F6은 교정했다. F14는 일반 Worker에 대한 oracle 신뢰 경계 분리와 실제 격리환경 qualification이 남았다. 이전 timeout 시간 변동 원인도 미확정이다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.

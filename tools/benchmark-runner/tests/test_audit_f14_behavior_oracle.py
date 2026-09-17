@@ -63,7 +63,7 @@ def test_new_bundle_is_closed_nonready_and_preserves_reference(tmp_path):
     destination = tmp_path / "new-bundle"
     manifest = builder.build(root, destination)
     assert manifest["challenge_ready"] is False and manifest["execution_performed"] is False
-    assert manifest["semantic_gate_version"] == 2 and len(manifest["files"]) == 7
+    assert manifest["semantic_gate_version"] == 2 and len(manifest["files"]) == 8
     for item in manifest["files"]:
         data = (destination / item["path"]).read_bytes()
         assert len(data) == item["size"] and hashlib.sha256(data).hexdigest() == item["sha256"]
