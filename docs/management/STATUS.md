@@ -1,6 +1,6 @@
 # 현재 진행 상황
 
-기준일: 2026-09-16. 이후 작업자는 완료·진행 중·미확인을 구분해 갱신한다.
+기준일: 2026-09-17. 이후 작업자는 완료·진행 중·미확인을 구분해 갱신한다.
 실제 전송 commit과 시점은 저장소 `docs/operations/동기화_인수인계.md`의 자동 블록을 확인한다.
 
 ## 연구와 구현
@@ -25,7 +25,10 @@
   실제 모델/SDK의 중단과 다른 OS의 process-tree 정리는 이번 Windows model-free 시험으로 검증하지 않았다.
 - 후속 F11 삭제·rename 관측을 교정했다. Git 후보와 실제 파일을 분리하고 안정된 부재만 삭제로 처리한다.
   권한/IO 오류·관측 중 변동은 BLOCKED이며, 필수 입력과 Check 증거 보호는 유지한다. 파일 자동 복원은 하지 않는다.
-  같은 검토에서 발견한 F10의 TIMED_OUT 취소 분기도 재현 후 보정했다. 최종 전체 B1은 **215 passed / 0 failed**이며 F11 38개와 F10 후속 경합 2개를 포함한다.
+  같은 검토에서 발견한 F10의 TIMED_OUT 취소 분기도 재현 후 보정했다. F11 완료 시 전체 B1은 **215 passed / 0 failed**이며 F11 38개와 F10 후속 경합 2개를 포함한다.
+- 2026-09-17 F12 불완전 backup 검증을 교정했다. 필수 DB·manifest/실제 집합·경로·SQLite schema/무결성·Run/Artifact 소유와 hash/size를 교차 검사한다.
+  원본에 쓰지 않고 고정 DB bytes의 메모리 사본만 검사한다. 검증 성공은 선택 Run payload의 내부 일치이며 진위·최신성·Live GO가 아니다.
+  최종 전체 B1은 **291 passed / 0 failed**이며 F12 76개를 포함한다. 중간 timeout 시간 조건 1회 실패는 안전 상태를 유지했고 분리 관측 2개는 통과했지만 원인은 미확정이다.
 
 기술 근거는 저장소 `docs/README.md`,
 `docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md`,
@@ -34,6 +37,7 @@
 후속 F5 결과는 `docs/operations/audit-f5-schema-remediation-20260916.md`다.
 후속 F10 결과는 `docs/operations/audit-f10-cancellation-remediation-20260916.md`다.
 후속 F11과 F10 terminal 보정 결과는 `docs/operations/audit-f11-workspace-deletion-remediation-20260916.md`다.
+후속 F12와 중간 실패 기록은 `docs/operations/audit-f12-backup-verification-remediation-20260917.md`다.
 전체 감사 원본은 회사의 ignored 경로
 `benchmarks/.local-r6/independent-audit-20260908-01/report.md`에 있다.
 이 원본과 대화 원문은 Git으로 자동 전달되지 않는다.
@@ -53,7 +57,7 @@
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 현재 active candidate·실행 대상이 새로 승인되지 않았다. Docker exact image, 인증, 외부 state/seal, 새 경로의 candidate binding과 동일경로 예행연습은 미확인이다.
 - **Live NO-GO.** 이번 작업은 환경 검증 GO나 새 experiment·기존 실패 Cell 실행 승인이 아니다.
-- 다음 교정 후보는 F12 불완전 backup 거부다. F1·F2·F4·F6·F14 평가 결함도 남아 있다.
+- 다음 교정 후보는 F1 반복 resume의 turn ID 충돌이다. F2·F4·F6·F14 평가 결함도 남아 있다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.

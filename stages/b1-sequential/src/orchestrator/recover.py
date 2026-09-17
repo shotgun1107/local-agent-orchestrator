@@ -10,9 +10,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from .backup_verify import checked_backup_directory, validate_backup_relative_path, verify_backup
 from .cancel import cancel_requested, request_cancel
 from .contract import AttemptState, CORE_VERSION, RunState, SessionState, TaskState, canonical_json, sha256_bytes, utc_now
-from .ledger import Ledger
+from .ledger import IntegrityViolation, Ledger
 from .verify import ArtifactStore, scan_state_for_secrets
 
 
@@ -174,10 +175,14 @@ def check_integrity(ledger: Ledger, state_root: Path, run_id: str | None = None)
 
 
 def backup_run(ledger: Ledger, state_root: Path, run_id: str) -> Path:
-    state_root = Path(state_root).resolve()
+    state_root = checked_backup_directory(state_root)
+    validate_backup_relative_path(run_id)
+    if "/" in run_id:
+        raise IntegrityViolation("backup Run identifier must be one path component")
     ledger.get("run", run_id)
     backup_root = state_root / "backups"
-    backup_root.mkdir(parents=True, exist_ok=True)
+    backup_root.mkdir(exist_ok=True)
+    checked_backup_directory(backup_root)
     temporary = Path(tempfile.mkdtemp(prefix=f".{run_id}-", dir=backup_root))
     destination = backup_root / f"{run_id}-{utc_now().replace(':', '').replace('-', '')}"
     try:
@@ -187,6 +192,7 @@ def backup_run(ledger: Ledger, state_root: Path, run_id: str) -> Path:
         for row in ledger.connection.execute(
             "SELECT relative_path, sha256 FROM artifacts WHERE run_id=? ORDER BY relative_path", (run_id,)
         ).fetchall():
+            validate_backup_relative_path(row["relative_path"])
             source = (state_root / PurePath(row["relative_path"])).resolve()
             if state_root not in source.parents or not source.is_file():
                 raise RuntimeError(f"missing or unsafe Artifact during backup: {row['relative_path']}")
@@ -209,22 +215,17 @@ def backup_run(ledger: Ledger, state_root: Path, run_id: str) -> Path:
             "files": files,
         }
         (temporary / "manifest.json").write_text(canonical_json(manifest) + "\n", encoding="utf-8")
+        verification = verify_backup(temporary, expected_run_id=run_id)
+        if not verification["ok"]:
+            raise IntegrityViolation("generated backup failed verification: " + ",".join(verification["mismatches"]))
         os.replace(temporary, destination)
         return destination
     except Exception:
+        checked_backup_directory(backup_root)
+        if backup_root not in temporary.resolve().parents:
+            raise IntegrityViolation("refusing cleanup outside backup root")
         shutil.rmtree(temporary, ignore_errors=True)
         raise
-
-
-def verify_backup(path: Path) -> dict[str, Any]:
-    path = Path(path)
-    manifest = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
-    mismatches = []
-    for item in manifest["files"]:
-        target = path / item["path"]
-        if not target.is_file() or sha256_bytes(target.read_bytes()) != item["sha256"]:
-            mismatches.append(item["path"])
-    return {"ok": not mismatches, "mismatches": mismatches, "manifest": manifest}
 
 
 def PurePath(value: str) -> Path:

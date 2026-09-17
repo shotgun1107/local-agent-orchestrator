@@ -121,5 +121,5 @@ manifest에는 원본 상대경로·파일 수·bytes·SHA-256·source/candidate
 ## 현재와 다음
 
 현재 상태/다음 연구 작업은 `docs/management/STATUS.md`, `NEXT.md`를 참조한다.
-통합·문서 정리 뒤 F8·F9·F3, F5, F10, F11과 F10 terminal 후속을 교정했다. F12 등 나머지 감사 결함과 새로운 연구 설계는 미완료다.
+통합·문서 정리 뒤 F8·F9·F3, F5, F10, F11과 F10 terminal 후속, F12를 교정했다. F1·F2·F4·F6·F14 등 비교 감사와 새로운 연구 설계는 미완료다.
 현재 Live NO-GO를 유지하며, 다른 PC 복원 실증과 다음 연구 범위 결정을 이어간다.
