@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "kind": "profile_i_semantic_case_contract",
+  "purpose": "reviewed_reference_diagnostic_only",
+  "comparison_authorized": false,
+  "oracle_isolation": "shared_python_process_not_hostile_safe",
+  "properties": [
+    {
+      "property_id": "I-P01-ACTIVE-PROFILE",
+      "prerequisite_ids": [],
+      "case_ids": [
+        "test_complete_zero_turn_transcript_is_recomputed",
+        "test_transcript_rejects_thread_mismatch_and_turn_start",
+        "test_transcript_rejects_disallowed_workspace_profile",
+        "test_collector_uses_named_profile_and_guaranteed_thread_started"
+      ]
+    },
+    {
+      "property_id": "I-P02-NO-LEGACY-SANDBOX",
+      "prerequisite_ids": [],
+      "case_ids": [
+        "test_manifest_builds_exact_profile_commands_without_legacy_sandbox",
+        "test_configuration_rejects_weakened_runtime_boundary_profile",
+        "test_manifest_rejects_profile_not_bound_to_controller_roots"
+      ]
+    },
+    {
+      "property_id": "I-P03-ELEVATED-IDENTITY",
+      "prerequisite_ids": [],
+      "case_ids": [
+        "test_windows_kind_requires_readiness_identity_and_child_equality"
+      ]
+    },
+    {
+      "property_id": "I-P04-W-ACL-BOUNDARY",
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "case_ids": [
+        "test_workspace_acl_transition_is_bound_to_exact_p01_restricted_sid",
+        "test_workspace_acl_transition_rejects_an_extra_ace",
+        "test_workspace_acl_transition_rejects_inherited_grant"
+      ]
+    },
+    {
+      "property_id": "I-P05-JS-CONTROLLER-ONLY",
+      "prerequisite_ids": [
+        "I-P03-ELEVATED-IDENTITY"
+      ],
+      "case_ids": [
+        "test_controller_acl_rejects_extra_grant_without_changing_os_acl"
+      ]
+    },
+    {
+      "property_id": "I-P06-LINK-ESCAPE-CLEANUP",
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "case_ids": [
+        "test_p05_junction_cleanup_does_not_depend_on_target_readability"
+      ]
+    },
+    {
+      "property_id": "I-P07-CHILD-SECRET-BOUNDARY",
+      "prerequisite_ids": [
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "case_ids": [
+        "test_child_and_input_scan_reject_disclosure_and_incomplete_scan",
+        "test_effective_policy_projection_is_redacted_and_recomputed"
+      ]
+    },
+    {
+      "property_id": "I-P08-STATE-NONDISCLOSURE",
+      "prerequisite_ids": [
+        "I-P05-JS-CONTROLLER-ONLY"
+      ],
+      "case_ids": [
+        "test_p08_requires_worker_metadata_nondisclosure_and_controller_invariants"
+      ]
+    },
+    {
+      "property_id": "I-P09-BUNDLE-RECALCULATION",
+      "prerequisite_ids": [
+        "I-P01-ACTIVE-PROFILE",
+        "I-P02-NO-LEGACY-SANDBOX",
+        "I-P03-ELEVATED-IDENTITY",
+        "I-P04-W-ACL-BOUNDARY",
+        "I-P05-JS-CONTROLLER-ONLY",
+        "I-P06-LINK-ESCAPE-CLEANUP",
+        "I-P07-CHILD-SECRET-BOUNDARY",
+        "I-P08-STATE-NONDISCLOSURE"
+      ],
+      "case_ids": [
+        "test_candidate_result_and_exact_four_file_bundle"
+      ]
+    },
+    {
+      "property_id": "I-P10-EVIDENCE-CLAIM-ALIGNMENT",
+      "prerequisite_ids": [],
+      "case_ids": [
+        "claim-alignment"
+      ]
+    }
+  ],
+  "public_tasks": {
+    "I01": [
+      "I-P10-EVIDENCE-CLAIM-ALIGNMENT"
+    ],
+    "I02": [
+      "I-P01-ACTIVE-PROFILE",
+      "I-P02-NO-LEGACY-SANDBOX"
+    ],
+    "I03": [
+      "I-P03-ELEVATED-IDENTITY"
+    ],
+    "I04": [
+      "I-P04-W-ACL-BOUNDARY",
+      "I-P05-JS-CONTROLLER-ONLY"
+    ],
+    "I05": [
+      "I-P06-LINK-ESCAPE-CLEANUP"
+    ],
+    "I06": [
+      "I-P07-CHILD-SECRET-BOUNDARY"
+    ],
+    "I07": [
+      "I-P08-STATE-NONDISCLOSURE"
+    ],
+    "I08": [
+      "I-P09-BUNDLE-RECALCULATION"
+    ]
+  }
+}

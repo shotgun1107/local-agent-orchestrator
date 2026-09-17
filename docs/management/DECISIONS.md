@@ -61,3 +61,11 @@
 - F14는 역사 v1 봉인을 보존하면서 새 실행/승격을 차단하고 별도 v2 행동 oracle/source bundle을 구현한다.
 - 단위시험으로 실제 isolation을 주장하지 않는다. 실제 격리 qualification까지 F14는 investigating이다.
 - 새 experiment·실제 모델/SDK/Judge workload 승인 관문은 유지한다. 중간 실패를 기록하며 이전 timeout 변동 해결도 주장하지 않는다.
+
+## 2026-09-17 — F14 기준 코드 진단 연결과 NO-GO
+
+- 사용자가 검증기 연결·입력/환경 고정·사전점검의 진행을 승인했다. 실제 workload와 새 비교 experiment 승인은 아니다.
+- 동일 Python 프로세스에서 후보와 oracle가 실행되는 구조적 한계를 확인했다. Container만으로 판정 신뢰가 확보됐다고 주장하지 않는다.
+- 기존 v1 차단을 유지하고 검토된 reference만 받는 별도 진단 경로로 연결했다. 모든 출력의 comparison_authorized/challenge_ready는 false다.
+- 관련 model-free 146개 통과와 실제 Docker engine 연결 불가를 분리해서 보고한다. engine 시작·이미지 설치·로그인·실제 실행은 하지 않는다.
+- F14 전체 해결 전에는 oracle 신뢰 경계와 실제 격리 qualification이 필요하다. 회사 진단도 Environment Closure GO 뒤 별도 실행 승인 턴을 요구한다.

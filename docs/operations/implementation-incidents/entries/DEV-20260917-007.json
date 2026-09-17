@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260917-007",
+  "title": "F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "tooling",
+  "discovered_at": "2026-09-17T03:22:14Z",
+  "resolved_at": "2026-09-17T03:22:36Z",
+  "discovered_by": "F14 진단 연결 최초 단위시험",
+  "symptom": "공통 prepare fixture에서 Git executable의 nlink=2를 거부해 1 failed와 47 setup errors 발생",
+  "reproduction": [
+    "f14-integration-20260917/first.xml: 1 passed, 1 failed, 47 errors; 설치된 Git 실행 파일을 고정한 prepare 호출"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "Git cmd/git.exe: 46480 bytes, regular file, nlink 2. 최초 공통 setup 실패이며 Docker/Worker는 실행되지 않았다."
+    }
+  ],
+  "root_cause": "payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. 정상 Git 설치는 실행 파일을 hardlink로 공유할 수 있다.",
+  "considered_options": [
+    {
+      "option": "실행 파일과 payload 계약 분리",
+      "decision": "adopted",
+      "reason": "설치 방식은 보존하며 입력 alias 위험과 실행 파일 변동은 계속 검사한다"
+    },
+    {
+      "option": "Git 재설치나 사본으로 우회",
+      "decision": "rejected",
+      "reason": "기존 설치를 불필요하게 바꾸며 잘못된 검사 조건을 숨긴다"
+    }
+  ],
+  "resolution": "실행 파일은 전체 bytes SHA-256과 읽기 전후 개체 identity를 고정하되 정상 hardlink를 허용한다. W/J/bundle payload는 hardlink 거부를 유지한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_profile_i_semantic_execution.py::test_preparation_is_bound_nonexecuting_and_reference_is_not_mounted"
+  ],
+  "verification": [
+    "second.xml 49 passed; final.xml 146 passed이며 연결부 88개 포함. 현재 설치된 Git으로 prepare fixture를 검증했다."
+  ],
+  "remaining_risks": [
+    "F14 자체의 일반 Worker oracle 격리와 실제 Docker qualification은 별도 미완료다."
+  ],
+  "related_commits": [
+    "da6224ac7af2c52c6f1a16f7e4d7bf23ee4bc9b0"
+  ],
+  "source_references": [
+    "docs/operations/audit-f14-integration-preflight-20260917.md"
+  ]
+}

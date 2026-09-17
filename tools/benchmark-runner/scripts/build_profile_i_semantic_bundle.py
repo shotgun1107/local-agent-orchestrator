@@ -17,6 +17,7 @@ def build(repository: Path, output: Path) -> dict:
     source = repository / "tools/benchmark-runner/qualifications/profile-i-semantic-v2"
     payloads = {"checker/check_properties.py": (source / "check_properties.py").read_bytes(),
                 "checker/test_behavior.py": (source / "test_behavior.py").read_bytes(),
+                "checker/semantic-contract.json": (source / "semantic-contract.json").read_bytes(),
                 "public-behavior-contract.md": (source / "README.md").read_bytes()}
     # Retain reference INPUTS, never copy the old names-only pass evidence/seal.
     for name in ("reference.patch", "property-catalog.json", "prerequisite-dag.json", "failure-lineage.json"):

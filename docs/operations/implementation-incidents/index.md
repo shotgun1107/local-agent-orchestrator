@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 89건
-- 해결: 87건
+- 전체: 90건
+- 해결: 88건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -102,6 +102,7 @@
 | DEV-20260917-004 | resolved | benchmark-runner | implementation | F4: Judge 준비 뒤 만료된 시한으로 workload 시작 |
 | DEV-20260917-005 | resolved | benchmark-runner | tooling | F6: Profile I source-intake 작업 bytes와 정본 LF 불일치 |
 | DEV-20260917-006 | investigating | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
+| DEV-20260917-007 | resolved | benchmark-runner | tooling | F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6002,7 +6003,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 채택한 해결
 
-기존 v1 새 matrix 실행/새 candidate 승격을 차단하고, 별도 v2 독립 행동 oracle와 공개 task selector·prerequisite/claim 검사·source bundle 조립을 구현했다. 실제 격리 qualification은 미완료다.
+기존 v1 새 matrix 실행/새 candidate 승격을 차단하고 별도 v2 행동 oracle와 공개 task/prerequisite/claim/source bundle을 구현했다. 후속으로 검토된 reference 전용 source/명령/결과 binding·preflight·1회 진단 연결을 구현했다. 동일 Python 프로세스의 oracle 신뢰 경계와 실제 격리 qualification은 미완료다.
 
 ### 수정 파일
 
@@ -6012,6 +6013,9 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 - tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
 - tools/benchmark-runner/src/benchmark_runner/realistic_profile_i_docker_matrix.py
 - tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py
+- tools/benchmark-runner/tests/test_profile_i_semantic_execution.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json
 
 ### 회귀시험
 
@@ -6022,14 +6026,71 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 - f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
 - 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
+- f14-integration-20260917/final.xml: 146 passed; 연결부 88, F14 39, Docker 단위 19. 기존 회차와 중복이며 실제 Docker 실행 증거가 아니다.
 
 ### 남은 위험
 
 - 아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.
-- v2 bundle의 실제 isolated execution·정상 대안/mutation matrix·hostile import/side-effect/timeout·exact runtime binding 및 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지.
+- 같은 Python 프로세스에서 후보와 oracle가 실행된다. 일반 Worker 평가는 신뢰 경계를 분리한 뒤 실제 qualification해야 한다. 이번 연결은 검토된 reference 진단 전용이다.
+- 회사 Docker engine 연결 실패로 exact image/동일경로 no-op은 미확인이다. 실제 isolated execution·정상 대안/mutation·hostile import/side-effect/timeout와 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지.
 
 ### 추적 정보
 
 - 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
 - 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: docs/operations/audit-f14-integration-preflight-20260917.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+
+## DEV-20260917-007 — F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `tooling`
+- 발견: 2026-09-17T03:22:14Z / F14 진단 연결 최초 단위시험
+- 해결: 2026-09-17T03:22:36Z
+
+### 증상
+
+공통 prepare fixture에서 Git executable의 nlink=2를 거부해 1 failed와 47 setup errors 발생
+
+### 재현
+
+- f14-integration-20260917/first.xml: 1 passed, 1 failed, 47 errors; 설치된 Git 실행 파일을 고정한 prepare 호출
+
+### 증거
+
+- `reproducible-test`: Git cmd/git.exe: 46480 bytes, regular file, nlink 2. 최초 공통 setup 실패이며 Docker/Worker는 실행되지 않았다.
+
+### 근본 원인
+
+payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. 정상 Git 설치는 실행 파일을 hardlink로 공유할 수 있다.
+
+### 검토한 해결안
+
+- `adopted` 실행 파일과 payload 계약 분리 — 설치 방식은 보존하며 입력 alias 위험과 실행 파일 변동은 계속 검사한다
+- `rejected` Git 재설치나 사본으로 우회 — 기존 설치를 불필요하게 바꾸며 잘못된 검사 조건을 숨긴다
+
+### 채택한 해결
+
+실행 파일은 전체 bytes SHA-256과 읽기 전후 개체 identity를 고정하되 정상 hardlink를 허용한다. W/J/bundle payload는 hardlink 거부를 유지한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_profile_i_semantic_execution.py::test_preparation_is_bound_nonexecuting_and_reference_is_not_mounted
+
+### 검증 결과
+
+- second.xml 49 passed; final.xml 146 passed이며 연결부 88개 포함. 현재 설치된 Git으로 prepare fixture를 검증했다.
+
+### 남은 위험
+
+- F14 자체의 일반 Worker oracle 격리와 실제 Docker qualification은 별도 미완료다.
+
+### 추적 정보
+
+- 관련 커밋: da6224ac7af2c52c6f1a16f7e4d7bf23ee4bc9b0
+- 출처: docs/operations/audit-f14-integration-preflight-20260917.md

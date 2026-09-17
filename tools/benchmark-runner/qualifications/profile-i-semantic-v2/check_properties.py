@@ -1,8 +1,10 @@
-"""Draft v2 behavior checker. Execute unknown Worker code only in qualified isolation.
+"""Draft v2 behavior checker, restricted to reviewed-reference diagnostics.
 
 The CLI is restricted to the existing /workspace, /judge, /output container layout;
 path checks are NOT a sandbox or evidence of OS enforcement. Never host-run an
-untrusted workspace. No reference patch or Worker-provided test is executed.
+untrusted workspace. No reference patch or Worker-provided test is executed here.
+Candidate and oracle share a Python process: this is NOT hostile-Worker-safe,
+even inside a container. General evaluation needs a separately qualified design.
 """
 from __future__ import annotations
 
@@ -99,6 +101,7 @@ def evaluate_loaded_oracle(oracle, scratch: Path, *, task_id: str | None = None,
                 passed = workspace is not None and _claims_match(workspace)
             except (OSError, ValueError, KeyError, TypeError):
                 passed = False
+            cases = [{"case_id": "claim-alignment", "passed": passed}]
         row = {"property_id": property_id, "status": "pass" if passed else "fail", "cases": cases}
         results[property_id] = row
         return row
@@ -109,6 +112,18 @@ def evaluate_loaded_oracle(oracle, scratch: Path, *, task_id: str | None = None,
             "behavior_passed": all(r["status"] == "pass" for r in rows),
             "scope": "synthetic_behavior_only", "os_enforcement_verified": False,
             "challenge_ready": False, "model_turns": 0}
+
+
+def validate_case_contract(contract):
+    expected_cases = {**PROPERTIES, CLAIM_PROPERTY: ("claim-alignment",)}
+    expected_tasks = {**PUBLIC_TASK_PROPERTIES, "I01": (CLAIM_PROPERTY,)}
+    expected_rows = [{"property_id": key, "prerequisite_ids": list(PREREQUISITES[key]),
+                      "case_ids": list(expected_cases[key])} for key in expected_cases]
+    if contract != {"schema_version": 1, "kind": "profile_i_semantic_case_contract",
+        "purpose": "reviewed_reference_diagnostic_only", "comparison_authorized": False,
+        "oracle_isolation": "shared_python_process_not_hostile_safe", "properties": expected_rows,
+        "public_tasks": {key: list(value) for key, value in expected_tasks.items()}}:
+        raise ValueError("Case contract differs from the trusted checker implementation")
 
 
 def _workspace_hash(root: Path) -> str:
@@ -131,6 +146,7 @@ def main() -> int:
     parser.add_argument("--experiment-id", default="profile-i-semantic-qualification")
     parser.add_argument("--cell-id", default="reviewed-control")
     parser.add_argument("--task-id", choices=sorted(PUBLIC_TASK_PROPERTIES))
+    parser.add_argument("--invocation-sha256", required=True)
     args = parser.parse_args()
     workspace, judge, output = Path("/workspace"), Path("/judge"), Path("/output")
     if args.workspace.resolve() != workspace:
@@ -141,6 +157,11 @@ def main() -> int:
         raise RuntimeError("Oracle must be outside the Worker tree")
     if any(name in os.environ for name in ("OPENAI_API_KEY", "CODEX_API_KEY")):
         raise RuntimeError("API-key environment name present")
+    import re
+    if not re.fullmatch(r"[0-9a-f]{64}", args.invocation_sha256):
+        raise ValueError("Invalid invocation identity")
+    contract_bytes = Path(__file__).with_name("semantic-contract.json").read_bytes()
+    validate_case_contract(json.loads(contract_bytes))
     sys.dont_write_bytecode = True
     before = _workspace_hash(workspace)
     source = workspace / "tools/benchmark-runner/src"
@@ -161,7 +182,10 @@ def main() -> int:
                   oracle_sha256=hashlib.sha256(Path(__file__).with_name("test_behavior.py").read_bytes()).hexdigest(),
                   case_set_sha256=hashlib.sha256(json.dumps(PROPERTIES, sort_keys=True).encode()).hexdigest(),
                   workspace_before_sha256=before, workspace_after_sha256=after, workspace_mutated=before != after)
-    print(json.dumps(result, sort_keys=True))
+    result.update(invocation_sha256=args.invocation_sha256, task_id=args.task_id,
+                  contract_sha256=hashlib.sha256(contract_bytes).hexdigest(),
+                  oracle_isolation="shared_python_process_not_hostile_safe", comparison_authorized=False)
+    print("PROFILE_I_DIAGNOSTIC_RESULT:" + json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0 if result["behavior_passed"] else 1
 
 
