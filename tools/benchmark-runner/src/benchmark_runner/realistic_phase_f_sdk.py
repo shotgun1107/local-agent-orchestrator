@@ -161,6 +161,8 @@ class PhaseFThreadStartObservation:
 
 
 class PhaseFTurnHandle(Protocol):
+    id: str
+
     def run(self) -> Any: ...
 
     def interrupt(self) -> None: ...

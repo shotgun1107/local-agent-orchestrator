@@ -258,6 +258,7 @@ class DockerExecutionBackend(Protocol):
         cleanup_timeout_seconds: int,
         limit: int,
         container_name: str,
+        completion_deadline_monotonic: float | None = None,
     ) -> DockerRawExecution: ...
 
 
@@ -296,14 +297,19 @@ class SubprocessDockerExecutionBackend:
         cleanup_timeout_seconds: int,
         limit: int,
         container_name: str,
+        completion_deadline_monotonic: float | None = None,
     ) -> DockerRawExecution:
         started_at = time.monotonic()
         creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+        # Prepare argv/env BEFORE the last clock check; no setup between it and Popen.
+        arguments, child_environment = list(command), dict(environment)
+        if completion_deadline_monotonic is not None and time.monotonic() >= completion_deadline_monotonic:
+            return _expired_without_start()
         try:
             process = subprocess.Popen(
-                list(command),
+                arguments,
                 cwd=cwd,
-                env=dict(environment),
+                env=child_environment,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -344,7 +350,10 @@ class SubprocessDockerExecutionBackend:
         cleanup_attempted = False
         cleanup_succeeded: bool | None = None
         try:
-            exit_code = process.wait(timeout=timeout_seconds)
+            wait_seconds = timeout_seconds
+            if completion_deadline_monotonic is not None:
+                wait_seconds = min(wait_seconds, max(0.0, completion_deadline_monotonic - time.monotonic()))
+            exit_code = process.wait(timeout=wait_seconds)
         except subprocess.TimeoutExpired:
             timed_out = True
             process.kill()
@@ -638,6 +647,12 @@ def _derive_result(
     return ("CHECKS_PASSED", []) if typed_outcome == "pass" else ("CHECKS_FAILED", ["CHECKS_FAILED"])
 
 
+def _expired_without_start() -> DockerRawExecution:
+    return DockerRawExecution(started=False, exit_code=None, stdout=b"", stdout_total=0,
+        stdout_sha256=sha256_bytes(b""), stderr=b"", stderr_total=0, stderr_sha256=sha256_bytes(b""),
+        duration_ms=0, timed_out=False, start_error_kind="CellDeadlineExceeded")
+
+
 def execute_docker_judge(
     prepared: PreparedJudgeRoots,
     *,
@@ -646,6 +661,7 @@ def execute_docker_judge(
     source_environment: Mapping[str, str] | None = None,
     limits: DockerJudgeLimits | None = None,
     cell_id: str | None = None,
+    completion_deadline_monotonic: float | None = None,
 ) -> tuple[DockerJudgeManifest, DockerJudgeResult]:
     """Run one frozen Docker Judge invocation and always persist typed evidence."""
 
@@ -663,15 +679,21 @@ def execute_docker_judge(
         canonical_json_bytes(manifest),
     )
     executor = backend or SubprocessDockerExecutionBackend()
-    raw = executor.execute(
-        manifest.command,
-        cwd=prepared.O,
-        environment=environment,
-        timeout_seconds=manifest.limits.timeout_seconds,
-        cleanup_timeout_seconds=manifest.limits.cleanup_timeout_seconds,
-        limit=manifest.limits.stdout_limit_bytes,
-        container_name=manifest.container_name,
-    )
+    deadline_arguments = ({"completion_deadline_monotonic": completion_deadline_monotonic}
+                          if completion_deadline_monotonic is not None else {})
+    if completion_deadline_monotonic is not None and time.monotonic() >= completion_deadline_monotonic:
+        raw = _expired_without_start()
+    else:
+        raw = executor.execute(
+            manifest.command,
+            cwd=prepared.O,
+            environment=environment,
+            timeout_seconds=manifest.limits.timeout_seconds,
+            cleanup_timeout_seconds=manifest.limits.cleanup_timeout_seconds,
+            limit=manifest.limits.stdout_limit_bytes,
+            container_name=manifest.container_name,
+            **deadline_arguments,
+        )
     atomic_write(prepared.run_root / "docker-judge.stdout.bin", raw.stdout)
     atomic_write(prepared.run_root / "docker-judge.stderr.bin", raw.stderr)
     process = _process_record(raw, manifest.limits.stdout_limit_bytes)

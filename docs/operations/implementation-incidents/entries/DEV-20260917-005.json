@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260917-005",
+  "title": "F6: Profile I source-intake 작업 bytes와 정본 LF 불일치",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "tooling",
+  "discovered_at": "2026-09-17T01:00:35Z",
+  "resolved_at": "2026-09-17T01:36:19Z",
+  "discovered_by": "독립 감사 잔여 항목 및 현재 source model-free 회귀",
+  "symptom": "Git clean으로 보이던 source-intake.json은 CRLF였으며 봉인 manifest가 참조한 LF hash와 달랐다.",
+  "reproduction": [
+    "f6-red.xml: 2 failed / 12 passed",
+    "f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "f6-red.xml: 2 failed / 12 passed; f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD"
+    }
+  ],
+  "root_cause": "이미 eol=lf 규칙이 있어도 이전 checkout의 기존 작업 bytes는 자동 재정규화되지 않았다.",
+  "considered_options": [
+    {
+      "option": "과거 봉인/DDL/결과를 변경해 현재 오류를 숨김",
+      "decision": "rejected",
+      "reason": "원본 증거와 기존 호환 계약을 훼손한다."
+    },
+    {
+      "option": "현재 source와 새 회귀/증거 경계에서 교정",
+      "decision": "adopted",
+      "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
+    }
+  ],
+  "resolution": "해당 추적 파일 전체를 기존 Git LF bytes로 맞췄고 source-gate/worker-snapshot 재생성 14개를 확인했다. Git blob 자체는 원래 정본과 같아 의미 변경 commit이 없다.",
+  "affected_files": [
+    "benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/source-intake.json",
+    "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md"
+  ],
+  "regression_tests": [
+    "f6-red.xml: 2 failed / 12 passed",
+    "f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD"
+  ],
+  "verification": [
+    "f6-red.xml: 2 failed / 12 passed",
+    "f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD"
+  ],
+  "remaining_risks": [
+    "최초 부분 줄 편집은 혼합 개행을 남겼고 재검사에서 실패했다. 전체 파일 LF 변환 뒤 통과했다.",
+    "다른 PC의 기존 checkout도 clean과 실제 canonical bytes를 구분해 확인해야 한다."
+  ],
+  "related_commits": [
+    "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9"
+  ],
+  "source_references": [
+    "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
+  ]
+}

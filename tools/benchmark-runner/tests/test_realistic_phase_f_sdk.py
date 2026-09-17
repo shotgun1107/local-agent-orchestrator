@@ -94,6 +94,7 @@ class FakeTurnResult:
 
 class FakeTurnHandle:
     def __init__(self) -> None:
+        self.id = "fake-turn"
         self.run_count = 0
         self.interrupt_count = 0
 

@@ -53,3 +53,11 @@
 - 검증 성공을 생성자 진위·최신성·전체 DB의 다른 Run payload·실제 실행 준비로 확대하지 않는다. 외부 seal과 Live 두 턴 관문은 유지한다.
 - 중간 timeout 시간 실패는 실패대로 기록하며 기대 시간을 완화하거나 원인 해결을 선언하지 않는다.
 - F1/F2/F4/F6/F14, 새로운 연구·experiment·실제 모델 사용은 이번 작업 범위 밖이다.
+
+## 2026-09-17 — 잔여 감사의 연속 교정 승인
+
+- 사용자가 남은 감사 항목은 하나씩 재확인하지 않고 계속 수정하도록 승인했다. 기존 결함의 코드·model-free 검증·기록·통상 Git 전송을 진행한다.
+- F1/F2/F4/F6을 교정했다. mixed 원장 제약은 DDL을 바꾸지 않고 종료 stage/Check 증거에 원인을 보존한다.
+- F14는 역사 v1 봉인을 보존하면서 새 실행/승격을 차단하고 별도 v2 행동 oracle/source bundle을 구현한다.
+- 단위시험으로 실제 isolation을 주장하지 않는다. 실제 격리 qualification까지 F14는 investigating이다.
+- 새 experiment·실제 모델/SDK/Judge workload 승인 관문은 유지한다. 중간 실패를 기록하며 이전 timeout 변동 해결도 주장하지 않는다.

@@ -84,8 +84,9 @@ def test_b1_environment_failure_is_not_labeled_as_product_failure() -> None:
 
 
 @pytest.mark.parametrize("judge_passes", [True, False])
+@pytest.mark.parametrize("failure_case", ["dispatch_uncertain", "transport", "terminal_unknown", "mixed"])
 def test_config_dispatch_failure_remains_environment_failure_through_sealing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, judge_passes: bool,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, judge_passes: bool, failure_case: str,
 ) -> None:
     """Exercise scheduler -> adapter -> finalizer without a real SDK or live state."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -94,10 +95,41 @@ def test_config_dispatch_failure_remains_environment_failure_through_sealing(
     planned = snapshot.plan.cells[1]
     request = _request_for(plan=snapshot.plan, snapshot=snapshot, cell=planned,
                           runtime_mode=PhaseFRuntimeMode.MODEL_FREE_FAKE)
+    if failure_case == "mixed":
+        import subprocess
+        from orchestrator import verify
+        original_process = verify._run_bounded_check_process
+        diagnostic = dict(schema_version=1, task_id="R01", classification="MIXED_PRODUCT_AND_ENVIRONMENT",
+            comparison_valid=False, product_failure_present=True, environment_failure_present=True,
+            nodes=[dict(node_id="product", classification="PRODUCT_ASSERTION", passed=False, reason_code="ASSERTION_FAILED"),
+                   dict(node_id="environment", classification="ENVIRONMENT", passed=False, reason_code="ENVIRONMENT_FAILED")])
+        def mixed_check(argv, **kwargs):
+            if "R01" not in argv:
+                return original_process(argv, **kwargs)
+            return subprocess.CompletedProcess(argv, 1, "CHECK_DIAGNOSTIC_RESULT:" + json.dumps(diagnostic, sort_keys=True, separators=(",", ":")) + "\n", ""), False
+        monkeypatch.setattr(verify, "_run_bounded_check_process", mixed_check)
 
     class ConfigDriftRuntime(FakeRuntime):
         def start_session(self, task_envelope, runtime_profile):
-            raise PhaseFConfigurationDriftError("Phase F configuration changed after preflight")
+            if failure_case == "dispatch_uncertain":
+                raise PhaseFConfigurationDriftError("Phase F configuration changed after preflight")
+            return super().start_session(task_envelope, runtime_profile)
+
+        def await_terminal(self, turn_handle, monotonic_deadline):
+            if failure_case == "mixed":
+                return super().await_terminal(turn_handle, monotonic_deadline)
+            if failure_case == "terminal_unknown":
+                from orchestrator.runtime import RuntimeOutcome
+                from orchestrator.contract import TerminalStatus
+                return RuntimeOutcome(terminal_status=TerminalStatus.UNKNOWN, terminal_evidence={"synthetic": True})
+            import queue
+            from benchmark_runner.realistic_phase_f_b1 import PhaseFB1RuntimeV2
+            def disconnected():
+                raise ConnectionError("synthetic disconnected transport")
+            destination = queue.Queue()
+            PhaseFB1RuntimeV2(self.workspace, port=SimpleNamespace(), environ={})._collect(
+                SimpleNamespace(raw=SimpleNamespace(run=disconnected)), destination)
+            return destination.get_nowait()
 
     worker = ProfileRPhaseFB1Backend(
         repository=REPOSITORY, artifact_root=tmp_path / "backend",
@@ -114,20 +146,23 @@ def test_config_dispatch_failure_remains_environment_failure_through_sealing(
     root = tmp_path / "backend" / planned.cell_id
     adapter = json.loads((root / PHASE_F_B1_EVIDENCE_FILENAME).read_bytes())
     assert adapter["adapter_outcome_state"] == "infrastructure_error"
-    assert adapter["adapter_failure_kind"] == "b1_dispatch_uncertain"
+    assert adapter["adapter_failure_kind"] == ({"dispatch_uncertain": "b1_dispatch_uncertain", "mixed": "check_mixed"}.get(failure_case, "b1_unknown_failure"))
     metrics = adapter["adapter_normalized_metrics"]
-    assert metrics["environment_failure_present"] is True
+    assert metrics["environment_failure_present"] is (failure_case in {"dispatch_uncertain", "mixed"})
     assert metrics["comparison_valid"] is False and metrics["b1_invalid_environment"] is True
     assert metrics["b1_retry_count"] == metrics["b1_resume_count"] == 0
     attempts = adapter["adapter_raw_payload"]["report"]["tasks"][0]["attempts"]
-    assert len(attempts) == 1 and attempts[0]["failure_kind"] == "dispatch_uncertain"
+    expected_kind = {"transport": "runtime_unknown", "terminal_unknown": "terminal_unknown", "dispatch_uncertain": "dispatch_uncertain", "mixed": "check_unknown"}[failure_case]
+    assert len(attempts) == 1 and attempts[0]["failure_kind"] == expected_kind
     assert result.actual_model_turns == adapter["actual_model_turns"] == 0
     measurement = verify_phase_f_cell_finalization(root, expected_seal_file_sha256=result.sealed_artifact_sha256)
     assert measurement.outcome.state == "infrastructure_error"
     assert measurement.variant_metrics.values["failure_classification"] == (
-        "ENVIRONMENT" if judge_passes else "MIXED_PRODUCT_AND_ENVIRONMENT")
+        "MIXED_PRODUCT_AND_ENVIRONMENT" if failure_case == "mixed" else
+        ("ENVIRONMENT" if judge_passes else "MIXED_PRODUCT_AND_ENVIRONMENT") if failure_case == "dispatch_uncertain" else "UNKNOWN")
     assert measurement.variant_metrics.values["comparison_valid"] is False
-    assert measurement.variant_metrics.values["environment_failure_present"] is True
+    assert measurement.variant_metrics.values["environment_failure_present"] is (failure_case in {"dispatch_uncertain", "mixed"})
+    assert measurement.variant_metrics.values["product_failure_present"] is (failure_case == "mixed" or not judge_passes)
 
 
 def test_model_free_b1_cell_uses_scheduler_and_variant_artifact(

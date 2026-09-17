@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260917-004",
+  "title": "F4: Judge 준비 뒤 만료된 시한으로 workload 시작",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "implementation",
+  "discovered_at": "2026-09-17T00:59:21Z",
+  "resolved_at": "2026-09-17T01:36:19Z",
+  "discovered_by": "독립 감사 잔여 항목 및 현재 source model-free 회귀",
+  "symptom": "roots/manifest 준비 중 deadline이 지났어도 준비 전 timeout으로 Docker 프로세스를 시작할 수 있었다.",
+  "reproduction": [
+    "F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거",
+    "기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거; 기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped"
+    }
+  ],
+  "root_cause": "상대 timeout을 준비 전에 한 번 계산하고 실제 Popen까지 절대 시한을 전달하지 않았다.",
+  "considered_options": [
+    {
+      "option": "과거 봉인/DDL/결과를 변경해 현재 오류를 숨김",
+      "decision": "rejected",
+      "reason": "원본 증거와 기존 호환 계약을 훼손한다."
+    },
+    {
+      "option": "현재 source와 새 회귀/증거 경계에서 교정",
+      "decision": "adopted",
+      "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
+    }
+  ],
+  "resolution": "roots/manifest 준비 뒤와 Popen 직전 검사, 시작 뒤 잔여시간 wait를 추가했다. 비시작 deadline 만료는 CellDeadlineExceeded로 기존 typed 결과를 보존한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_docker.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge.py",
+    "tools/benchmark-runner/tests/test_audit_f4_judge_deadline.py"
+  ],
+  "regression_tests": [
+    "F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거",
+    "기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped"
+  ],
+  "verification": [
+    "F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거",
+    "기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped"
+  ],
+  "remaining_risks": [
+    "OS 스케줄링까지 원자적으로 묶는 실시간 보장은 아니다.",
+    "비시작 timed_out=true 조합의 초기 typed 오류는 시작 전 오류와 실행 중 timeout을 구분해 수정했다. 실제 Docker는 실행하지 않았다."
+  ],
+  "related_commits": [
+    "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9"
+  ],
+  "source_references": [
+    "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
+  ]
+}

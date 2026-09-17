@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260917-002",
+  "title": "F1: 반복 resume의 합성 turn ID 충돌",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "implementation",
+  "discovered_at": "2026-09-17T00:53:56Z",
+  "resolved_at": "2026-09-17T01:36:19Z",
+  "discovered_by": "독립 감사 잔여 항목 및 현재 source model-free 회귀",
+  "symptom": "Profile R resume가 늘어도 turn_no=2 식별자를 반복해 서로 다른 결과가 Ledger idempotency 오류로 중단될 수 있었다.",
+  "reproduction": [
+    "F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료",
+    "f1-f2-final.xml: 관련 16 passed"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료; f1-f2-final.xml: 관련 16 passed"
+    }
+  ],
+  "root_cause": "최대 1회 resume라는 예전 가정의 합성 ID를 횟수 제한 없는 completion-deadline mode에도 사용했다.",
+  "considered_options": [
+    {
+      "option": "과거 봉인/DDL/결과를 변경해 현재 오류를 숨김",
+      "decision": "rejected",
+      "reason": "원본 증거와 기존 호환 계약을 훼손한다."
+    },
+    {
+      "option": "현재 source와 새 회귀/증거 경계에서 교정",
+      "decision": "adopted",
+      "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
+    }
+  ],
+  "resolution": "실제 transport ID를 보존하고 세션별 turn_no만 별도로 증가시켰다. 누락/다른 terminal ID는 거부하며 호출 계수와 기존 원장 멱등성은 유지한다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py",
+    "tools/benchmark-runner/tests/test_audit_f1_turn_identity.py"
+  ],
+  "regression_tests": [
+    "F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료",
+    "f1-f2-final.xml: 관련 16 passed"
+  ],
+  "verification": [
+    "F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료",
+    "f1-f2-final.xml: 관련 16 passed"
+  ],
+  "remaining_risks": [
+    "실제 SDK/model은 사용하지 않았다. 기존 runtime cancellation/timeout 변동은 이번 교정 밖이다."
+  ],
+  "related_commits": [
+    "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9"
+  ],
+  "source_references": [
+    "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
+  ]
+}
