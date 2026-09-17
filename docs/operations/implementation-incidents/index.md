@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 84건
-- 해결: 83건
-- 조사 중: 1건
+- 전체: 89건
+- 해결: 87건
+- 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -97,6 +97,11 @@
 | DEV-20260916-004 | resolved | b1 | implementation | 감사 F11: 삭제된 Git index 경로를 읽어 허용 삭제·rename 검증이 중단됨 |
 | DEV-20260916-005 | resolved | b1 | implementation | F10 후속: 취소와 TIMED_OUT terminal 경합에서 누락된 상태 매핑 |
 | DEV-20260917-001 | resolved | b1 | implementation | 감사 F12: 빈 목록·가짜 DB도 통과하는 백업 검증기 |
+| DEV-20260917-002 | resolved | benchmark-runner | implementation | F1: 반복 resume의 합성 turn ID 충돌 |
+| DEV-20260917-003 | resolved | benchmark-runner | implementation | F2: 구조화 실패 분류 손실 및 mixed 원장 제약 충돌 |
+| DEV-20260917-004 | resolved | benchmark-runner | implementation | F4: Judge 준비 뒤 만료된 시한으로 workload 시작 |
+| DEV-20260917-005 | resolved | benchmark-runner | tooling | F6: Profile I source-intake 작업 bytes와 정본 LF 불일치 |
+| DEV-20260917-006 | investigating | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5717,3 +5722,314 @@ backup_verify.py에 schema-1 strict manifest, portable 경로·link/별칭 거�
 - 출처: docs/operations/audit-f12-backup-verification-remediation-20260917.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 - 출처: related_commits는 작업 전 기준이다. 전달 작업 commit은 기존 동기화_인수인계.md의 최신 자동 블록을 따른다.
+
+## DEV-20260917-002 — F1: 반복 resume의 합성 turn ID 충돌
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `implementation`
+- 발견: 2026-09-17T00:53:56Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
+- 해결: 2026-09-17T01:36:19Z
+
+### 증상
+
+Profile R resume가 늘어도 turn_no=2 식별자를 반복해 서로 다른 결과가 Ledger idempotency 오류로 중단될 수 있었다.
+
+### 재현
+
+- F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료
+- f1-f2-final.xml: 관련 16 passed
+
+### 증거
+
+- `reproducible-test`: F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료; f1-f2-final.xml: 관련 16 passed
+
+### 근본 원인
+
+최대 1회 resume라는 예전 가정의 합성 ID를 횟수 제한 없는 completion-deadline mode에도 사용했다.
+
+### 검토한 해결안
+
+- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
+- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+
+### 채택한 해결
+
+실제 transport ID를 보존하고 세션별 turn_no만 별도로 증가시켰다. 누락/다른 terminal ID는 거부하며 호출 계수와 기존 원장 멱등성은 유지한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py
+- tools/benchmark-runner/tests/test_audit_f1_turn_identity.py
+
+### 회귀시험
+
+- F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료
+- f1-f2-final.xml: 관련 16 passed
+
+### 검증 결과
+
+- F1 집중 6개 및 실제 scheduler의 malformed 4회 후 정상 5번째 결과 완료
+- f1-f2-final.xml: 관련 16 passed
+
+### 남은 위험
+
+- 실제 SDK/model은 사용하지 않았다. 기존 runtime cancellation/timeout 변동은 이번 교정 밖이다.
+
+### 추적 정보
+
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+
+## DEV-20260917-003 — F2: 구조화 실패 분류 손실 및 mixed 원장 제약 충돌
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `implementation`
+- 발견: 2026-09-17T00:55:54Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
+- 해결: 2026-09-17T01:36:19Z
+
+### 증상
+
+transport/unknown 실패가 제품 실패로 바뀌거나 mixed의 제품 flag가 사라졌다. 추가로 mixed Check의 실제 원장 기록은 SQLite 제약을 위반했다.
+
+### 재현
+
+- F2 matrix 27개 및 mixed node/recovered product 대조 2개
+- f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed
+- f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed
+
+### 증거
+
+- `reproducible-test`: F2 matrix 27개 및 mixed node/recovered product 대조 2개; f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed; f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed
+
+### 근본 원인
+
+계층마다 상태 문자열로 원인을 축약했고 migration-1에 없는 check_mixed enum을 DB 열에 기록했다.
+
+### 검토한 해결안
+
+- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
+- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+
+### 채택한 해결
+
+adapter 사본에 result_claim/종료 stage/Check node를 결합하고 UNKNOWN·MIXED를 Measurement와 새 seal verifier에 보존했다. 원장 열은 기존 check_unknown을 쓰되 stage=check_mixed와 정확한 Check artifact를 보존한다. public report/DDL은 바꾸지 않는다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_failure.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/tests/integration/test_mixed_check_persistence.py
+
+### 회귀시험
+
+- F2 matrix 27개 및 mixed node/recovered product 대조 2개
+- f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed
+- f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed
+
+### 검증 결과
+
+- F2 matrix 27개 및 mixed node/recovered product 대조 2개
+- f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed
+- f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed
+
+### 남은 위험
+
+- public report에 필드를 넣은 초기 통합 3실패는 adapter만 보강하도록 수정했다. mixed 초기 mock/비정규 JSON 실패도 보존했다.
+- 새 분류는 기존 v25 원본 Measurement를 고치거나 당시 비교를 유효하게 만들지 않는다.
+
+### 추적 정보
+
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+
+## DEV-20260917-004 — F4: Judge 준비 뒤 만료된 시한으로 workload 시작
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `implementation`
+- 발견: 2026-09-17T00:59:21Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
+- 해결: 2026-09-17T01:36:19Z
+
+### 증상
+
+roots/manifest 준비 중 deadline이 지났어도 준비 전 timeout으로 Docker 프로세스를 시작할 수 있었다.
+
+### 재현
+
+- F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거
+- 기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped
+
+### 증거
+
+- `reproducible-test`: F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거; 기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped
+
+### 근본 원인
+
+상대 timeout을 준비 전에 한 번 계산하고 실제 Popen까지 절대 시한을 전달하지 않았다.
+
+### 검토한 해결안
+
+- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
+- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+
+### 채택한 해결
+
+roots/manifest 준비 뒤와 Popen 직전 검사, 시작 뒤 잔여시간 wait를 추가했다. 비시작 deadline 만료는 CellDeadlineExceeded로 기존 typed 결과를 보존한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_docker.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_docker_judge.py
+- tools/benchmark-runner/tests/test_audit_f4_judge_deadline.py
+
+### 회귀시험
+
+- F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거
+- 기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped
+
+### 검증 결과
+
+- F4 집중 6 passed: 직전/정확/초과, Popen 방지, manifest 준비 뒤 비시작 증거
+- 기존 Docker 경계 19 passed / 실제 Docker opt-in 1 skipped
+
+### 남은 위험
+
+- OS 스케줄링까지 원자적으로 묶는 실시간 보장은 아니다.
+- 비시작 timed_out=true 조합의 초기 typed 오류는 시작 전 오류와 실행 중 timeout을 구분해 수정했다. 실제 Docker는 실행하지 않았다.
+
+### 추적 정보
+
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+
+## DEV-20260917-005 — F6: Profile I source-intake 작업 bytes와 정본 LF 불일치
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `tooling`
+- 발견: 2026-09-17T01:00:35Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
+- 해결: 2026-09-17T01:36:19Z
+
+### 증상
+
+Git clean으로 보이던 source-intake.json은 CRLF였으며 봉인 manifest가 참조한 LF hash와 달랐다.
+
+### 재현
+
+- f6-red.xml: 2 failed / 12 passed
+- f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD
+
+### 증거
+
+- `reproducible-test`: f6-red.xml: 2 failed / 12 passed; f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD
+
+### 근본 원인
+
+이미 eol=lf 규칙이 있어도 이전 checkout의 기존 작업 bytes는 자동 재정규화되지 않았다.
+
+### 검토한 해결안
+
+- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
+- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+
+### 채택한 해결
+
+해당 추적 파일 전체를 기존 Git LF bytes로 맞췄고 source-gate/worker-snapshot 재생성 14개를 확인했다. Git blob 자체는 원래 정본과 같아 의미 변경 commit이 없다.
+
+### 수정 파일
+
+- benchmarks/fixtures/routing-realistic-high-difficulty-v1/realistic-incident-repair-001/source-intake.json
+- docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+
+### 회귀시험
+
+- f6-red.xml: 2 failed / 12 passed
+- f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD
+
+### 검증 결과
+
+- f6-red.xml: 2 failed / 12 passed
+- f6-green2.xml: 14 passed; raw Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 = HEAD
+
+### 남은 위험
+
+- 최초 부분 줄 편집은 혼합 개행을 남겼고 재검사에서 실패했다. 전체 파일 LF 변환 뒤 통과했다.
+- 다른 PC의 기존 checkout도 clean과 실제 canonical bytes를 구분해 확인해야 한다.
+
+### 추적 정보
+
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+
+## DEV-20260917-006 — F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I
+
+- 상태: `investigating`
+- 단계: `benchmark-runner`
+- 분류: `implementation`
+- 발견: 2026-09-17T01:19:35Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
+- 해결: 미해결
+
+### 증상
+
+noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 검사가 통과할 수 있었다.
+
+### 재현
+
+- f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
+- 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
+
+### 증거
+
+- `reproducible-test`: f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5; 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
+
+### 근본 원인
+
+지정 이름·상수 존재를 구현의 거부/identity/비밀정보 경계가 실제로 동작한다는 증거로 대체했다.
+
+### 검토한 해결안
+
+- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
+- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+
+### 채택한 해결
+
+기존 v1 새 matrix 실행/새 candidate 승격을 차단하고, 별도 v2 독립 행동 oracle와 공개 task selector·prerequisite/claim 검사·source bundle 조립을 구현했다. 실제 격리 qualification은 미완료다.
+
+### 수정 파일
+
+- tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v2/check_properties.py
+- tools/benchmark-runner/scripts/build_profile_i_semantic_bundle.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
+- tools/benchmark-runner/src/benchmark_runner/realistic_profile_i_docker_matrix.py
+- tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py
+
+### 회귀시험
+
+- f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
+- 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
+
+### 검증 결과
+
+- f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
+- 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
+
+### 남은 위험
+
+- 아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.
+- v2 bundle의 실제 isolated execution·정상 대안/mutation matrix·hostile import/side-effect/timeout·exact runtime binding 및 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지.
+
+### 추적 정보
+
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md

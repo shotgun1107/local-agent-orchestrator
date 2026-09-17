@@ -55,6 +55,7 @@ from benchmark_runner.realistic_routing import (
     common_safety_decision,
 )
 from benchmark_runner.runner import sha256_bytes, sha256_file
+from benchmark_runner.realistic_failure import b1_failure_diagnostic
 from benchmark_runner.workspace import git_environment_provenance
 
 from orchestrator.contract import (
@@ -120,9 +121,13 @@ def _b1_adapter_outcome(
     if "check_mixed" in failure_kinds:
         return "infrastructure_error", "check_mixed"
     if "check_unknown" in failure_kinds:
-        return "infrastructure_error", "check_unknown"
+        diagnostic = b1_failure_diagnostic(state, report)
+        return "infrastructure_error", ("check_mixed" if diagnostic["classification"] == "MIXED_PRODUCT_AND_ENVIRONMENT" else "check_unknown")
     if "dispatch_uncertain" in failure_kinds:
         return "infrastructure_error", "b1_dispatch_uncertain"
+    diagnostic = b1_failure_diagnostic(state, report)
+    if diagnostic["unknown_failure_present"]:
+        return "infrastructure_error", "b1_unknown_failure"
     outcome = {
         "COMPLETED": "completed",
         "FAILED": "failed",
@@ -151,6 +156,7 @@ class PhaseFB1RuntimeV2(RuntimePort):
         self._preflight_complete = False
         self._actual_model_turns = 0
         self._thread_evidence: list[dict[str, JsonValue]] = []
+        self._session_turn_numbers: dict[str, int] = {}
 
     @property
     def actual_model_turns(self) -> int:
@@ -235,8 +241,6 @@ class PhaseFB1RuntimeV2(RuntimePort):
         self,
         session_handle: SessionHandle,
         prompt: str,
-        *,
-        turn_no: int,
     ) -> TurnHandle:
         handle = self.port.start_turn(
             session_handle.id,
@@ -247,8 +251,13 @@ class PhaseFB1RuntimeV2(RuntimePort):
             ),
         )
         self._actual_model_turns += 1
+        turn_no = self._session_turn_numbers.get(session_handle.id, 0) + 1
+        self._session_turn_numbers[session_handle.id] = turn_no
+        turn_id = getattr(handle, "id", None)
+        if not isinstance(turn_id, str) or not turn_id:
+            raise PhaseFB1BackendError("Phase F B1 transport has no turn ID")
         return TurnHandle(
-            id=f"{session_handle.id}:turn:{turn_no}",
+            id=turn_id,
             session=session_handle,
             raw=handle,
             turn_no=turn_no,
@@ -262,7 +271,6 @@ class PhaseFB1RuntimeV2(RuntimePort):
         return self._start_turn(
             session_handle,
             render_worker_prompt(task_envelope, session_handle.initial_feedback),
-            turn_no=1,
         )
 
     def resume_session(
@@ -273,7 +281,6 @@ class PhaseFB1RuntimeV2(RuntimePort):
         return self._start_turn(
             session_handle,
             render_worker_prompt(session_handle.envelope, feedback_envelope),
-            turn_no=2,
         )
 
     @staticmethod
@@ -299,6 +306,8 @@ class PhaseFB1RuntimeV2(RuntimePort):
     ) -> None:
         try:
             result = handle.raw.run()
+            if getattr(result, "id", handle.id) != handle.id:
+                raise PhaseFB1BackendError("Phase F B1 terminal turn ID differs")
             status = str(getattr(getattr(result, "status", None), "value", getattr(result, "status", "unknown")))
             terminal = {
                 "runtime_turn_id": str(getattr(result, "id", handle.id)),
@@ -848,27 +857,27 @@ class ProfileRPhaseFB1Backend:
             )
         report_path = cell_root / "b1-state" / "runs" / run_id / "report" / "summary.json"
         report = json.loads(report_path.read_text(encoding="utf-8"))
+        # Enrich only adapter evidence, not the frozen public RunReport schema.
+        source_tasks = {task["external_key"]: task for task in snapshot["tasks"]}
+        failure_stages = {event["aggregate_id"]: json.loads(event["payload_json"]).get("stage")
+                          for event in snapshot["events"] if event["event_type"] == "attempt_finished"}
+        for task in report["tasks"]:
+            claims = {attempt["attempt_no"]: attempt["result_claim"]
+                      for attempt in source_tasks[task["key"]]["attempts"]}
+            source_attempts = {attempt["attempt_no"]: attempt for attempt in source_tasks[task["key"]]["attempts"]}
+            for attempt in task["attempts"]:
+                attempt["result_claim"] = claims[attempt["attempt_no"]]
+                attempt["failure_stage"] = failure_stages.get(source_attempts[attempt["attempt_no"]]["attempt_id"])
         metrics = report["metrics"]
         turn_accounting = runtime.model_turn_accounting()
         actual_model_turns = turn_accounting.actual_model_turns
         state = str(snapshot["run"]["state"])
         outcome, failure_kind = _b1_adapter_outcome(state, report)
-        report_failure_kinds = {
-            str(attempt.get("failure_kind"))
-            for task in report.get("tasks", [])
-            if isinstance(task, dict)
-            for attempt in task.get("attempts", [])
-            if isinstance(attempt, dict)
-            and attempt.get("failure_kind") is not None
-        }
-        product_failure_present = bool(
-            report_failure_kinds.intersection({"check_failed", "check_mixed"})
-        )
-        environment_failure_present = bool(
-            report_failure_kinds.intersection(
-                {"check_environment", "check_mixed", "check_unknown", "dispatch_uncertain"}
-            )
-        )
+        diagnostic = b1_failure_diagnostic(state, report, check_records)
+        product_failure_present = diagnostic["product_failure_present"]
+        environment_failure_present = diagnostic["environment_failure_present"]
+        if not diagnostic["comparison_valid"]:
+            outcome = "infrastructure_error"
         token_usage = (
             metrics["token_usage"]
             if metrics.get("usage_status") == "measured"
@@ -892,13 +901,9 @@ class ProfileRPhaseFB1Backend:
                 for attempt in task["attempts"]
             ),
             "b1_environment_diagnostic_count": len(environment_diagnostics),
-            "b1_invalid_environment": failure_kind in {
-                "check_environment",
-                "check_mixed",
-                "check_unknown",
-                "b1_dispatch_uncertain",
-            },
-            "comparison_valid": not environment_failure_present,
+            "b1_invalid_environment": not diagnostic["comparison_valid"],
+            "comparison_valid": diagnostic["comparison_valid"],
+            "unknown_failure_present": diagnostic["unknown_failure_present"],
             "product_failure_present": product_failure_present,
             "environment_failure_present": environment_failure_present,
         }
@@ -918,6 +923,7 @@ class ProfileRPhaseFB1Backend:
             "model_turn_accounting": turn_accounting.model_dump(mode="json"),
             "adapter_outcome_state": outcome,
             "adapter_failure_kind": failure_kind,
+            "adapter_failure_diagnostic": diagnostic,
             "adapter_attempt_count": int(metrics["attempts"]),
             "adapter_raw_payload": {
                 "run_id": run_id,
@@ -965,10 +971,6 @@ class ProfileRPhaseFB1Backend:
                 "boundary_record_count": len(records),
                 "judge_executed": False,
                 "automatic_continuation": False,
-                "invalid_environment": failure_kind in {
-                    "check_environment",
-                    "check_mixed",
-                    "check_unknown",
-                },
+                "invalid_environment": not diagnostic["comparison_valid"],
             },
         )

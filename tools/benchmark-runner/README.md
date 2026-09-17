@@ -1,5 +1,13 @@
 # Benchmark Runner
 
+## 현재 감사 경계 — 2026-09-17
+
+F1/F2/F4/F6 교정을 반영했다. [최신 결과와 한계](../../docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md)를 따른다.
+F14는 부분 교정이다. names-only Profile I v1의 새 matrix 실행과 새 Phase E candidate 생성은 차단한다.
+역사 verifier는 계속 사용할 수 있지만 과거 qualification을 새 실행 승인으로 사용하면 안 된다.
+[v2 행동 oracle/source bundle](qualifications/profile-i-semantic-v2/README.md)은 별도 개발 판본이며,
+실제 격리환경 qualification 전에는 CHALLENGE_READY가 아니다.
+
 동결된 [범용 Benchmark Runner 설계](../../docs/design/general-benchmark-runner-design.md)의 단계별 reference 구현이다.
 
 ## 현재 구현 범위: R0~R6 실행·검증 완료

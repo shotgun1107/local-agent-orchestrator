@@ -205,9 +205,11 @@ class PhaseFDockerJudgePort:
         if not workspace.resolve(strict=True).is_dir() or output_root.exists():
             raise PhaseFFinalizationError("Docker Judge Cell roots are invalid")
         limits = self.limits
+        deadline = None
         if request.budget_mode == "cell_completion_deadline":
             if self._completion_deadline_monotonic is None:
                 raise PhaseFFinalizationError("Docker Judge Cell deadline was not bound")
+            deadline = self._completion_deadline_monotonic
             remaining = self._completion_deadline_monotonic - time.monotonic()
             if remaining <= 0:
                 raise PhaseFFinalizationError("Cell completion deadline exceeded")
@@ -222,6 +224,13 @@ class PhaseFDockerJudgePort:
             request=request,
             workspace=workspace,
         )
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise PhaseFFinalizationError("Cell completion deadline exceeded during Judge preparation")
+            limits = (self.limits or DockerJudgeLimits()).model_copy(
+                update={"timeout_seconds": min(9000, max(1, math.ceil(remaining)))}
+            )
         manifest, result = execute_docker_judge(
             prepared,
             docker_executable=self.docker_executable,
@@ -229,6 +238,7 @@ class PhaseFDockerJudgePort:
             source_environment=self.source_environment,
             limits=limits,
             cell_id=f"phase-f-r-{request.execution_ordinal}-{request.variant_id}",
+            completion_deadline_monotonic=deadline,
         )
         status = verify_docker_judge_result(manifest, result)
         failed = _failed_property_ids(result)

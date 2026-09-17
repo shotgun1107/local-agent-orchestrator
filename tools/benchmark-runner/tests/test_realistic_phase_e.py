@@ -87,13 +87,8 @@ def _create_worktree_v2_candidate(
 
     monkeypatch.setattr(phase_e, "_git_text", git_text)
     candidate = tmp_path / "candidate-v2"
-    create_phase_e_candidate(
-        REPOSITORY,
-        candidate,
-        source_commit=source_commit,
-        preflight=_preflight(),
-        created_at=datetime(2026, 8, 23, 0, 0, tzinfo=timezone.utc),
-    )
+    # Historical verification is still supported; F14 forbids new promotion.
+    copytree(REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v16", candidate)
     return candidate
 
 
@@ -404,7 +399,8 @@ def test_v2_verifier_rejects_partial_plan_identity_even_when_resealed(
     plan = ExecutionPlan.model_validate(raw_plan)
     fingerprint = recompute_plan_fingerprint(plan)
     raw_plan["plan_fingerprint"] = fingerprint
-    raw_plan["experiment_id"] = f"exp_20260823_{fingerprint[:8]}_1"
+    original_date = raw_plan["experiment_id"].split("_")[1]
+    raw_plan["experiment_id"] = f"exp_{original_date}_{fingerprint[:8]}_1"
     plan_path.write_bytes(canonical_json_bytes(raw_plan))
     _reseal_candidate(candidate)
 
@@ -1012,13 +1008,13 @@ def test_plan_and_candidate_are_reproducible_and_tamper_evident(
         "profile_r_task_budget_seal_sha256"
     ] == profile_r.task_budget_seal_sha256
     candidate = tmp_path / "candidate"
-    seal = create_phase_e_candidate(
-        REPOSITORY,
-        candidate,
-        source_commit=source_commit,
-        preflight=_preflight(),
-        created_at=created_at,
-    )
+    original_git_text = phase_e._git_text
+    monkeypatch.setattr(phase_e, "_git_text", lambda repo, *args: "" if args == ("status", "--porcelain=v1") else original_git_text(repo, *args))
+    with pytest.raises(PhaseECandidateError, match="semantic v2 qualification"):
+        create_phase_e_candidate(REPOSITORY, candidate, source_commit=source_commit, preflight=_preflight(), created_at=created_at)
+    assert not candidate.exists()
+    copytree(REPOSITORY / "benchmarks/artifacts/sdk-routing-realistic-high-difficulty-phase-e-v25", candidate)
+    seal = verify_phase_e_candidate(REPOSITORY, candidate)
     assert seal.schema_version == 4
     assert seal.budget_mode == "cell_completion_deadline"
     assert seal.cell_completion_deadline_seconds == 9000

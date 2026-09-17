@@ -43,20 +43,29 @@ Check 트리 정리, 요청 backup 보존과 보고서 갱신을 교정했다. �
 F12 76개 포함 최종 B1 291개가 통과했다. 중간 timeout 시간 실패 1회와 분리 관측 결과도 보존한다.
 결과·지원 한계는 `docs/operations/audit-f12-backup-verification-remediation-20260917.md`에서 인수한다.
 
-## 다음 개발 제안 — 별도 범위 선택 필요
+## 잔여 감사 연속 교정 — 사용자 승인됨, 2026-09-17
 
-1. F1: Profile R adapter가 같은 Attempt를 두 번 이상 resume할 때 turn ID가 중복되는 문제를 model-free로 교정한다.
-2. F2·F4·F6·F14와 다음 연구 가설·판정 기준을 확인한다. 시간 변동 원인 분석도 별도 범위로 남아 있다.
+사용자가 감사 항목마다 다시 확인받지 않고 이어서 수정하도록 승인했다.
+F1/F2/F4/F6을 교정했고 B1 전체 292개·관련 Runner 298개가 통과했다(실제 Docker 2개 skip).
+최신 결과는 `docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md`에서 인수한다.
+F14는 v1 새 실행/승격 차단과 v2 행동 검사·source bundle까지 구현했고 source 대조 39개가 통과했다.
+하지만 실제 isolated Judge qualification은 아직 미완료다. 다음 순서:
 
-이 목록은 제안이며 후속 개발·실험을 자동 승인하지 않는다.
+1. `tools/benchmark-runner/qualifications/profile-i-semantic-v2/README.md`를 읽고 새 source bundle·Worker/oracle/case-set·exact runtime 요구를 고정한다.
+2. 미검토 Worker를 호스트에서 실행하지 않는다. 정상 대안·mutation, hostile import/side effect/timeout 및 실제 격리경계를 검증할 환경을 준비한다.
+3. 실제 Judge workload는 Environment Closure 턴 A 결과를 보고한 후 별도 사용자 승인 턴 B까지 멈춘다.
+4. qualification 전까지 F14는 investigating, 새 Profile I candidate 생성은 차단이다. 과거 checker/reference/mutation/seal은 보존한다.
+
+안전한 감사 코드·검증·기록의 연속 진행은 승인됐지만 새 연구 가설·experiment·모델 사용은 아니다.
+이전 timeout 시간 변동의 근본 원인 분석은 별도 범위로 남아 있다.
 
 아래는 이번 수정에 한정한 범위다.
 
 | 항목 | 현재 값 |
 |---|---|
-| 연구 질문·가설 | F12가 정상 backup은 보존하고 불완전/잘못 연결된 묶음을 거부하는가 |
-| 허용 변경 경로 | B1 backup 검증·생성 경로/CLI·회귀·수정/관리 기록 |
-| 검증 명령·기대 판정 | F12 회귀 76개 포함 최종 B1 291개 통과, 원본 불변·CLI 실패 코드·관련 model-free adapter 회귀 |
+| 연구 질문·가설 | 잔여 비교 경계가 실제 ID·실패 원인·시한·bytes·행동에 근거하는가 |
+| 허용 변경 경로 | 관련 B1/Runner 경계·새 v2 oracle/source bundle 도구·회귀·관리 기록 |
+| 검증 명령·기대 판정 | B1 292 passed, 관련 Runner 298 passed/2 skipped, F14 source 39 passed; 실제 격리 qualification은 미완료 |
 | 완료 조건 | 재현 근거·변경·회귀 결과·한계가 연결된 보고 |
 | 실제 모델 실행 | 미승인 |
 | 신규 experiment | 미승인 |

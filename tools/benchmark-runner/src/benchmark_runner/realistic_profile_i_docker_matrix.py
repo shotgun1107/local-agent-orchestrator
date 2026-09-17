@@ -210,49 +210,9 @@ def execute_profile_i_docker_matrix(
     source_environment: Mapping[str, str] | None = None,
     patch_backend: PatchBackend | None = None,
 ) -> ProfileIDockerMatrixExecution:
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,47}", run_token):
-        raise ProfileIDockerMatrixError("matrix run token is not canonical")
-    repository, parent, docker = Path(repository).resolve(strict=True), Path(base_root).resolve(strict=True), Path(docker_executable).resolve(strict=True)
-    environment = build_docker_controller_environment(source_environment)
-    batch_id = f"profile-i-docker-matrix-{run_token}"
-    root = parent / batch_id
-    if root.exists():
-        raise ProfileIDockerMatrixError("matrix root already exists")
-    root.mkdir()
-    cells = root / "cells"
-    cells.mkdir()
-    backend = patch_backend or GitPatchBackend()
-    variants = [
-        _prepare_variant(repository=repository, cells_root=cells, source_commit=source_commit, run_token=run_token, ordinal=ordinal, variant_id=variant_id, patch_backend=backend, environment=environment)
-        for ordinal, variant_id in enumerate(ORDERED_VARIANTS, 1)
-    ]
-    manifest_values = {
-        "schema_version": 1,
-        "profile": "I",
-        "snapshot_id": SNAPSHOT_ID,
-        "batch_id": batch_id,
-        "source_commit": source_commit,
-        "docker_executable_sha256": sha256_file(docker),
-        "model_turns": 0,
-        "variants": [
-            {"ordinal": row.ordinal, "variant_id": row.variant_id, "target_property_id": row.target_property_id, "run_id": row.run_id, "patch_paths": list(row.patch_paths), "patch_sha256s": list(row.patch_sha256s), "expected_evidence_sha256": sha256_bytes(canonical_json_bytes(row.expected))}
-            for row in variants
-        ],
-    }
-    manifest = {**manifest_values, "manifest_sha256": sha256_bytes(canonical_json_bytes(manifest_values))}
-    atomic_write(root / "batch-manifest.json", canonical_json_bytes(manifest))
-    results = []
-    for variant in variants:
-        if variant.roots is None:
-            raise ProfileIDockerMatrixError("prepared variant roots are missing")
-        docker_manifest, docker_result = execute_docker_judge(variant.roots, docker_executable=docker, source_environment=environment, cell_id=variant.variant_id)
-        results.append(_cell_result(variant, docker_manifest, docker_result))
-    result_values = {"schema_version": 1, "profile": "I", "batch_id": batch_id, "manifest_sha256": manifest["manifest_sha256"], "model_turns": 0, "status": "CHALLENGE_READY" if all(row["matched_expectation"] for row in results) else "CHALLENGE_NOT_READY", "challenge_ready": all(row["matched_expectation"] for row in results), "cells": results}
-    result = {**result_values, "result_sha256": sha256_bytes(canonical_json_bytes(result_values))}
-    atomic_write(root / "batch-result.json", canonical_json_bytes(result))
-    seal = _seal(root, manifest, result)
-    verify_profile_i_docker_matrix(root)
-    return ProfileIDockerMatrixExecution(root, manifest, result, seal)
+    raise ProfileIDockerMatrixError(
+        "Legacy Profile I names-only matrix is not promotable; semantic v2 qualification is required"
+    )
 
 
 def verify_profile_i_docker_matrix(root: Path) -> dict[str, Any]:

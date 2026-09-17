@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260917-003",
+  "title": "F2: 구조화 실패 분류 손실 및 mixed 원장 제약 충돌",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "implementation",
+  "discovered_at": "2026-09-17T00:55:54Z",
+  "resolved_at": "2026-09-17T01:36:19Z",
+  "discovered_by": "독립 감사 잔여 항목 및 현재 source model-free 회귀",
+  "symptom": "transport/unknown 실패가 제품 실패로 바뀌거나 mixed의 제품 flag가 사라졌다. 추가로 mixed Check의 실제 원장 기록은 SQLite 제약을 위반했다.",
+  "reproduction": [
+    "F2 matrix 27개 및 mixed node/recovered product 대조 2개",
+    "f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed",
+    "f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "F2 matrix 27개 및 mixed node/recovered product 대조 2개; f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed; f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed"
+    }
+  ],
+  "root_cause": "계층마다 상태 문자열로 원인을 축약했고 migration-1에 없는 check_mixed enum을 DB 열에 기록했다.",
+  "considered_options": [
+    {
+      "option": "과거 봉인/DDL/결과를 변경해 현재 오류를 숨김",
+      "decision": "rejected",
+      "reason": "원본 증거와 기존 호환 계약을 훼손한다."
+    },
+    {
+      "option": "현재 source와 새 회귀/증거 경계에서 교정",
+      "decision": "adopted",
+      "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
+    }
+  ],
+  "resolution": "adapter 사본에 result_claim/종료 stage/Check node를 결합하고 UNKNOWN·MIXED를 Measurement와 새 seal verifier에 보존했다. 원장 열은 기존 check_unknown을 쓰되 stage=check_mixed와 정확한 Check artifact를 보존한다. public report/DDL은 바꾸지 않는다.",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/realistic_failure.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_b1.py",
+    "tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_finalize.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "stages/b1-sequential/tests/integration/test_mixed_check_persistence.py"
+  ],
+  "regression_tests": [
+    "F2 matrix 27개 및 mixed node/recovered product 대조 2개",
+    "f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed",
+    "f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed"
+  ],
+  "verification": [
+    "F2 matrix 27개 및 mixed node/recovered product 대조 2개",
+    "f2-mixed-red3.xml: SQLite CHECK constraint 재현; green3 1 passed",
+    "f2-mixed-seal.xml: Judge pass/fail 두 경로 2 passed"
+  ],
+  "remaining_risks": [
+    "public report에 필드를 넣은 초기 통합 3실패는 adapter만 보강하도록 수정했다. mixed 초기 mock/비정규 JSON 실패도 보존했다.",
+    "새 분류는 기존 v25 원본 Measurement를 고치거나 당시 비교를 유효하게 만들지 않는다."
+  ],
+  "related_commits": [
+    "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9"
+  ],
+  "source_references": [
+    "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
+  ]
+}

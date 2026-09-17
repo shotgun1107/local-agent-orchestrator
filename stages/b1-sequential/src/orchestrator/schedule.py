@@ -1388,7 +1388,9 @@ class Orchestrator:
                 "freshness": FailureKind.STALE_INPUT,
                 "checks": FailureKind.CHECK_FAILED,
                 "check_environment": FailureKind.CHECK_ENVIRONMENT,
-                "check_mixed": FailureKind.CHECK_MIXED,
+                # migration-1 has no check_mixed column value. Keep the exact
+                # mixed stage and Check nodes in evidence, not a rewritten DDL.
+                "check_mixed": FailureKind.CHECK_UNKNOWN,
                 "check_unknown": FailureKind.CHECK_UNKNOWN,
                 "cell_deadline": FailureKind.TIMEOUT,
                 "project_pack": FailureKind.ARTIFACT_CORRUPT,

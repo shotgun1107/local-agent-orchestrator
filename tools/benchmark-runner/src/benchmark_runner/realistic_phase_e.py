@@ -1555,6 +1555,11 @@ def create_phase_e_candidate(
     source_commit = source_commit or _git_text(repository, "rev-parse", "HEAD")
     if source_commit != _git_text(repository, "rev-parse", "HEAD"):
         raise PhaseECandidateError("Phase E candidate source must be current HEAD")
+    # Historical verification remains available; new promotion cannot reuse F14's
+    # known names-only qualification. A v2 isolated behavioral bundle is pending.
+    stage = load_phase_e_stage(repository, source_commit)
+    if any(profile.snapshot_id == "realistic-incident-repair-001" for profile in stage.profiles):
+        raise PhaseECandidateError("Profile I semantic v2 qualification is required before creating a new candidate")
     preflight = preflight or probe_phase_e_preflight()
     if preflight.actual_model_turns != 0:
         raise PhaseECandidateError("Phase E preflight consumed a model turn")

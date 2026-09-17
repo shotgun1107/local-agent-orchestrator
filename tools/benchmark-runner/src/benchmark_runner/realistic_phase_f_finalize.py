@@ -47,6 +47,7 @@ from benchmark_runner.realistic_phase_f import (
 )
 from benchmark_runner.realistic_routing import canonical_json_bytes, canonical_sha256
 from benchmark_runner.runner import sha256_bytes, sha256_file
+from benchmark_runner.realistic_failure import classification, node, summarize, worker_failure_diagnostic
 
 
 PHASE_F_FINAL_DIRECTORY = "final"
@@ -476,23 +477,12 @@ def _measurement(
         raise PhaseFFinalizationError("Phase F final Worker tree hash is invalid")
     adapter_failure_kind = adapter_payload.get("adapter_failure_kind")
     worker_failed = worker.outcome_state != "completed"
-    worker_environment_failure = (
-        worker.outcome_state == "infrastructure_error"
-        or adapter_failure_kind
-        in {
-            "sdk_terminal_failed",
-            "ss1_setup_failed",
-            "ss1_task_resolution_failed",
-            "ss1_runtime_dispatch_failed",
-            "ss1_observer_failed",
-            "ss1_common_safety_stop",
-            "check_environment",
-            "check_mixed",
-            "check_unknown",
-            "b1_dispatch_uncertain",
-        }
-    )
-    worker_product_failure = worker_failed and not worker_environment_failure
+    try:
+        worker_diagnostic = worker_failure_diagnostic(worker.outcome_state, adapter_payload)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise PhaseFFinalizationError("Phase F worker failure diagnostic is invalid") from exc
+    worker_environment_failure = worker_diagnostic["environment_failure_present"]
+    worker_product_failure = worker_diagnostic["product_failure_present"]
     judge_product_failure = judge.status == "CHECKS_FAILED"
     judge_environment_failure = judge.status in {
         "JUDGE_RUNTIME_ERROR",
@@ -503,34 +493,19 @@ def _measurement(
         worker_environment_failure or judge_environment_failure
     )
     unknown_failure_present = (
-        worker.outcome_state
-        not in {"completed", "failed", "blocked", "interrupted", "infrastructure_error"}
+        worker_diagnostic["unknown_failure_present"]
         or (not judge.check_success and not judge_product_failure and not judge_environment_failure)
     )
-    failure_classification = (
-        "UNKNOWN"
-        if unknown_failure_present
-        else "MIXED_PRODUCT_AND_ENVIRONMENT"
-        if product_failure_present and environment_failure_present
-        else "PRODUCT_ASSERTION"
-        if product_failure_present
-        else "ENVIRONMENT"
-        if environment_failure_present
-        else None
-    )
+    failure_classification = classification(product_failure_present, environment_failure_present, unknown_failure_present)
     failure_nodes = [
         {
             "node_id": "worker",
             "passed": not worker_failed,
-            "classification": (
-                None
-                if not worker_failed
-                else "ENVIRONMENT"
-                if worker_environment_failure
-                else "PRODUCT_ASSERTION"
-                if worker_product_failure
-                else "UNKNOWN"
-            ),
+            "classification": worker_diagnostic["classification"],
+            "source_nodes": worker_diagnostic["nodes"],
+            "product_failure_present": worker_product_failure,
+            "environment_failure_present": worker_environment_failure,
+            "unknown_failure_present": worker_diagnostic["unknown_failure_present"],
             "reason_code": (
                 "PASSED"
                 if not worker_failed
@@ -702,11 +677,13 @@ def _measurement(
                 "judge_observation_sha256": judge.observation_sha256,
                 "failed_property_ids": judge.failed_property_ids,
                 "failure_classification": failure_classification,
+                "failure_diagnostic_policy": 2,
                 "comparison_valid": not (
                     environment_failure_present or unknown_failure_present
                 ),
                 "product_failure_present": product_failure_present,
                 "environment_failure_present": environment_failure_present,
+                "unknown_failure_present": unknown_failure_present,
                 "failure_diagnostic": {
                     "schema_version": 1,
                     "classification": failure_classification,
@@ -715,6 +692,7 @@ def _measurement(
                     ),
                     "product_failure_present": product_failure_present,
                     "environment_failure_present": environment_failure_present,
+                    "unknown_failure_present": unknown_failure_present,
                     "nodes": failure_nodes,
                 },
                 "automatic_continuation": False,
@@ -1004,4 +982,19 @@ def verify_phase_f_cell_finalization(
         or measurement_turn_count != logical_turn_count
     ):
         raise PhaseFFinalizationError("Phase F Measurement identity differs from seal")
+    values = measurement.variant_metrics.values
+    if values.get("failure_diagnostic_policy") == 2:
+        try:
+            worker_diagnostic = worker_failure_diagnostic(str(adapter_payload.get("adapter_outcome_state")), adapter_payload)
+            status = values.get("judge_status")
+            judge_kind = {"CHECKS_PASSED": None, "CHECKS_FAILED": "PRODUCT_ASSERTION",
+                          "JUDGE_RUNTIME_ERROR": "ENVIRONMENT", "CHALLENGE_INVALID": "ENVIRONMENT"}.get(status, "UNKNOWN")
+            expected = summarize([*worker_diagnostic["nodes"], node("judge", str(status), judge_kind)])
+            for key in ("comparison_valid", "product_failure_present", "environment_failure_present", "unknown_failure_present"):
+                if values.get(key) != expected[key] or values.get("failure_diagnostic", {}).get(key) != expected[key]:
+                    raise ValueError("Failure presence flags differ")
+            if values.get("failure_classification") != expected["classification"]:
+                raise ValueError("Failure classification differs")
+        except (ValueError, AttributeError, TypeError) as exc:
+            raise PhaseFFinalizationError("Phase F sealed failure diagnostic differs") from exc
     return measurement
