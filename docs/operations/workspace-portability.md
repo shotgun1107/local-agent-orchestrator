@@ -70,7 +70,9 @@ Git 사본, Documents 사본, 마지막 일치 해시를 대조한다. 내용이
 11. 기존 인수인계의 최신 자동 블록과 관리 문서 STATUS/NEXT를 읽는다. 확인된 범위만 준비 완료라고 보고한다.
 
 이 과정은 이미 설치된 회사 PC 개발 환경을 대체 설치하지 않는다.
-새 PC에서 pip를 통한 전체 복원은 아직 별도 실증이 필요하다. Linux/macOS는 SDK platform·환경 진입 스크립트를 별도 검증해야 한다.
+2026-09-29 회사의 별도 새 venv에서 고정 의존성 설치·개발 점검과 두 wheel 설치를 실증했다.
+상세는 `audit-maintenance-closure-20260929.md`를 따른다. 실제 집 PC 수신·인증·외부 원본 복원은
+별개이며 Linux/macOS는 SDK platform·환경 진입 스크립트를 별도 검증해야 한다.
 
 ## 최소 model-free 검증
 
@@ -122,5 +124,5 @@ manifest에는 원본 상대경로·파일 수·bytes·SHA-256·source/candidate
 
 현재 상태/다음 연구 작업은 `docs/management/STATUS.md`, `NEXT.md`를 참조한다.
 통합·문서 정리 뒤 F8·F9·F3, F5, F10, F11과 F10 terminal 후속, F12 및 F1/F2/F4/F6을 교정했다.
-F14는 v1 새 실행/승격 차단·v2 행동 oracle/source bundle까지 부분 교정했다. 실제 격리 qualification과 새 연구 설계는 미완료다.
-현재 Live NO-GO를 유지하며, 다른 PC 복원 실증과 다음 연구 범위 결정을 이어간다.
+F14 v3 고정 9종 native 진단은 완료했다. 일반 Worker 평가 연결과 감사·유지보수 전체 종료는
+`audit-maintenance-closure-20260929.md`에서 계속 점검 중이다. 현재 Live NO-GO와 역사 자료 보존은 유지한다.
