@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-004",
+  "title": "F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "integration",
+  "discovered_at": "2026-09-29T08:10:36Z",
+  "resolved_at": "2026-09-29T08:10:36Z",
+  "discovered_by": "연속 감사 종료 점검과 실제 cold checkout/native qualification",
+  "symptom": "정상 reference가 지원 모듈 읽기 거부 및 tuple 직렬화 오류로 native 평가를 완료하지 못함",
+  "reproduction": [
+    "reference-1은 runner_support.py PermissionError, reference-2는 windows 결과의 wire.WireError TYPE로 실패"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "reference-1은 runner_support.py PermissionError, reference-2는 windows 결과의 wire.WireError TYPE로 실패"
+    }
+  ],
+  "root_cause": "no-op이 지연된 공통 지원 모듈 import를 검사하지 않았고, 단위시험이 실제 strict serializer 대신 JSON 자동 tuple 변환을 사용했다",
+  "considered_options": [
+    {
+      "option": "고정 원본 보존과 새 구현/회귀에서 교정",
+      "decision": "adopted",
+      "reason": "기존 실패를 숨기거나 봉인을 재작성하지 않음"
+    }
+  ],
+  "resolution": "봉인된 공통 유틸리티만 Landlock 적용 전에 로드하고 적용 뒤 driver 읽기는 차단했다. 정상 tuple을 JSON array로 변환하고 실제 supervisor serializer로 회귀한다",
+  "affected_files": [
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/child.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/sandbox.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py",
+    "tools/benchmark-runner/tests/test_profile_i_call_boundary.py"
+  ],
+  "regression_tests": [
+    "v4-support-load.xml 및 v4-envelope.xml 각 55 passed; reference-3 native 45 calls/11 groups/10 properties pass"
+  ],
+  "verification": [
+    "실패 root 2개 보존. 후속 5ddcc10 matrix-1 native 20/20 기대 일치 및 설치 wheel의 독립 재검증 완료"
+  ],
+  "remaining_risks": [
+    "실제 Windows/SDK enforcement가 아니라 격리된 합성 API checker의 전달 경계를 검증했다"
+  ],
+  "related_commits": [
+    "e45bad012402c3e0a6abbd8ef7603657eac9469b",
+    "36e2304135848a61927b2dfa73738d35de1d7380"
+  ],
+  "source_references": [
+    "docs/operations/audit-maintenance-closure-20260929.md"
+  ]
+}

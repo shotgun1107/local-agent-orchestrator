@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-005",
+  "title": "F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "test",
+  "discovered_at": "2026-09-29T08:10:36Z",
+  "resolved_at": "2026-09-29T08:10:37Z",
+  "discovered_by": "연속 감사 종료 점검과 실제 cold checkout/native qualification",
+  "symptom": "두 model_validate에 부정 입력만 호출해 always-reject 구현이 합격했다",
+  "reproduction": [
+    "v4-reject-all-red.xml: ConfigurationExpectation 및 RuntimeBoundaryProbeManifest 변형 2 failed"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "v4-reject-all-red.xml: ConfigurationExpectation 및 RuntimeBoundaryProbeManifest 변형 2 failed"
+    }
+  ],
+  "root_cause": "정상 builder 호출과 별개인 두 model_validate API에 정상 입력 대조가 누락됐다",
+  "considered_options": [
+    {
+      "option": "고정 원본 보존과 새 구현/회귀에서 교정",
+      "decision": "adopted",
+      "reason": "기존 실패를 숨기거나 봉인을 재작성하지 않음"
+    }
+  ],
+  "resolution": "정상 configuration/manifest의 실제 호출과 exact 반환값 대조를 추가했다. 45호출을 47호출로 확장하고 기존 실패/이전 성공을 재분류하지 않았다",
+  "affected_files": [
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/supervisor.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py",
+    "tools/benchmark-runner/tests/test_profile_i_call_boundary.py"
+  ],
+  "regression_tests": [
+    "v4-reject-all-green.xml 57 passed; 최종 v4-final-corpus-tests.xml 136 passed"
+  ],
+  "verification": [
+    "native reject-valid-config/reject-valid-manifest 모두 정확한 configuration 행동 불일치로 거부; 정상 reference와 equivalent는 통과"
+  ],
+  "remaining_risks": [
+    "고정 정상/오류 corpus이며 모든 가능한 구현과 입력의 수학적 증명은 아니다"
+  ],
+  "related_commits": [
+    "5ddcc10d2c6a224b85164059e0d8a828f26d1869"
+  ],
+  "source_references": [
+    "docs/operations/audit-maintenance-closure-20260929.md"
+  ]
+}

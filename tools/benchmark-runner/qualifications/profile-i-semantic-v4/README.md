@@ -1,7 +1,9 @@
-# F14 v4 — 실제 함수 호출과 관측자의 분리 (진행 중)
+# F14 v4 — 실제 함수 호출과 관측자의 분리
 
 이 경로는 감사 F14를 닫기 위한 후속 유지보수다. v3 원문/봉인/검증기는 보존한다.
-**아직 Judge 또는 qualification 완료물이 아니다.** v3 결과를 새 revision의 합격으로 복사하지 않는다.
+**47호출의 정상 구현과 고정 20종 native qualification을 완료했다.**
+[결과·범위·외부 SHA](../../../../docs/operations/audit-f14-v4-checker-qualification-20260929.md)를 따른다.
+실제 Windows/SDK·정식 비교 승격은 별개다. v3 결과를 새 revision의 합격으로 복사하지 않는다.
 
 v3의 호스트 판정기는 보호되지만 candidate와 관측 수집기가 같은 프로세스라
 candidate가 완성된 관측 묶음을 흉내 낼 수 있다. 일반 Worker에 연결하기 전에
@@ -35,7 +37,7 @@ mem 읽기/쓰기·environ 읽기 open이 거부됐고 child 출력은 부모 �
 원문·외부 seal·미확인 범위는 `docs/operations/audit-maintenance-closure-20260929.md`를 따른다.
 이 경계 probe의 과거 봉인은 보존한다.
 
-## 새 호출 경로 — 구현·검증 진행 중
+## 새 호출 경로
 
 `benchmark_runner.profile_i_call_execution`은 임의 **내보낸 Worker snapshot**의 파일 목록/hash를
 외부 expected SHA와 대조해 고정한다. Git metadata·cache·link·empty directory가 있는 checkout을
@@ -97,7 +99,9 @@ reference를 새 root에서 먼저 검증하고 그 bytes에서 별도 외부 Wo
 관측 전체 위조는 실제 reference의 완전한 v3 관측을 새 nonce에 맞춰 제출하므로 빈 가짜 JSON만 시험하지 않는다.
 각 변형은 same-path native no-op·1회 dispatch·저장 증거 재판정과 **예정한 실패 지점**까지 확인한다.
 환경 오류나 무관한 import 오류는 mutation qualification 성공으로 인정하지 않는다.
-**47호출·20종 native qualification은 아직 미완료다.** 단위시험과 실제 결과를 따로 기록한다.
+source 5ddcc10의 **47호출·20종 native qualification은 완료**했다. 정상 2종 합격/오류 18종 거부,
+220 no-op/220 supervisor/574 child call, 입력 불변·최종 환경 일치·잔여 container 0이다.
+관련 136개 회귀와 별도 설치 wheel의 저장 증거 재검증도 통과했다. 전체 프로젝트 감사 종료와는 구분한다.
 실제 Windows ACL·SDK 인증/권한 enforcement는 이 Linux 합성 행동 검사로 증명되지 않는다.
 그 성질은 이후 승인된 candidate의 exact Windows/SDK 증거가 필요하며 현재 출력의
 `os_enforcement_verified`, `comparison_authorized`, `challenge_ready`는 모두 false다.

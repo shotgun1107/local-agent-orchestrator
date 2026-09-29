@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-006",
+  "title": "새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "integration",
+  "discovered_at": "2026-09-29T08:10:37Z",
+  "resolved_at": "2026-09-29T08:10:37Z",
+  "discovered_by": "연속 감사 종료 점검과 실제 cold checkout/native qualification",
+  "symptom": "기존 폴더는 통과했지만 동일 commit의 fresh checkout에서 reference chain/worker snapshot/Judge bundle 시험 3개가 실패했다",
+  "reproduction": [
+    "r5dd-reference-repro.xml 1 failed, r5dd-phase-d-repro.xml 2 failed, sealed-byte-git-red.xml 1 failed"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "r5dd-reference-repro.xml 1 failed, r5dd-phase-d-repro.xml 2 failed, sealed-byte-git-red.xml 1 failed"
+    }
+  ],
+  "root_cause": "reference-source에 byte-preserving 속성이 없어 44파일이 CRLF로 변환됐다. anonymization-map은 Git 1485-byte LF와 기존 봉인/작업 파일 1537-byte CRLF가 달랐지만 기존 Git status는 clean이었다",
+  "considered_options": [
+    {
+      "option": "고정 원본 보존과 새 구현/회귀에서 교정",
+      "decision": "adopted",
+      "reason": "기존 실패를 숨기거나 봉인을 재작성하지 않음"
+    }
+  ],
+  "resolution": "reference-source를 -text로 보호했다. 원래 봉인 SHA와 일치한 작업 파일을 변경 없이 no-filters Git blob으로 기록했다. 과거 seal·raw·기존 commit은 수정하지 않았다",
+  "affected_files": [
+    ".gitattributes",
+    "benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/anonymization-map.json",
+    "tools/benchmark-runner/tests/test_sealed_checkout_bytes.py"
+  ],
+  "regression_tests": [
+    "sealed-byte-git-green.xml 4 passed; 실제 새 c926e86 checkout의 cold-checkout-focused-c926e86.xml 7 passed"
+  ],
+  "verification": [
+    "core.autocrlf true/false의 cold clone 바이트 대조와 봉인 hash 검증 통과. 1171개 추적 raw 중 기존 불일치는 이 mapping 1개뿐이었다"
+  ],
+  "remaining_risks": [
+    "최초 개행/색인 불일치가 발생한 역사 시점은 미확인이다. 기존 5ddcc10 실패 작업 사본과 XML은 보존했다"
+  ],
+  "related_commits": [
+    "c926e86b85582bd7b54a6d1d759077c29d6149bf"
+  ],
+  "source_references": [
+    "docs/operations/audit-maintenance-closure-20260929.md"
+  ]
+}

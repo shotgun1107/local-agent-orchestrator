@@ -5,9 +5,9 @@
 
 ## 요약
 
-- 전체: 93건
-- 해결: 91건
-- 조사 중: 2건
+- 전체: 96건
+- 해결: 95건
+- 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -101,11 +101,14 @@
 | DEV-20260917-003 | resolved | benchmark-runner | implementation | F2: 구조화 실패 분류 손실 및 mixed 원장 제약 충돌 |
 | DEV-20260917-004 | resolved | benchmark-runner | implementation | F4: Judge 준비 뒤 만료된 시한으로 workload 시작 |
 | DEV-20260917-005 | resolved | benchmark-runner | tooling | F6: Profile I source-intake 작업 bytes와 정본 LF 불일치 |
-| DEV-20260917-006 | investigating | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
+| DEV-20260917-006 | resolved | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
 | DEV-20260917-007 | resolved | benchmark-runner | tooling | F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함 |
 | DEV-20260929-001 | resolved | benchmark-runner | integration | F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함 |
 | DEV-20260929-002 | resolved | benchmark-runner | implementation | F14 native 진단의 stderr 원문과 종료 후 환경 증거 누락 |
 | DEV-20260929-003 | resolved | b1 | implementation | Controller가 비협조 RuntimePort의 deadline과 늦은 terminal을 독립 집행하지 않음 |
+| DEV-20260929-004 | resolved | benchmark-runner | integration | F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락 |
+| DEV-20260929-005 | resolved | benchmark-runner | test | F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴 |
+| DEV-20260929-006 | resolved | benchmark-runner | integration | 새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -5979,11 +5982,11 @@ Git clean으로 보이던 source-intake.json은 CRLF였으며 봉인 manifest가
 
 ## DEV-20260917-006 — F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `benchmark-runner`
 - 분류: `implementation`
 - 발견: 2026-09-17T01:19:35Z / 독립 감사 잔여 항목 및 현재 source model-free 회귀
-- 해결: 미해결
+- 해결: 2026-09-29T08:17:32Z
 
 ### 증상
 
@@ -6000,39 +6003,54 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 근본 원인
 
-지정 이름·상수 존재를 구현의 거부/identity/비밀정보 경계가 실제로 동작한다는 증거로 대체했다.
+함수·시험 이름을 행동 증거로 취급했고, 중간 판본은 후보가 관측 수집기와 같은 프로세스를 공유해 전체 관측 위조를 막지 못했다
 
 ### 검토한 해결안
 
-- `rejected` 과거 봉인/DDL/결과를 변경해 현재 오류를 숨김 — 원본 증거와 기존 호환 계약을 훼손한다.
-- `adopted` 현재 source와 새 회귀/증거 경계에서 교정 — 과거 결과를 보존하면서 반례를 확인할 수 있다.
+- `adopted` 일반 snapshot과 관측자/후보/최종 판정의 분리 — 자기보고·이름 존재 대신 실제 호출/파일 효과를 검증
+- `rejected` 기존 봉인을 고치거나 합성 API 통과를 실제 OS/SDK GO로 승격 — 원본 보존과 검증 범위를 훼손함
 
 ### 채택한 해결
 
-기존 v1 새 실행/승격 차단을 유지하고 v3 host oracle/container 후보 분리, strict JSON·transcript·DAG·입력 hash·bounded streams·종료 후 환경 검사와 1회 실행을 구현했다. 2026-09-29 사용자 연속 준비 승인 아래 native 고정 9종이 모두 기대와 일치했고 저장 증거 재검증도 통과했다. 일반 Worker production 연결/정교한 전체 관측 위조·과적합/실제 OS·SDK 검증은 미완료라 전체 F14는 investigating이다.
+새 v4에서 외부 Worker snapshot/hash, protected supervisor와 개별 child 호출, 정상/오류 Evidence·실제 파일 효과·public/hidden 공통 소비를 구현했다. 현재 API 행동 검증의 native 20종과 설치본 재판정까지 완료했다. 과거 v1/v2/v3·seal은 보존하고 기존 v1 승격 차단 및 실제 Windows/SDK 환경 증거 요구는 유지한다
 
 ### 수정 파일
 
-- tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py
 - tools/benchmark-runner/qualifications/profile-i-semantic-v2/check_properties.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json
+- tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/child.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/rpc.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/sandbox.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/supervisor.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/wire.py
 - tools/benchmark-runner/scripts/build_profile_i_semantic_bundle.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_call_qualification.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_oracle.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py
 - tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py
 - tools/benchmark-runner/src/benchmark_runner/realistic_profile_i_docker_matrix.py
 - tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py
-- tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py
-- tools/benchmark-runner/tests/test_profile_i_semantic_execution.py
-- tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json
-- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py
-- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_oracle.py
+- tools/benchmark-runner/tests/test_profile_i_call_boundary.py
+- tools/benchmark-runner/tests/test_profile_i_call_execution.py
+- tools/benchmark-runner/tests/test_profile_i_call_qualification.py
 - tools/benchmark-runner/tests/test_profile_i_isolated_execution.py
+- tools/benchmark-runner/tests/test_profile_i_semantic_execution.py
 
 ### 회귀시험
 
+- v4-final-corpus-tests.xml 136 passed; v4-reject-all-red.xml 2 failed 뒤 정상/오류 양방향 교정
 - f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
 - 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
 
 ### 검증 결과
 
+- 5ddcc10 matrix-1 native 20/20 기대 일치, 정상 2종 합격/오류 18종 예정 지점 거부; 220 no-op/220 supervisor/574 child call
+- 입력 불변·최종 환경 일치·잔여 container 0; 별도 설치 wheel에서 원문/변형 bytes/결과 재판정 20/20 일치
+- manifest a1fba3544d36e96aa8b49930696ce89f74d834af0dee3da7752cfbe292506a27; summary a90de57eff087da4fdadfebb1a51b20a8ca061df0dbc3d91168b734ab90780d4
 - f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
 - 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
 - f14-integration-20260917/final.xml: 146 passed; 연결부 88, F14 39, Docker 단위 19. 기존 회차와 중복이며 실제 Docker 실행 증거가 아니다.
@@ -6041,18 +6059,18 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 남은 위험
 
-- 아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.
-- v2의 같은 Python 프로세스 구조는 일반 평가에 쓰지 않는다. v3의 고정 9종 native 진단은 통과했지만 일반 Worker production 경로는 아직 없다.
-- 공개 합성 관측의 정교한 전체 위조/과적합과 실제 Windows ACL·SDK enforcement는 미검증이다. 고정 9종 통과를 F14 전체 resolved/CHALLENGE_READY/정식 비교 Live GO로 확대하지 않는다.
+- 유한 합성 API 계약 검증이다. 실제 Windows ACL/SDK 인증·권한 enforcement 및 새 comparison candidate는 별도 exact 환경/사용자 승인 대상이다
+- 모든 프로그램·입력·커널 공격·부채널을 증명하지 않는다. Landlock ABI 3 미만/불가는 fail-closed이고 legacy v1 승격은 계속 차단한다
 
 ### 추적 정보
 
-- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9, c60b26595b5d67133289afd8aed646cf8bc8ad65
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9, c60b26595b5d67133289afd8aed646cf8bc8ad65, dcb1baa604ff713de030e9e2f530d577331ae6a7, e45bad012402c3e0a6abbd8ef7603657eac9469b, 36e2304135848a61927b2dfa73738d35de1d7380, 5ddcc10d2c6a224b85164059e0d8a828f26d1869
+- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 - 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
 - 출처: docs/operations/audit-f14-integration-preflight-20260917.md
 - 출처: docs/operations/audit-f14-isolation-v3-20260929.md
 - 출처: docs/operations/audit-f14-native-qualification-20260929.md
-- 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
+- 출처: docs/operations/audit-f14-v4-checker-qualification-20260929.md
 
 ## DEV-20260917-007 — F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함
 
@@ -6274,3 +6292,170 @@ deadline+grace의 절대 종료 경계, producer 수신 시각, 늦은 terminal 
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
+
+## DEV-20260929-004 — F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `integration`
+- 발견: 2026-09-29T08:10:36Z / 연속 감사 종료 점검과 실제 cold checkout/native qualification
+- 해결: 2026-09-29T08:10:36Z
+
+### 증상
+
+정상 reference가 지원 모듈 읽기 거부 및 tuple 직렬화 오류로 native 평가를 완료하지 못함
+
+### 재현
+
+- reference-1은 runner_support.py PermissionError, reference-2는 windows 결과의 wire.WireError TYPE로 실패
+
+### 증거
+
+- `reproducible-test`: reference-1은 runner_support.py PermissionError, reference-2는 windows 결과의 wire.WireError TYPE로 실패
+
+### 근본 원인
+
+no-op이 지연된 공통 지원 모듈 import를 검사하지 않았고, 단위시험이 실제 strict serializer 대신 JSON 자동 tuple 변환을 사용했다
+
+### 검토한 해결안
+
+- `adopted` 고정 원본 보존과 새 구현/회귀에서 교정 — 기존 실패를 숨기거나 봉인을 재작성하지 않음
+
+### 채택한 해결
+
+봉인된 공통 유틸리티만 Landlock 적용 전에 로드하고 적용 뒤 driver 읽기는 차단했다. 정상 tuple을 JSON array로 변환하고 실제 supervisor serializer로 회귀한다
+
+### 수정 파일
+
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/child.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/sandbox.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py
+- tools/benchmark-runner/tests/test_profile_i_call_boundary.py
+
+### 회귀시험
+
+- v4-support-load.xml 및 v4-envelope.xml 각 55 passed; reference-3 native 45 calls/11 groups/10 properties pass
+
+### 검증 결과
+
+- 실패 root 2개 보존. 후속 5ddcc10 matrix-1 native 20/20 기대 일치 및 설치 wheel의 독립 재검증 완료
+
+### 남은 위험
+
+- 실제 Windows/SDK enforcement가 아니라 격리된 합성 API checker의 전달 경계를 검증했다
+
+### 추적 정보
+
+- 관련 커밋: e45bad012402c3e0a6abbd8ef7603657eac9469b, 36e2304135848a61927b2dfa73738d35de1d7380
+- 출처: docs/operations/audit-maintenance-closure-20260929.md
+
+## DEV-20260929-005 — F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `test`
+- 발견: 2026-09-29T08:10:36Z / 연속 감사 종료 점검과 실제 cold checkout/native qualification
+- 해결: 2026-09-29T08:10:37Z
+
+### 증상
+
+두 model_validate에 부정 입력만 호출해 always-reject 구현이 합격했다
+
+### 재현
+
+- v4-reject-all-red.xml: ConfigurationExpectation 및 RuntimeBoundaryProbeManifest 변형 2 failed
+
+### 증거
+
+- `reproducible-test`: v4-reject-all-red.xml: ConfigurationExpectation 및 RuntimeBoundaryProbeManifest 변형 2 failed
+
+### 근본 원인
+
+정상 builder 호출과 별개인 두 model_validate API에 정상 입력 대조가 누락됐다
+
+### 검토한 해결안
+
+- `adopted` 고정 원본 보존과 새 구현/회귀에서 교정 — 기존 실패를 숨기거나 봉인을 재작성하지 않음
+
+### 채택한 해결
+
+정상 configuration/manifest의 실제 호출과 exact 반환값 대조를 추가했다. 45호출을 47호출로 확장하고 기존 실패/이전 성공을 재분류하지 않았다
+
+### 수정 파일
+
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/supervisor.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py
+- tools/benchmark-runner/tests/test_profile_i_call_boundary.py
+
+### 회귀시험
+
+- v4-reject-all-green.xml 57 passed; 최종 v4-final-corpus-tests.xml 136 passed
+
+### 검증 결과
+
+- native reject-valid-config/reject-valid-manifest 모두 정확한 configuration 행동 불일치로 거부; 정상 reference와 equivalent는 통과
+
+### 남은 위험
+
+- 고정 정상/오류 corpus이며 모든 가능한 구현과 입력의 수학적 증명은 아니다
+
+### 추적 정보
+
+- 관련 커밋: 5ddcc10d2c6a224b85164059e0d8a828f26d1869
+- 출처: docs/operations/audit-maintenance-closure-20260929.md
+
+## DEV-20260929-006 — 새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `integration`
+- 발견: 2026-09-29T08:10:37Z / 연속 감사 종료 점검과 실제 cold checkout/native qualification
+- 해결: 2026-09-29T08:10:37Z
+
+### 증상
+
+기존 폴더는 통과했지만 동일 commit의 fresh checkout에서 reference chain/worker snapshot/Judge bundle 시험 3개가 실패했다
+
+### 재현
+
+- r5dd-reference-repro.xml 1 failed, r5dd-phase-d-repro.xml 2 failed, sealed-byte-git-red.xml 1 failed
+
+### 증거
+
+- `reproducible-test`: r5dd-reference-repro.xml 1 failed, r5dd-phase-d-repro.xml 2 failed, sealed-byte-git-red.xml 1 failed
+
+### 근본 원인
+
+reference-source에 byte-preserving 속성이 없어 44파일이 CRLF로 변환됐다. anonymization-map은 Git 1485-byte LF와 기존 봉인/작업 파일 1537-byte CRLF가 달랐지만 기존 Git status는 clean이었다
+
+### 검토한 해결안
+
+- `adopted` 고정 원본 보존과 새 구현/회귀에서 교정 — 기존 실패를 숨기거나 봉인을 재작성하지 않음
+
+### 채택한 해결
+
+reference-source를 -text로 보호했다. 원래 봉인 SHA와 일치한 작업 파일을 변경 없이 no-filters Git blob으로 기록했다. 과거 seal·raw·기존 commit은 수정하지 않았다
+
+### 수정 파일
+
+- .gitattributes
+- benchmarks/judge-source/sdk-routing-realistic-high-difficulty-v1/realistic-compat-migration-001/anonymization-map.json
+- tools/benchmark-runner/tests/test_sealed_checkout_bytes.py
+
+### 회귀시험
+
+- sealed-byte-git-green.xml 4 passed; 실제 새 c926e86 checkout의 cold-checkout-focused-c926e86.xml 7 passed
+
+### 검증 결과
+
+- core.autocrlf true/false의 cold clone 바이트 대조와 봉인 hash 검증 통과. 1171개 추적 raw 중 기존 불일치는 이 mapping 1개뿐이었다
+
+### 남은 위험
+
+- 최초 개행/색인 불일치가 발생한 역사 시점은 미확인이다. 기존 5ddcc10 실패 작업 사본과 XML은 보존했다
+
+### 추적 정보
+
+- 관련 커밋: c926e86b85582bd7b54a6d1d759077c29d6149bf
+- 출처: docs/operations/audit-maintenance-closure-20260929.md

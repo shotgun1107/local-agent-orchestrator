@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260917-006",
   "title": "F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "benchmark-runner",
   "category": "implementation",
   "discovered_at": "2026-09-17T01:19:35Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-29T08:17:32Z",
   "discovered_by": "독립 감사 잔여 항목 및 현재 source model-free 회귀",
   "symptom": "noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 검사가 통과할 수 있었다.",
   "reproduction": [
@@ -20,39 +20,54 @@
       "detail": "f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5; 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부"
     }
   ],
-  "root_cause": "지정 이름·상수 존재를 구현의 거부/identity/비밀정보 경계가 실제로 동작한다는 증거로 대체했다.",
+  "root_cause": "함수·시험 이름을 행동 증거로 취급했고, 중간 판본은 후보가 관측 수집기와 같은 프로세스를 공유해 전체 관측 위조를 막지 못했다",
   "considered_options": [
     {
-      "option": "과거 봉인/DDL/결과를 변경해 현재 오류를 숨김",
-      "decision": "rejected",
-      "reason": "원본 증거와 기존 호환 계약을 훼손한다."
+      "option": "일반 snapshot과 관측자/후보/최종 판정의 분리",
+      "decision": "adopted",
+      "reason": "자기보고·이름 존재 대신 실제 호출/파일 효과를 검증"
     },
     {
-      "option": "현재 source와 새 회귀/증거 경계에서 교정",
-      "decision": "adopted",
-      "reason": "과거 결과를 보존하면서 반례를 확인할 수 있다."
+      "option": "기존 봉인을 고치거나 합성 API 통과를 실제 OS/SDK GO로 승격",
+      "decision": "rejected",
+      "reason": "원본 보존과 검증 범위를 훼손함"
     }
   ],
-  "resolution": "기존 v1 새 실행/승격 차단을 유지하고 v3 host oracle/container 후보 분리, strict JSON·transcript·DAG·입력 hash·bounded streams·종료 후 환경 검사와 1회 실행을 구현했다. 2026-09-29 사용자 연속 준비 승인 아래 native 고정 9종이 모두 기대와 일치했고 저장 증거 재검증도 통과했다. 일반 Worker production 연결/정교한 전체 관측 위조·과적합/실제 OS·SDK 검증은 미완료라 전체 F14는 investigating이다.",
+  "resolution": "새 v4에서 외부 Worker snapshot/hash, protected supervisor와 개별 child 호출, 정상/오류 Evidence·실제 파일 효과·public/hidden 공통 소비를 구현했다. 현재 API 행동 검증의 native 20종과 설치본 재판정까지 완료했다. 과거 v1/v2/v3·seal은 보존하고 기존 v1 승격 차단 및 실제 Windows/SDK 환경 증거 요구는 유지한다",
   "affected_files": [
-    "tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py",
     "tools/benchmark-runner/qualifications/profile-i-semantic-v2/check_properties.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v2/test_behavior.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/child.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/rpc.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/sandbox.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/supervisor.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/wire.py",
     "tools/benchmark-runner/scripts/build_profile_i_semantic_bundle.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_call_qualification.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_oracle.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_phase_e.py",
     "tools/benchmark-runner/src/benchmark_runner/realistic_profile_i_docker_matrix.py",
     "tools/benchmark-runner/tests/test_audit_f14_behavior_oracle.py",
-    "tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py",
-    "tools/benchmark-runner/tests/test_profile_i_semantic_execution.py",
-    "tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json",
-    "tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py",
-    "tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_oracle.py",
-    "tools/benchmark-runner/tests/test_profile_i_isolated_execution.py"
+    "tools/benchmark-runner/tests/test_profile_i_call_boundary.py",
+    "tools/benchmark-runner/tests/test_profile_i_call_execution.py",
+    "tools/benchmark-runner/tests/test_profile_i_call_qualification.py",
+    "tools/benchmark-runner/tests/test_profile_i_isolated_execution.py",
+    "tools/benchmark-runner/tests/test_profile_i_semantic_execution.py"
   ],
   "regression_tests": [
+    "v4-final-corpus-tests.xml 136 passed; v4-reject-all-red.xml 2 failed 뒤 정상/오류 양방향 교정",
     "f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5",
     "과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부"
   ],
   "verification": [
+    "5ddcc10 matrix-1 native 20/20 기대 일치, 정상 2종 합격/오류 18종 예정 지점 거부; 220 no-op/220 supervisor/574 child call",
+    "입력 불변·최종 환경 일치·잔여 container 0; 별도 설치 wheel에서 원문/변형 bytes/결과 재판정 20/20 일치",
+    "manifest a1fba3544d36e96aa8b49930696ce89f74d834af0dee3da7752cfbe292506a27; summary a90de57eff087da4fdadfebb1a51b20a8ca061df0dbc3d91168b734ab90780d4",
     "f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5",
     "과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부",
     "f14-integration-20260917/final.xml: 146 passed; 연결부 88, F14 39, Docker 단위 19. 기존 회차와 중복이며 실제 Docker 실행 증거가 아니다.",
@@ -60,19 +75,23 @@
     "matrix-1: native no-op 99/99, 관측 process 49개, 정상 2종 합격/오류 7종 거부, 9종 입력 불변/최종 환경 확인/잔여 container 0, 읽기 전용 결과 재검증 일치. summary seal ec734f97f7beabeebfc335525c26ca8754e3cc07a33863c898a68f5c7677c8dd"
   ],
   "remaining_risks": [
-    "아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.",
-    "v2의 같은 Python 프로세스 구조는 일반 평가에 쓰지 않는다. v3의 고정 9종 native 진단은 통과했지만 일반 Worker production 경로는 아직 없다.",
-    "공개 합성 관측의 정교한 전체 위조/과적합과 실제 Windows ACL·SDK enforcement는 미검증이다. 고정 9종 통과를 F14 전체 resolved/CHALLENGE_READY/정식 비교 Live GO로 확대하지 않는다."
+    "유한 합성 API 계약 검증이다. 실제 Windows ACL/SDK 인증·권한 enforcement 및 새 comparison candidate는 별도 exact 환경/사용자 승인 대상이다",
+    "모든 프로그램·입력·커널 공격·부채널을 증명하지 않는다. Landlock ABI 3 미만/불가는 fail-closed이고 legacy v1 승격은 계속 차단한다"
   ],
   "related_commits": [
     "4df24fed32ef4dbc70f6beb3c4a34e912681cfc9",
-    "c60b26595b5d67133289afd8aed646cf8bc8ad65"
+    "c60b26595b5d67133289afd8aed646cf8bc8ad65",
+    "dcb1baa604ff713de030e9e2f530d577331ae6a7",
+    "e45bad012402c3e0a6abbd8ef7603657eac9469b",
+    "36e2304135848a61927b2dfa73738d35de1d7380",
+    "5ddcc10d2c6a224b85164059e0d8a828f26d1869"
   ],
   "source_references": [
+    "benchmarks/.local-r6/independent-audit-20260908-01/report.md",
     "docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md",
     "docs/operations/audit-f14-integration-preflight-20260917.md",
     "docs/operations/audit-f14-isolation-v3-20260929.md",
     "docs/operations/audit-f14-native-qualification-20260929.md",
-    "benchmarks/.local-r6/independent-audit-20260908-01/report.md"
+    "docs/operations/audit-f14-v4-checker-qualification-20260929.md"
   ]
 }
