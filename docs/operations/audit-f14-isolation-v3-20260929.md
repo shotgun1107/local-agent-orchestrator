@@ -58,9 +58,37 @@ engine 29.6.2, linux/amd64 및 다음 exact image 존재를 읽기 전용으로 
 
 `local-agent-orchestrator/profile-r-judge@sha256:ba83a1832f5d00e83250b93427357421f19fbcd29b477e1ce1ac9602829330ab`
 
-이 문서 작성 시 native no-op은 아직 수행 전이다. 커밋된 clean source를 고정한 뒤
-새 경로에서 11개 request mount의 동일경로 no-op을 수행하고 결과를 추가한다.
-no-op은 후보/driver를 import하지 않으며 package/bytes/uid/capabilities/read-only/tmp IO만 검사한다.
+코드 commit `f10487b9b14525052fd09f07e7d9fb976f1c2423`을 고정한 native no-op은 **11/11 통과, GO**다.
+Evidence 하위 `native-work-commit/preflight.json`에 보존했다.
+plan SHA: `81fd3c659cafab327a775736ed4d3084b5948ebe01f5e719c66e7b449abcd0cb`.
+receipt SHA: `5f7bda148ba2aed4f97ef25a9810aec371cac387d56d588ec09351da3adecd47`.
+
+관측값은 guest Python **3.12.13**(계약은 exact image의 3.12 계열), pytest 8.4.2,
+Pydantic 2.13.4, uid 65532, CapEff 0, NoNewPrivs 1, read-only 3개 root, tmp write/read/cleanup 성공이다.
+source/driver/overlay/request hash와 Docker image/context/server identity가 전후 일치했고 동일 이름의 잔여 container는 없었다.
+후보/driver는 import하지 않았으며 dispatch.json/result.json도 생성되지 않았다. 실제 Judge·SDK/model·Cell claim은 0이다.
+호스트 개발 Python 3.12.10과 guest 3.12.13을 혼동하지 않는다. 새 설치·의존성 교체는 없었다.
+
+이 보고서와 인수인계 커밋 때문에 HEAD가 바뀌면 위 plan은 역사 증거로만 보존한다.
+최종 note 이후 새 경로 `C:\LAO\evidence\f14-v3-20260929\company-preflight-final`에 최종 plan/receipt를 만든다.
+다음 실행자는 해당 파일의 실제 source/plan/receipt SHA를 확인한다. 없으면 준비 미완료다.
+receipt가 10분을 넘으면 같은 root의 새 receipt 이름으로 no-op을 다시 수행하고 별도 실행 승인 여부를 확인한다.
+
+개발 점검 PASS, 관리 도구 18개·로그 도구 10개 통과, incident 91건/index 일치도 확인했다.
+관리 문서는 사용자 사본을 검토 후 collect했다. 환경 GO는 아래 제한된 reference 진단에만 해당한다.
+
+```text
+실행 대상: F14 v3 reference 진단 1건(고정 11개 관측 그룹), 아직 미실행
+봉인된 요구사항: clean source/plan/hash, exact image, host oracle + read-only 후보 container
+현재 환경: 회사 Windows host / Docker linux-amd64 / guest Python 3.12.13
+일치: 고정 입력·명령·image·package·uid/capability·read-only·tmp IO·container 부재
+불일치: 이번 제한된 no-op에서 없음
+미확인: native 후보 동작, 전체 대조군 qualification, 실제 OS/SDK enforcement
+model-free 동일경로 예행연습: native 11/11 통과
+state 변경 수: 원본 Controller 0, Phase F claim 0
+model turn 수: 0, SDK thread/start·turn/start 0, 실제 Judge workload 0
+최종 판정: reference 진단 환경 GO / F14 해결·정식 비교 Live는 아직 NO-GO
+```
 
 ## 완료와 남은 경계
 

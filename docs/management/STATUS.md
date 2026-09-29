@@ -47,8 +47,9 @@ case·선행 조건·합계를 다시 검증하는 경로를 구현했다. 관�
 2026-09-29 재개: v3는 후보를 컨테이너에 두고 판정기는 호스트에 분리하는 새 경로를 구현했다.
 호스트는 Worker Python을 import하지 않고 제한된 JSON 관측만 검사한다. 9종 대조군 준비,
 기록 결합·모의/실제 receipt 구분·1회 실행/실패 보존을 추가했고 부분 fixture의 import 의존성도 명시적으로 보완했다.
-기존 B1 전체 292개가 다시 통과했다. 회사 Docker를 시작해 exact image 존재까지 확인했다.
-동일경로 no-op과 실제 qualification의 완료 여부는 `docs/operations/audit-f14-isolation-v3-20260929.md`의 최신 검증을 확인한다.
+기존 B1 전체 292개와 최종 v3 전용 132개가 통과했다. 관련 중간 276개와는 중복 합산하지 않는다.
+회사 Docker를 시작해 exact image와 **native 동일경로 no-op 11/11 통과**를 확인했다.
+**reference 진단의 환경만 GO**이며 실제 후보 평가/모델 호출은 0이다. 결과는 `docs/operations/audit-f14-isolation-v3-20260929.md`에서 확인한다.
 v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 실제 qualification 전까지 F14 investigating/정식 비교 NO-GO다.
 
 기술 근거는 저장소 `docs/README.md`,
@@ -76,8 +77,8 @@ v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 
 ## 남은 한계
 
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
-- 현재 active candidate·실행 대상이 새로 승인되지 않았다. Docker exact image, 인증, 외부 state/seal, 새 경로의 candidate binding과 동일경로 예행연습은 미확인이다.
-- **Live NO-GO.** 이번 작업은 환경 검증 GO나 새 experiment·기존 실패 Cell 실행 승인이 아니다.
+- 정식 비교의 active candidate·실행 대상은 새로 승인되지 않았다. F14 reference 진단의 Docker/image/no-op은 확인했지만 실제 SDK 인증·외부 state/seal·정식 비교 candidate는 별도 미확인이다.
+- **reference 진단 환경 GO / 정식 비교 Live NO-GO.** 새 experiment·기존 실패 Cell 실행 승인이 아니며 실제 reference 진단도 별도 사용자 턴 승인이 필요하다.
 - 이번 잔여 5항목 중 F1/F2/F4/F6은 교정했다. F14 신뢰 경계 분리 구현은 v3에 추가했으며 실제 reference/대조군 qualification은 남아 있다. 이전 timeout 시간 변동 원인도 미확정이다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
