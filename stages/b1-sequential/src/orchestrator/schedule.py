@@ -1026,7 +1026,7 @@ class Orchestrator:
             )
             return
         ledger.update_session_terminal(
-            session["session_id"], SessionState.FAILED, outcome.terminal_evidence,
+            session["session_id"], SessionState.TIMED_OUT if outcome.terminal_status == TerminalStatus.TIMED_OUT else SessionState.FAILED, outcome.terminal_evidence,
             usage_status, None,
         )
         retryable = bool(outcome.failure and outcome.failure.retryable)

@@ -731,17 +731,20 @@ def test_duplicate_same_result_is_idempotent(tmp_path: Path, project_factory) ->
         ("timeout_interrupt_unsupported", "BLOCKED", "QUARANTINED"),
     ],
 )
-def test_timeout_paths_are_bounded_and_never_adopted(
+def test_timeout_paths_are_quarantined_or_failed_and_never_adopted(
     tmp_path: Path, project_factory, scenario: str, task_state: str, attempt_state: str
 ) -> None:
     root = project_factory(task_timeout=1)
-    started = time.monotonic()
     _, snapshot = execute(
         root, tmp_path / "state", make_spec(), scenario=scenario, fixture={"delay_ms": 10_000}
     )
-    assert time.monotonic() - started < 2.0
+    # Exact deadline/grace and non-cooperative ports are covered independently
+    # by test_terminal_watchdog/test_controller_watchdog. Total execute time
+    # also includes config/Git/SQLite/report IO outside the runtime deadline.
     assert snapshot["tasks"][0]["state"] == task_state
     assert snapshot["tasks"][0]["attempts"][0]["state"] == attempt_state
+    assert len(snapshot["tasks"][0]["attempts"]) == len(snapshot["sessions"]) == 1
+    assert snapshot["checks"] == []
 
 
 def test_stale_input_retries_then_fails_without_adoption(tmp_path: Path, project_factory) -> None:
