@@ -33,4 +33,43 @@ child가 부모를 signal로 종료하는 것은 가용성 실패로 채택을 �
 2026-09-29의 source 64d000c에서 고정 native probe가 통과했다. 부모 fd/1·fd/2 쓰기,
 mem 읽기/쓰기·environ 읽기 open이 거부됐고 child 출력은 부모 출력과 분리됐다.
 원문·외부 seal·미확인 범위는 `docs/operations/audit-maintenance-closure-20260929.md`를 따른다.
-일반 Worker snapshot/RPC/host-owned case/side-effect 소비 및 qualification은 계속 구현해야 한다.
+이 경계 probe의 과거 봉인은 보존한다.
+
+## 새 호출 경로 — 구현·검증 진행 중
+
+`benchmark_runner.profile_i_call_execution`은 임의 **내보낸 Worker snapshot**의 파일 목록/hash를
+외부 expected SHA와 대조해 고정한다. Git metadata·cache·link·empty directory가 있는 checkout을
+그대로 받지는 않는다. Worker 파일을 호스트에 import하지 않는다. 기본 reference와 외부 snapshot을
+구분하고 source/driver/request/명령/환경과 결합한다. 원래 v1/v2/v3 자료를 수정하지 않는다.
+
+- `wire.py`: 제한 JSON/tagged data만 전송한다. pickle/eval은 없다. 잘못된 model_copy 입력을
+  조기 정정하지 않고 전달하여 **후보의 검증 함수**가 실제로 거부하는지 검사한다.
+- `supervisor.py`, `observations.py`, `rpc.py`: 기준 fixture와 관측은 부모가 소유하고 11묶음/45호출을
+  자식으로 보낸다. SDK는 부모가 소유한 합성 callback 8개만 허용한다. 실제 SDK client를 호출하지 않는다.
+  bundle/link 결과는 부모가 파일 bytes/존재로 확인한다. 초과출력·시한초과·여분 process·계약 밖 쓰기는 거부한다.
+- `sandbox.py`: child의 Worker import **전에** Landlock ABI 3 이상을 요구한다. 불가하면 fail-closed다.
+  후보는 /workspace와 Python library를 읽고 /tmp만 쓸 수 있다. /trusted의 기준 구현,
+  관측 코드/fixture/request와 부모 procfs 접근은 차단한다. 다른 실행 파일의 exec도 허용하지 않는다.
+  allowlist의 runner_support는 기존 공통 serialization/hash 유틸리티뿐이며 판정/정답은 없다.
+- no-op에서 exact mount/uid/caps/NNP와 Landlock의 실제 거부·Worker 읽기·tmp IO를 먼저 확인한다.
+  단순 ABI 조회나 합성 mock만으로 native GO를 기록하지 않는다.
+- read_run은 외부 plan/result SHA로 보존 증거를 읽어 재판정한다. I01~I08 public projection과
+  전체 hidden property/DAG가 동일한 실제 호출 관측을 소비한다. 상수 success·이름 존재를 판정하지 않는다.
+
+Landlock 구현 근거: [Linux v6.6 userspace API](https://www.kernel.org/doc/html/v6.6/userspace-api/landlock.html),
+[정확한 ABI 구조/권한 비트](https://github.com/torvalds/linux/blob/v6.6/include/uapi/linux/landlock.h).
+파일시스템 읽기/쓰기와 후손 상속을 제한하며, 일반적인 모든 syscall/CPU 부채널 방어를 주장하지 않는다.
+이 API checker는 순수 함수와 지정 파일 효과만 지원하므로 임의 exec는 지원 계약이 아니다.
+공개 명세를 알고 동등한 동작을 구현하는 것은 허용된다. 유한한 시험을 모든 입력에 대한 수학적 증명이라고 하지 않는다.
+후보가 부모를 종료하거나 예산을 소모하면 합격이 아니라 실행 실패로 닫는다.
+
+모듈 CLI의 `prepare` → `preflight` → 별도 승인된 `dispatch`는 fresh root를 사용한다.
+`dispatch --authorize-model-free-checker`도 기존 승인·환경 검증을 대체하지 않는다.
+이번 세션의 연속 유지보수 승인 범위 외에서는 저장소의 Live 관문을 먼저 적용한다.
+`verify-run --task-id I02`는 public I02와 선행 property, task-id 생략은 전체 평가를 반환한다.
+합성 행동 불합격은 exit 1, 준비/무결성/실행 실패는 exit 2다. 검증 성공과 비교 승격은 다르다.
+
+**아직 native 함수 호출·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
+실제 Windows ACL·SDK 인증/권한 enforcement는 이 Linux 합성 행동 검사로 증명되지 않는다.
+그 성질은 이후 승인된 candidate의 exact Windows/SDK 증거가 필요하며 현재 출력의
+`os_enforcement_verified`, `comparison_authorized`, `challenge_ready`는 모두 false다.
