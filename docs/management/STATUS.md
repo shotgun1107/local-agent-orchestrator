@@ -5,6 +5,9 @@
 
 ## 먼저 볼 최신 요약
 
+- **현재 목표는 감사·유지보수의 공식 종료이며 아직 OPEN이다.** 사용자가 고정 진단의 부분 완료에서
+  멈추지 말고 전체 종료 근거를 갖출 때까지 연속 진행하도록 지시했다. 종료 표는
+  `docs/operations/audit-maintenance-closure-20260929.md`를 따른다. 새 기능개발은 시작하지 않는다.
 - 관리 공간은 이 Documents 폴더, 코드·시험 공간은 회사 `C:\LAO\repo`다. 단일 Git 저장소로 공유한다.
 - 앞선 감사 F1/F2/F3/F4/F5/F6/F8/F9/F10/F11/F12의 교정과 B1 전체 292개 통과 기록을 유지한다.
 - 남은 핵심 F14의 판정기/후보 프로세스를 분리했고, 실제 reference 11개 관측 그룹/10 property가 통과했다.
@@ -16,6 +19,10 @@
 - F14의 고정 진단은 통과했지만 일반 Worker 평가 연결·정교한 관측 위조·실제 OS/SDK 검증까지
   끝난 것은 아니다. F14 investigating/기존 v1 새 실행·승격 차단은 유지한다.
 - 새 연구 실험·실제 model/SDK·Phase F Cell은 시작하지 않았다. 준비 진단과 정식 연구 실행을 구분한다.
+- 종료 재점검에서 RuntimePort가 멈추면 controller deadline을 독립 집행하지 못하는 후속 결함을
+  재현했다(4 failed/1 passed). 시한 감시와 늦은 결과 거부 교정 뒤 통합 41개와 B1 전체 **303개**가 통과했다.
+  새 로컬 venv의 고정 의존성 19개·두 wheel 설치·Schema 5개·Python 55모듈 bytes·개발 점검도 통과했다.
+  실제 집 PC 검증은 아니다. F14 후속의 supervisor 경계 probe는 18개 계약시험까지이며 일반 평가 연결은 진행 중이다.
 
 아래는 변경 이유와 과거 시험 결과를 보존한 이력이다. 회차별 시험 수를 합산하지 않는다.
 
@@ -94,8 +101,9 @@ v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 
 
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 정식 비교의 active candidate·실행 대상은 새로 승인되지 않았다. F14 reference 진단의 Docker/image/no-op은 확인했지만 실제 SDK 인증·외부 state/seal·정식 비교 candidate는 별도 미확인이다.
-- **reference 진단 환경 GO / 정식 비교 Live NO-GO.** 새 experiment·기존 실패 Cell 실행 승인이 아니며 실제 reference 진단도 별도 사용자 턴 승인이 필요하다.
-- 이번 잔여 5항목 중 F1/F2/F4/F6은 교정했다. F14 신뢰 경계 분리 구현은 v3에 추가했으며 실제 reference/대조군 qualification은 남아 있다. 이전 timeout 시간 변동 원인도 미확정이다.
+- **고정 native 진단 완료 / 정식 비교 Live NO-GO.** reference와 matrix-1은 이미 실행됐으며 재실행하지 않는다.
+- F1/F2/F4/F6은 교정했고 F14 고정 9종도 완료했지만 일반 Worker 평가 연결·관측 위조 대응은 남아 있다.
+  controller deadline 후속을 교정·검증 중이다. 과거 wall-clock 변동을 이 결함 발생으로 소급 단정하지 않는다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.
