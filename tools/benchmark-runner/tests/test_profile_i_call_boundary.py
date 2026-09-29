@@ -234,3 +234,13 @@ def test_forged_or_incomplete_observation_rejected(driver, tmp_path, attack):
     elif attack == 'wrong_nonce': value['nonce'] = 'f' * 32
     else: value = {**request, 'version': 3, 'observations': value['observations']}
     assert not execution.grade(request, binding.canonical(value))['passed']
+
+
+@pytest.mark.parametrize('name', ['ConfigurationExpectation', 'RuntimeBoundaryProbeManifest'])
+def test_validator_rejecting_every_input_cannot_pass(driver, tmp_path, monkeypatch, name):
+    def always_reject(*_a, **_kw):
+        raise ValueError('synthetic unconditional rejection')
+    monkeypatch.setattr(getattr(driver.fixtures.runtime_boundary, name), 'model_validate', always_reject)
+    value = envelope(driver, tmp_path, 'configuration')
+    request = {k: value[k] for k in ('version', 'case', 'nonce')}
+    assert not execution.grade(request, driver.wire.pack(value))['passed']

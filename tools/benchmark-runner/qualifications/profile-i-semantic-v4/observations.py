@@ -88,6 +88,8 @@ def observe(case: str, nonce: str, scratch: Path, f, r):
             probe_script_relative_path=manifest.probe_script_relative_path, environment_name_allowlist=manifest.environment_name_allowlist,
             runtime=manifest.runtime, created_at=manifest.created_at, probe_id=manifest.probe_id)
         return {"built": built.model_dump(mode="json"), "verified": capture(lambda: r.verify_probe_command_contract(built)),
+            "normal_configuration": capture(lambda: r.ConfigurationExpectation.model_validate(built.configuration.model_dump(mode="json"))),
+            "normal_manifest": capture(lambda: r.RuntimeBoundaryProbeManifest.model_validate(built.model_dump(mode="json"))),
             "weakened": capture(lambda: r.ConfigurationExpectation.model_validate(payload)),
             "unbound": capture(lambda: r.RuntimeBoundaryProbeManifest.model_validate(other))}
 
