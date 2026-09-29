@@ -57,19 +57,22 @@ def await_cancellable_terminal(
     runtime: RuntimePort, turn: TurnHandle, deadline: float,
     requested: Callable[[], bool], grace_seconds: float,
 ) -> RuntimeOutcome:
-    """Bound cancellation even if an adapter's wait or interrupt call gets stuck.
+    """Bound controller waiting even if an adapter's wait/interrupt gets stuck.
 
     Background calls never receive a Ledger. UNKNOWN is not proof that the
     runtime stopped; its Attempt must be quarantined and never auto-retried.
     """
-    results: queue.Queue[RuntimeOutcome | Exception] = queue.Queue(maxsize=1)
+    # Record delivery time in the producer, not the controller's later polling
+    # time. A timely queued result must not become late merely due to scheduling.
+    results: queue.Queue[tuple[float, RuntimeOutcome | Exception]] = queue.Queue(maxsize=1)
     interrupts: queue.Queue[InterruptOutcome] = queue.Queue(maxsize=1)
 
     def wait() -> None:
         try:
-            results.put(runtime.await_terminal(turn, deadline))
+            outcome = runtime.await_terminal(turn, deadline)
         except Exception as exc:
-            results.put(exc)
+            outcome = exc
+        results.put((time.monotonic(), outcome))
 
     def interrupt() -> None:
         try:
@@ -77,14 +80,14 @@ def await_cancellable_terminal(
         except Exception:
             interrupts.put(InterruptOutcome(state=InterruptState.FAILED))
 
-    def unknown(evidence: dict) -> RuntimeOutcome:
+    def unknown(evidence: dict, *, cancelled: bool) -> RuntimeOutcome:
         return RuntimeOutcome(
             terminal_status=TerminalStatus.UNKNOWN,
-            terminal_evidence={"cancel_requested": True, **evidence},
+            terminal_evidence={"cancel_requested": cancelled, "deadline_exceeded": not cancelled, **evidence},
             failure=RuntimeFailure(
                 kind=FailureKind.TERMINAL_UNKNOWN, retryable=False,
-                redacted_message="terminal not proven within user cancellation grace",
-                source_exception_type="CancellationTerminalUnknown",
+                redacted_message="terminal not proven within controller deadline and grace",
+                source_exception_type="CancellationTerminalUnknown" if cancelled else "RuntimeDeadlineExceeded",
             ),
             usage_snapshot=UsageSnapshot(status=UsageStatus.UNKNOWN),
         )
@@ -95,23 +98,39 @@ def await_cancellable_terminal(
         if cancel_deadline is None and requested():
             cancel_deadline = time.monotonic() + grace_seconds
             threading.Thread(target=interrupt, name="lao-cancel-interrupt", daemon=True).start()
+        # RuntimePort owns its deadline interrupt. This is the independent
+        # controller watchdog, including a stuck synchronous SDK interrupt.
+        # UNKNOWN does not claim the background call stopped; no retry is safe.
+        hard_deadline = min(deadline + grace_seconds, cancel_deadline if cancel_deadline is not None else float("inf"))
         try:
-            outcome = results.get(timeout=(
-                POLL_SECONDS if cancel_deadline is None
-                else min(POLL_SECONDS, max(0.0, cancel_deadline - time.monotonic()))
-            ))
+            received_at, outcome = results.get(timeout=min(POLL_SECONDS, max(0.0, hard_deadline - time.monotonic())))
         except queue.Empty:
-            if cancel_deadline is None or time.monotonic() < cancel_deadline:
+            if time.monotonic() < hard_deadline:
                 continue
             try:
                 interrupt_state = interrupts.get_nowait().state
             except queue.Empty:
-                interrupt_state = InterruptState.REQUESTED
-            return unknown({"interrupt_state": interrupt_state})
+                interrupt_state = InterruptState.REQUESTED if cancel_deadline is not None else None
+            return unknown({"interrupt_state": interrupt_state}, cancelled=cancel_deadline is not None)
+        if received_at > hard_deadline:
+            return unknown({"late_delivery": True}, cancelled=cancel_deadline is not None)
         if isinstance(outcome, Exception):
             if cancel_deadline is not None or requested():
-                return unknown({"wait_error_type": type(outcome).__name__})
+                return unknown({"wait_error_type": type(outcome).__name__}, cancelled=True)
+            if received_at > deadline:
+                return unknown({"wait_error_type": type(outcome).__name__}, cancelled=False)
             raise outcome
+        if received_at > deadline and outcome.terminal_status != TerminalStatus.UNKNOWN and cancel_deadline is None:
+            # Grace proves terminal only; it does not extend the result budget.
+            return RuntimeOutcome(
+                terminal_status=TerminalStatus.TIMED_OUT,
+                terminal_evidence={**outcome.terminal_evidence, "deadline_exceeded": True,
+                                   "terminal_status_after_deadline": str(outcome.terminal_status)},
+                failure=RuntimeFailure(kind=FailureKind.TIMEOUT, retryable=False,
+                    redacted_message="terminal result arrived after the task deadline",
+                    source_exception_type="RuntimeDeadlineExceeded"),
+                usage_snapshot=outcome.usage_snapshot,
+            )
         return outcome
 
 

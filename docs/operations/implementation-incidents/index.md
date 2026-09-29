@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 92건
-- 해결: 90건
+- 전체: 93건
+- 해결: 91건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -105,6 +105,7 @@
 | DEV-20260917-007 | resolved | benchmark-runner | tooling | F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함 |
 | DEV-20260929-001 | resolved | benchmark-runner | integration | F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함 |
 | DEV-20260929-002 | resolved | benchmark-runner | implementation | F14 native 진단의 stderr 원문과 종료 후 환경 증거 누락 |
+| DEV-20260929-003 | resolved | b1 | implementation | Controller가 비협조 RuntimePort의 deadline과 늦은 terminal을 독립 집행하지 않음 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6206,6 +6207,62 @@ stderr 한도 검사, 각각 1MiB prefix와 전체 수신 길이/hash, 실패 �
 ### 검증 결과
 
 - source/model-free 검증 275 passed; native 대조군은 별도 후속 결과로 기록하며 이 해결 범위에 선반영하지 않음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+
+## DEV-20260929-003 — Controller가 비협조 RuntimePort의 deadline과 늦은 terminal을 독립 집행하지 않음
+
+- 상태: `resolved`
+- 단계: `b1`
+- 분류: `implementation`
+- 발견: 2026-09-29T05:36:37Z / 공식 감사 종료 점검의 timeout 경계 재검토
+- 해결: 2026-09-29T05:44:29Z
+
+### 증상
+
+사용자 취소가 없으면 await_terminal/동기 interrupt 정지에 무한 대기하며 grace 중 늦은 완료를 채택할 수 있음
+
+### 재현
+
+- 합성 시각과 blocking port로 deadline+grace 초과, 늦은 completed와 예외를 재현
+
+### 증거
+
+- `reproducible-test`: audit-closure-20260929/watchdog-red.xml 4 failed/1 passed; 교정 후 watchdog-green.xml 14 passed, watchdog-integration2.xml 41 passed. 실제 SDK 호출 0.
+
+### 근본 원인
+
+취소 wrapper가 user cancel grace만 관측하고 RuntimePort의 자체 deadline 집행을 신뢰했다. terminal 도착 시각도 결과 예산과 대조하지 않았다
+
+### 검토한 해결안
+
+- `adopted` controller 독립 watchdog와 수신 시각 검사 — blocked wait/interrupt와 늦은 completed 또는 retryable 실패를 안전하게 격리 또는 timeout 처리
+- `rejected` 기존 전체 실행시간 assert만 늘림 — 실제 deadline 결함을 검증하지 못함
+
+### 채택한 해결
+
+deadline+grace의 절대 종료 경계, producer 수신 시각, 늦은 terminal raw 폐기와 retry 금지, UNKNOWN 격리 및 TIMED_OUT session 기록을 추가했다. 기존 user cancel 경계는 유지한다
+
+### 수정 파일
+
+- stages/b1-sequential/src/orchestrator/cancel.py
+- stages/b1-sequential/src/orchestrator/schedule.py
+- stages/b1-sequential/tests/contract/test_terminal_watchdog.py
+- stages/b1-sequential/tests/integration/test_controller_watchdog.py
+
+### 회귀시험
+
+- watchdog-red.xml 4 failed/1 passed; watchdog-integration2.xml 41 passed; b1-watchdog.xml 303 passed
+
+### 검증 결과
+
+- B1 전체 303 passed/0 failed, 301.00초. 합성 RuntimePort/시각과 실제 임시 SQLite/보고서로 검증. 실제 SDK/model 호출 0.
 
 ### 남은 위험
 

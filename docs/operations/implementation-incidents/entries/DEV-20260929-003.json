@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-003",
+  "title": "Controller가 비협조 RuntimePort의 deadline과 늦은 terminal을 독립 집행하지 않음",
+  "status": "resolved",
+  "stage": "b1",
+  "category": "implementation",
+  "discovered_at": "2026-09-29T05:36:37Z",
+  "resolved_at": "2026-09-29T05:44:29Z",
+  "discovered_by": "공식 감사 종료 점검의 timeout 경계 재검토",
+  "symptom": "사용자 취소가 없으면 await_terminal/동기 interrupt 정지에 무한 대기하며 grace 중 늦은 완료를 채택할 수 있음",
+  "reproduction": [
+    "합성 시각과 blocking port로 deadline+grace 초과, 늦은 completed와 예외를 재현"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "audit-closure-20260929/watchdog-red.xml 4 failed/1 passed; 교정 후 watchdog-green.xml 14 passed, watchdog-integration2.xml 41 passed. 실제 SDK 호출 0."
+    }
+  ],
+  "root_cause": "취소 wrapper가 user cancel grace만 관측하고 RuntimePort의 자체 deadline 집행을 신뢰했다. terminal 도착 시각도 결과 예산과 대조하지 않았다",
+  "considered_options": [
+    {
+      "option": "controller 독립 watchdog와 수신 시각 검사",
+      "decision": "adopted",
+      "reason": "blocked wait/interrupt와 늦은 completed 또는 retryable 실패를 안전하게 격리 또는 timeout 처리"
+    },
+    {
+      "option": "기존 전체 실행시간 assert만 늘림",
+      "decision": "rejected",
+      "reason": "실제 deadline 결함을 검증하지 못함"
+    }
+  ],
+  "resolution": "deadline+grace의 절대 종료 경계, producer 수신 시각, 늦은 terminal raw 폐기와 retry 금지, UNKNOWN 격리 및 TIMED_OUT session 기록을 추가했다. 기존 user cancel 경계는 유지한다",
+  "affected_files": [
+    "stages/b1-sequential/src/orchestrator/cancel.py",
+    "stages/b1-sequential/src/orchestrator/schedule.py",
+    "stages/b1-sequential/tests/contract/test_terminal_watchdog.py",
+    "stages/b1-sequential/tests/integration/test_controller_watchdog.py"
+  ],
+  "regression_tests": [
+    "watchdog-red.xml 4 failed/1 passed; watchdog-integration2.xml 41 passed; b1-watchdog.xml 303 passed"
+  ],
+  "verification": [
+    "B1 전체 303 passed/0 failed, 301.00초. 합성 RuntimePort/시각과 실제 임시 SQLite/보고서로 검증. 실제 SDK/model 호출 0."
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}
