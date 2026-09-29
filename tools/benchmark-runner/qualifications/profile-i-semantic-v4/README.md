@@ -50,7 +50,8 @@ mem 읽기/쓰기·environ 읽기 open이 거부됐고 child 출력은 부모 �
 - `sandbox.py`: child의 Worker import **전에** Landlock ABI 3 이상을 요구한다. 불가하면 fail-closed다.
   후보는 /workspace와 Python library를 읽고 /tmp만 쓸 수 있다. /trusted의 기준 구현,
   관측 코드/fixture/request와 부모 procfs 접근은 차단한다. 다른 실행 파일의 exec도 허용하지 않는다.
-  allowlist의 runner_support는 기존 공통 serialization/hash 유틸리티뿐이며 판정/정답은 없다.
+  runner_support는 기존 공통 serialization/hash 유틸리티뿐이며 판정/정답은 없다.
+  이 고정 지원 모듈은 제한 적용 전에 로드하고, 적용 뒤 /driver 전체 읽기를 거부한다.
 - no-op에서 exact mount/uid/caps/NNP와 Landlock의 실제 거부·Worker 읽기·tmp IO를 먼저 확인한다.
   단순 ABI 조회나 합성 mock만으로 native GO를 기록하지 않는다.
 - read_run은 외부 plan/result SHA로 보존 증거를 읽어 재판정한다. I01~I08 public projection과
@@ -69,7 +70,14 @@ Landlock 구현 근거: [Linux v6.6 userspace API](https://www.kernel.org/doc/ht
 `verify-run --task-id I02`는 public I02와 선행 property, task-id 생략은 전체 평가를 반환한다.
 합성 행동 불합격은 exit 1, 준비/무결성/실행 실패는 exit 2다. 검증 성공과 비교 승격은 다르다.
 
-**아직 native 함수 호출·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
+source dcb1baa의 계약·host·경계 **109개**는 통과했지만 첫 native reference는 합격하지 못했다.
+`C:\LAO\evidence\f14-v4-20260929\reference-1`에서 no-op 11개/실제 Landlock ABI 7 거부 검증은 통과했고,
+후속 함수 호출은 runner_support.py 읽기 PermissionError로 시작하지 못했다. no-op은 이 지연 import를
+검사하지 않았다. 원본을 보존하고 고정 지원 모듈 선행 로드를 no-op/실제 child 공통 경로에 넣어 교정한다.
+실패 plan SHA `8618d4fc881d13657fbd8590e6cbaa677657295348a62601a7f3f0a7a5b0f5fc`,
+result SHA `65e64b42f3401f87867fef315c7c41b446a8723c0cfe4c5938bbde4d6e32c08b`.
+입력 불변/최종 환경 일치/잔여 container 0이다. 전체 root 재실행·실패 재분류는 하지 않는다.
+**아직 native 함수 호출 합격·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
 실제 Windows ACL·SDK 인증/권한 enforcement는 이 Linux 합성 행동 검사로 증명되지 않는다.
 그 성질은 이후 승인된 candidate의 exact Windows/SDK 증거가 필요하며 현재 출력의
 `os_enforcement_verified`, `comparison_authorized`, `challenge_ready`는 모두 false다.

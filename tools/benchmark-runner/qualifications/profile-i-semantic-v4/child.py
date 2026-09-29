@@ -14,11 +14,17 @@ import wire
 import sandbox
 
 
-def load_candidate():
-    sys.path.insert(0,'/workspace/tools/benchmark-runner/src')
+def load_support():
+    # Trusted, sealed serialization/hash helpers ONLY. No Worker or oracle.
+    # Load before Landlock; the child then needs no readable /driver source.
     spec=importlib.util.spec_from_file_location('benchmark_runner.runner','/driver/runner_support.py')
     support=importlib.util.module_from_spec(spec)
     spec.loader.exec_module(support)
+    return support
+
+
+def load_candidate(support):
+    sys.path.insert(0,'/workspace/tools/benchmark-runner/src')
     sys.modules['benchmark_runner.runner']=support
     import benchmark_runner.runtime_boundary as candidate
     return candidate
@@ -27,6 +33,7 @@ def load_candidate():
 def main():
     if sys.platform!='linux' or Path(__file__).resolve()!=Path('/driver/child.py') or Path.cwd()!=Path('/tmp') or os.getuid()!=65532:
         raise RuntimeError('CONTAINER_CHILD_ONLY')
+    support=load_support()
     abi=sandbox.enforce()
     if sys.argv[1:]==['--sandbox-probe']:
         sys.stdout.buffer.write(wire.pack(sandbox.probe(abi)))
@@ -34,7 +41,7 @@ def main():
     if sys.argv[1:]: raise RuntimeError('CHILD_ARGUMENTS')
     request=wire.parse(sys.stdin.buffer.readline(wire.LIMIT+1))
     if set(request)!={'id','op','args','kwargs','mocks'} or request['op'] not in wire.OPERATIONS: raise wire.WireError('REQUEST')
-    candidate=load_candidate()
+    candidate=load_candidate(support)
     registry={name:getattr(candidate,name) for name in wire.MODELS}
     args=wire.decode(request['args'],registry)
     kwargs=wire.decode(request['kwargs'],registry)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import ExitStack
+import ast
 import copy
 from datetime import datetime, timezone
 import importlib.util
@@ -174,6 +175,17 @@ def test_landlock_cannot_run_on_host():
     assert sandbox.Beneath.parent_fd.offset == 8
     assert sandbox.TEMP & 1 == 0  # EXECUTE never allowed
     assert sandbox.TEMP & ~sandbox.HANDLED == 0
+
+
+def test_only_trusted_helpers_load_before_landlock():
+    tree = ast.parse((REPO / execution.ROOT / 'child.py').read_text(encoding='utf-8'))
+    main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'main')
+    calls = sorted((node.lineno, ast.unparse(node.func)) for node in ast.walk(main) if isinstance(node, ast.Call))
+    order = [name for _, name in calls if name in {'load_support', 'sandbox.enforce', 'load_candidate'}]
+    assert order == ['load_support', 'sandbox.enforce', 'load_candidate']
+    helpers = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'load_support')
+    assert '/driver/runner_support.py' in ast.unparse(helpers)
+    assert '/workspace' not in ast.unparse(helpers) and '/trusted' not in ast.unparse(helpers)
 
 
 def envelope(driver, tmp_path, case, nonce='a' * 32):

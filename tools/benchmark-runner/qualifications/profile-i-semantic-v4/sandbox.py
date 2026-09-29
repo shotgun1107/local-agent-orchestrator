@@ -50,7 +50,9 @@ def enforce():
     try:
         paths = [('/usr', READ_FILE | READ_DIR), ('/workspace', READ_FILE | READ_DIR), ('/tmp', TEMP)]
         paths += [(name, READ_FILE | READ_DIR) for name in ('/lib', '/lib64') if Path(name).exists()]
-        paths += [(name, READ_FILE) for name in ('/driver/wire.py', '/driver/runner_support.py', '/dev/urandom')]
+        # Trusted bridge libraries are already loaded before restriction. No
+        # /driver path is readable by the candidate, even its public helpers.
+        paths += [('/dev/urandom', READ_FILE)]
         for name, access in paths:
             fd = os.open(name, os.O_PATH | os.O_CLOEXEC)
             try:
