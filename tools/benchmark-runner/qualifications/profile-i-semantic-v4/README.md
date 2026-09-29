@@ -3,6 +3,8 @@
 이 경로는 감사 F14를 닫기 위한 후속 유지보수다. v3 원문/봉인/검증기는 보존한다.
 **47호출의 정상 구현과 고정 20종 native qualification을 완료했다.**
 [결과·범위·외부 SHA](../../../../docs/operations/audit-f14-v4-checker-qualification-20260929.md)를 따른다.
+**후속 요청/반환값 binding 반례를 교정했으며, 이를 포함한 새 21종 qualification은 진행 중이다.**
+47회 호출 수는 같지만 관측자가 보관한 원래 입력 14필드와 반환 manifest도 직접 대조한다.
 실제 Windows/SDK·정식 비교 승격은 별개다. v3 결과를 새 revision의 합격으로 복사하지 않는다.
 
 v3의 호스트 판정기는 보호되지만 candidate와 관측 수집기가 같은 프로세스라

@@ -26,6 +26,7 @@ RECIPES={
     'skip-state-check':(RUNTIME,b'\nrecompute_probe_pass=lambda *a,**kw:True\n'),
     'reject-valid-config':(RUNTIME,b"\ndef _f14_reject(*a,**kw):\n    raise ValueError('synthetic rejection')\nConfigurationExpectation.model_validate=classmethod(_f14_reject)\n"),
     'reject-valid-manifest':(RUNTIME,b"\ndef _f14_reject(*a,**kw):\n    raise ValueError('synthetic rejection')\nRuntimeBoundaryProbeManifest.model_validate=classmethod(_f14_reject)\n"),
+    'wrong-manifest-binding':(RUNTIME,b"\nfrom pathlib import Path\n_f14_build=build_runtime_boundary_manifest\ndef _f14_redirect(**kw):\n    identity=kw['J']\n    kw['J']=identity.model_copy(update={'resolved_absolute_path':str(Path(identity.resolved_absolute_path).with_name('wrong-J'))})\n    return _f14_build(**kw)\nbuild_runtime_boundary_manifest=_f14_redirect\n"),
     'link-no-cleanup':(PROBE,b"\ndef _link_attempt(kind,link,target):\n    return {'link_kind':kind,'link_exists_after_create':True,'link_exists_after_cleanup':False}\n"),
     'bundle-no-write':(RUNTIME,b'\nwrite_runtime_boundary_bundle=lambda *a,**kw:None\n'),
     'whole-observation':(RUNTIME,b''),
@@ -115,11 +116,12 @@ def expected_failure(variant,result,root):
     if result['behavior_passed'] is not False or not by_case['claims']['passed'] or result['failure'] is not None:
         return False
     focus={'skip-state-check':'state','reject-valid-config':'configuration','reject-valid-manifest':'configuration',
+           'wrong-manifest-binding':'configuration',
            'link-no-cleanup':'link','bundle-no-write':'bundle'}.get(variant,'profile')
     if by_case[focus]['passed']: return False
     value=binding.parse(binding.read_file(root/'streams'/(focus+'.stdout')))
     records=value['calls']
-    if variant in {'no-op','constant-success','skip-state-check','reject-valid-config','reject-valid-manifest'}:
+    if variant in {'no-op','constant-success','skip-state-check','reject-valid-config','reject-valid-manifest','wrong-manifest-binding'}:
         return by_case[focus]['reason']=='BEHAVIOR_MISMATCH'
     if variant=='link-no-cleanup': return value['observations']['remaining'] is True
     if variant=='bundle-no-write': return value['driver_failure']=='CallError'

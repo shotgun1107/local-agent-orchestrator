@@ -33,6 +33,9 @@ CALL_PLAN={
     'bundle':['build_windows_sandbox_provenance','sdk_profile_evidence_from_transcript','result_with_recomputed_verdict','write_runtime_boundary_bundle','verify_runtime_boundary_bundle','verify_runtime_boundary_bundle'],
 }
 TRUSTED=(MODULE,previous.TRUSTED[1])
+MANIFEST_INPUT_FIELDS=('source_commit','probe_id','created_at','runtime','W','J','S',
+    'W_sentinel','J_sentinel','S_sentinel','fixtures','probe_python_executable',
+    'probe_script_relative_path','environment_name_allowlist')
 
 
 def command(plan,root,case,noop=False):
@@ -201,7 +204,10 @@ def grade(request,raw):
         envelope={'version':3,'case':request['case'],'nonce':request['nonce'],'observations':data['observations']}
         if request['case']=='configuration':
             value=data['observations']
-            if (not oracle.returned(value['normal_configuration'],value['built']['configuration'])
+            wanted=value['requested_bindings']
+            if (type(wanted) is not dict or set(wanted)!=set(MANIFEST_INPUT_FIELDS)
+                or any(not oracle.same(value['built'][key],wanted[key]) for key in MANIFEST_INPUT_FIELDS)
+                or not oracle.returned(value['normal_configuration'],value['built']['configuration'])
                 or not oracle.returned(value['normal_manifest'],value['built'])):
                 return {**bad,'reason':'BEHAVIOR_MISMATCH'}
         return oracle.grade({k:envelope[k] for k in ('version','case','nonce')},binding.canonical(envelope),exit_code=0)

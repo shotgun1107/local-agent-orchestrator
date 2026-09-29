@@ -77,6 +77,13 @@ def observe(case: str, nonce: str, scratch: Path, f, r):
         return {"calls": client.calls, "waited": client.waited, "evidence": evidence.model_dump(mode="json")}
 
     if case == "configuration":
+        # Keep caller-owned identities outside the Worker process. Internal
+        # consistency of a returned manifest is not input/output binding.
+        requested = manifest.model_dump(mode="json")
+        binding_fields = ("source_commit", "probe_id", "created_at", "runtime", "W", "J", "S",
+            "W_sentinel", "J_sentinel", "S_sentinel", "fixtures", "probe_python_executable",
+            "probe_script_relative_path", "environment_name_allowlist")
+        requested_bindings = {name: requested[name] for name in binding_fields}
         payload = f._configuration().model_dump(mode="json")
         payload["config_overrides"] = [v.replace('\":root\"=\"deny\"', '\":root\"=\"read\"') for v in payload["config_overrides"]]
         other = manifest.model_dump(mode="json")
@@ -87,7 +94,8 @@ def observe(case: str, nonce: str, scratch: Path, f, r):
             fixtures=manifest.fixtures, probe_python_executable=Path(manifest.probe_python_executable),
             probe_script_relative_path=manifest.probe_script_relative_path, environment_name_allowlist=manifest.environment_name_allowlist,
             runtime=manifest.runtime, created_at=manifest.created_at, probe_id=manifest.probe_id)
-        return {"built": built.model_dump(mode="json"), "verified": capture(lambda: r.verify_probe_command_contract(built)),
+        return {"built": built.model_dump(mode="json"), "requested_bindings": requested_bindings,
+            "verified": capture(lambda: r.verify_probe_command_contract(built)),
             "normal_configuration": capture(lambda: r.ConfigurationExpectation.model_validate(built.configuration.model_dump(mode="json"))),
             "normal_manifest": capture(lambda: r.RuntimeBoundaryProbeManifest.model_validate(built.model_dump(mode="json"))),
             "weakened": capture(lambda: r.ConfigurationExpectation.model_validate(payload)),

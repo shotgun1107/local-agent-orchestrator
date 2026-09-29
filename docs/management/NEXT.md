@@ -4,6 +4,7 @@
 `docs/operations/audit-maintenance-closure-20260929.md`의 요구별 표를 따라
 controller deadline 후속·F14 일반 snapshot/20종 native 검증·새 wheel 설치와 cold checkout 교정을 인수한다.
 지금은 교정된 고정 checkout의 전체 Runner 회귀와 최종 기록/전달 확인을 마무리하는 단계다.
+추가로 발견한 v4 요청/반환값 binding을 교정했으므로 새 21종 native qualification도 완료해야 한다.
 사용자는 각 항목마다 다시 묻지 말고 공식 종료 직전까지 연속 처리하도록 지시했다.
 고정 9종 진단을 목표 전체의 완료로 대체하지 않고, 새 기능개발/모델 실험은 시작하지 않는다.
 9월 16~17일 단락은 완료 경과이며 이미 끝난 단계의 재실행 지시가 아니다.

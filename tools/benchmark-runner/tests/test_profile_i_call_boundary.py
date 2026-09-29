@@ -244,3 +244,32 @@ def test_validator_rejecting_every_input_cannot_pass(driver, tmp_path, monkeypat
     value = envelope(driver, tmp_path, 'configuration')
     request = {k: value[k] for k in ('version', 'case', 'nonce')}
     assert not execution.grade(request, driver.wire.pack(value))['passed']
+
+
+def test_builder_cannot_replace_the_requested_protected_root(driver, tmp_path, monkeypatch):
+    reference = driver.fixtures.runtime_boundary
+    original = reference.build_runtime_boundary_manifest
+    def redirect(**kwargs):
+        identity = kwargs['J']
+        kwargs['J'] = identity.model_copy(update={
+            'resolved_absolute_path': str(Path(identity.resolved_absolute_path).with_name('wrong-J'))})
+        return original(**kwargs)
+    monkeypatch.setattr(reference, 'build_runtime_boundary_manifest', redirect)
+    value = envelope(driver, tmp_path, 'configuration')
+    assert value['observations']['built']['J']['resolved_absolute_path'].endswith('wrong-J')
+    request = {k: value[k] for k in ('version', 'case', 'nonce')}
+    assert not execution.grade(request, driver.wire.pack(value))['passed']
+
+
+@pytest.mark.parametrize('field', execution.MANIFEST_INPUT_FIELDS)
+def test_all_requested_manifest_inputs_are_bound(driver, tmp_path, field):
+    value = envelope(driver, tmp_path, 'configuration')
+    observed = value['observations']
+    assert set(observed['requested_bindings']) == set(execution.MANIFEST_INPUT_FIELDS)
+    # Simulate mutually consistent wrong builder and validator responses. The
+    # caller-owned input remains independent of both untrusted responses.
+    observed['built'][field] = {'synthetic_wrong_input': field}
+    observed['normal_manifest'] = {'value': copy.deepcopy(observed['built'])}
+    request = {k: value[k] for k in ('version', 'case', 'nonce')}
+    assert execution.grade(request, driver.wire.pack(value)) == {
+        'case': 'configuration', 'passed': False, 'reason': 'BEHAVIOR_MISMATCH'}
