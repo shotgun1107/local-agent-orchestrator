@@ -22,18 +22,18 @@
 | F3 현재 결과/출력과 Check 재사용 binding | audit-f8-f9-f3-remediation-20260916.md, test_audit_execution_gates.py | 교정 후 B1 전체 303에 포함·통과 |
 | F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
 | F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | 76f91fd 두 wheel 새 build/install, Schema 5개·Git/wheel/설치 Python 55모듈 일치 PASS |
-| F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 작업 파일/Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 일치; Runner 전수 관련 회귀 통과 |
-| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | 입구에 남은 v2-only 안내를 최신 상태 연결로 교정 중 |
+| F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 기존 Python OID 일치 유지. 후속 cold checkout의 개행·봉인 Git bytes 결함도 교정했고 fresh checkout 7개 통과; 아래 참조 |
+| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | 입구를 최신 종료 표와 v4 결과로 연결. 최종 전수 결과/인수인계 갱신 대기 |
 | F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 교정 후 B1 303에 포함·통과 |
 | F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 교정 후 B1 303에 포함·통과 |
 | F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | 후속 deadline 교정까지 B1 303 통과 |
 | F11 삭제/rename·scope/freshness/입력 | test_workspace_deletions.py | 교정 후 B1 303에 포함·통과 |
 | F12 strict backup DB/manifest/Run/Artifact | test_backup_verification.py | 교정 후 B1 303에 포함·통과 |
 | F13 306/86/20 및 질문별 분모·과도한 확인 문구 | 두 연구 문서·codex-revision-log의 9월16일 정정 | 9월29일 v1/v4 원문 재대조 일치. 아래 범위에서 확인 |
-| F14 public/hidden 행동 검사·정상 대안/반례·격리·환경 주장 구분 | v3 native 9/9·275개 회귀 | 일반 Worker 입력/평가 연결과 완전한 관측 위조 대응 미완료 |
+| F14 public/hidden 행동 검사·정상 대안/반례·격리·환경 주장 구분 | v3 native 9/9·275개 회귀 | v4 일반 snapshot/개별 호출/직접 파일 관측/public·hidden 소비 구현, native 20/20·회귀 136·설치본 재검증 통과. 실제 OS/SDK 증명과 비교 승격은 분리 |
 | incident commit 오타 | DEV-20260823-002 | 실제 c4fb396c5546a204630937bc5ba781c5fdaa528b로 정정 확인 |
 | 오래된 standalone CLI 쓰기 오판 | DEV-20260806-012 | vendor 원인 미확인 유지. 승인된 SDK 동결 명세가 CLI 재시험/Adapter를 제외했고 현행 공개 경로는 SDK 사용임을 확인 |
-| PC 간 개발 복원·문서 양방향 | tools/workspace, requirements-dev.lock | 별도 새 venv에 고정 19패키지 설치 및 개발/문서/로그 검사 통과. 패키지 배포 검증 진행 중, 집 PC 실증은 별개 |
+| PC 간 개발 복원·문서 양방향 | tools/workspace, requirements-dev.lock | 별도 venv 고정 19패키지/두 wheel/개발/문서/로그 통과. 새 Runner 44모듈과 실제 cold checkout 7개도 통과. 집 PC 로그인/외부 환경은 별개 |
 
 ## 새로 확인한 controller deadline 결함
 
@@ -50,7 +50,7 @@ SDK의 동기 interrupt가 멈추거나 비협조 port가 늦은 completed를 �
   deadline 뒤 grace 중 completed를 각각 재현했다.
 - 독립 controller hard deadline와 수신 시각을 결합하고, 늦은 결과를 discarded/TIMED_OUT,
   종료 미확인을 UNKNOWN→QUARANTINED로 보낸다. grace는 결과 예산 연장이 아니다.
-- `watchdog-green.xml`: 최초 계약 교정 **14 passed**. 최종 통합/회귀는 진행 중이다.
+- `watchdog-green.xml`: 최초 계약 교정 **14 passed**. 이후 아래의 통합/전체 303개로 보완했다.
 - 첫 통합 수집은 새 시험 basename 중복으로 collection error였다. 파일 이름만 고쳤고
   실패 XML `watchdog-integration.xml`은 보존했다. 제품 실패와 혼동하지 않는다.
 - `watchdog-integration2.xml`: **41 passed**, 53.07초. 늦은 결과 폐기·원장/보고 불변·재시도 금지와
@@ -135,7 +135,66 @@ SDK를 사용하고 설치된 CodexClient는 `app-server --listen stdio://`로 �
 
 ## 다음 진행
 
-1. controller deadline 후속의 durable state/기존 취소/전수 회귀를 마무리한다.
-2. F14가 특정 기준 코드 진단에만 머물지 않도록 실제 입력 binding·관측 신뢰 경계와 public/hidden 소비 경로를 고친다.
-3. 위 표의 배포·문서·이력·복원 검증 공백을 닫고 항목별 현재 근거를 다시 검사한다.
-4. 모든 필수 요구가 증명된 뒤에만 공식 종료 판정과 관리 STATUS/NEXT/기존 SYNC:AUTO 인수인계를 갱신한다.
+1. c926e86의 실제 새 checkout에서 실행 중인 Runner 전수 결과를 인수한다. 아래 두 회차를 혼동하지 않는다.
+2. 결과·incident·관리 문서·기존 SYNC:AUTO를 최종 점검하고 일반 Git 전달을 확인한다.
+3. 모든 필수 요구가 증명된 뒤에만 공식 종료한다. 새 기능/연구/model/Phase F는 시작하지 않는다.
+
+## F14 v4 일반 실행·관측·소비 경로의 완료
+
+[v4 상세 결과](audit-f14-v4-checker-qualification-20260929.md)가 최신 정본이다.
+source `5ddcc10d2c6a224b85164059e0d8a828f26d1869`의 native 20종은 모두 기대와 일치했다.
+정상 2종 합격/오류 18종 거부이며 완전한 관측 위조, 부모 FD/기준 소스 접근, 여분 파일/후손 process,
+빈/오류 종료·timeout·flood·쓰기·exec, no-op/상수/검사 생략/정상 입력 거부를 대조했다.
+일반 외부 snapshot의 예상 hash를 고정하고 개별 함수를 실제 호출한다. public I01~I08과
+전체 property/DAG는 같은 저장 증거를 소비하며 함수·시험 이름의 존재를 점수로 세지 않는다.
+
+- 원문 `C:\LAO\evidence\f14-v4-20260929\matrix-1`.
+- manifest `a1fba3544d36e96aa8b49930696ce89f74d834af0dee3da7752cfbe292506a27`.
+- summary `a90de57eff087da4fdadfebb1a51b20a8ca061df0dbc3d91168b734ab90780d4`.
+- no-op 220 / supervisor 220 / child call 574; 실제 Landlock ABI 7, 전후 환경 일치/입력 불변/잔여 container 0.
+- `v4-final-corpus-tests.xml` **136 passed**. 설치 wheel에서도 원문·변형 bytes·예정된 실패 지점을 재계산해 20/20 일치했다.
+- 새 Runner QA wheel `4773f8c3fc519a666ca6eed31d676ceba32e3843ed7400f461e0b6e1856767c9`의
+  Git/wheel/설치 Python 44개 exact 및 RECORD 48개, pip check, CLI help PASS.
+  기존 B1 source/tests/schema는 76f91fd와 byte-identical이다. 새 B1 코드 변경은 없다.
+
+reference-1/2 실패와 reference-3의 당시 45호출 성공을 보존했다. 이후 always-reject 반례
+2개를 추가 재현해 정상 입력 2호출까지 47호출로 고쳤다. 선행 실패·성공을 최종 결과로 재분류하지 않는다.
+기존 v1 실행/승격 차단은 유지한다. 실제 Windows/SDK enforcement와 새 비교 승인은 별도이며 모든
+`comparison_authorized/challenge_ready/os_enforcement_verified`는 false다. 프로젝트 model/SDK thread/Phase F는 0이다.
+
+## 실제 cold checkout이 드러낸 추가 복원 결함과 교정
+
+반복 검증이 기존 작업 폴더에 편중되지 않도록 별도 읽기 전용 QA worktree를 만들었다.
+이는 새 운영 저장소가 아니며 실제 작업 위치/기기 설정은 계속 `C:\LAO\repo`다.
+
+5ddcc10의 fresh checkout은 Git clean인데 다음 세 회귀가 실패했다. 실패 작업 사본·XML은 보존한다.
+
+1. `benchmarks/reference-source`에는 바이트 보존 속성이 없어 회사 Git의 `core.autocrlf=true`가
+   45개 중 44파일을 CRLF로 바꿨다. 봉인 chain 두 JSON의 hash가 달라졌다.
+2. 기존 `anonymization-map.json`은 작업 파일 1537-byte CRLF가 원 봉인과 일치했지만
+   Git blob은 1485-byte LF였다. 기존 `git status` clean만으로 이 차이를 발견하지 못했다.
+   이 차이가 snapshot 재조립과 Judge bundle 검사도 실패시켰다. 최초 발생 시점은 미확인이다.
+
+tracked raw 1171개를 Git blob과 직접 비교한 결과 불일치는 위 mapping 1개뿐이었다.
+원래 봉인 SHA는 `eea6653eb62d72890bf041d675e4b64fb8648aa59b7f3059ecee1f018c198e1a`다.
+작업 파일·seal·manifest는 수정하지 않고 그 **기존 정확한 bytes**를 no-filters blob
+`97f881ab21424513ee839729079a3756b1f548aa`로 현재 Git에 반영했다. 기존 commit은 그대로다.
+reference-source에는 `-text -whitespace`를 추가했다. 전역 Git 설정이나 다른 경로를 일괄 정규화하지 않았다.
+
+교정 commit: `c926e86b85582bd7b54a6d1d759077c29d6149bf`.
+
+- 직접 재현: `r5dd-reference-repro.xml` 1 failed, `r5dd-phase-d-repro.xml` 2 failed,
+  `sealed-byte-git-red.xml` 1 failed. 서로 겹치는 경계이므로 실패 수를 합산하지 않는다.
+- `sealed-byte-git-green.xml`: **4 passed**. true/false 양쪽 autocrlf cold clone의 exact bytes를 검사했다.
+- 실제 새 c926e86 checkout의 `cold-checkout-focused-c926e86.xml`: **7 passed**.
+  위 4개와 원래 실패했던 3개 회귀를 함께 확인했다.
+- 교정 후 보호 대상 raw **1216파일**의 Git blob·현재 작업 파일·cold checkout bytes가 모두 일치했다.
+  `sealed-byte-inventory-c926e86.json` SHA는
+  `717e15d9ef5438fafbb2743a042b41dcce952585e675709fc00e5b4b5137de2e`다.
+  범위를 reference-source 45개까지 보호한 결과이며, 이 수를 최초 점검 1171개와 혼동하지 않는다.
+- `runner-full-5ddcc10.xml`: 최초 고정 checkout의 전수 실행. 확인된 위 3개 실패를 포함하며 아직 진행 중이다.
+- `runner-full-c926e86.xml`: 교정 후 별도 고정 checkout의 전수 실행 중. 완료 전 통과로 세지 않는다.
+
+QA 경로는 각각 `C:\LAO\tmp\audit-closure-20260929\regression-5ddcc10`, `regression-c926e86`이다.
+이전 Codex/AppData 소유 worktree나 역사 root은 건드리지 않았다. 새 wheel 생성 때 생긴 프로젝트 전용
+pip 캐시 2파일도 출처/hash를 확인해 같은 LAO 임시 영역으로 옮겼다. 다른 pip 캐시는 건드리지 않았다.

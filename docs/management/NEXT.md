@@ -2,7 +2,8 @@
 
 현재 우선순위는 **감사·유지보수 공식 종료**다.
 `docs/operations/audit-maintenance-closure-20260929.md`의 요구별 표를 따라
-controller deadline 후속·F14 실제 평가 연결·배포/복원/문서 검증 공백을 닫는다.
+controller deadline 후속·F14 일반 snapshot/20종 native 검증·새 wheel 설치와 cold checkout 교정을 인수한다.
+지금은 교정된 고정 checkout의 전체 Runner 회귀와 최종 기록/전달 확인을 마무리하는 단계다.
 사용자는 각 항목마다 다시 묻지 말고 공식 종료 직전까지 연속 처리하도록 지시했다.
 고정 9종 진단을 목표 전체의 완료로 대체하지 않고, 새 기능개발/모델 실험은 시작하지 않는다.
 9월 16~17일 단락은 완료 경과이며 이미 끝난 단계의 재실행 지시가 아니다.
@@ -14,6 +15,16 @@ controller deadline 후속·F14 실제 평가 연결·배포/복원/문서 검�
 3. 받은 관리 문서를 `refresh`한다. 전송된 작업 commit, 미전송 로컬 작업, 개발 환경 상태를 따로 확인한다.
 4. 개발 환경에 진입해 `tools/workspace/check_environment.py`를 실행한다. 다른 PC라면 복원 문서에 따라 venv를 새로 만든다.
 5. 아래 연구 과제 중 사용자가 선택한 범위를 확인한 뒤에만 코드·실험 작업으로 넘어간다.
+
+## 2026-09-29 최신 감사 마감 작업
+
+1. F14 v4 결과는 `docs/operations/audit-f14-v4-checker-qualification-20260929.md`에서 인수한다.
+   `C:\LAO\evidence\f14-v4-20260929\matrix-1`은 native 20/20과 설치본 재판정까지 완료됐으므로 다시 실행하지 않는다.
+2. cold checkout의 원래 실패 3개를 고쳤고 c926e86의 새 checkout 집중 7개가 통과했다.
+   `C:\LAO\evidence\audit-closure-20260929\runner-full-c926e86.xml`의 완료 여부와 실제 결과를 먼저 확인한다.
+   5ddcc10의 전수는 교정 전 별도 회차다. 아직 실행 중인 프로세스/결과를 확인하지 않고 같은 시험을 중복 시작하지 않는다.
+3. 최종 전수·incident·관리 반영·기존 SYNC:AUTO·원격 tip을 확인한 뒤에만 공식 종료한다.
+   실제 기능개발/연구/모델/Phase F는 시작하지 않는다. 실제 Windows/SDK/집 PC 환경은 별도 확인 대상이다.
 
 ## 앞선 F8·F9·F3 범위의 완료 — 2026-09-16
 
@@ -90,8 +101,8 @@ Docker engine 연결 실패와 후보/oracle의 동일 Python 프로세스 공�
 3. 연속 승인 범위의 고정 9종 native 대조군은 **9/9 기대 일치**, 회귀 275개, 저장 결과 재검증까지 완료됐다.
    완료 root `C:\LAO\evidence\f14-native-qualification-20260929\matrix-1`은 재실행하지 않는다.
    필요하면 후속 보고서의 외부 SHA를 사용한 읽기 전용 verifier만 실행한다.
-4. 후속 사용자 지시에 따라 F14 일반 Worker 평가 연결과 관측 위조 대응을 감사 종료 작업으로 계속한다.
-   고정 대조군 통과가 그 작업 완료나 정식 비교 승격은 아니다. 원래 public/hidden 계약과 종료 표를 따른다.
+4. 이후 v4에서 일반 Worker snapshot/관측 위조 대응과 public/hidden 소비를 교정하고 20종 native 검증까지 완료했다.
+   위 최신 마감 작업을 우선한다. 이 결과는 정식 비교 승격이나 실제 OS/SDK 검증 완료가 아니다.
 5. SDK·model/Phase F Cell/새 연구는 시작하지 않았다. 일반 Live 관문과 기존 v1 승격 차단을 유지한다.
 
 ## PC 전환의 남은 확인

@@ -10,21 +10,27 @@
   `docs/operations/audit-maintenance-closure-20260929.md`를 따른다. 새 기능개발은 시작하지 않는다.
 - 관리 공간은 이 Documents 폴더, 코드·시험 공간은 회사 `C:\LAO\repo`다. 단일 Git 저장소로 공유한다.
 - 앞선 감사 F1/F2/F3/F4/F5/F6/F8/F9/F10/F11/F12의 교정과 B1 전체 292개 통과 기록을 유지한다.
-- 남은 핵심 F14의 판정기/후보 프로세스를 분리했고, 실제 reference 11개 관측 그룹/10 property가 통과했다.
+- F14의 새 v4는 일반 Worker snapshot의 개별 함수 호출과 관측을 분리했고, 실제 47호출/11개 묶음/10 property가 통과했다.
   아래의 9월 17일 Docker 불가와 9월 29일 no-op만 완료라는 문단은 각 시점의 과거 기록이다.
 - 사용자가 지시한 고정 준비 진단은 **9/9 기대 일치**로 완료했다. 정상 2종 합격/오류 7종 거부,
   native no-op 99회/관측 process 49개, 입력 불변·잔여 container 0·저장 증거 재검증을 확인했다.
   관련 회귀 275개와 관리 18개/로그 10개도 통과했다. 이전 회차와 합산하지 않는다.
   최신 결과는 `docs/operations/audit-f14-native-qualification-20260929.md`를 따른다.
-- F14의 고정 진단은 통과했지만 일반 Worker 평가 연결·정교한 관측 위조·실제 OS/SDK 검증까지
-  끝난 것은 아니다. F14 investigating/기존 v1 새 실행·승격 차단은 유지한다.
+- 후속 v4의 정상 2종·오류/위조 18종이 **20/20 기대 일치**했고 관련 회귀 **136개**가 통과했다.
+  일반 snapshot 입력, 실제 파일 효과 관측, public I01~I08/전체 평가 소비와 설치 wheel 재판정까지 확인했다.
+  최신 근거는 `docs/operations/audit-f14-v4-checker-qualification-20260929.md`다.
+  실제 OS/SDK enforcement와 정식 비교 승인은 별개이며, 기존 v1 새 실행·승격 차단은 유지한다.
 - 새 연구 실험·실제 model/SDK·Phase F Cell은 시작하지 않았다. 준비 진단과 정식 연구 실행을 구분한다.
 - 종료 재점검에서 RuntimePort가 멈추면 controller deadline을 독립 집행하지 못하는 후속 결함을
   재현했다(4 failed/1 passed). 시한 감시와 늦은 결과 거부 교정 뒤 통합 41개와 B1 전체 **303개**가 통과했다.
   새 로컬 venv의 고정 의존성 19개·두 wheel 설치·Schema 5개·Python 55모듈 bytes·개발 점검도 통과했다.
   실제 집 PC 검증은 아니다. Runner 전수 983 passed/10 skipped 뒤 관련 80개 및 실제 설정 파서 6개도 통과했다.
-  F14 후속의 supervisor 경계는 18개 계약시험과 native probe가 통과했으나 일반 평가 연결은 진행 중이다.
+  F14 후속은 위 v4 일반 snapshot 경로와 20종 native 검증까지 진행했다.
   native 설정 파서는 임시 설정으로 initialize/config/read만 호출했다. 실제 model/SDK thread·turn은 0이다.
+- 새 Windows checkout에서 봉인 참조 자료의 줄바꿈/저장 bytes 문제를 추가 발견했다.
+  원래 봉인·작업 파일은 유지하고 Git 전달 바이트와 reference-source 속성을 교정했다(c926e86).
+  실제 새 checkout의 **7개 집중 회귀**가 통과했고, 교정 후 전체 Runner 전수는 별도 고정 사본에서 실행 중이다.
+  정상 환경의 성공과 실패/미완료 회차를 합산하지 않는다. **아직 공식 감사 종료를 선언하지 않는다.**
 
 아래는 변경 이유와 과거 시험 결과를 보존한 이력이다. 회차별 시험 수를 합산하지 않는다.
 
@@ -104,8 +110,8 @@ v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 정식 비교의 active candidate·실행 대상은 새로 승인되지 않았다. F14 reference 진단의 Docker/image/no-op은 확인했지만 실제 SDK 인증·외부 state/seal·정식 비교 candidate는 별도 미확인이다.
 - **고정 native 진단 완료 / 정식 비교 Live NO-GO.** reference와 matrix-1은 이미 실행됐으며 재실행하지 않는다.
-- F1/F2/F4/F6은 교정했고 F14 고정 9종도 완료했지만 일반 Worker 평가 연결·관측 위조 대응은 남아 있다.
-  controller deadline 후속을 교정·검증 중이다. 과거 wall-clock 변동을 이 결함 발생으로 소급 단정하지 않는다.
+- F14 일반 snapshot/관측 위조 대응과 20종 qualification까지 교정했다. controller deadline 후속도 303개로 검증했다.
+  최신 cold checkout 교정 뒤 전수 회귀·최종 기록/전달 확인이 남았다. 과거 wall-clock 변동의 원인을 소급 단정하지 않는다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.
