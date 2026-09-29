@@ -5,6 +5,13 @@
 프로젝트 전체 감사 종료는 [종료 점검](audit-maintenance-closure-20260929.md)의 별도 판정을 따른다.
 실제 Windows/SDK enforcement, 새 연구 experiment, Phase F 승격을 완료했다는 뜻은 아니다.
 
+**후속 점검:** 요청한 J와 다른 J를 반환해도 통과하는 추가 반례를 확인했다.
+`v4-binding-red.xml` 1 failed, 교정 후 관련 `v4-binding-all-fields.xml` 97 passed다.
+내부적으로 일관된 manifest인지와 원래 요청을 구현했는지는 별개이므로, 후보 밖의 수집자가
+보관한 원래 source/runtime/W·J·S/sentinel/fixture/Python/script/allowlist/시간/ID의 14필드와
+반환값을 직접 묶었다. 이 새 source의 **21종 native qualification은 아직 진행 중**이다.
+아래 20종은 5ddcc10의 실제 기록이며 후속 결과로 소급 재분류하지 않는다. DEV-20260929-007로 추적한다.
+
 ## 왜 필요했고 무엇을 고쳤는가
 
 원 감사의 v1은 함수·시험 이름만 맞는 no-op을 통과시킬 수 있었다. v2는 실제 함수를

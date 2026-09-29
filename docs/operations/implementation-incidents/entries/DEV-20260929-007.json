@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-007",
+  "title": "v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동",
+  "status": "open",
+  "stage": "benchmark-runner",
+  "category": "test",
+  "discovered_at": "2026-09-29T08:42:06Z",
+  "resolved_at": null,
+  "discovered_by": "마지막 입력/반환값 독립 대조",
+  "symptom": "builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했다",
+  "reproduction": [
+    "v4-builder-binding-probe.json passed true; v4-binding-red.xml 1 failed"
+  ],
+  "evidence": [
+    {
+      "kind": "reproducible-test",
+      "detail": "보호 root만 바꾸는 검토된 함수 변형은 기존 정상/오류 검사를 모두 통과했다"
+    }
+  ],
+  "root_cause": "",
+  "considered_options": [],
+  "resolution": "",
+  "affected_files": [],
+  "regression_tests": [],
+  "verification": [],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": [
+    "docs/operations/audit-f14-v4-checker-qualification-20260929.md"
+  ]
+}

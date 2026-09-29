@@ -5,10 +5,10 @@
 
 ## 요약
 
-- 전체: 96건
+- 전체: 97건
 - 해결: 95건
 - 조사 중: 1건
-- 미해결: 0건
+- 미해결: 1건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -109,6 +109,7 @@
 | DEV-20260929-004 | resolved | benchmark-runner | integration | F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락 |
 | DEV-20260929-005 | resolved | benchmark-runner | test | F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴 |
 | DEV-20260929-006 | resolved | benchmark-runner | integration | 새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치 |
+| DEV-20260929-007 | open | benchmark-runner | test | v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6459,3 +6460,56 @@ reference-source를 -text로 보호했다. 원래 봉인 SHA와 일치한 작업
 
 - 관련 커밋: c926e86b85582bd7b54a6d1d759077c29d6149bf
 - 출처: docs/operations/audit-maintenance-closure-20260929.md
+
+## DEV-20260929-007 — v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동
+
+- 상태: `open`
+- 단계: `benchmark-runner`
+- 분류: `test`
+- 발견: 2026-09-29T08:42:06Z / 마지막 입력/반환값 독립 대조
+- 해결: 미해결
+
+### 증상
+
+builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했다
+
+### 재현
+
+- v4-builder-binding-probe.json passed true; v4-binding-red.xml 1 failed
+
+### 증거
+
+- `reproducible-test`: 보호 root만 바꾸는 검토된 함수 변형은 기존 정상/오류 검사를 모두 통과했다
+
+### 근본 원인
+
+미확인
+
+### 검토한 해결안
+
+- 기록 없음
+
+### 채택한 해결
+
+미해결
+
+### 수정 파일
+
+- 기록 없음
+
+### 회귀시험
+
+- 기록 없음
+
+### 검증 결과
+
+- 기록 없음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음
+- 출처: docs/operations/audit-f14-v4-checker-qualification-20260929.md
