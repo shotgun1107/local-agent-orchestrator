@@ -17,6 +17,7 @@ import pytest
 from benchmark_runner import profile_i_isolated_execution as execution
 from benchmark_runner import profile_i_isolated_oracle as oracle
 from benchmark_runner import profile_i_semantic_execution as binding
+from benchmark_runner import profile_i_qualification as qualification
 
 REPO = Path(__file__).resolve().parents[3]
 GIT = Path(shutil.which("git")).resolve()
@@ -121,7 +122,7 @@ def test_equivalent_internal_name_is_not_a_verdict_input(probe, tmp_path, monkey
 def source(tmp_path_factory):
     parent = tmp_path_factory.mktemp("v3-source")
     repo = parent / "repo"
-    names = {*binding.SOURCE_FILES.values(), *execution.SOURCES.values(), *execution.TRUSTED,
+    names = {qualification.MODULE, *binding.SOURCE_FILES.values(), *execution.SOURCES.values(), *execution.TRUSTED,
              *git(REPO, "ls-files", binding.FIXTURE).decode().splitlines()}
     for name in names:
         path = repo / name
@@ -165,7 +166,7 @@ def env():
 
 def raw(data, **changes):
     values = dict(started=True, timed_out=False, exit_code=0, stdout=data, stdout_total=len(data), stdout_sha256=binding.digest(data),
-        stderr_sha256=binding.digest(b""), cleanup_succeeded=None)
+        stderr=b"", stderr_total=0, stderr_sha256=binding.digest(b""), cleanup_succeeded=None)
     return NS(**{**values, **changes})
 
 
@@ -303,19 +304,25 @@ def test_backend_failure_is_recorded_without_retry(source):
     assert (path.parent / "dispatch.json").is_file() and (path.parent / "result.json").is_file()
 
 
-@pytest.mark.parametrize("attack", ["timeout", "flood", "cleanup", "nonzero"])
+@pytest.mark.parametrize("attack", ["timeout", "flood", "stderr_flood", "cleanup", "nonzero"])
 def test_process_failure_cannot_be_overridden_by_passing_payload(source, observations, attack):
-    path, plan = prepare(source, "process-" + attack)
+    path, plan = prepare(source, "process-" + attack.replace("_", "-"))
     closure = execution.preflight(path, plan["plan_sha256"], rehearse=True, backend=fake_backend(plan), inspector=environment, source_environment=env())
     calls = []
     def execute(*_a, **_k):
         calls.append(True)
         return raw(wire(plan["requests"][0], observations["profile"]), timed_out=attack == "timeout",
             stdout_total=1_048_577 if attack == "flood" else 100, exit_code=7 if attack == "nonzero" else 0,
+            stderr=b"synthetic-error", stderr_total=1_048_577 if attack == "stderr_flood" else len(b"synthetic-error"),
+            stderr_sha256=binding.digest(b"synthetic-error"),
             cleanup_succeeded=False if attack == "cleanup" else None)
     result = execution.dispatch(path, approved_plan_sha256=plan["plan_sha256"], closure=closure, expected_closure_sha256=closure["receipt_sha256"],
         backend=NS(execute=execute), inspector=environment, source_environment=env())
     assert not result["behavior_passed"] and result["failure"] == "EXECUTION_INCOMPLETE" and len(calls) == 1
+    assert (path.parent / "streams/profile.stderr").read_bytes() == b"synthetic-error"
+    assert result["processes"][0]["stderr_size"] == len(b"synthetic-error")
+    assert result["processes"][0]["stderr_prefix_sha256"] == binding.digest(b"synthetic-error")
+    assert result["final_environment"] == environment() and result["input_unchanged"] is True
 
 
 def test_external_input_changed_during_execution_invalidates_verdict(source, observations):
@@ -334,6 +341,22 @@ def test_external_input_changed_during_execution_invalidates_verdict(source, obs
         assert result["failure"] == "INPUT_CHANGED" and not result["behavior_passed"]
     finally:
         target.write_bytes(before)
+
+
+def test_output_prefix_is_bounded_and_final_environment_failure_is_not_ignored(source):
+    path, plan = prepare(source, "bounded-stream")
+    closure = execution.preflight(path, plan["plan_sha256"], rehearse=True, backend=fake_backend(plan), inspector=environment, source_environment=env())
+    ended = []
+    def execute(*_a, **_k):
+        ended.append(True)
+        return raw(b"x" * 1_048_577)
+    def inspect(*_a, **_k):
+        return {**environment(), "failures":["CONTAINER_REMAINS"]} if ended else environment()
+    result = execution.dispatch(path, approved_plan_sha256=plan["plan_sha256"], closure=closure, expected_closure_sha256=closure["receipt_sha256"],
+        backend=NS(execute=execute), inspector=inspect, source_environment=env())
+    assert result["failure"] == "ENVIRONMENT_CHANGED" and not result["behavior_passed"]
+    assert result["processes"][0]["stdout_size"] == 1_048_576
+    assert len((path.parent / "streams/profile.stdout").read_bytes()) == 1_048_576
 
 
 @pytest.mark.parametrize("field", ["model_turns", "comparison_authorized", "commands", "sources"])

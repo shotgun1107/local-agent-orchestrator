@@ -39,7 +39,7 @@ v2의 동일 Python 프로세스 문제를 분리한 **qualification 구현**이
 4. 결과를 사용자에게 보고하고 **별도 실행 승인 턴까지 중지**한다. CLI에는 `run`이 없다.
 5. 후속 턴의 `dispatch` 함수는 승인된 plan/closure hash, 10분 이내 GO, 실제/native와 Fake 구분,
    최신 환경을 다시 확인한다. 한 승인 대상은 선택 variant의 고정 11개 관측 그룹이다.
-   그룹당 30초, 512MiB, CPU 1, pids 64, tmpfs 32MiB, stdout 1MiB, cleanup 15초다.
+   그룹당 30초, 512MiB, CPU 1, pids 64, tmpfs 32MiB, stdout/stderr 각각 1MiB, cleanup 15초다.
    모델·SDK·Phase F Cell은 사용하지 않는다. Phase F 자동 continuation도 없다.
 6. 1회 dispatch 표식을 먼저 남긴다. 중간 실패·backend 예외도 결과 파일에 보존하며 자동 재실행하지 않는다.
    다음 준비는 새 root다. 미완료 결과는 재분류하거나 성공으로 덮지 않는다.
@@ -84,3 +84,28 @@ Fake 결과는 `injected_test_backend`로 표시하며 native 실행 승인 근�
 
 회사 원문 Evidence는 `C:\LAO\evidence\f14-v3-20260929`, 공유 결과는
 `docs/operations/audit-f14-isolation-v3-20260929.md`에서 확인한다.
+
+## 2026-09-29 준비 진단의 연속 승인과 결과 검증
+
+위 일반 실행 관문은 유지한다. 사용자는 reference 사전검증 보고 뒤 **실제 연구를
+이어가기 전 준비 단계는 중단 지시 전까지 연속 진행**하도록 명시했다. 이 세션에서는
+고정 9종의 model-free 대조군 진단·결함 교정·회귀·기록에 한해 그 지시를 적용한다.
+새 연구/Phase F Cell/SDK·model/임의 Worker 실행 권한으로 확대하지 않는다.
+
+`profile_i_qualification.prepare`는 clean commit에서 9종 plan과 외부 manifest SHA를 고정한다.
+`run_approved`는 현재 사용자 승인을 기록한 뒤 각 진단 직전에 실제 no-op/환경 재검증을
+수행하고 1회만 dispatch한다. TTL은 여전히 600초다. 예상 밖 실패·환경 변화면 해당
+matrix를 중지·보존하고 진단한다. 같은 root의 재시도/실패 재분류는 없다.
+의도한 오류의 거부(`behavior_passed=false`)와 대조군 기대 일치(`matched_expectation=true`)는 별개다.
+
+새 결과는 bounded stdout/stderr prefix와 전체 수신 길이/hash, 입력 불변,
+실행 후 environment identity·container 부재를 보존한다. 한도를 넘겨 버린 tail은
+원문 재검증했다고 주장하지 않는다. 이미 끝난 예전 결과에는 필드를 소급 추가하지 않는다.
+
+`python -B -m benchmark_runner.profile_i_qualification --root <보존 matrix>
+--manifest-sha256 <외부 SHA> --summary-sha256 <외부 SHA>`는 **읽기 전용**이다.
+고정 판정기/검증기 revision, 입력·streams·receipt·1회 표식·판정을 다시 대조하므로
+문서만 바뀐 후에도 과거 결과를 검증할 수 있다. SHA는 출처 서명이 아니며 외부 기준값이 필요하다.
+단위시험의 조작된 archive fixture는 pytest tmp에만 있고 실제 실행 증거로 사용하지 않는다.
+
+후속 결과 정본: `docs/operations/audit-f14-native-qualification-20260929.md`.
