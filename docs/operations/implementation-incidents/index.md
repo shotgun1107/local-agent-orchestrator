@@ -6005,7 +6005,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 채택한 해결
 
-기존 v1 새 실행/승격 차단과 v2 행동 oracle·고정 reference 진단을 보존했다. 2026-09-29 v3는 호스트 oracle와 컨테이너 후보를 분리하고 JSON 관측·transcript·case/DAG·입력/명령 hash를 재검사한다. read-only mount, 고정 대조군 준비, Fake/native receipt 분리와 1회 실행/실패 보존을 구현했다. 실제 native qualification은 별도 승인 턴 전이므로 investigating을 유지한다.
+기존 v1 새 실행/승격 차단을 유지하고 v3 host oracle/container 후보 분리, strict JSON·transcript·DAG·입력 hash·bounded streams·종료 후 환경 검사와 1회 실행을 구현했다. 2026-09-29 사용자 연속 준비 승인 아래 native 고정 9종이 모두 기대와 일치했고 저장 증거 재검증도 통과했다. 일반 Worker production 연결/정교한 전체 관측 위조·과적합/실제 OS·SDK 검증은 미완료라 전체 F14는 investigating이다.
 
 ### 수정 파일
 
@@ -6032,19 +6032,22 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 - f14-source-final.xml: 39 passed; behavior oracle 17, no-op/constant 16, 정상 내부 이름 대안 1, bundle/guard/DAG/public claim 등 5
 - 과거 candidate 검증 유지; 새 v1 promotion은 부작용 전에 거부
 - f14-integration-20260917/final.xml: 146 passed; 연결부 88, F14 39, Docker 단위 19. 기존 회차와 중복이며 실제 Docker 실행 증거가 아니다.
+- f14-native-qualification-20260929/qualification-final.xml: 275 passed / 0 failed / 0 skipped; v3 134, matrix verifier 20, v2 88, 기존 F14 22, Docker backend 11
+- matrix-1: native no-op 99/99, 관측 process 49개, 정상 2종 합격/오류 7종 거부, 9종 입력 불변/최종 환경 확인/잔여 container 0, 읽기 전용 결과 재검증 일치. summary seal ec734f97f7beabeebfc335525c26ca8754e3cc07a33863c898a68f5c7677c8dd
 
 ### 남은 위험
 
 - 아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.
-- v2의 같은 Python 프로세스 구조는 일반 평가에 쓰지 않는다. v3 외부 판정 구현을 추가했으나 실제 reference/정상 대안/적대적 대조군 qualification이 필요하다.
-- 2026-09-29 Docker를 시작해 exact image 존재를 확인했다. 최신 no-op 결과는 v3 보고서/로컬 receipt를 따른다. 실제 qualification 전 F14 resolved/CHALLENGE_READY/정식 비교 Live GO 선언 금지.
+- v2의 같은 Python 프로세스 구조는 일반 평가에 쓰지 않는다. v3의 고정 9종 native 진단은 통과했지만 일반 Worker production 경로는 아직 없다.
+- 공개 합성 관측의 정교한 전체 위조/과적합과 실제 Windows ACL·SDK enforcement는 미검증이다. 고정 9종 통과를 F14 전체 resolved/CHALLENGE_READY/정식 비교 Live GO로 확대하지 않는다.
 
 ### 추적 정보
 
-- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9, c60b26595b5d67133289afd8aed646cf8bc8ad65
 - 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
 - 출처: docs/operations/audit-f14-integration-preflight-20260917.md
 - 출처: docs/operations/audit-f14-isolation-v3-20260929.md
+- 출처: docs/operations/audit-f14-native-qualification-20260929.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 
 ## DEV-20260917-007 — F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함
@@ -6147,10 +6150,11 @@ payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. �
 ### 검증 결과
 
 - 정적 import 누락 재현과 지원 함수 AST 동일성 및 합성 파일 IO를 검사한다. 최종 회귀 원문은 support-final.xml이다.
+- 후속 native reference/equivalent의 실제 import와 10 property 통과 확인. matrix-1 전체 9/9 기대 일치. audit-f14-native-qualification-20260929.md 참조.
 
 ### 남은 위험
 
-- 실제 native 후보 import와 qualification 전체 성공은 별도 실행 승인 뒤 검증한다.
+- 고정 부분 fixture의 명시한 4개 utility 지원만 검증했다. 다른 임의 Worker의 의존성 복원을 일반 보장하지 않는다.
 
 ### 추적 정보
 
