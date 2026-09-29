@@ -77,3 +77,13 @@
 - 설치된 Docker Desktop을 시작해 사전검증한다. 설치/업데이트/pull·로그인·과거 state 변경은 하지 않는다.
 - 기존 부분 fixture가 빠진 runner dependency를 요구하므로 기존 4개 공통 유틸리티와 동일한 지원 모듈을 명시적으로 제공한다. 평가 대상 함수는 대체하지 않는다.
 - Fake GO는 native 실행 근거로 거부한다. 실제 qualification과 모델 실행의 별도 턴 관문은 유지한다.
+
+## 2026-09-29 — 실제 연구 이전 준비 작업의 연속 진행 지시
+
+- reference 환경 GO 보고 뒤 사용자가 명시적 중단·종료 지시 전까지 준비 작업을 계속하라고 지시했다.
+- 이번 세션의 고정 9종 model-free 진단·교정·회귀·기록은 매 항목마다 재승인을 묻지 않는다.
+  일반 Live 정책 전역 변경이나 새 연구/Phase F Cell/SDK·model/B2·B3 승인은 아니다.
+- 각 진단의 clean source/plan·exact 환경·native no-op·600초 receipt·1회 표식은 그대로 검증한다.
+  예상 밖 실패는 보존하고 원인을 확인한다. 같은 root 재실행·성공 재분류는 하지 않는다.
+- 최초 native reference 11개 그룹/10 property는 통과했다. 후속 9종 진단과 한계는
+  `docs/operations/audit-f14-native-qualification-20260929.md`에 기록한다.

@@ -183,7 +183,7 @@ def valid_noop(plan, request, value):
 
 def completed(raw, limit):
     return (raw.started and not raw.timed_out and type(raw.exit_code) is int and raw.exit_code == 0
-        and raw.stdout_total <= limit and raw.cleanup_succeeded is not False)
+        and raw.stdout_total <= limit and raw.stderr_total <= limit and raw.cleanup_succeeded is not False)
 
 
 def preflight(path, expected, *, rehearse=False, backend=None, inspector=binding.inspect_environment, source_environment=None):
@@ -246,10 +246,17 @@ def dispatch(path, *, approved_plan_sha256, closure, expected_closure_sha256, ba
                 raise Error("ENVIRONMENT_CHANGED")
             raw = engine.execute(plan["commands"][request["case"]], cwd=root, environment=environment,
                 timeout_seconds=30, cleanup_timeout_seconds=15, limit=1_048_576, container_name=plan["diagnostic_id"])
+            # Backend retains one sentinel byte past the limit. Persist only
+            # the contractual prefix while keeping full-stream counts/hashes.
+            stdout, stderr = raw.stdout[:1_048_576], raw.stderr[:1_048_576]
             records.append({"case": request["case"], "started": raw.started, "exit_code": raw.exit_code, "timed_out": raw.timed_out,
-                "stdout_sha256": raw.stdout_sha256, "stderr_sha256": raw.stderr_sha256, "cleanup_succeeded": raw.cleanup_succeeded})
+                "stdout_sha256": raw.stdout_sha256, "stderr_sha256": raw.stderr_sha256, "cleanup_succeeded": raw.cleanup_succeeded,
+                "stdout_total": raw.stdout_total, "stderr_total": raw.stderr_total,
+                "stdout_size": len(stdout), "stderr_size": len(stderr),
+                "stdout_prefix_sha256": binding.digest(stdout), "stderr_prefix_sha256": binding.digest(stderr)})
             # Bounded streams remain private evidence, never Git or executed code.
-            binding._write_new(root / "streams" / (request["case"] + ".stdout"), raw.stdout)
+            binding._write_new(root / "streams" / (request["case"] + ".stdout"), stdout)
+            binding._write_new(root / "streams" / (request["case"] + ".stderr"), stderr)
             if not completed(raw, 1_048_576):
                 raise Error("PROCESS_NOT_COMPLETE")
             cases.append(oracle.grade(request, raw.stdout, exit_code=raw.exit_code))
@@ -258,17 +265,27 @@ def dispatch(path, *, approved_plan_sha256, closure, expected_closure_sha256, ba
         except (OSError, ValueError, binding.DockerJudgeError):
             failure = "EXECUTION_INCOMPLETE"
             break
+    input_unchanged = True
     try:
         verify(path, approved_plan_sha256)
     except (OSError, ValueError):
+        input_unchanged = False
         failure = "INPUT_CHANGED"
+    try:
+        final_environment = inspector(plan, source_environment=source_environment)
+        if final_environment != closure["environment"]:
+            failure = "ENVIRONMENT_CHANGED"
+    except (OSError, ValueError, binding.DockerJudgeError):
+        final_environment = None
+        failure = "ENVIRONMENT_UNVERIFIED"
     completed_cases = {r["case"] for r in cases}
     cases.extend({"case": case, "passed": False, "reason": "NOT_COMPLETED"} for case in oracle.CASES if case not in completed_cases)
     cases.append(oracle.claims(root / "binding/worker"))
     result = oracle.aggregate(cases)
     if failure:
         result["behavior_passed"] = False
-    result.update(version=3, purpose=PURPOSE, variant=plan["variant"], plan_sha256=approved_plan_sha256, failure=failure, processes=records,
+    result.update(version=3, evidence_version=2, purpose=PURPOSE, variant=plan["variant"], plan_sha256=approved_plan_sha256,
+        input_unchanged=input_unchanged, final_environment=final_environment, failure=failure, processes=records,
         execution_backend=fixed["rehearsal_backend"], model_turns=0, phase_f_claims=0)
     result = seal(result, "result_sha256")
     binding._write_new(root / "result.json", binding.canonical(result))

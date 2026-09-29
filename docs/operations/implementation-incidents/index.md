@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 91건
-- 해결: 89건
+- 전체: 92건
+- 해결: 90건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -104,6 +104,7 @@
 | DEV-20260917-006 | investigating | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
 | DEV-20260917-007 | resolved | benchmark-runner | tooling | F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함 |
 | DEV-20260929-001 | resolved | benchmark-runner | integration | F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함 |
+| DEV-20260929-002 | resolved | benchmark-runner | implementation | F14 native 진단의 stderr 원문과 종료 후 환경 증거 누락 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6155,3 +6156,57 @@ payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. �
 
 - 관련 커밋: 35072d4af4bf69b2dab9f077a0946f91d9ca6641
 - 출처: docs/operations/audit-f14-isolation-v3-20260929.md
+
+## DEV-20260929-002 — F14 native 진단의 stderr 원문과 종료 후 환경 증거 누락
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `implementation`
+- 발견: 2026-09-29T05:04:16Z / 대조군 실행 전 source 검토
+- 해결: 2026-09-29T05:08:10Z
+
+### 증상
+
+오류 출력 hash만 기록하고 stdout만 한도 검사하여 거부 이유와 실패 뒤 정리를 독립 검증하기 부족함
+
+### 재현
+
+- 기존 v3 dispatch의 stderr 원문/크기 미기록 및 process 실패 뒤 최종 inspector 누락 확인
+
+### 증거
+
+- `source-inspection`: profile_i_isolated_execution.py dispatch 보강과 evidence-tests.xml 132 pass/1 fixture naming fail; qualification-tests.xml 152 pass/1 fixture output root fail
+
+### 근본 원인
+
+성공 JSON 판정 중심의 최초 기록 설계가 stderr와 실패 뒤 최종 환경 검증을 빠뜨렸다
+
+### 검토한 해결안
+
+- `adopted` bounded stdout/stderr와 전후 환경 보존 — 기존 결과를 바꾸지 않고 새 evidence version에서 거부 원인 재검증 가능
+- `rejected` 기존 결과 재봉인 — 과거 증거 변조가 되므로 보존
+
+### 채택한 해결
+
+stderr 한도 검사, 각각 1MiB prefix와 전체 수신 길이/hash, 실패 뒤 input/environment 검사, 고정 matrix 재검증 도구를 추가했다
+
+### 수정 파일
+
+- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_qualification.py
+
+### 회귀시험
+
+- qualification-final.xml 275 passed; stderr flood, bounded prefix, final environment, artifact tampering, no retry
+
+### 검증 결과
+
+- source/model-free 검증 275 passed; native 대조군은 별도 후속 결과로 기록하며 이 해결 범위에 선반영하지 않음
+
+### 남은 위험
+
+- 없음
+
+### 추적 정보
+
+- 관련 커밋: 기록 없음

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-002",
+  "title": "F14 native 진단의 stderr 원문과 종료 후 환경 증거 누락",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "implementation",
+  "discovered_at": "2026-09-29T05:04:16Z",
+  "resolved_at": "2026-09-29T05:08:10Z",
+  "discovered_by": "대조군 실행 전 source 검토",
+  "symptom": "오류 출력 hash만 기록하고 stdout만 한도 검사하여 거부 이유와 실패 뒤 정리를 독립 검증하기 부족함",
+  "reproduction": [
+    "기존 v3 dispatch의 stderr 원문/크기 미기록 및 process 실패 뒤 최종 inspector 누락 확인"
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "profile_i_isolated_execution.py dispatch 보강과 evidence-tests.xml 132 pass/1 fixture naming fail; qualification-tests.xml 152 pass/1 fixture output root fail"
+    }
+  ],
+  "root_cause": "성공 JSON 판정 중심의 최초 기록 설계가 stderr와 실패 뒤 최종 환경 검증을 빠뜨렸다",
+  "considered_options": [
+    {
+      "option": "bounded stdout/stderr와 전후 환경 보존",
+      "decision": "adopted",
+      "reason": "기존 결과를 바꾸지 않고 새 evidence version에서 거부 원인 재검증 가능"
+    },
+    {
+      "option": "기존 결과 재봉인",
+      "decision": "rejected",
+      "reason": "과거 증거 변조가 되므로 보존"
+    }
+  ],
+  "resolution": "stderr 한도 검사, 각각 1MiB prefix와 전체 수신 길이/hash, 실패 뒤 input/environment 검사, 고정 matrix 재검증 도구를 추가했다",
+  "affected_files": [
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_qualification.py"
+  ],
+  "regression_tests": [
+    "qualification-final.xml 275 passed; stderr flood, bounded prefix, final environment, artifact tampering, no retry"
+  ],
+  "verification": [
+    "source/model-free 검증 275 passed; native 대조군은 별도 후속 결과로 기록하며 이 해결 범위에 선반영하지 않음"
+  ],
+  "remaining_risks": [],
+  "related_commits": [],
+  "source_references": []
+}
