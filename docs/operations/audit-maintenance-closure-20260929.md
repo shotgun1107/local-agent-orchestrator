@@ -17,22 +17,22 @@
 
 | 요구 | 기존 근거 | 이번 종료 점검 |
 |---|---|---|
-| F1 실제 turn ID·반복 resume·멱등성 | audit-f1-f2-f4-f6-f14-remediation-20260917.md 및 test_audit_f1_turn_identity.py | 전체 Runner 재검증 중 |
-| F2 구조화 원인·unknown/mixed×Judge·Measurement/seal | 같은 보고서 및 test_audit_f2_failure_classification.py | 전체 Runner 재검증 중 |
-| F3 현재 결과/출력과 Check 재사용 binding | audit-f8-f9-f3-remediation-20260916.md, test_audit_execution_gates.py | 이번 수정 전 B1 전체 292개 통과; 후속 교정 후 전수 재검증 필요 |
-| F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | 전체 Runner 재검증 중 |
+| F1 실제 turn ID·반복 resume·멱등성 | audit-f1-f2-f4-f6-f14-remediation-20260917.md 및 test_audit_f1_turn_identity.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
+| F2 구조화 원인·unknown/mixed×Judge·Measurement/seal | 같은 보고서 및 test_audit_f2_failure_classification.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
+| F3 현재 결과/출력과 Check 재사용 binding | audit-f8-f9-f3-remediation-20260916.md, test_audit_execution_gates.py | 교정 후 B1 전체 303에 포함·통과 |
+| F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
 | F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | 76f91fd 두 wheel 새 build/install, Schema 5개·Git/wheel/설치 Python 55모듈 일치 PASS |
-| F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 작업 파일/Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 일치; 전체 회귀 대조 중 |
+| F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 작업 파일/Git blob OID 276c1d2d520d5956c81cfbbcfda2da629bad3835 일치; Runner 전수 관련 회귀 통과 |
 | F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | 입구에 남은 v2-only 안내를 최신 상태 연결로 교정 중 |
-| F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 수정 전 B1 292 통과, 최종 회귀 대조 필요 |
-| F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 수정 전 B1 292 통과, 최종 회귀 대조 필요 |
-| F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | deadline 감시 후속 결함 발견·교정 중 |
-| F11 삭제/rename·scope/freshness/입력 | test_workspace_deletions.py | 수정 전 B1 292 통과, 최종 회귀 대조 필요 |
-| F12 strict backup DB/manifest/Run/Artifact | test_backup_verification.py | 수정 전 B1 292 통과, 최종 회귀 대조 필요 |
+| F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 교정 후 B1 303에 포함·통과 |
+| F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 교정 후 B1 303에 포함·통과 |
+| F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | 후속 deadline 교정까지 B1 303 통과 |
+| F11 삭제/rename·scope/freshness/입력 | test_workspace_deletions.py | 교정 후 B1 303에 포함·통과 |
+| F12 strict backup DB/manifest/Run/Artifact | test_backup_verification.py | 교정 후 B1 303에 포함·통과 |
 | F13 306/86/20 및 질문별 분모·과도한 확인 문구 | 두 연구 문서·codex-revision-log의 9월16일 정정 | 9월29일 v1/v4 원문 재대조 일치. 아래 범위에서 확인 |
 | F14 public/hidden 행동 검사·정상 대안/반례·격리·환경 주장 구분 | v3 native 9/9·275개 회귀 | 일반 Worker 입력/평가 연결과 완전한 관측 위조 대응 미완료 |
 | incident commit 오타 | DEV-20260823-002 | 실제 c4fb396c5546a204630937bc5ba781c5fdaa528b로 정정 확인 |
-| 오래된 standalone CLI 쓰기 오판 | DEV-20260806-012 | 상위 원인 미확인. 현행 진입점 의존/차단과 SDK 전환 계보 대조 필요 |
+| 오래된 standalone CLI 쓰기 오판 | DEV-20260806-012 | vendor 원인 미확인 유지. 승인된 SDK 동결 명세가 CLI 재시험/Adapter를 제외했고 현행 공개 경로는 SDK 사용임을 확인 |
 | PC 간 개발 복원·문서 양방향 | tools/workspace, requirements-dev.lock | 별도 새 venv에 고정 19패키지 설치 및 개발/문서/로그 검사 통과. 패키지 배포 검증 진행 중, 집 PC 실증은 별개 |
 
 ## 새로 확인한 controller deadline 결함
@@ -99,10 +99,39 @@ v3의 원문과 실행기는 변경하지 않았다. `qualifications/profile-i-s
 후보가 전체 관측을 자기보고하는 대신 trusted supervisor가 개별 호출과 side effect를 소유하도록 한다.
 같은 UID의 subprocess 분리만으로 부모 FD가 보호된다고 가정하지 않는다.
 현재는 Linux parent dumpability/procfs/stdio 경계 probe와 고정 source/no-op/1회 실행 harness만 작성했다.
-`supervisor-host-unit.xml` **18 passed**이며 Fake 관측 시험이다. native probe와 실제 일반 Worker 연결은 아직 미완료다.
+`supervisor-host-unit.xml` **18 passed**이며 Fake 관측 시험이다. 실제 일반 Worker 연결은 아직 미완료다.
 
-Runner 전수 `runner-baseline`은 원래 source에서 시작해 동작 중이다. 실행 중 B1 교정·commit이
-진행됐으므로 종료 결과를 최종 단일 revision 전체 회귀로 과장하지 않는다. 마지막 source에서 관련 경계를 추가 검증한다.
+고정 source `64d000c2d1de81a24da107cecf62753a504ff5c1`의 native 경계 probe는 **PASS**다.
+원문 `C:\LAO\evidence\audit-closure-20260929\f14-supervisor-boundary-1`.
+plan seal: `6fc0b0159ea1cfc495d1cedd2d98c2df380c19d5abe2a6edf51bd3848e9fe05b`.
+result seal: `17d88b2527efbc5cb8ae2d384deb83880e1516e06c2f01ca2b4982533c65160b`.
+고정 Docker image ba83a183…330ab/engine 29.6.2에서 같은 인자의 no-op 뒤 probe를 1회 실행했다.
+uid 65532·capability 0·no-new-privileges 1·read-only driver·tmp IO·source hash를 확인했고,
+부모 dumpable 0에서 child의 부모 stdout/stderr 쓰기·메모리 읽기/쓰기·environ 읽기 open을 모두 거부했다.
+child의 가짜 합격문은 별도 pipe의 데이터로만 수집했다. 전후 환경 일치·잔여 container 0,
+모델/SDK thread/Phase F claim 0이다. 이것은 해당 경계 probe이며 일반 Judge 합격이 아니다.
+
+## 전수·후속 회귀의 완료와 미실행 구분
+
+- `runner-baseline.xml`: **983 passed / 10 skipped**, 2143.66초. source 4dfb142에서 시작했고 실행 중
+  B1 교정·commit이 진행됐다. 이를 최종 단일 revision 전체 회귀로 과장하지 않는다.
+- `runner-post-watchdog.xml`: source 64d000c의 F1/F2/F4·B1 adapter·completion deadline·supervisor 관련
+  **80 passed**, 121.60초. 앞선 전수와 중복이므로 합산하지 않는다.
+- 전수 미실행: Windows symlink 권한 1, 설정 파서 opt-in 6, Docker smoke/full dry-run 2, SDK 0-turn 1.
+- 그중 설정 파서 6개를 별도 승인된 유지보수 범위에서 실제 pinned CLI **0.144.4**로 실행했다:
+  `config-native.xml` **6 passed**, 9.67초. synthetic CODEX_HOME만 사용해 initialize/initialized/config/read만
+  허용하고 thread/start·turn/start·account/read는 테스트 가드로 금지했다. 설정 오류/redaction/drift,
+  실제 process 종료, session JSONL 부재를 확인했다. 사용자 로그인/설정은 수정하지 않았다.
+  따라서 전수 당시 skip 기록을 수정하지 않으며 별도 native 결과로만 보완한다. 나머지 4개는 여전히 미실행이다.
+- OpenAI Docs 지침으로 [공식 app-server 문서](https://learn.chatgpt.com/docs/app-server)의 초기화와
+  설정 조회 경계를 확인하고 로컬 pinned SDK/CLI source와 시험을 대조했다. 최신 문서만으로
+  0.144.4나 실제 인증·권한 enforcement를 보장했다고 주장하지 않는다.
+
+DEV-20260806-012는 오래된 외부 CLI의 근본 원인이 미확정인 역사 이슈다. 기존 승인된
+`docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md` §1·범위는 이 실패 때문에 SDK로
+전환하며 `codex exec` 재시험/CLI Adapter를 제외한다. 현행 B1 Runtime과 Phase F 포트는
+SDK를 사용하고 설치된 CodexClient는 `app-server --listen stdio://`로 시작한다.
+이 차이를 외부 CLI 버그가 고쳐졌다는 주장으로 바꾸지 않는다. 현행 경로의 결함은 별도로 계속 검증한다.
 
 ## 다음 진행
 

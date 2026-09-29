@@ -2133,16 +2133,19 @@ Codex 앱 안에서 실행한 자식 codex exec가 부모의 관리형 CODEX_PER
 - codex sandbox -P :workspace 직접 probe가 같은 fixture 루트에 파일을 생성함을 확인했다
 - rollout turn_context의 cwd, workspace_roots, permission_profile write entry, approval_policy를 직접 대조했다
 - T1 JSONL, stderr, rollout tool arguments, 실제 파일 부재를 서로 대조했다
+- 2026-09-29 유지보수: SDK 통제 비교 동결 명세가 standalone CLI 재시험/Adapter를 명시적으로 제외함을 확인했다. 현행 B1/Phase F는 SDK이며 pinned CodexClient의 실행은 app-server --listen stdio://다. 외부 CLI 근본 원인 해결을 주장하지 않는다.
 
 ### 남은 위험
 
 - 현재 Windows CLI 0.144.4에서 codex exec 기반 쓰기 Adapter를 신뢰할 수 없다
 - 에이전트 최종 메시지와 프로세스 exit code 0만으로 완료를 판정하면 허위 성공이 된다
-- SDK 기준선으로 전환할 경우 Claude 심사의 CLI 기반 제안과 달라지므로 비교 명세를 다시 고정해야 한다
+- SDK 전환 비교 명세는 이후 별도로 동결됐다. 이 기록의 외부 CLI 오류는 재분류하지 않으며 standalone CLI 경로를 다시 채택하려면 별도 실제 검증이 필요하다
 
 ### 추적 정보
 
 - 관련 커밋: 기록 없음
+- 출처: docs/design/sdk-controlled-c0-c1-c2-b1-comparison-spec.md
+- 출처: docs/operations/audit-maintenance-closure-20260929.md
 - 출처: https://learn.chatgpt.com/docs/non-interactive-mode.md
 - 출처: https://learn.chatgpt.com/docs/agent-approvals-security.md
 

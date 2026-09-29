@@ -22,7 +22,9 @@
 - 종료 재점검에서 RuntimePort가 멈추면 controller deadline을 독립 집행하지 못하는 후속 결함을
   재현했다(4 failed/1 passed). 시한 감시와 늦은 결과 거부 교정 뒤 통합 41개와 B1 전체 **303개**가 통과했다.
   새 로컬 venv의 고정 의존성 19개·두 wheel 설치·Schema 5개·Python 55모듈 bytes·개발 점검도 통과했다.
-  실제 집 PC 검증은 아니다. F14 후속의 supervisor 경계 probe는 18개 계약시험까지이며 일반 평가 연결은 진행 중이다.
+  실제 집 PC 검증은 아니다. Runner 전수 983 passed/10 skipped 뒤 관련 80개 및 실제 설정 파서 6개도 통과했다.
+  F14 후속의 supervisor 경계는 18개 계약시험과 native probe가 통과했으나 일반 평가 연결은 진행 중이다.
+  native 설정 파서는 임시 설정으로 initialize/config/read만 호출했다. 실제 model/SDK thread·turn은 0이다.
 
 아래는 변경 이유와 과거 시험 결과를 보존한 이력이다. 회차별 시험 수를 합산하지 않는다.
 

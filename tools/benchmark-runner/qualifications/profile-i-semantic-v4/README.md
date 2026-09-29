@@ -29,3 +29,8 @@ child가 부모를 signal로 종료하는 것은 가용성 실패로 채택을 �
 [/proc/pid/fd 접근 검사](https://man7.org/linux/man-pages/man5/proc_pid_fd.5.html)다.
 이 속성은 호출 프로세스에만 적용한다. Windows 호스트의 보안 설정·커널 전역 설정을 바꾸지 않는다.
 문서 근거만으로 보장하지 않고 정확한 이미지/사용자/권한의 native probe로 확인한다.
+
+2026-09-29의 source 64d000c에서 고정 native probe가 통과했다. 부모 fd/1·fd/2 쓰기,
+mem 읽기/쓰기·environ 읽기 open이 거부됐고 child 출력은 부모 출력과 분리됐다.
+원문·외부 seal·미확인 범위는 `docs/operations/audit-maintenance-closure-20260929.md`를 따른다.
+일반 Worker snapshot/RPC/host-owned case/side-effect 소비 및 qualification은 계속 구현해야 한다.
