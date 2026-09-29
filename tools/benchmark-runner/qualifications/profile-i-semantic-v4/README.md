@@ -77,7 +77,14 @@ source dcb1baa의 계약·host·경계 **109개**는 통과했지만 첫 native 
 실패 plan SHA `8618d4fc881d13657fbd8590e6cbaa677657295348a62601a7f3f0a7a5b0f5fc`,
 result SHA `65e64b42f3401f87867fef315c7c41b446a8723c0cfe4c5938bbde4d6e32c08b`.
 입력 불변/최종 환경 일치/잔여 container 0이다. 전체 root 재실행·실패 재분류는 하지 않는다.
-**아직 native 함수 호출 합격·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
+후속 source e45bad0/reference-2는 no-op 11개 뒤 profile/collector/configuration 3묶음의 실제 호출이
+통과했으나 windows 묶음의 정상 tuple을 supervisor JSON에 담는 단계에서 중단됐다. 단위시험이
+json.dumps의 자동 tuple 변환을 사용해 실제 strict serializer 차이를 놓쳤다. 실제 serializer를
+회귀에도 적용하고 정상 tuple 반환값을 JSON array로 명시 변환한다. 남은 묶음은 실행하지 않았다.
+실패 plan SHA `e05e9f0f035c138d55314418e035de628855934fd10f4b5b6ad03256745d3e02`,
+result SHA `a8f6db140f1ff27a2bda1d3888f1e51ef774057b3ce87b769b10cfaf45051ac7`.
+입력/환경 일치와 잔여 container 0을 확인했다. 이 실패도 보존하고 재실행하지 않는다.
+**아직 전체 native 함수 호출 합격·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
 실제 Windows ACL·SDK 인증/권한 enforcement는 이 Linux 합성 행동 검사로 증명되지 않는다.
 그 성질은 이후 승인된 candidate의 exact Windows/SDK 증거가 필요하며 현재 출력의
 `os_enforcement_verified`, `comparison_authorized`, `challenge_ready`는 모두 false다.

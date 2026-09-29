@@ -208,7 +208,9 @@ def envelope(driver, tmp_path, case, nonce='a' * 32):
 @pytest.mark.parametrize('case', oracle.CASES)
 def test_host_checks_real_call_journal_shape(driver, tmp_path, case):
     value = envelope(driver, tmp_path, case)
-    assert execution.grade({k: value[k] for k in ('version','case','nonce')}, binding.canonical(value))['passed']
+    # Exercise the actual supervisor serializer, not json.dumps' implicit
+    # tuple conversion (which had masked a native-envelope failure).
+    assert execution.grade({k: value[k] for k in ('version','case','nonce')}, driver.wire.pack(value))['passed']
 
 
 @pytest.mark.parametrize('attack', ['missing_call', 'extra_call', 'bool_count', 'extra_field', 'stderr',
