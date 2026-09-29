@@ -22,6 +22,10 @@ def capture(call):
         value = call()
         if hasattr(value, "model_dump"):
             value = value.model_dump(mode="json")
+        elif isinstance(value, tuple):
+            # The remote API legitimately returns a tuple (e.g. sandbox kind).
+            # The supervisor envelope is JSON data, not the tagged call wire.
+            value = list(value)
         return {"value": value}
     except TargetError as error:
         return {"error": error.remote_name}
