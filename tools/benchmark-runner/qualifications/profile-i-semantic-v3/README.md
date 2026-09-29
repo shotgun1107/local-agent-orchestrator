@@ -109,3 +109,7 @@ matrix를 중지·보존하고 진단한다. 같은 root의 재시도/실패 재
 단위시험의 조작된 archive fixture는 pytest tmp에만 있고 실제 실행 증거로 사용하지 않는다.
 
 후속 결과 정본: `docs/operations/audit-f14-native-qualification-20260929.md`.
+
+회사 고정 matrix는 2026-09-29에 native **9/9 기대 일치**로 완료했다(정상 2종 합격,
+오류 7종 거부, no-op 99회/관측 process 49개). 독립 saved-result 재검증도 통과했다.
+일반 Worker production 연결/전체 관측 위조·실제 OS/SDK 증명은 미완료이고 기존 승격 차단은 유지한다.

@@ -42,10 +42,11 @@
     "tools/benchmark-runner/tests/test_profile_i_isolated_execution.py::test_fixture_import_gap_is_explicitly_closed_by_driver"
   ],
   "verification": [
-    "정적 import 누락 재현과 지원 함수 AST 동일성 및 합성 파일 IO를 검사한다. 최종 회귀 원문은 support-final.xml이다."
+    "정적 import 누락 재현과 지원 함수 AST 동일성 및 합성 파일 IO를 검사한다. 최종 회귀 원문은 support-final.xml이다.",
+    "후속 native reference/equivalent의 실제 import와 10 property 통과 확인. matrix-1 전체 9/9 기대 일치. audit-f14-native-qualification-20260929.md 참조."
   ],
   "remaining_risks": [
-    "실제 native 후보 import와 qualification 전체 성공은 별도 실행 승인 뒤 검증한다."
+    "고정 부분 fixture의 명시한 4개 utility 지원만 검증했다. 다른 임의 Worker의 의존성 복원을 일반 보장하지 않는다."
   ],
   "related_commits": [
     "35072d4af4bf69b2dab9f077a0946f91d9ca6641"

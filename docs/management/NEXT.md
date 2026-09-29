@@ -84,10 +84,12 @@ Docker engine 연결 실패와 후보/oracle의 동일 Python 프로세스 공�
    `docs/operations/audit-f14-isolation-v3-20260929.md`를 읽는다. v2 진단을 기본 경로로 다시 실행하지 않는다.
 2. `company-preflight-final`의 최초 native reference는 11개 그룹/10 property 통과로 완료됐다.
    이미 dispatch된 root이므로 재실행하지 않는다. 후속 정본은 `docs/operations/audit-f14-native-qualification-20260929.md`다.
-3. 사용자는 이번 세션의 실제 연구 이전 준비 작업을 연속 진행하도록 지시했다. 고정 9종
-   native 대조군·교정·회귀·기록을 진행하며 각 진단 직전 exact 환경/no-op/600초 receipt는 유지한다.
-4. 자기 보고/Fake 통과를 native 증거로 대체하지 않는다. SDK·model/Phase F Cell/새 연구는
-   시작하지 않으며 일반 Live 관문과 기존 v1 승격 차단을 유지한다.
+3. 연속 승인 범위의 고정 9종 native 대조군은 **9/9 기대 일치**, 회귀 275개, 저장 결과 재검증까지 완료됐다.
+   완료 root `C:\LAO\evidence\f14-native-qualification-20260929\matrix-1`은 재실행하지 않는다.
+   필요하면 후속 보고서의 외부 SHA를 사용한 읽기 전용 verifier만 실행한다.
+4. 다음 개발 후보는 F14 일반 Worker 평가 연결과 정교한 관측 위조/과적합 검증 설계다.
+   이번 고정 대조군 통과가 그 작업 완료나 정식 비교 승격은 아니다. 연구 총괄 공간에서 다음 범위를 정한다.
+5. SDK·model/Phase F Cell/새 연구는 시작하지 않았다. 일반 Live 관문과 기존 v1 승격 차단을 유지한다.
 
 ## PC 전환의 남은 확인
 
