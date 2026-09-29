@@ -44,7 +44,7 @@ mem 읽기/쓰기·environ 읽기 open이 거부됐고 child 출력은 부모 �
 
 - `wire.py`: 제한 JSON/tagged data만 전송한다. pickle/eval은 없다. 잘못된 model_copy 입력을
   조기 정정하지 않고 전달하여 **후보의 검증 함수**가 실제로 거부하는지 검사한다.
-- `supervisor.py`, `observations.py`, `rpc.py`: 기준 fixture와 관측은 부모가 소유하고 11묶음/45호출을
+- `supervisor.py`, `observations.py`, `rpc.py`: 기준 fixture와 관측은 부모가 소유하고 11묶음/47호출을
   자식으로 보낸다. SDK는 부모가 소유한 합성 callback 8개만 허용한다. 실제 SDK client를 호출하지 않는다.
   bundle/link 결과는 부모가 파일 bytes/존재로 확인한다. 초과출력·시한초과·여분 process·계약 밖 쓰기는 거부한다.
 - `sandbox.py`: child의 Worker import **전에** Landlock ABI 3 이상을 요구한다. 불가하면 fail-closed다.
@@ -84,7 +84,20 @@ json.dumps의 자동 tuple 변환을 사용해 실제 strict serializer 차이�
 실패 plan SHA `e05e9f0f035c138d55314418e035de628855934fd10f4b5b6ad03256745d3e02`,
 result SHA `a8f6db140f1ff27a2bda1d3888f1e51ef774057b3ce87b769b10cfaf45051ac7`.
 입력/환경 일치와 잔여 container 0을 확인했다. 이 실패도 보존하고 재실행하지 않는다.
-**아직 전체 native 함수 호출 합격·신규 mutation qualification 결과는 없다.** 단위시험과 실제 결과를 따로 기록한다.
+source 36e2304/reference-3의 당시 45호출·11묶음·10 property는 실제 통과했다.
+plan SHA `e0676e0a9fb1268b7a1b2f166c6f59c501613bc50b0075cb31d3f09b5f02feeb`,
+result SHA `8962fdcaf5da64df51e98e0929e390aa2bac1dddde4b476103f2b8d531c7964a`.
+같은 source의 저장 증거 재판정으로 전체 + public I01~I08 9개 projection도 통과했다.
+그 뒤 두 model_validate가 모든 입력을 거부해도 configuration을 통과하는 반례 2개를 재현했다.
+정상 config/manifest 검증 2호출과 exact 결과 대조를 추가했다. 이제 47호출이며 기존 45호출 증거를
+47호출의 합격으로 재분류하지 않는다. 각 저장 원문의 재검증에는 그때 고정한 verifier revision이 필요하다.
+
+`profile_i_call_qualification`은 정상 2종과 오류/위조/격리 경계 18종의 고정 corpus다.
+reference를 새 root에서 먼저 검증하고 그 bytes에서 별도 외부 Worker snapshot을 생성한다.
+관측 전체 위조는 실제 reference의 완전한 v3 관측을 새 nonce에 맞춰 제출하므로 빈 가짜 JSON만 시험하지 않는다.
+각 변형은 same-path native no-op·1회 dispatch·저장 증거 재판정과 **예정한 실패 지점**까지 확인한다.
+환경 오류나 무관한 import 오류는 mutation qualification 성공으로 인정하지 않는다.
+**47호출·20종 native qualification은 아직 미완료다.** 단위시험과 실제 결과를 따로 기록한다.
 실제 Windows ACL·SDK 인증/권한 enforcement는 이 Linux 합성 행동 검사로 증명되지 않는다.
 그 성질은 이후 승인된 candidate의 exact Windows/SDK 증거가 필요하며 현재 출력의
 `os_enforcement_verified`, `comparison_authorized`, `challenge_ready`는 모두 false다.

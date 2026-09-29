@@ -24,7 +24,7 @@ DRIVER.update({name:f'tools/benchmark-runner/qualifications/profile-i-semantic-v
 CALL_PLAN={
     'profile':['sdk_profile_evidence_from_transcript']*3+['verify_sdk_profile_provenance']*2,
     'collector':['collect_sdk_profile_provenance'],
-    'configuration':['build_runtime_boundary_manifest','verify_probe_command_contract','ConfigurationExpectation.model_validate','RuntimeBoundaryProbeManifest.model_validate'],
+    'configuration':['build_runtime_boundary_manifest','verify_probe_command_contract','ConfigurationExpectation.model_validate','RuntimeBoundaryProbeManifest.model_validate','ConfigurationExpectation.model_validate','RuntimeBoundaryProbeManifest.model_validate'],
     'windows':['derive_windows_sandbox_kind']*5,
     'workspace-acl':['verify_workspace_acl_transition']*3+['_parse_workspace_acl_ace'],
     'controller-acl':['_assert_controller_only_directory_security']*2,
@@ -199,6 +199,11 @@ def grade(request,raw):
             if row['op']!='collect_sdk_profile_provenance' and row['callbacks']!=[]: return bad
             if row['op']=='collect_sdk_profile_provenance' and not valid_callbacks(row,data['observations']): return bad
         envelope={'version':3,'case':request['case'],'nonce':request['nonce'],'observations':data['observations']}
+        if request['case']=='configuration':
+            value=data['observations']
+            if (not oracle.returned(value['normal_configuration'],value['built']['configuration'])
+                or not oracle.returned(value['normal_manifest'],value['built'])):
+                return {**bad,'reason':'BEHAVIOR_MISMATCH'}
         return oracle.grade({k:envelope[k] for k in ('version','case','nonce')},binding.canonical(envelope),exit_code=0)
     except (ValueError,KeyError,TypeError,IndexError,RecursionError,OverflowError): return bad
 

@@ -16,6 +16,7 @@ CALL_PLAN = {
     'profile':['sdk_profile_evidence_from_transcript']*3+['verify_sdk_profile_provenance']*2,
     'collector':['collect_sdk_profile_provenance'],
     'configuration':['build_runtime_boundary_manifest','verify_probe_command_contract',
+                     'ConfigurationExpectation.model_validate','RuntimeBoundaryProbeManifest.model_validate',
                      'ConfigurationExpectation.model_validate','RuntimeBoundaryProbeManifest.model_validate'],
     'windows':['derive_windows_sandbox_kind']*5,
     'workspace-acl':['verify_workspace_acl_transition']*3+['_parse_workspace_acl_ace'],
