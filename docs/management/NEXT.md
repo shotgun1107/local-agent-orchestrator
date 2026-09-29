@@ -74,6 +74,15 @@ Docker engine 연결 실패와 후보/oracle의 동일 Python 프로세스 공�
 | 실제 모델 실행 | 미승인 |
 | 신규 experiment | 미승인 |
 
+## 2026-09-29 재개 후 우선 순서
+
+1. v3 계약 `tools/benchmark-runner/qualifications/profile-i-semantic-v3/README.md`와
+   `docs/operations/audit-f14-isolation-v3-20260929.md`를 읽는다. v2 진단을 기본 경로로 다시 실행하지 않는다.
+2. 최종 clean source와 새 root의 plan/no-op 결과를 확인한다. commit이나 runtime이 달라지거나 receipt 10분이 지나면 다시 사전검증한다.
+3. 환경 검증 결과를 보고한 **별도 사용자 턴**에서 승인된 reference 진단만 실행한다. models/SDK/Phase F Cell은 사용하지 않는다.
+4. 이후 각 정상 대안·오류/적대적 대조군의 native qualification과 새 판정 규칙 검증을 완료해야 F14 해결 여부를 판단할 수 있다.
+   자기 보고식 합격이나 Fake backend 통과를 실제 격리 성공으로 대체하지 않는다.
+
 ## PC 전환의 남은 확인
 
 - 집 PC에서 이 브랜치를 수신하고 관리 문서 복원·개발 의존성 설치·점검을 실제로 한 번 검증한다.

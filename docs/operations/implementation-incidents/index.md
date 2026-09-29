@@ -5,8 +5,8 @@
 
 ## 요약
 
-- 전체: 90건
-- 해결: 88건
+- 전체: 91건
+- 해결: 89건
 - 조사 중: 2건
 - 미해결: 0건
 - 위험 수용: 0건
@@ -103,6 +103,7 @@
 | DEV-20260917-005 | resolved | benchmark-runner | tooling | F6: Profile I source-intake 작업 bytes와 정본 LF 불일치 |
 | DEV-20260917-006 | investigating | benchmark-runner | implementation | F14: 이름·문자열 검사를 행동 검증으로 오인한 Profile I |
 | DEV-20260917-007 | resolved | benchmark-runner | tooling | F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함 |
+| DEV-20260929-001 | resolved | benchmark-runner | integration | F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6003,7 +6004,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 채택한 해결
 
-기존 v1 새 matrix 실행/새 candidate 승격을 차단하고 별도 v2 행동 oracle와 공개 task/prerequisite/claim/source bundle을 구현했다. 후속으로 검토된 reference 전용 source/명령/결과 binding·preflight·1회 진단 연결을 구현했다. 동일 Python 프로세스의 oracle 신뢰 경계와 실제 격리 qualification은 미완료다.
+기존 v1 새 실행/승격 차단과 v2 행동 oracle·고정 reference 진단을 보존했다. 2026-09-29 v3는 호스트 oracle와 컨테이너 후보를 분리하고 JSON 관측·transcript·case/DAG·입력/명령 hash를 재검사한다. read-only mount, 고정 대조군 준비, Fake/native receipt 분리와 1회 실행/실패 보존을 구현했다. 실제 native qualification은 별도 승인 턴 전이므로 investigating을 유지한다.
 
 ### 수정 파일
 
@@ -6016,6 +6017,9 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 - tools/benchmark-runner/src/benchmark_runner/profile_i_semantic_execution.py
 - tools/benchmark-runner/tests/test_profile_i_semantic_execution.py
 - tools/benchmark-runner/qualifications/profile-i-semantic-v2/semantic-contract.json
+- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_execution.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_isolated_oracle.py
+- tools/benchmark-runner/tests/test_profile_i_isolated_execution.py
 
 ### 회귀시험
 
@@ -6031,14 +6035,15 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 ### 남은 위험
 
 - 아직 production Judge가 아니다. 미검토 Worker Python을 호스트에서 실행하면 안 된다.
-- 같은 Python 프로세스에서 후보와 oracle가 실행된다. 일반 Worker 평가는 신뢰 경계를 분리한 뒤 실제 qualification해야 한다. 이번 연결은 검토된 reference 진단 전용이다.
-- 회사 Docker engine 연결 실패로 exact image/동일경로 no-op은 미확인이다. 실제 isolated execution·정상 대안/mutation·hostile import/side-effect/timeout와 별도 승인 관문이 남았다. F14 resolved/CHALLENGE_READY/Live GO 선언 금지.
+- v2의 같은 Python 프로세스 구조는 일반 평가에 쓰지 않는다. v3 외부 판정 구현을 추가했으나 실제 reference/정상 대안/적대적 대조군 qualification이 필요하다.
+- 2026-09-29 Docker를 시작해 exact image 존재를 확인했다. 최신 no-op 결과는 v3 보고서/로컬 receipt를 따른다. 실제 qualification 전 F14 resolved/CHALLENGE_READY/정식 비교 Live GO 선언 금지.
 
 ### 추적 정보
 
 - 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9
 - 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
 - 출처: docs/operations/audit-f14-integration-preflight-20260917.md
+- 출처: docs/operations/audit-f14-isolation-v3-20260929.md
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 
 ## DEV-20260917-007 — F14 진단 준비가 설치된 Git의 정상 hardlink를 잘못 거부함
@@ -6094,3 +6099,59 @@ payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. �
 
 - 관련 커밋: da6224ac7af2c52c6f1a16f7e4d7bf23ee4bc9b0
 - 출처: docs/operations/audit-f14-integration-preflight-20260917.md
+
+## DEV-20260929-001 — F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함
+
+- 상태: `resolved`
+- 단계: `benchmark-runner`
+- 분류: `integration`
+- 발견: 2026-09-29T03:28:33Z / v3 실행 자료 source 대조
+- 해결: 2026-09-29T03:28:33Z
+
+### 증상
+
+전체 저장소 host QA는 통과하지만 고정 Worker fixture의 runner는 제공되지 않은 adapter 등을 import한다.
+
+### 재현
+
+- fixture의 runner.py AST에 benchmark_runner.adapter import가 있고 해당 fixture에 adapter.py가 없음을 확인한다.
+
+### 증거
+
+- `source-inspection`: 실제 Worker 실행 실패를 관측한 것이 아니다. 부분 fixture와 전체 저장소의 import 의존성 차이를 정적으로 확인했다.
+
+### 근본 원인
+
+행동 검사에 필요한 4개 utility 때문에 전체 runner/controller 의존성을 import하는데 고정 fixture에는 일부 파일만 포함된다.
+
+### 검토한 해결안
+
+- `adopted` 고정 utility 의존성을 명시적으로 제공 — 평가 대상 기능을 바꾸지 않고 필요한 import 경계를 닫는다
+- `rejected` 누락된 전체 controller source를 임의로 W에 추가 — fixture의 평가 범위와 과거 source binding을 변경한다
+
+### 채택한 해결
+
+4개 기존 utility와 AST가 동일한 runner_support를 frozen driver에 제공하고 후보 import 전에 명시적으로 연결한다. 후보 runtime_boundary 함수는 대체하지 않으며 prepare/verify에서 import 집합을 검사한다.
+
+### 수정 파일
+
+- tools/benchmark-runner/qualifications/profile-i-semantic-v3/runner_support.py
+- tools/benchmark-runner/qualifications/profile-i-semantic-v3/probe.py
+
+### 회귀시험
+
+- tools/benchmark-runner/tests/test_profile_i_isolated_execution.py::test_support_utility_bodies_are_exact_existing_implementation
+- tools/benchmark-runner/tests/test_profile_i_isolated_execution.py::test_fixture_import_gap_is_explicitly_closed_by_driver
+
+### 검증 결과
+
+- 정적 import 누락 재현과 지원 함수 AST 동일성 및 합성 파일 IO를 검사한다. 최종 회귀 원문은 support-final.xml이다.
+
+### 남은 위험
+
+- 실제 native 후보 import와 qualification 전체 성공은 별도 실행 승인 뒤 검증한다.
+
+### 추적 정보
+
+- 관련 커밋: 35072d4af4bf69b2dab9f077a0946f91d9ca6641
+- 출처: docs/operations/audit-f14-isolation-v3-20260929.md

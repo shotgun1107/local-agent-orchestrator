@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "scope": "orchestrator-development",
+  "id": "DEV-20260929-001",
+  "title": "F14 부분 fixture의 runner import가 누락된 controller 모듈을 요구함",
+  "status": "resolved",
+  "stage": "benchmark-runner",
+  "category": "integration",
+  "discovered_at": "2026-09-29T03:28:33Z",
+  "resolved_at": "2026-09-29T03:28:33Z",
+  "discovered_by": "v3 실행 자료 source 대조",
+  "symptom": "전체 저장소 host QA는 통과하지만 고정 Worker fixture의 runner는 제공되지 않은 adapter 등을 import한다.",
+  "reproduction": [
+    "fixture의 runner.py AST에 benchmark_runner.adapter import가 있고 해당 fixture에 adapter.py가 없음을 확인한다."
+  ],
+  "evidence": [
+    {
+      "kind": "source-inspection",
+      "detail": "실제 Worker 실행 실패를 관측한 것이 아니다. 부분 fixture와 전체 저장소의 import 의존성 차이를 정적으로 확인했다."
+    }
+  ],
+  "root_cause": "행동 검사에 필요한 4개 utility 때문에 전체 runner/controller 의존성을 import하는데 고정 fixture에는 일부 파일만 포함된다.",
+  "considered_options": [
+    {
+      "option": "고정 utility 의존성을 명시적으로 제공",
+      "decision": "adopted",
+      "reason": "평가 대상 기능을 바꾸지 않고 필요한 import 경계를 닫는다"
+    },
+    {
+      "option": "누락된 전체 controller source를 임의로 W에 추가",
+      "decision": "rejected",
+      "reason": "fixture의 평가 범위와 과거 source binding을 변경한다"
+    }
+  ],
+  "resolution": "4개 기존 utility와 AST가 동일한 runner_support를 frozen driver에 제공하고 후보 import 전에 명시적으로 연결한다. 후보 runtime_boundary 함수는 대체하지 않으며 prepare/verify에서 import 집합을 검사한다.",
+  "affected_files": [
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v3/runner_support.py",
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v3/probe.py"
+  ],
+  "regression_tests": [
+    "tools/benchmark-runner/tests/test_profile_i_isolated_execution.py::test_support_utility_bodies_are_exact_existing_implementation",
+    "tools/benchmark-runner/tests/test_profile_i_isolated_execution.py::test_fixture_import_gap_is_explicitly_closed_by_driver"
+  ],
+  "verification": [
+    "정적 import 누락 재현과 지원 함수 AST 동일성 및 합성 파일 IO를 검사한다. 최종 회귀 원문은 support-final.xml이다."
+  ],
+  "remaining_risks": [
+    "실제 native 후보 import와 qualification 전체 성공은 별도 실행 승인 뒤 검증한다."
+  ],
+  "related_commits": [
+    "35072d4af4bf69b2dab9f077a0946f91d9ca6641"
+  ],
+  "source_references": [
+    "docs/operations/audit-f14-isolation-v3-20260929.md"
+  ]
+}

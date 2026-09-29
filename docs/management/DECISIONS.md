@@ -69,3 +69,11 @@
 - 기존 v1 차단을 유지하고 검토된 reference만 받는 별도 진단 경로로 연결했다. 모든 출력의 comparison_authorized/challenge_ready는 false다.
 - 관련 model-free 146개 통과와 실제 Docker engine 연결 불가를 분리해서 보고한다. engine 시작·이미지 설치·로그인·실제 실행은 하지 않는다.
 - F14 전체 해결 전에는 oracle 신뢰 경계와 실제 격리 qualification이 필요하다. 회사 진단도 Environment Closure GO 뒤 별도 실행 승인 턴을 요구한다.
+
+## 2026-09-29 — 잔여 구현 재개와 v3 외부 판정
+
+- 사용자가 남은 구현을 자율적으로 진행하도록 요청했다. 새 연구·병렬 B2/B3로 범위를 넓히지 않고 잔여 F14부터 구현한다.
+- 판정기는 호스트, 후보/공개 관측 adapter는 read-only·무네트워크 컨테이너로 분리한다. 후보의 합격 선언을 신뢰하지 않는다.
+- 설치된 Docker Desktop을 시작해 사전검증한다. 설치/업데이트/pull·로그인·과거 state 변경은 하지 않는다.
+- 기존 부분 fixture가 빠진 runner dependency를 요구하므로 기존 4개 공통 유틸리티와 동일한 지원 모듈을 명시적으로 제공한다. 평가 대상 함수는 대체하지 않는다.
+- Fake GO는 native 실행 근거로 거부한다. 실제 qualification과 모델 실행의 별도 턴 관문은 유지한다.
