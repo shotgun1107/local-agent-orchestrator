@@ -1,22 +1,34 @@
 # 감사·유지보수 종료 점검 — 2026-09-29
 
-**판정: OPEN — 아직 공식 종료하지 않는다.**
+**최종 판정: CLOSED — 2026-09-30 감사·유지보수 공식 종료.**
 
-최신 추가: v4가 요청된 보호 root와 다른 반환 root를 받아들이는 반례를 재현했다.
-입력 14필드의 직접 binding과 97개 관련 회귀를 추가했고 새 21종 native qualification을 준비한다.
-기존 20종과 cold checkout 성공을 이 새 조건의 완료로 대체하지 않는다.
+원 감사 F1~F14, 이후 직접 재현한 controller deadline·v4 bridge/validator/입력 binding·cold checkout
+결함의 교정 및 재검증을 완료했다. 마지막 새 matrix-3은 **21/21 기대 일치**, 소스·별도 설치본의
+전체 증거 재검증도 통과했다. 기준 source는 `665040396e68b90293ec4623518009152fe774c0`이며,
+아래의 마감 변경은 실행 코드를 바꾸지 않는 결과·문서 갱신이다.
 
-**9월 30일 인수:** cold checkout 전수는 **1,123 passed / 10 skipped / 0 failed**로 완료됐고,
-302a7cb binding 후속 회귀는 **152 passed**다. native matrix-2는 완료 13종의 저장 증거를 재검증했으나,
-14번째 extra-effect의 dispatch 뒤 최종 result와 matrix summary가 없다. 뒤 7종은 미착수다.
-실행 process도 없어 중단·미완료로 보존한다. 중단 원인은 미확정이며 기존 root를 재실행하지 않는다.
-자세한 원문 인수와 hash는 [v4 결과](audit-f14-v4-checker-qualification-20260929.md)의 9월 30일 절을 따른다.
-필수 전체 qualification이 아직 남아 있으므로 공식 종료는 OPEN이다.
+검증 근거는 B1 **303 passed**, 고정 cold checkout Runner **1,123 passed / 10 skipped / 0 failed**,
+그 이후 변경 경계의 **152 passed**다. 서로 다른 회차이며 합산하지 않는다. 이전 native matrix-2는
+13종 완료/extra-effect 중단/7종 미착수 원본 그대로 보존했고, 새 결과로 재분류하지 않았다.
+원문·외부 SHA·최종 회차는 [v4 결과](audit-f14-v4-checker-qualification-20260929.md)의 최종 절을 따른다.
 
 사용자는 감사·유지보수를 공식 종료해 실제 기능개발을 이어갈 수 있는 직전까지
 중간 승인 질문 없이 계속 진행하도록 지시했다. 고정 진단의 부분 통과를 이 목표로
 대체하지 않는다. 새 기능·B2/B3·연구 experiment·실제 모델 실행은 시작하지 않는다.
 기존 실패 pair/state/raw/seal·역사 wheel은 불변이며 새 model-free 재현과 코드에서 교정한다.
+
+### 종료의 의미와 남겨 둔 범위
+
+- 이 판정은 이번 감사에서 확인한 결함의 수선·회귀·배포·기록 완료다. 모든 제품 결함이 없다는 보증,
+  범용 실무 채택, 실제 OS/SDK 인증·권한 검증 또는 정식 비교 Live GO가 아니다.
+- 원 감사 §5의 외부 pilot/사람 부담 측정과 새 Live는 원래부터 별도 연구·사용자 결정 사항이다.
+  기능개발/B2/B3/새 experiment/모델·SDK thread/Phase F를 이번 목표의 후속 행동으로 자동 실행하지 않았다.
+- 과거 standalone CLI 이슈 DEV-20260806-012는 investigating 이력으로 유지한다. 승인된 SDK 비교 명세 §3.2가
+  CLI 재시험·Adapter를 제외하므로 현재 수선 완료를 막는 활성 경로 결함은 아니다. vendor 원인 해결을 주장하지 않는다.
+- 전수의 10 skip은 합격이 아니다. 그중 설정 파서 6개는 별도 native 6 passed 기록이 있으며 해당 코드·시험은
+  지금도 같다. Windows symlink 권한 1/Docker opt-in 2/SDK 0-turn 1은 이번 전수에서 미실행으로 남긴다.
+- Git 전달과 다른 PC 실행환경·인증·외부 원본 전달은 다르다. 기존 dirty 보조 worktree와 외부 증거는 로컬에 보존한다.
+  과거 wall-clock 변동의 역사 원인도 이번 새 deadline 결함 교정으로 소급 확정하지 않는다.
 
 ## 종료 근거의 기준
 
@@ -28,20 +40,20 @@
 
 | 요구 | 기존 근거 | 이번 종료 점검 |
 |---|---|---|
-| F1 실제 turn ID·반복 resume·멱등성 | audit-f1-f2-f4-f6-f14-remediation-20260917.md 및 test_audit_f1_turn_identity.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
-| F2 구조화 원인·unknown/mixed×Judge·Measurement/seal | 같은 보고서 및 test_audit_f2_failure_classification.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
+| F1 실제 turn ID·반복 resume·멱등성 | audit-f1-f2-f4-f6-f14-remediation-20260917.md 및 test_audit_f1_turn_identity.py | CLOSED. 고정 전수 1,123 중 전용 6개; 5번째 결과 수용·4회 resume·실제 ID/usage·중복 경계 통과 |
+| F2 구조화 원인·unknown/mixed×Judge·Measurement/seal | 같은 보고서 및 test_audit_f2_failure_classification.py | CLOSED. 같은 전수의 전용 29개 통과; 옛 pair 재분류 없음 |
 | F3 현재 결과/출력과 Check 재사용 binding | audit-f8-f9-f3-remediation-20260916.md, test_audit_execution_gates.py | 교정 후 B1 전체 303에 포함·통과 |
-| F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | 전수 983 및 교정 후 관련 80에 포함·통과 |
-| F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | 76f91fd 두 wheel 새 build/install, Schema 5개·Git/wheel/설치 Python 55모듈 일치 PASS |
+| F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | CLOSED. 같은 전수의 전용 6개 통과; 준비·실행 직전 만료 시 workload 0 |
+| F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | CLOSED. 아래 새 설치 근거와 9월 30일 Schema 5개·최신 Python 57모듈·두 RECORD 재대조 PASS |
 | F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 기존 Python OID 일치 유지. 후속 cold checkout의 개행·봉인 Git bytes 결함도 교정했고 fresh checkout 7개 통과; 아래 참조 |
-| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | 입구를 최신 종료 표와 v4 결과로 연결. 최종 전수 결과/인수인계 갱신 대기 |
+| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | CLOSED. 입구·관리 문서·기존 SYNC:AUTO에 최종 결과와 미검증 범위를 구분; 과거 OPEN/대기 지시는 역사 기록으로 표시 |
 | F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 교정 후 B1 303에 포함·통과 |
 | F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 교정 후 B1 303에 포함·통과 |
 | F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | 후속 deadline 교정까지 B1 303 통과 |
 | F11 삭제/rename·scope/freshness/입력 | test_workspace_deletions.py | 교정 후 B1 303에 포함·통과 |
 | F12 strict backup DB/manifest/Run/Artifact | test_backup_verification.py | 교정 후 B1 303에 포함·통과 |
-| F13 306/86/20 및 질문별 분모·과도한 확인 문구 | 두 연구 문서·codex-revision-log의 9월16일 정정 | 9월29일 v1/v4 원문 재대조 일치. 아래 범위에서 확인 |
-| F14 public/hidden 행동 검사·정상 대안/반례·격리·환경 주장 구분 | v3 native 9/9·275개 회귀 | v4 일반 snapshot/개별 호출/직접 파일 관측/public·hidden 소비 구현, native 20/20·회귀 136·설치본 재검증 통과. 실제 OS/SDK 증명과 비교 승격은 분리 |
+| F13 306/86/20 및 질문별 분모·과도한 확인 문구 | 두 연구 문서·codex-revision-log의 9월16일 정정 | CLOSED. 9월 30일에도 v1/v4 원문과 현재 세 문서가 일치. 이 인용 계보만 확인 |
+| F14 public/hidden 행동 검사·정상 대안/반례·격리·환경 주장 구분 | v3 native 9/9와 v4 후속 교정 | CLOSED. 최종 21/21·후속 152·소스/설치본 재검증·public I01~I08/전체 판정 통과. 실제 OS/SDK 증명과 비교 승격은 분리 |
 | incident commit 오타 | DEV-20260823-002 | 실제 c4fb396c5546a204630937bc5ba781c5fdaa528b로 정정 확인 |
 | 오래된 standalone CLI 쓰기 오판 | DEV-20260806-012 | vendor 원인 미확인 유지. 승인된 SDK 동결 명세가 CLI 재시험/Adapter를 제외했고 현행 공개 경로는 SDK 사용임을 확인 |
 | PC 간 개발 복원·문서 양방향 | tools/workspace, requirements-dev.lock | 별도 venv 고정 19패키지/두 wheel/개발/문서/로그 통과. 새 Runner 44모듈과 실제 cold checkout 7개도 통과. 집 PC 로그인/외부 환경은 별개 |
@@ -104,7 +116,7 @@ source/wheel/설치본/실제 export/설치 모델과 일치했다. `lao`/`lao-b
 `python -I`로 source 경로 주입을 배제한 설치 Runner가 보존된 v3 matrix의 외부 SHA를 사용한
 읽기 전용 검증에서도 9/9 일치를 반환했다. 새 workload는 없다.
 
-## F14의 다음 신뢰 경계
+## 초기 F14 신뢰 경계 구현 이력 — 아래는 당시 상태
 
 v3의 원문과 실행기는 변경하지 않았다. `qualifications/profile-i-semantic-v4`는 진행 중인 후속 경로다.
 후보가 전체 관측을 자기보고하는 대신 trusted supervisor가 개별 호출과 side effect를 소유하도록 한다.
@@ -122,7 +134,7 @@ uid 65532·capability 0·no-new-privileges 1·read-only driver·tmp IO·source h
 child의 가짜 합격문은 별도 pipe의 데이터로만 수집했다. 전후 환경 일치·잔여 container 0,
 모델/SDK thread/Phase F claim 0이다. 이것은 해당 경계 probe이며 일반 Judge 합격이 아니다.
 
-## 전수·후속 회귀의 완료와 미실행 구분
+## 마감 전 회귀 이력 — 최종 회차는 마지막 절 참조
 
 - `runner-baseline.xml`: **983 passed / 10 skipped**, 2143.66초. source 4dfb142에서 시작했고 실행 중
   B1 교정·commit이 진행됐다. 이를 최종 단일 revision 전체 회귀로 과장하지 않는다.
@@ -144,13 +156,13 @@ DEV-20260806-012는 오래된 외부 CLI의 근본 원인이 미확정인 역사
 SDK를 사용하고 설치된 CodexClient는 `app-server --listen stdio://`로 시작한다.
 이 차이를 외부 CLI 버그가 고쳐졌다는 주장으로 바꾸지 않는다. 현행 경로의 결함은 별도로 계속 검증한다.
 
-## 다음 진행
+## 다음 범위
 
-1. c926e86의 실제 새 checkout에서 실행 중인 Runner 전수 결과를 인수한다. 아래 두 회차를 혼동하지 않는다.
-2. 결과·incident·관리 문서·기존 SYNC:AUTO를 최종 점검하고 일반 Git 전달을 확인한다.
-3. 모든 필수 요구가 증명된 뒤에만 공식 종료한다. 새 기능/연구/model/Phase F는 시작하지 않는다.
+이번 감사 마감 작업은 끝났다. 사용자가 정하는 다음 기능개발·연구 범위의 명세부터 이어가되,
+새 모델/Phase F/외부 pilot은 해당 작업의 별도 검증·승인 관문을 유지한다. 완료·실패·중단 root를 재사용하지 않는다.
+전송된 작업 commit은 기존 `동기화_인수인계.md`의 SYNC:AUTO 블록을 따른다.
 
-## F14 v4 일반 실행·관측·소비 경로의 완료
+## 앞선 F14 v4 일반 실행·관측·소비 경로의 20종 완료 이력
 
 [v4 상세 결과](audit-f14-v4-checker-qualification-20260929.md)가 최신 정본이다.
 source `5ddcc10d2c6a224b85164059e0d8a828f26d1869`의 native 20종은 모두 기대와 일치했다.
@@ -213,3 +225,34 @@ reference-source에는 `-text -whitespace`를 추가했다. 전역 Git 설정이
 QA 경로는 각각 `C:\LAO\tmp\audit-closure-20260929\regression-5ddcc10`, `regression-c926e86`이다.
 이전 Codex/AppData 소유 worktree나 역사 root은 건드리지 않았다. 새 wheel 생성 때 생긴 프로젝트 전용
 pip 캐시 2파일도 출처/hash를 확인해 같은 LAO 임시 영역으로 옮겼다. 다른 pip 캐시는 건드리지 않았다.
+
+## 2026-09-30 최종 종료 증거
+
+마지막 요청 binding 교정을 포함한 native matrix-3은 21/21 기대 일치다. source 6650403을 실행 내내 고정했고
+정상 2종 합격/오류·위조 19종 거부, no-op 231/관측 process 231/child call 621을 실제 기록에서 계산했다.
+소스 및 별도 설치본으로 plan·receipt·입력·stream·결과·변형 bytes·의도한 실패 지점을 재계산했고,
+public I01~I08/전체 판정도 같은 reference 증거에서 통과했다. 최종 환경 일치·잔여 container 0,
+중단 matrix-2의 1,628파일 inventory 불변을 확인했다. 이전 회차를 다시 실행한 결과가 아니다.
+
+- manifest seal: `1e807d64228f8190b5a1e232f3278f1879789aef65e903b3ebe5f2d62a60ecd8`.
+- summary seal: `88f9ad7d0728b4cd9e5d0d44bddd83ae180b4ee7b9e0271b88b9ffd3ba49468e`.
+- source verifier 파일 SHA: `e846921a3d594423e4995c49679192513e2caad525eb9ad320ae060b0fe2a0f4`.
+- 설치 verifier 파일 SHA: `fbc8ec333d7a8b48d8d59a691b933e301135aa4aa761d2fa7b9961ef3c0e4f1b`.
+- raw: `C:\LAO\evidence\f14-v4-20260930\matrix-3`; 별도 검증 보고서는
+  `C:\LAO\evidence\audit-closure-20260930`의 `matrix3-source-verification.json`, `matrix3-installed-verification.json`.
+
+현재 B1 source/tests/Schema/template는 76f91fd와, 최신 checker 코드는 302a7cb와 같다.
+별도 QA venv에서 두 wheel의 Python **57모듈**과 설치 bytes, RECORD 29/48개를 다시 검증했다.
+기존 `verify_schema_wheel.py`로 공개 Schema 5개의 실제 새 export·설치 모델·source/wheel/설치 bytes를
+검사했고 pip check도 통과했다. 기존 설치와 원본은 교체하지 않았다.
+이 관측 기록 `installed-and-regression-verification.json`의 SHA는
+`4e1ce31f81389a547c661288b147f3032cfecc35648fd1c773d1f0799cd2dd6e`다.
+
+JUnit 원문과 테스트별 결과도 직접 대조했다. B1 303에는 F3/F8/F9 38·F5 18·F10 32·F11 38·F12 76·
+후속 deadline 8+3이 포함된다. Runner 1,123에는 F1 6·F2 29·F4 6이 포함되고, 이후 152개는
+binding 경계 72·실행/보관 37·대조군 25·supervisor 18을 포함한다. 부분 수와 회차는 합산하지 않는다.
+
+F13은 9월 30일 [v1 방법론](https://arxiv.org/html/2512.04123v1)과
+[v4 §3.2·§5.2·Figure 7(a)·8](https://arxiv.org/html/2512.04123v4)을 다시 열어 현재 정정과 대조했다.
+전체 306/분석 86/심층 20, 질문별 60·31 및 사례 14/20 구분이 일치한다. 문헌 전수 검증은 아니다.
+incident commit 오타의 실제 commit 존재도 확인했다. 실행 원본·옛 봉인·기존 보조 worktree는 바꾸지 않았다.

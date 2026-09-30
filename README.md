@@ -14,8 +14,8 @@
 
 이 프로젝트의 운영 목적은 **연구 기획과 실험·검증의 연속성**이다. Documents 관리 폴더에서 연구를 총괄하고 LAO에서 실제 작업을 수행한다. 두 공간의 공유 내용은 이 저장소 하나로 버전 관리하며, 기기별 환경·인증·실행 원본은 별도로 관리한다.
 
-현재 제품 단계는 **B1 순차 오케스트레이터**다. 버전 코어와 Project Pack을 분리하는 설계는 유지하지만, 범용 실무 도구의 채택 조건을 모두 충족한 상태는 아니다. 최신 감사 상태와 시험 회차는 [관리 STATUS](./docs/management/STATUS.md), 공식 종료 판정은 [감사·유지보수 종료 점검](./docs/operations/audit-maintenance-closure-20260929.md)을 따른다. 종료 점검이 열린 동안 새 기능개발로 넘어가지 않는다. B2·B3는 계속 보류한다.
+현재 제품 단계는 **B1 순차 오케스트레이터**다. 버전 코어와 Project Pack을 분리하는 설계는 유지하지만, 범용 실무 도구의 채택 조건을 모두 충족한 상태는 아니다. **감사 F1~F14와 후속 유지보수는 2026-09-30 공식 종료했다.** 시험 회차는 [관리 STATUS](./docs/management/STATUS.md), 근거와 적용 범위는 [공식 종료 판정](./docs/operations/audit-maintenance-closure-20260929.md)을 따른다. 다음 기능개발은 아직 시작하지 않았으며 B2·B3는 계속 보류한다.
 
-앞선 F1~F12 교정과 [F14 v3 고정 9종 진단](./docs/operations/audit-f14-native-qualification-20260929.md)은 역사 근거로 보존한다. 최신 [F14 v4 일반 snapshot·20종 native 검증](./docs/operations/audit-f14-v4-checker-qualification-20260929.md)은 실제 함수 호출·파일 효과·관측 위조 대응과 public/hidden 소비 경로를 검증했다. 실제 Windows/SDK enforcement·정식 비교 승격과는 구분한다. 과거 보고서의 시험 수와 실행 대기 지시는 현재 실행 지시가 아니다.
+앞선 F1~F12 교정과 [F14 v3 고정 9종 진단](./docs/operations/audit-f14-native-qualification-20260929.md)은 역사 근거로 보존한다. 최신 [F14 v4 일반 snapshot·21종 native 검증](./docs/operations/audit-f14-v4-checker-qualification-20260929.md)은 실제 함수 호출·파일 효과·관측 위조·요청 입력 binding과 public/hidden 소비 경로를 검증했다. 실제 Windows/SDK enforcement·정식 비교 승격과는 구분한다. 과거 보고서의 시험 수와 실행 대기 지시는 현재 실행 지시가 아니다.
 
 비교 실행기의 R0~R6 및 SDK 비교에는 이미 실행한 역사 자료가 있다. 기존 12-Cell 결과를 미실행으로 취급하거나 B1 우월성의 증거로 확대하지 않는다. 최신 v25의 SS1/B1 pair는 정식 비교에서 격리됐고, 현행 소스의 policy 2 경계는 과거 policy 1 candidate의 Live 실행을 거부한다. 실제 실행 상태와 후속 제한은 [문서 안내](./docs/README.md)와 [설정·배차 수정 결과](./docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md)를 따른다. 문서·임시자료 정리는 코드 결함 수정이나 새 Live 승인을 뜻하지 않는다.

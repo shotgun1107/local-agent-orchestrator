@@ -3,11 +3,11 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260929-007",
   "title": "v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동",
-  "status": "investigating",
+  "status": "resolved",
   "stage": "benchmark-runner",
   "category": "test",
   "discovered_at": "2026-09-29T08:42:06Z",
-  "resolved_at": null,
+  "resolved_at": "2026-09-30T08:41:36Z",
   "discovered_by": "마지막 입력/반환값 독립 대조",
   "symptom": "builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했다",
   "reproduction": [
@@ -27,7 +27,7 @@
       "reason": "후보가 반환값과 그 내부 검증 결과를 함께 바꿔도 요청 대상을 바꾼 구현은 거부해야 한다."
     }
   ],
-  "resolution": "302a7cb에서 입력 binding과 wrong-manifest-binding 대조군을 추가했다. 코드 교정과 회귀는 통과했으나 21종 native 전체 qualification이 중단돼 조사 중을 유지한다.",
+  "resolution": "302a7cb에서 trusted 수집자의 원래 입력 14필드와 반환 manifest를 직접 대조하고 wrong-manifest-binding 대조군을 추가했다. 6650403의 별도 matrix-3에서 정상 2종/오류 19종 native 21/21 기대 일치와 소스·설치본 전체 증거 재검증을 완료했다. 중단 matrix-2는 원본 그대로 보존한다.",
   "affected_files": [
     "tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py",
     "tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py",
@@ -41,14 +41,19 @@
   "verification": [
     "v4-binding-all-fields.xml 97 passed; v4-binding-final-contract.xml 152 passed. 중복 합산하지 않는다.",
     "2026-09-30 matrix-2 완료 13종의 저장 증거/변형 bytes/예정 실패 지점 재검증 PASS; wrong-manifest-binding 거부 포함.",
-    "matrix-2 extra-effect는 dispatch 뒤 result 부재, 뒤 7종은 미착수, 전체 summary 없음. 원본 1628파일 보존."
+    "matrix-2 extra-effect는 dispatch 뒤 result 부재, 뒤 7종은 미착수, 전체 summary 없음. 원본 1628파일 보존.",
+    "6650403 matrix-3 native 21/21 기대 일치: 정상 2종 합격/오류 19종 예정 지점 거부, no-op 231/관측 process 231/child call 621. 입력 불변·최종 환경 일치·잔여 container 0.",
+    "소스와 별도 설치 wheel의 verify_matrix 모두 21/21 재계산 일치. public I01~I08/전체 판정 9개도 설치본에서 동일 reference 증거로 통과.",
+    "manifest seal 1e807d64228f8190b5a1e232f3278f1879789aef65e903b3ebe5f2d62a60ecd8; summary seal 88f9ad7d0728b4cd9e5d0d44bddd83ae180b4ee7b9e0271b88b9ffd3ba49468e.",
+    "기존 matrix-2 1628파일 inventory SHA 929268ab22f048ba9a3674f46d7c0d3ea1d71fa422f39471f5006a6aa852d955가 완료 후에도 일치. 재실행·사후 summary 생성 없음."
   ],
   "remaining_risks": [
-    "새 source의 전체 21종 native qualification 및 설치본 전체 재판정 미완료",
+    "유한한 합성 API 행동 검증이며 실제 OS/SDK enforcement·정식 비교 승격·모든 입력의 정답을 보장하지 않는다",
     "중단 원인은 미확정. 기존 root 재실행이나 summary 사후 생성으로 완료 처리하지 않는다."
   ],
   "related_commits": [
-    "302a7cb2754053c1450f90be1511f19399beed3e"
+    "302a7cb2754053c1450f90be1511f19399beed3e",
+    "665040396e68b90293ec4623518009152fe774c0"
   ],
   "source_references": [
     "docs/operations/audit-f14-v4-checker-qualification-20260929.md"

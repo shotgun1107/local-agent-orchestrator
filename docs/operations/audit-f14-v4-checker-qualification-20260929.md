@@ -1,7 +1,7 @@
 # F14 v4 행동 검증기 — 일반 snapshot 경로와 실제 qualification
 
-기준 source: `5ddcc10d2c6a224b85164059e0d8a828f26d1869`.
-**F14의 이름 기반 판정 결함을 새 격리 행동 검증기로 교정했고, 고정 20종 qualification은 완료했다.**
+최종 검증 source: `665040396e68b90293ec4623518009152fe774c0`(실행 코드 교정 `302a7cb`).
+**F14의 이름 기반 판정과 후속 요청 binding 결함을 교정했고, 최종 고정 21종 qualification을 완료했다.**
 프로젝트 전체 감사 종료는 [종료 점검](audit-maintenance-closure-20260929.md)의 별도 판정을 따른다.
 실제 Windows/SDK enforcement, 새 연구 experiment, Phase F 승격을 완료했다는 뜻은 아니다.
 
@@ -9,8 +9,9 @@
 `v4-binding-red.xml` 1 failed, 교정 후 관련 `v4-binding-all-fields.xml` 97 passed다.
 내부적으로 일관된 manifest인지와 원래 요청을 구현했는지는 별개이므로, 후보 밖의 수집자가
 보관한 원래 source/runtime/W·J·S/sentinel/fixture/Python/script/allowlist/시간/ID의 14필드와
-반환값을 직접 묶었다. 이 새 source의 **21종 native qualification은 중단·미완료**다(9월 30일 인수).
-아래 20종은 5ddcc10의 실제 기록이며 후속 결과로 소급 재분류하지 않는다. DEV-20260929-007로 추적한다.
+반환값을 직접 묶었다. 첫 matrix-2의 중단·미완료는 보존했고, 새 matrix-3에서 **21/21 기대 일치**와
+소스·설치본 재검증을 완료했다. DEV-20260929-007을 닫는다. 아래 20종은 앞선 5ddcc10의 실제 기록이며
+최종 결과와 합산하거나 소급 재분류하지 않는다. 최종 원문·SHA는 이 문서 마지막 절을 따른다.
 
 ## 왜 필요했고 무엇을 고쳤는가
 
@@ -38,7 +39,7 @@ CLI의 `prepare --candidate-root --candidate-sha256`은 실제 외부 snapshot�
 `.git`·cache·link·빈 디렉터리가 있는 임의 checkout을 그대로 받는 계약은 아니다.
 기존 v1 경로의 새 실행/승격 차단을 해제하거나 옛 reference/mutation/seal을 고치지 않았다.
 
-## 실제 검증 결과
+## 앞선 실제 검증 결과 — matrix-1 / source 5ddcc10
 
 원문: `C:\LAO\evidence\f14-v4-20260929\matrix-1`.
 
@@ -93,7 +94,7 @@ ABI 3 미만/사용 불가는 완화하지 않고 NO-GO다. 이 설정은 해당
 계약 시험의 중간 실패도 보존했다: 큰 pytest parameter ID 오류, 시험 중 source 수정의
 VERIFIER_REVISION_CHANGED, 저장 reader의 request_files 필드명 오류다. 고정 source의 최종 136개와 구분한다.
 
-## 설치 산출물과 범위
+## 앞선 설치 산출물과 범위 — source 5ddcc10
 
 Runner QA wheel SHA: `4773f8c3fc519a666ca6eed31d676ceba32e3843ed7400f461e0b6e1856767c9`.
 Git → wheel → 별도 설치본 Python **44모듈**이 exact 일치했고 RECORD 48개를 검증했다.
@@ -110,7 +111,7 @@ wheel/원문은 Git 밖이고 source·시험·절차·기준 SHA는 Git으로 �
 실제 환경이 필요한 성질은 이후 별도 승인된 candidate의 exact 환경 증거를 요구한다.
 프로젝트 SDK thread/model turn/Phase F claim/연구 experiment는 이번에 **0**이다.
 
-## 2026-09-30 — matrix-2 중단 상태 인수
+## 2026-09-30 오전 — matrix-2 중단 상태 인수 이력
 
 source `302a7cb2754053c1450f90be1511f19399beed3e`, 원문
 `C:\LAO\evidence\f14-v4-20260929\matrix-2`.
@@ -139,4 +140,46 @@ Engine 29.6.2/linux-amd64가 다시 응답하며 matrix-2 이름의 잔여 conta
 개발 진입 스크립트 적용 후 Python 3.12.10/고정 의존성/현재 source 경로/pip check는 PASS다.
 진입 전 source 경로 불일치는 기존 설치 wheel이 선택됐기 때문이며 환경 변경 없이 process-local 진입으로 바로잡았다.
 새 실제 qualification은 fresh root와 현재 환경/no-op 검증·별도 승인 절차를 따른다.
-DEV-20260929-007과 전체 감사는 아직 닫지 않는다.
+이 인수 시점에는 DEV-20260929-007과 전체 감사를 닫지 않았다. 이후 완료는 아래의 별도 matrix-3 근거다.
+
+## 2026-09-30 최종 — matrix-3 21종 완료와 설치본 재판정
+
+실행 source `665040396e68b90293ec4623518009152fe774c0`, tree
+`b65fff66e0efd39ed995c4475e6b34197225f3d4`를 실행 내내 clean 상태로 고정했다.
+코드는 302a7cb와 같으며 이 사이 변경은 기록·문서뿐이다.
+원문: `C:\LAO\evidence\f14-v4-20260930\matrix-3`.
+
+| 무결성 기준 | SHA-256 |
+|---|---|
+| matrix manifest seal | 1e807d64228f8190b5a1e232f3278f1879789aef65e903b3ebe5f2d62a60ecd8 |
+| matrix summary seal | 88f9ad7d0728b4cd9e5d0d44bddd83ae180b4ee7b9e0271b88b9ffd3ba49468e |
+| source verifier 보고서 파일 | e846921a3d594423e4995c49679192513e2caad525eb9ad320ae060b0fe2a0f4 |
+| 설치본 verifier 보고서 파일 | fbc8ec333d7a8b48d8d59a691b933e301135aa4aa761d2fa7b9961ef3c0e4f1b |
+
+**21/21 기대 일치:** 정상 reference/equivalent 2종은 합격, 기존 오류/위조 18종과 추가
+wrong-manifest-binding까지 19종은 정확한 실패 지점에서 거부했다. 다른 환경/import 오류를 성공으로 세지 않았다.
+각 대조군의 plan·입력·명령·native receipt·dispatch·stream·결과와 reference에서 유도한 변형 bytes를
+소스와 별도 설치본의 `verify_matrix`에서 각각 다시 검사했다. 두 재판정 모두 21/21이며 새 workload를 실행하지 않았다.
+
+- 회차 내부 native no-op **231회**, supervisor process **231개**, child call **621회**.
+  별도 턴 A의 예행연습은 이 합계에 포함하지 않는다. 실제 Landlock ABI 7에서 21종 입력 불변,
+  진단별 최종 환경 일치와 전체 종료 후 해당 이름의 잔여 container 0을 확인했다.
+- 정상 reference의 47호출/11묶음/10-property와 전체 및 public I01~I08 **9개 판정**을
+  설치본에서 읽기 전용 재계산했다. 모두 같은 실제 실행 증거로 통과했다.
+- reference plan seal: `63de2cf0aec884d4cce7fe0ec3faa5284dab69f952ed18c727228f4446dc4eab`.
+  reference result seal: `d215789490c825b4fa09fff48c8dd0052911204e544daac3c8298e4538aa1428`.
+- 이전 matrix-2의 **1,628파일** inventory SHA가 오전 인수 값과 그대로 일치했다.
+  중단 결과에 summary를 덧붙이거나 완료로 재분류하지 않았다. matrix-1/2와 합산해 만든 결과도 아니다.
+- 17:17 실행 직전 Docker 엔진 부재는 dispatch 전에 차단됐다. source/plan은 같았지만 환경이 달라
+  기존 GO를 소비하지 않았다. 설치된 엔진 재기동 뒤 17:20 새 11/11 no-op GO를 보고했고,
+  그 다음 사용자 승인으로 고정 21종을 1회 실행했다. install/update/pull·인증 사용·전역 설정 변경은 없다.
+
+별도 판정 보고서는 `C:\LAO\evidence\audit-closure-20260930\matrix3-source-verification.json`과
+`matrix3-installed-verification.json`이다. 설치본은 기존 별도 QA venv의 Runner wheel
+`b52f5ec9ffd0699b6c941b36af7869f4add006069b93671aee9b0eee3426a424`이며 `python -I -B`로
+source 경로 주입을 배제했다. B1 13/Runner 44, 합계 **57개 Python 모듈**의 Git→wheel→설치 bytes와
+두 RECORD 29/48개를 재검증했다. 공개 Schema 5개의 source/wheel/설치/export/모델 일치와 pip check도 PASS다.
+
+실행·읽기 검증 모두 `comparison_authorized/challenge_ready/os_enforcement_verified`는 false다.
+프로젝트 model turn·SDK thread·Phase F claim·Controller state 변경은 0이며 새 기능/연구를 시작하지 않았다.
+이 유한 API 행동 검증의 완료를 실제 Windows/SDK enforcement·범용 실무 채택·모든 공격의 증명으로 확대하지 않는다.

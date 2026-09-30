@@ -1,11 +1,12 @@
 # F14 v4 — 실제 함수 호출과 관측자의 분리
 
 이 경로는 감사 F14를 닫기 위한 후속 유지보수다. v3 원문/봉인/검증기는 보존한다.
-**47호출의 정상 구현과 고정 20종 native qualification을 완료했다.**
+**47호출의 정상 구현과 최종 고정 21종 native qualification을 완료했다(2026-09-30).**
 [결과·범위·외부 SHA](../../../../docs/operations/audit-f14-v4-checker-qualification-20260929.md)를 따른다.
-**후속 요청/반환값 binding 반례를 교정했으나, 새 21종 qualification은 중단·미완료다(9월 30일 인수).**
-matrix-2의 13종 완료 증거는 재검증했고 extra-effect는 dispatch 뒤 result 부재, 나머지 7종은 미착수다.
-원본을 보존하며 같은 root 재실행·사후 summary 생성은 금지한다. 관련 최종 회귀는 152 passed다.
+후속 요청/반환값 binding 교정은 새 matrix-3의 **21/21 기대 일치**와 소스·설치본 재검증으로 닫았다.
+정상 2종 합격/오류·위조 19종 거부, no-op 231/관측 process 231/child call 621이며 관련 회귀는 152 passed다.
+중단 matrix-2의 13종 완료/extra-effect result 부재/7종 미착수 원본은 그대로 보존했다.
+완료·중단 root 재실행, 과거 회차와 합산, 사후 summary 생성은 금지한다.
 47회 호출 수는 같지만 관측자가 보관한 원래 입력 14필드와 반환 manifest도 직접 대조한다.
 실제 Windows/SDK·정식 비교 승격은 별개다. v3 결과를 새 revision의 합격으로 복사하지 않는다.
 
