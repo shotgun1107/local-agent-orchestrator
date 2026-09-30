@@ -6,8 +6,8 @@
 ## 요약
 
 - 전체: 97건
-- 해결: 95건
-- 조사 중: 2건
+- 해결: 96건
+- 조사 중: 1건
 - 미해결: 0건
 - 위험 수용: 0건
 
@@ -109,7 +109,7 @@
 | DEV-20260929-004 | resolved | benchmark-runner | integration | F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락 |
 | DEV-20260929-005 | resolved | benchmark-runner | test | F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴 |
 | DEV-20260929-006 | resolved | benchmark-runner | integration | 새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치 |
-| DEV-20260929-007 | investigating | benchmark-runner | test | v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동 |
+| DEV-20260929-007 | resolved | benchmark-runner | test | v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6013,7 +6013,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 채택한 해결
 
-새 v4에서 외부 Worker snapshot/hash, protected supervisor와 개별 child 호출, 정상/오류 Evidence·실제 파일 효과·public/hidden 공통 소비를 구현했다. 현재 API 행동 검증의 native 20종과 설치본 재판정까지 완료했다. 과거 v1/v2/v3·seal은 보존하고 기존 v1 승격 차단 및 실제 Windows/SDK 환경 증거 요구는 유지한다
+새 v4에서 외부 Worker snapshot/hash, protected supervisor와 개별 child 호출, 정상/오류 Evidence·실제 파일 효과·public/hidden 공통 소비를 구현했다. 당시 API 행동 검증의 native 20종과 설치본 재판정을 완료했고, 후속 요청 binding 결함 DEV-20260929-007까지 교정한 최종 21종도 2026-09-30 완료했다. 과거 v1/v2/v3·seal은 보존하고 기존 v1 승격 차단 및 실제 Windows/SDK 환경 증거 요구는 유지한다
 
 ### 수정 파일
 
@@ -6049,6 +6049,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 검증 결과
 
+- 2026-09-30 후속 6650403 matrix-3 native 21/21 기대 일치, 소스·설치본 전체 재검증, public I01~I08/전체 판정 통과. manifest 1e807d64228f8190b5a1e232f3278f1879789aef65e903b3ebe5f2d62a60ecd8, summary 88f9ad7d0728b4cd9e5d0d44bddd83ae180b4ee7b9e0271b88b9ffd3ba49468e. 이전 회차와 합산하지 않는다.
 - 5ddcc10 matrix-1 native 20/20 기대 일치, 정상 2종 합격/오류 18종 예정 지점 거부; 220 no-op/220 supervisor/574 child call
 - 입력 불변·최종 환경 일치·잔여 container 0; 별도 설치 wheel에서 원문/변형 bytes/결과 재판정 20/20 일치
 - manifest a1fba3544d36e96aa8b49930696ce89f74d834af0dee3da7752cfbe292506a27; summary a90de57eff087da4fdadfebb1a51b20a8ca061df0dbc3d91168b734ab90780d4
@@ -6065,7 +6066,7 @@ noop 함수와 pass test 이름만으로 일부 핵심 property/public 선언 �
 
 ### 추적 정보
 
-- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9, c60b26595b5d67133289afd8aed646cf8bc8ad65, dcb1baa604ff713de030e9e2f530d577331ae6a7, e45bad012402c3e0a6abbd8ef7603657eac9469b, 36e2304135848a61927b2dfa73738d35de1d7380, 5ddcc10d2c6a224b85164059e0d8a828f26d1869
+- 관련 커밋: 4df24fed32ef4dbc70f6beb3c4a34e912681cfc9, c60b26595b5d67133289afd8aed646cf8bc8ad65, dcb1baa604ff713de030e9e2f530d577331ae6a7, e45bad012402c3e0a6abbd8ef7603657eac9469b, 36e2304135848a61927b2dfa73738d35de1d7380, 5ddcc10d2c6a224b85164059e0d8a828f26d1869, 302a7cb2754053c1450f90be1511f19399beed3e, 665040396e68b90293ec4623518009152fe774c0
 - 출처: benchmarks/.local-r6/independent-audit-20260908-01/report.md
 - 출처: docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md
 - 출처: docs/operations/audit-f14-integration-preflight-20260917.md
@@ -6463,11 +6464,11 @@ reference-source를 -text로 보호했다. 원래 봉인 SHA와 일치한 작업
 
 ## DEV-20260929-007 — v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동
 
-- 상태: `investigating`
+- 상태: `resolved`
 - 단계: `benchmark-runner`
 - 분류: `test`
 - 발견: 2026-09-29T08:42:06Z / 마지막 입력/반환값 독립 대조
-- 해결: 미해결
+- 해결: 2026-09-30T08:41:36Z
 
 ### 증상
 
@@ -6491,7 +6492,7 @@ builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했
 
 ### 채택한 해결
 
-302a7cb에서 입력 binding과 wrong-manifest-binding 대조군을 추가했다. 코드 교정과 회귀는 통과했으나 21종 native 전체 qualification이 중단돼 조사 중을 유지한다.
+302a7cb에서 trusted 수집자의 원래 입력 14필드와 반환 manifest를 직접 대조하고 wrong-manifest-binding 대조군을 추가했다. 6650403의 별도 matrix-3에서 정상 2종/오류 19종 native 21/21 기대 일치와 소스·설치본 전체 증거 재검증을 완료했다. 중단 matrix-2는 원본 그대로 보존한다.
 
 ### 수정 파일
 
@@ -6510,13 +6511,17 @@ builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했
 - v4-binding-all-fields.xml 97 passed; v4-binding-final-contract.xml 152 passed. 중복 합산하지 않는다.
 - 2026-09-30 matrix-2 완료 13종의 저장 증거/변형 bytes/예정 실패 지점 재검증 PASS; wrong-manifest-binding 거부 포함.
 - matrix-2 extra-effect는 dispatch 뒤 result 부재, 뒤 7종은 미착수, 전체 summary 없음. 원본 1628파일 보존.
+- 6650403 matrix-3 native 21/21 기대 일치: 정상 2종 합격/오류 19종 예정 지점 거부, no-op 231/관측 process 231/child call 621. 입력 불변·최종 환경 일치·잔여 container 0.
+- 소스와 별도 설치 wheel의 verify_matrix 모두 21/21 재계산 일치. public I01~I08/전체 판정 9개도 설치본에서 동일 reference 증거로 통과.
+- manifest seal 1e807d64228f8190b5a1e232f3278f1879789aef65e903b3ebe5f2d62a60ecd8; summary seal 88f9ad7d0728b4cd9e5d0d44bddd83ae180b4ee7b9e0271b88b9ffd3ba49468e.
+- 기존 matrix-2 1628파일 inventory SHA 929268ab22f048ba9a3674f46d7c0d3ea1d71fa422f39471f5006a6aa852d955가 완료 후에도 일치. 재실행·사후 summary 생성 없음.
 
 ### 남은 위험
 
-- 새 source의 전체 21종 native qualification 및 설치본 전체 재판정 미완료
+- 유한한 합성 API 행동 검증이며 실제 OS/SDK enforcement·정식 비교 승격·모든 입력의 정답을 보장하지 않는다
 - 중단 원인은 미확정. 기존 root 재실행이나 summary 사후 생성으로 완료 처리하지 않는다.
 
 ### 추적 정보
 
-- 관련 커밋: 302a7cb2754053c1450f90be1511f19399beed3e
+- 관련 커밋: 302a7cb2754053c1450f90be1511f19399beed3e, 665040396e68b90293ec4623518009152fe774c0
 - 출처: docs/operations/audit-f14-v4-checker-qualification-20260929.md

@@ -4,7 +4,7 @@
 
 ## 먼저 읽을 문서
 
-제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. 최신 감사 상태와 시험 회차는 [관리 STATUS](./management/STATUS.md), 공식 종료 판정은 [감사·유지보수 종료 점검](./operations/audit-maintenance-closure-20260929.md)을 따른다. [F14 v4 일반 snapshot·20종 native 검증](./operations/audit-f14-v4-checker-qualification-20260929.md)은 완료됐고 cold checkout 교정 뒤 최종 전수 회귀를 확인 중이다. API 행동 검증과 역사 실험 무결성을 실제 OS/SDK·전체 제품·Live 검증으로 확대하지 않는다.
+제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. **감사 F1~F14와 후속 유지보수는 2026-09-30 공식 종료했다.** 시험 회차는 [관리 STATUS](./management/STATUS.md), 근거와 한계는 [공식 종료 판정](./operations/audit-maintenance-closure-20260929.md)을 따른다. [F14 v4 일반 snapshot·21종 native 검증](./operations/audit-f14-v4-checker-qualification-20260929.md), cold checkout 전수와 후속 입력 binding 회귀도 완료됐다. API 행동 검증과 역사 실험 무결성을 실제 OS/SDK·범용 실무 채택·Live 검증으로 확대하지 않는다.
 
 회사 PC의 현재 작업 위치는 `C:\LAO\repo`다. 새 세션은 [회사 PC 경로·인수인계](./operations/company-pc-layout-20260916.md)를 먼저 읽는다. 프로젝트를 외부 작성 도구에 설명할 때는 [프로젝트 맥락 학습 자료](./portfolio/local-agent-orchestrator-application-context.md)를 참고하되, 개인 기여·검증 한계를 함께 유지한다.
 

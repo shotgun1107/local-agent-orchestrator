@@ -5,6 +5,22 @@
 
 ## 먼저 볼 최신 요약
 
+- **2026-09-30 감사·유지보수 공식 종료(CLOSED).** 원 감사 F1~F14와 유지보수 중 재현한 후속 결함의
+  교정·회귀·배포·문서 근거를 닫았다. 정본은 `docs/operations/audit-maintenance-closure-20260929.md`다.
+- 마지막 v4 요청/반환값 binding 교정은 새 `matrix-3`에서 **21/21 기대 일치**로 검증했다.
+  정상 2종 합격/오류·위조 19종 거부, native no-op 231회/관측 process 231개/실제 child call 621회다.
+  소스와 별도 설치본의 전체 증거 재검증, 전체 및 공개 I01~I08 판정, 입력 불변·잔여 container 0을 확인했다.
+- 회귀 근거는 B1 **303 passed**, cold checkout Runner **1,123 passed / 10 skipped**,
+  이후 변경 경계의 **152 passed**다. 서로 다른 회차이며 중복 수를 합산하지 않는다.
+  두 QA wheel의 Python 57모듈과 설치 bytes/RECORD, 공개 Schema 5개의 모델·실제 export도 일치한다.
+- 이전 `matrix-2`는 13종 완료/14번째 중단/7종 미착수 상태 그대로 보존했다. 1,628파일 hash가 인수 시점과 같다.
+  새 결과로 과거 실패·중단 회차를 재분류하거나 재봉인하지 않았다.
+- **기능개발·새 연구·프로젝트 model/SDK thread·Phase F는 시작하지 않았다.** 다음 범위는 사용자가 정한다.
+  실제 OS/SDK enforcement·다른 PC 실행환경·범용 실무 채택은 이번 감사 종료의 의미가 아니다.
+  SDK 전환 명세에서 제외한 과거 standalone CLI 이슈는 미확정 이력으로 유지하며 정식 Live는 별도 관문이다.
+
+## 최종 마감 전 진행 이력 — 아래의 OPEN·진행 중은 당시 상태
+
 - **9월 30일 인수:** c926e86 고정 cold checkout의 전체 Runner는 **1,123 passed / 10 skipped / 실패 0**으로 완료됐다.
   후속 302a7cb 입력 binding 관련 회귀도 **152 passed**다. 아래의 전수 실행 중 표기는 9월 29일 기록이다.
   native matrix-2는 **완료 13종을 읽기 전용 재검증**, 14번째 extra-effect는 dispatch 뒤 result 부재,
@@ -43,7 +59,7 @@
 
 아래는 변경 이유와 과거 시험 결과를 보존한 이력이다. 회차별 시험 수를 합산하지 않는다.
 
-## 연구와 구현
+## 연구와 구현 — 과거 교정 회차의 경과
 
 - 구현 기반은 B1 순차 로컬 오케스트레이터와 benchmark runner다. B2 병렬·B3 Reviewer는 보류돼 있다.
 - 과거 12-Cell 비교는 INCONCLUSIVE다. SDK pilot의 PILOT_PASS를 B1 일반 우월성으로 확대하지 않는다.
@@ -118,9 +134,10 @@ v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 
 
 - 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
 - 정식 비교의 active candidate·실행 대상은 새로 승인되지 않았다. F14 reference 진단의 Docker/image/no-op은 확인했지만 실제 SDK 인증·외부 state/seal·정식 비교 candidate는 별도 미확인이다.
-- **고정 native 진단 완료 / 정식 비교 Live NO-GO.** reference와 matrix-1은 이미 실행됐으며 재실행하지 않는다.
-- F14 일반 snapshot/관측 위조 대응과 20종 qualification까지 교정했다. controller deadline 후속도 303개로 검증했다.
-  최신 cold checkout 교정 뒤 전수 회귀·최종 기록/전달 확인이 남았다. 과거 wall-clock 변동의 원인을 소급 단정하지 않는다.
+- **감사·유지보수 CLOSED / 정식 비교 Live NO-GO.** 완료 reference·matrix-1/3과 중단 matrix-2는 재실행하지 않는다.
+- F14 일반 snapshot/관측 위조/요청 binding의 최종 21종과 controller deadline 후속 303개를 검증했다.
+  전수의 10 skip 중 설정 파서 6개는 별도 native 시험이 통과했으며 나머지 4개는 미실행이다.
+  과거 wall-clock 변동의 원인을 소급 단정하지 않는다.
 - Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
 - `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
 - 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.

@@ -124,5 +124,6 @@ manifest에는 원본 상대경로·파일 수·bytes·SHA-256·source/candidate
 
 현재 상태/다음 연구 작업은 `docs/management/STATUS.md`, `NEXT.md`를 참조한다.
 통합·문서 정리 뒤 F8·F9·F3, F5, F10, F11과 F10 terminal 후속, F12 및 F1/F2/F4/F6을 교정했다.
-F14 v3 고정 9종 native 진단은 완료했다. 일반 Worker 평가 연결과 감사·유지보수 전체 종료는
-`audit-maintenance-closure-20260929.md`에서 계속 점검 중이다. 현재 Live NO-GO와 역사 자료 보존은 유지한다.
+F14 v4 일반 snapshot·입력 binding의 최종 21종 native 진단과 설치본 재검증까지 완료했다.
+감사·유지보수는 2026-09-30 공식 종료했으며 `audit-maintenance-closure-20260929.md`에 근거와 범위를 기록했다.
+다른 PC의 실제 환경·인증·원본 전달과 정식 Live GO는 별개이며 역사 자료 보존은 유지한다.
