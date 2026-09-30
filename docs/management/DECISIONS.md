@@ -109,3 +109,11 @@
 - 실제 fresh checkout에서 발견한 참조 자료 개행과 Git blob 불일치도 현재 유지보수 범위에서 교정한다.
   원래 봉인·원본 파일·과거 commit은 보존하고 현재 Git 전달 바이트/속성만 바로잡는다.
 - 기존 폴더에서의 통과만으로 PC 복원을 완료했다고 하지 않는다. 고정된 별도 QA checkout의 최종 전수 결과를 확인한 뒤 공식 종료한다.
+
+## 2026-09-30 — 완료 회귀와 중단된 qualification 분리
+
+- 사용자의 이어서 진행 지시에 따라 원문과 process 상태를 먼저 인수했다. 전수 1,123 passed/10 skipped와
+  후속 152 passed는 완료로 기록하되, native matrix-2의 13종 부분 결과를 전체 21종 완료로 확대하지 않는다.
+- 14번째 extra-effect는 dispatch 뒤 최종 result가 없고 뒤의 7종은 미착수다. 중단 원인은 미확정이다.
+  기존 원본/봉인은 보존하며 같은 root 재실행·사후 summary 생성·이전 회차와 성공 합산을 하지 않는다.
+- 새 검증은 fresh root와 현재 exact 환경 확인부터 진행한다. 새 모델·연구 experiment·Phase F 승인은 포함하지 않는다.

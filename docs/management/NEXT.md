@@ -3,8 +3,8 @@
 현재 우선순위는 **감사·유지보수 공식 종료**다.
 `docs/operations/audit-maintenance-closure-20260929.md`의 요구별 표를 따라
 controller deadline 후속·F14 일반 snapshot/20종 native 검증·새 wheel 설치와 cold checkout 교정을 인수한다.
-지금은 교정된 고정 checkout의 전체 Runner 회귀와 최종 기록/전달 확인을 마무리하는 단계다.
-추가로 발견한 v4 요청/반환값 binding을 교정했으므로 새 21종 native qualification도 완료해야 한다.
+교정된 고정 checkout의 전체 Runner는 1,123 passed / 10 skipped로 완료했고,
+요청/반환값 binding 관련 후속 152개도 통과했다. 21종 native qualification의 중단·미완료를 인수하는 단계다.
 사용자는 각 항목마다 다시 묻지 말고 공식 종료 직전까지 연속 처리하도록 지시했다.
 고정 9종 진단을 목표 전체의 완료로 대체하지 않고, 새 기능개발/모델 실험은 시작하지 않는다.
 9월 16~17일 단락은 완료 경과이며 이미 끝난 단계의 재실행 지시가 아니다.
@@ -17,7 +17,18 @@ controller deadline 후속·F14 일반 snapshot/20종 native 검증·새 wheel �
 4. 개발 환경에 진입해 `tools/workspace/check_environment.py`를 실행한다. 다른 PC라면 복원 문서에 따라 venv를 새로 만든다.
 5. 아래 연구 과제 중 사용자가 선택한 범위를 확인한 뒤에만 코드·실험 작업으로 넘어간다.
 
-## 2026-09-29 최신 감사 마감 작업
+## 2026-09-30 최신 감사 마감 작업
+
+1. 전체 Runner 결과와 후속 152개는 완료다. 같은 전수를 다시 시작할 필요는 없다.
+2. `C:\LAO\evidence\f14-v4-20260929\matrix-2`는 13종 완료/extra-effect 중단/7종 미착수다.
+   완료 13종의 plan/result/입력/예정 실패 지점을 재검증했다. 기존 root에 재진입하거나 summary를 만들어
+   완결 회차처럼 보이게 하지 않는다. 원본 1,628파일의 인수 inventory SHA는 상세 결과 문서에 기록했다.
+3. 남은 전체 qualification은 새 fresh root에서 exact 환경과 동일경로 no-op을 확인하고,
+   별도 승인 뒤 수행한다. matrix-1/2의 결과를 새 회차와 합산해 21/21로 만들지 않는다.
+4. 전체 native qualification·incident·관리 반영·기존 SYNC:AUTO·원격 tip을 확인한 뒤에만 공식 종료한다.
+   실제 기능개발/연구/모델/Phase F는 시작하지 않는다.
+
+## 2026-09-29 마감 작업 이력
 
 1. F14 v4 결과는 `docs/operations/audit-f14-v4-checker-qualification-20260929.md`에서 인수한다.
    `C:\LAO\evidence\f14-v4-20260929\matrix-1`은 native 20/20과 설치본 재판정까지 완료됐으므로 다시 실행하지 않는다.

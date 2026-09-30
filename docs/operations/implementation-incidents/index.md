@@ -7,8 +7,8 @@
 
 - 전체: 97건
 - 해결: 95건
-- 조사 중: 1건
-- 미해결: 1건
+- 조사 중: 2건
+- 미해결: 0건
 - 위험 수용: 0건
 
 | ID | 상태 | 단계 | 분류 | 제목 |
@@ -109,7 +109,7 @@
 | DEV-20260929-004 | resolved | benchmark-runner | integration | F14 v4 native bridge의 지연 import와 strict JSON 전달 전제 누락 |
 | DEV-20260929-005 | resolved | benchmark-runner | test | F14 configuration 검증기가 정상 입력도 무조건 거부하는 구현을 통과시킴 |
 | DEV-20260929-006 | resolved | benchmark-runner | integration | 새 Windows checkout의 참조 자료 개행 변환과 Git blob의 봉인 바이트 불일치 |
-| DEV-20260929-007 | open | benchmark-runner | test | v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동 |
+| DEV-20260929-007 | investigating | benchmark-runner | test | v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동 |
 
 ## DEV-20260804-001 — SDK에 없는 observe 기반 timeout 설계
 
@@ -6463,7 +6463,7 @@ reference-source를 -text로 보호했다. 원래 봉인 SHA와 일치한 작업
 
 ## DEV-20260929-007 — v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동
 
-- 상태: `open`
+- 상태: `investigating`
 - 단계: `benchmark-runner`
 - 분류: `test`
 - 발견: 2026-09-29T08:42:06Z / 마지막 입력/반환값 독립 대조
@@ -6483,33 +6483,40 @@ builder가 요청된 J를 wrong-J로 바꿔도 configuration 판정이 합격했
 
 ### 근본 원인
 
-미확인
+기존 검사는 반환 manifest 내부 정합성을 대조했지만 후보 밖에 보관한 보호 root를 포함한 원래 요청 입력 14필드를 직접 결합하지 않았다.
 
 ### 검토한 해결안
 
-- 기록 없음
+- `adopted` trusted 수집자가 원래 14필드를 보관하고 host 판정기가 반환값과 직접 대조 — 후보가 반환값과 그 내부 검증 결과를 함께 바꿔도 요청 대상을 바꾼 구현은 거부해야 한다.
 
 ### 채택한 해결
 
-미해결
+302a7cb에서 입력 binding과 wrong-manifest-binding 대조군을 추가했다. 코드 교정과 회귀는 통과했으나 21종 native 전체 qualification이 중단돼 조사 중을 유지한다.
 
 ### 수정 파일
 
-- 기록 없음
+- tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py
+- tools/benchmark-runner/src/benchmark_runner/profile_i_call_qualification.py
+- tools/benchmark-runner/tests/test_profile_i_call_boundary.py
 
 ### 회귀시험
 
-- 기록 없음
+- test_builder_cannot_replace_the_requested_protected_root
+- test_all_requested_manifest_inputs_are_bound
 
 ### 검증 결과
 
-- 기록 없음
+- v4-binding-all-fields.xml 97 passed; v4-binding-final-contract.xml 152 passed. 중복 합산하지 않는다.
+- 2026-09-30 matrix-2 완료 13종의 저장 증거/변형 bytes/예정 실패 지점 재검증 PASS; wrong-manifest-binding 거부 포함.
+- matrix-2 extra-effect는 dispatch 뒤 result 부재, 뒤 7종은 미착수, 전체 summary 없음. 원본 1628파일 보존.
 
 ### 남은 위험
 
-- 없음
+- 새 source의 전체 21종 native qualification 및 설치본 전체 재판정 미완료
+- 중단 원인은 미확정. 기존 root 재실행이나 summary 사후 생성으로 완료 처리하지 않는다.
 
 ### 추적 정보
 
-- 관련 커밋: 기록 없음
+- 관련 커밋: 302a7cb2754053c1450f90be1511f19399beed3e
 - 출처: docs/operations/audit-f14-v4-checker-qualification-20260929.md
