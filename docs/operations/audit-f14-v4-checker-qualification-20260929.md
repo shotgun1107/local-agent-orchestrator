@@ -9,7 +9,7 @@
 `v4-binding-red.xml` 1 failed, 교정 후 관련 `v4-binding-all-fields.xml` 97 passed다.
 내부적으로 일관된 manifest인지와 원래 요청을 구현했는지는 별개이므로, 후보 밖의 수집자가
 보관한 원래 source/runtime/W·J·S/sentinel/fixture/Python/script/allowlist/시간/ID의 14필드와
-반환값을 직접 묶었다. 이 새 source의 **21종 native qualification은 아직 진행 중**이다.
+반환값을 직접 묶었다. 이 새 source의 **21종 native qualification은 중단·미완료**다(9월 30일 인수).
 아래 20종은 5ddcc10의 실제 기록이며 후속 결과로 소급 재분류하지 않는다. DEV-20260929-007로 추적한다.
 
 ## 왜 필요했고 무엇을 고쳤는가
@@ -109,3 +109,34 @@ wheel/원문은 Git 밖이고 source·시험·절차·기준 SHA는 Git으로 �
 모든 결과의 `comparison_authorized`, `challenge_ready`, `os_enforcement_verified`는 false다.
 실제 환경이 필요한 성질은 이후 별도 승인된 candidate의 exact 환경 증거를 요구한다.
 프로젝트 SDK thread/model turn/Phase F claim/연구 experiment는 이번에 **0**이다.
+
+## 2026-09-30 — matrix-2 중단 상태 인수
+
+source `302a7cb2754053c1450f90be1511f19399beed3e`, 원문
+`C:\LAO\evidence\f14-v4-20260929\matrix-2`.
+manifest SHA: `c412f0a787aa1f9f55722ecef71a2e46972cf0de034ee57d90dc63eb64fabaaa`.
+
+- 완료 13종: reference/equivalent 정상 합격과 no-op/constant-success/skip-state-check/
+  reject-valid-config/reject-valid-manifest/wrong-manifest-binding/link-no-cleanup/
+  bundle-no-write/whole-observation/parent-fd/trusted-read 오류 거부다.
+  각각 저장된 plan/result/입력/명령/receipt/stream과 의도한 실패 지점,
+  reference에서 유도한 정확한 변형 bytes를 현재 verifier로 읽기 전용 재검증했다. 모두 기대와 일치했다.
+- 14번째 extra-effect는 `dispatch.json`이 9월 29일 18:00:05 KST에 기록됐지만 `result.json`이 없다.
+  뒤 7종 escaped-descendant/empty-exit/nonzero-exit/timeout/output-flood/write-readonly/exec-binary는 미착수다.
+  `summary.json`도 없고 인수 시 Python/Docker 실행 process가 없었다. 중단 원인은 확인되지 않았다.
+- 원본 **1,628파일**의 인수 inventory SHA:
+  `929268ab22f048ba9a3674f46d7c0d3ea1d71fa422f39471f5006a6aa852d955`.
+  정렬한 파일별 상대경로/size/SHA-256 목록의 canonical JSON SHA이며 새 전체 성공 seal이 아니다.
+  원문을 수정하거나 summary를 사후 작성하지 않았다. 기존 root 재실행은 금지한다.
+- 새 binding 전용 `v4-binding-all-fields.xml` **97 passed**, 관련 최종
+  `v4-binding-final-contract.xml` **152 passed**다. 중복 회차이므로 합산하지 않는다.
+- 302a7cb QA wheel 기록: SHA `b52f5ec9ffd0699b6c941b36af7869f4add006069b93671aee9b0eee3426a424`,
+  Git/wheel/설치 Python 44모듈과 RECORD 48개 exact 확인 결과가 보존돼 있다.
+  전체 21종의 설치본 재판정은 summary 부재로 미완료다.
+
+인수 시 Docker engine 연결 불가를 확인했고 설치된 Desktop만 시작했다. 설치/업데이트/pull/로그인은 하지 않았다.
+Engine 29.6.2/linux-amd64가 다시 응답하며 matrix-2 이름의 잔여 container는 0이다.
+개발 진입 스크립트 적용 후 Python 3.12.10/고정 의존성/현재 source 경로/pip check는 PASS다.
+진입 전 source 경로 불일치는 기존 설치 wheel이 선택됐기 때문이며 환경 변경 없이 process-local 진입으로 바로잡았다.
+새 실제 qualification은 fresh root와 현재 환경/no-op 검증·별도 승인 절차를 따른다.
+DEV-20260929-007과 전체 감사는 아직 닫지 않는다.

@@ -3,7 +3,7 @@
   "scope": "orchestrator-development",
   "id": "DEV-20260929-007",
   "title": "v4 manifest 검사에서 반환값 내부 정합성과 원래 요청 대상의 동일성을 혼동",
-  "status": "open",
+  "status": "investigating",
   "stage": "benchmark-runner",
   "category": "test",
   "discovered_at": "2026-09-29T08:42:06Z",
@@ -19,14 +19,37 @@
       "detail": "보호 root만 바꾸는 검토된 함수 변형은 기존 정상/오류 검사를 모두 통과했다"
     }
   ],
-  "root_cause": "",
-  "considered_options": [],
-  "resolution": "",
-  "affected_files": [],
-  "regression_tests": [],
-  "verification": [],
-  "remaining_risks": [],
-  "related_commits": [],
+  "root_cause": "기존 검사는 반환 manifest 내부 정합성을 대조했지만 후보 밖에 보관한 보호 root를 포함한 원래 요청 입력 14필드를 직접 결합하지 않았다.",
+  "considered_options": [
+    {
+      "option": "trusted 수집자가 원래 14필드를 보관하고 host 판정기가 반환값과 직접 대조",
+      "decision": "adopted",
+      "reason": "후보가 반환값과 그 내부 검증 결과를 함께 바꿔도 요청 대상을 바꾼 구현은 거부해야 한다."
+    }
+  ],
+  "resolution": "302a7cb에서 입력 binding과 wrong-manifest-binding 대조군을 추가했다. 코드 교정과 회귀는 통과했으나 21종 native 전체 qualification이 중단돼 조사 중을 유지한다.",
+  "affected_files": [
+    "tools/benchmark-runner/qualifications/profile-i-semantic-v4/observations.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_call_execution.py",
+    "tools/benchmark-runner/src/benchmark_runner/profile_i_call_qualification.py",
+    "tools/benchmark-runner/tests/test_profile_i_call_boundary.py"
+  ],
+  "regression_tests": [
+    "test_builder_cannot_replace_the_requested_protected_root",
+    "test_all_requested_manifest_inputs_are_bound"
+  ],
+  "verification": [
+    "v4-binding-all-fields.xml 97 passed; v4-binding-final-contract.xml 152 passed. 중복 합산하지 않는다.",
+    "2026-09-30 matrix-2 완료 13종의 저장 증거/변형 bytes/예정 실패 지점 재검증 PASS; wrong-manifest-binding 거부 포함.",
+    "matrix-2 extra-effect는 dispatch 뒤 result 부재, 뒤 7종은 미착수, 전체 summary 없음. 원본 1628파일 보존."
+  ],
+  "remaining_risks": [
+    "새 source의 전체 21종 native qualification 및 설치본 전체 재판정 미완료",
+    "중단 원인은 미확정. 기존 root 재실행이나 summary 사후 생성으로 완료 처리하지 않는다."
+  ],
+  "related_commits": [
+    "302a7cb2754053c1450f90be1511f19399beed3e"
+  ],
   "source_references": [
     "docs/operations/audit-f14-v4-checker-qualification-20260929.md"
   ]

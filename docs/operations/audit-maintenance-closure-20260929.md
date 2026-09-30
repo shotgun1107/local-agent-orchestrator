@@ -6,6 +6,13 @@
 입력 14필드의 직접 binding과 97개 관련 회귀를 추가했고 새 21종 native qualification을 준비한다.
 기존 20종과 cold checkout 성공을 이 새 조건의 완료로 대체하지 않는다.
 
+**9월 30일 인수:** cold checkout 전수는 **1,123 passed / 10 skipped / 0 failed**로 완료됐고,
+302a7cb binding 후속 회귀는 **152 passed**다. native matrix-2는 완료 13종의 저장 증거를 재검증했으나,
+14번째 extra-effect의 dispatch 뒤 최종 result와 matrix summary가 없다. 뒤 7종은 미착수다.
+실행 process도 없어 중단·미완료로 보존한다. 중단 원인은 미확정이며 기존 root를 재실행하지 않는다.
+자세한 원문 인수와 hash는 [v4 결과](audit-f14-v4-checker-qualification-20260929.md)의 9월 30일 절을 따른다.
+필수 전체 qualification이 아직 남아 있으므로 공식 종료는 OPEN이다.
+
 사용자는 감사·유지보수를 공식 종료해 실제 기능개발을 이어갈 수 있는 직전까지
 중간 승인 질문 없이 계속 진행하도록 지시했다. 고정 진단의 부분 통과를 이 목표로
 대체하지 않는다. 새 기능·B2/B3·연구 experiment·실제 모델 실행은 시작하지 않는다.
@@ -196,8 +203,12 @@ reference-source에는 `-text -whitespace`를 추가했다. 전역 Git 설정이
   `sealed-byte-inventory-c926e86.json` SHA는
   `717e15d9ef5438fafbb2743a042b41dcce952585e675709fc00e5b4b5137de2e`다.
   범위를 reference-source 45개까지 보호한 결과이며, 이 수를 최초 점검 1171개와 혼동하지 않는다.
-- `runner-full-5ddcc10.xml`: 최초 고정 checkout의 전수 실행. 확인된 위 3개 실패를 포함하며 아직 진행 중이다.
-- `runner-full-c926e86.xml`: 교정 후 별도 고정 checkout의 전수 실행 중. 완료 전 통과로 세지 않는다.
+- `runner-full-5ddcc10.xml`: 최초 고정 checkout 전수 **1,116 passed / 3 failed / 10 skipped**, 2569.622초.
+  실패 3개는 위 cold checkout 결함이며 실패 XML/작업 사본을 보존한다.
+- `runner-full-c926e86.xml`: 교정 후 별도 고정 checkout 전수 **1,123 passed / 0 failed / 10 skipped**, 2397.126초.
+  9월 30일 XML을 직접 읽어 완료를 확인했다. 10 skip을 통과에 포함하지 않는다.
+- source 302a7cb의 `v4-binding-final-contract.xml`: **152 passed**, 160.915초.
+  전수 이후 변경된 checker/수집기/대조군 경계의 후속 근거이며 전수 숫자에 합산하지 않는다.
 
 QA 경로는 각각 `C:\LAO\tmp\audit-closure-20260929\regression-5ddcc10`, `regression-c926e86`이다.
 이전 Codex/AppData 소유 worktree나 역사 root은 건드리지 않았다. 새 wheel 생성 때 생긴 프로젝트 전용
