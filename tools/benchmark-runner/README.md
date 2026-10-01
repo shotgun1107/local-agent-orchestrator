@@ -15,6 +15,10 @@ F14 후속 개발의 기준은 [v4 함수 호출·관측 분리 계약](qualific
 | [v3 외부 판정기](qualifications/profile-i-semantic-v3/README.md) | 과거 9종 및 그 원문/검증기 보존 | 후보와 관측 수집기 공유 한계 때문에 v4로 대체 |
 | [v4 호출 경로](qualifications/profile-i-semantic-v4/README.md) | 일반 snapshot·관측 위조·입력 binding 검증 | 감사 수선 기준. 신규 연구 candidate/Live 권한은 없음 |
 
+여기서 “이전 경로”는 평가 입구의 지위이지 해당 파일 전체가 불필요하다는 뜻이 아니다.
+현행 [v4 실행기](src/benchmark_runner/profile_i_call_execution.py)는 v2/v3의 실행·판정 공통 모듈과
+v3의 `probe_fixtures.py`·`runner_support.py`에 의존한다. 버전 이름만 보고 이 의존성을 삭제하거나 대체하지 않는다.
+
 옛 차단 오류의 `semantic v2 qualification is required` 문구는 v1 승격을 거부하는 역사적 진단 문자열이다.
 v2로 돌아가라는 선택 지시가 아니며, v4 진단을 새 Phase E에 연결하는 승격 계약은 별도 개발·검증 대상이다.
 이 안내를 이유로 차단을 제거하거나 기존 candidate/seal을 수정하지 않는다.
@@ -433,12 +437,17 @@ homes only when `LAO_PHASE_F_CONFIG_LOAD_PREFLIGHT=1`. It allowlists initializat
 and config/read requests; no credentials or real thread are needed. See
 `docs/experiments/sdk-routing-realistic-high-difficulty-phase-f-config-load-remediation-result.md`.
 
-Phase F configuration compatibility policy v1 adds the exact process-only override
-`features.context_management=false` to the five permission overrides. The personal
-config and authentication stay in place. A new candidate must bind this policy and
-source commit; both live stack factories reject missing or mismatched bindings
-before opening an SDK port. The permission contract remains v2 and the Cell deadline
-remains 9000 seconds. Historical candidates are still verifiable as historical input.
+The current Phase F configuration compatibility policy is **v2**, defined by
+[`phase_f_configuration_compatibility_policy`](src/benchmark_runner/realistic_phase_f_sdk.py).
+It retains v1's exact process-only override `features.context_management=false` in
+addition to the five permission overrides, and accepts only the source-defined
+`verified_thread_start_exact_addition_only` workspace-trust transition. It does not
+permit arbitrary configuration drift or direct edits to the user's config/authentication.
+A newly approved candidate must bind the current policy and source commit; both live
+stack factories reject missing or mismatched bindings before opening an SDK port.
+The permission contract remains v2 and the Cell deadline remains 9000 seconds.
+Historical candidates remain verifiable, but policy-v1 bindings do not authorize a
+current-policy Live run. This contract does not itself approve a new candidate or Live execution.
 
 For source-bound probes, invoke the checked-in scripts or explicitly select the
 repository's Runner/B1 source paths. Bare Python imports may load the older installed
