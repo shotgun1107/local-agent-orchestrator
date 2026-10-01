@@ -1,143 +1,61 @@
 # 현재 진행 상황
 
-기준일: 2026-09-30. 이후 작업자는 완료·진행 중·미확인을 구분해 갱신한다.
-실제 전송 commit과 시점은 저장소 `docs/operations/동기화_인수인계.md`의 자동 블록을 확인한다.
+기준일: 2026-10-01. 이 문서는 현재 상태만 유지한다. 지난 회차의 대기열은 되살리지 않는다.
+전송 work commit·시점·미전송 자료는 연결된 저장소의 `docs/operations/동기화_인수인계.md` `SYNC:AUTO` 블록을 확인한다.
+경로 표기는 별도 설명이 없으면 LAO/repo 기준이다. Documents에서 상대경로로 실행하지 않는다.
 
-## 먼저 볼 최신 요약
+## 현재 구현과 연구 범위
 
-- **2026-09-30 감사·유지보수 공식 종료(CLOSED).** 원 감사 F1~F14와 유지보수 중 재현한 후속 결함의
-  교정·회귀·배포·문서 근거를 닫았다. 정본은 `docs/operations/audit-maintenance-closure-20260929.md`다.
-- 마지막 v4 요청/반환값 binding 교정은 새 `matrix-3`에서 **21/21 기대 일치**로 검증했다.
-  정상 2종 합격/오류·위조 19종 거부, native no-op 231회/관측 process 231개/실제 child call 621회다.
-  소스와 별도 설치본의 전체 증거 재검증, 전체 및 공개 I01~I08 판정, 입력 불변·잔여 container 0을 확인했다.
-- 회귀 근거는 B1 **303 passed**, cold checkout Runner **1,123 passed / 10 skipped**,
-  이후 변경 경계의 **152 passed**다. 서로 다른 회차이며 중복 수를 합산하지 않는다.
-  두 QA wheel의 Python 57모듈과 설치 bytes/RECORD, 공개 Schema 5개의 모델·실제 export도 일치한다.
-- 이전 `matrix-2`는 13종 완료/14번째 중단/7종 미착수 상태 그대로 보존했다. 1,628파일 hash가 인수 시점과 같다.
-  새 결과로 과거 실패·중단 회차를 재분류하거나 재봉인하지 않았다.
-- **기능개발·새 연구·프로젝트 model/SDK thread·Phase F는 시작하지 않았다.** 다음 범위는 사용자가 정한다.
-  실제 OS/SDK enforcement·다른 PC 실행환경·범용 실무 채택은 이번 감사 종료의 의미가 아니다.
-  SDK 전환 명세에서 제외한 과거 standalone CLI 이슈는 미확정 이력으로 유지하며 정식 Live는 별도 관문이다.
+- 구현 기반은 **B1 순차 로컬 오케스트레이터**와 benchmark runner다. B2 병렬·B3 Reviewer는 보류돼 있다.
+- 연구 목표·가설·계획·결과 해석은 이 관리 공간에서, 코드·시험·실험은 연결된 LAO/repo에서 한다.
+- **감사·유지보수는 2026-09-30 CLOSED**다. 원 감사 F1~F14와 직접 재현한 후속 결함의 수선 근거는
+  `docs/operations/audit-maintenance-closure-20260929.md`다. 모든 결함 부재나 실무 채택의 보증이 아니다.
+- 2026-10-01 새 세션 인수 점검에서 Runner 입구·문서 인덱스·과거 handoff 안내의 낡은 현재형 문구를 추가 발견했다.
+  사용자 요청에 따라 공통 시작 계약·문서 우선순위·역사 안내·incident 위험 설명을 교정했다.
+  문서 회귀 12개/관리 도구 18개/기록 도구 10개, 변경 문서의 상대 링크·현재성 대조를 통과했다.
+  이것은 독립 새 AI의 이해 성공이나 모든 문서의 의미적 무모순 검증은 아니다.
+- **새 기능개발·새 연구·프로젝트 model/SDK thread·Phase F는 시작하지 않았다.** 다음 개발 범위는 사용자가 정한다.
 
-## 최종 마감 전 진행 이력 — 아래의 OPEN·진행 중은 당시 상태
+## 검증된 최신 근거
 
-- **9월 30일 인수:** c926e86 고정 cold checkout의 전체 Runner는 **1,123 passed / 10 skipped / 실패 0**으로 완료됐다.
-  후속 302a7cb 입력 binding 관련 회귀도 **152 passed**다. 아래의 전수 실행 중 표기는 9월 29일 기록이다.
-  native matrix-2는 **완료 13종을 읽기 전용 재검증**, 14번째 extra-effect는 dispatch 뒤 result 부재,
-  나머지 7종은 미착수다. 실행 process와 최종 summary가 없어 중단·미완료로 보존한다.
-  중단 원인은 미확정이며 PC 종료 때문이라고 단정하지 않는다. 이전 root 재실행·summary 사후 생성은 금지한다.
-  전체 21종 qualification과 공식 감사 종료는 아직 미완료다. 새 실행은 fresh root와 환경 검증/별도 승인 관문을 따른다.
-- **현재 목표는 감사·유지보수의 공식 종료이며 아직 OPEN이다.** 사용자가 고정 진단의 부분 완료에서
-  멈추지 말고 전체 종료 근거를 갖출 때까지 연속 진행하도록 지시했다. 종료 표는
-  `docs/operations/audit-maintenance-closure-20260929.md`를 따른다. 새 기능개발은 시작하지 않는다.
-- 관리 공간은 이 Documents 폴더, 코드·시험 공간은 회사 `C:\LAO\repo`다. 단일 Git 저장소로 공유한다.
-- 앞선 감사 F1/F2/F3/F4/F5/F6/F8/F9/F10/F11/F12의 교정과 B1 전체 292개 통과 기록을 유지한다.
-- F14의 새 v4는 일반 Worker snapshot의 개별 함수 호출과 관측을 분리했고, 실제 47호출/11개 묶음/10 property가 통과했다.
-  아래의 9월 17일 Docker 불가와 9월 29일 no-op만 완료라는 문단은 각 시점의 과거 기록이다.
-- 사용자가 지시한 고정 준비 진단은 **9/9 기대 일치**로 완료했다. 정상 2종 합격/오류 7종 거부,
-  native no-op 99회/관측 process 49개, 입력 불변·잔여 container 0·저장 증거 재검증을 확인했다.
-  관련 회귀 275개와 관리 18개/로그 10개도 통과했다. 이전 회차와 합산하지 않는다.
-  최신 결과는 `docs/operations/audit-f14-native-qualification-20260929.md`를 따른다.
-- 후속 v4의 정상 2종·오류/위조 18종이 **20/20 기대 일치**했고 관련 회귀 **136개**가 통과했다.
-  일반 snapshot 입력, 실제 파일 효과 관측, public I01~I08/전체 평가 소비와 설치 wheel 재판정까지 확인했다.
-  최신 근거는 `docs/operations/audit-f14-v4-checker-qualification-20260929.md`다.
-  실제 OS/SDK enforcement와 정식 비교 승인은 별개이며, 기존 v1 새 실행·승격 차단은 유지한다.
-- 새 연구 실험·실제 model/SDK·Phase F Cell은 시작하지 않았다. 준비 진단과 정식 연구 실행을 구분한다.
-- 종료 재점검에서 RuntimePort가 멈추면 controller deadline을 독립 집행하지 못하는 후속 결함을
-  재현했다(4 failed/1 passed). 시한 감시와 늦은 결과 거부 교정 뒤 통합 41개와 B1 전체 **303개**가 통과했다.
-  새 로컬 venv의 고정 의존성 19개·두 wheel 설치·Schema 5개·Python 55모듈 bytes·개발 점검도 통과했다.
-  실제 집 PC 검증은 아니다. Runner 전수 983 passed/10 skipped 뒤 관련 80개 및 실제 설정 파서 6개도 통과했다.
-  F14 후속은 위 v4 일반 snapshot 경로와 20종 native 검증까지 진행했다.
-  native 설정 파서는 임시 설정으로 initialize/config/read만 호출했다. 실제 model/SDK thread·turn은 0이다.
-- 새 Windows checkout에서 봉인 참조 자료의 줄바꿈/저장 bytes 문제를 추가 발견했다.
-  원래 봉인·작업 파일은 유지하고 Git 전달 바이트와 reference-source 속성을 교정했다(c926e86).
-  실제 새 checkout의 **7개 집중 회귀**가 통과했고, 교정 후 전체 Runner 전수는 별도 고정 사본에서 실행 중이다.
-  정상 환경의 성공과 실패/미완료 회차를 합산하지 않는다. **아직 공식 감사 종료를 선언하지 않는다.**
-- 마지막 입력 대조에서 요청한 보호 root와 다른 반환 root를 허용하는 추가 반례를 재현했다.
-  입력 14필드의 직접 binding을 추가했고 관련 97개가 통과했다. 새 source의 native 21종을 검증 중이다.
-  앞선 20종을 이 후속 조건의 합격으로 소급 재분류하지 않는다(DEV-20260929-007).
+- B1 전체 **303 passed**. source/tests/Schema/template는 검증 source `76f91fd`와 동일하다.
+- 고정 cold checkout Runner **1,123 passed / 0 failed / 10 skipped**(`c926e86`).
+  이후 변경 경계는 별도 **152 passed**(`302a7cb`)다. 서로 다른 회차이며 합산하지 않는다.
+- F14의 현재 후속 기준은 `tools/benchmark-runner/qualifications/profile-i-semantic-v4/README.md`다.
+  최종 matrix-3은 **21/21 기대 일치**(정상 2종 합격/오류·위조 19종 거부)이며 소스·별도 설치본으로 재검증했다.
+  native no-op 231회/관측 process 231개/child call 621회, 입력 불변·잔여 container 0을 확인했다.
+- 두 QA wheel의 Python 57모듈과 설치 bytes/RECORD, 공개 Schema 5개의 source·모델·실제 export가 일치했다.
+- 위 결과는 해당 source·회사 환경의 검증이다. 이후 변경은 관련 회귀를 별도로 확인한다.
+  원문·외부 SHA·회차별 근거는 종료 보고서와 `docs/operations/audit-f14-v4-checker-qualification-20260929.md`에 있다.
 
-아래는 변경 이유와 과거 시험 결과를 보존한 이력이다. 회차별 시험 수를 합산하지 않는다.
+## 보존·차단하는 역사 경계
 
-## 연구와 구현 — 과거 교정 회차의 경과
+- 기존 12-Cell 비교는 INCONCLUSIVE다. SDK pilot의 PILOT_PASS는 B1 일반 우월성의 증거가 아니다.
+- v23 pair는 DIAGNOSTIC_ONLY_NO_ROUTE, v25 SS1/B1 pair는 정식 비교에서 격리됐다.
+  현행 소스는 policy 2이고 v25 candidate는 policy 1이다. 옛 candidate 실행 거부는 의도된 경계다.
+- names-only Profile I v1의 새 matrix/Phase E 승격 차단은 유지한다.
+  v2/v3는 보존된 이전 경로이며 v4가 후속 기준이다. v4 진단 완료도 정식 비교 승격 권한은 아니다.
+- 이전 matrix-2는 13종 완료/14번째 dispatch 뒤 result 부재/7종 미착수로 보존했다.
+  중단 원인은 미확정이며 원본 1,628파일의 hash 불변을 확인했다. 재실행·사후 summary 생성·성공 재분류하지 않는다.
+- 완료·실패·중단 pair/state/raw/seal·과거 wheel은 보존하며 다른 회차와 합산하지 않는다.
+- 과거 standalone CLI 이슈 DEV-20260806-012는 원인 미확정 이력이다.
+  승인된 SDK 명세가 CLI 재시험/Adapter를 제외하며, 현재 감사 종료를 외부 CLI 버그 해결로 표현하지 않는다.
 
-- 구현 기반은 B1 순차 로컬 오케스트레이터와 benchmark runner다. B2 병렬·B3 Reviewer는 보류돼 있다.
-- 과거 12-Cell 비교는 INCONCLUSIVE다. SDK pilot의 PILOT_PASS를 B1 일반 우월성으로 확대하지 않는다.
-- v23 pair는 DIAGNOSTIC_ONLY_NO_ROUTE, 최신 v25 SS1/B1 pair는 정식 비교에서 격리됐다.
-- 현행 소스는 policy 2, 과거 v25 candidate는 policy 1이다. 옛 candidate의 실행을 거부하는 경계는 의도된 것이다.
-- 폴더 정리 이후 사용자가 F8 실행 설정·F9 필수 입력·F3 완료 증거 재사용의 수정을 승인했다.
-  해당 세 경계를 수정했고 집중 38개 및 관련 model-free adapter 5개가 통과했다.
-  당시 전체 B1 회귀는 129 passed / 기존 F5 공개 Schema 불일치 1 failed였다. 집중 38개는 이 129개에 포함된다.
-  중간 회차에서 timeout 시간 조건이 한 번 실패했으며 격리·최종 전체 관측은 통과했다. 원인은 미확정이고 안전 상태는 유지됐다.
-  취소·삭제·backup 및 나머지 평가 결함은 이번 수정 밖이다. 전체 회귀·제품·Live 통과로 확대하지 않는다.
-  과거 감사 14개를 현재 미해결 수라고 단정하지 않는다. 문서 관련 일부는 앞서 교정됐다.
-- 이어서 승인받은 F5 공개 Schema 교정을 완료했다. own_check와 remaining_attempts null/생략을 현행 모델과 맞췄다.
-  F5 완료 시 전체 B1은 **145 passed / 0 failed**이며 Schema 시험 18개와 기존 F8·F9·F3 회귀를 포함한다.
-  새 QA wheel의 별도 설치·export에서 Schema 5개 exact bytes·RECORD·모델 일치도 확인했다.
-  전체 감사의 잔여 결함이나 실제 Live 준비가 해결됐다는 뜻은 아니다.
-- 후속 F10 실행 중 취소를 교정했다. 잠금은 유지하고 Run별 요청을 소유 controller에 전달한다.
-  terminal 미확인은 격리하며 자동 재시도하지 않는다. Check 취소는 프로세스 트리를 정리하고 결과를 채택하지 않는다.
-  요청의 backup 보존과 취소 뒤 보고서 갱신도 연결했다. F10 완료 시 전체 B1은 **175 passed / 0 failed**이며 당시 F10 회귀 30개를 포함한다.
-  실제 모델/SDK의 중단과 다른 OS의 process-tree 정리는 이번 Windows model-free 시험으로 검증하지 않았다.
-- 후속 F11 삭제·rename 관측을 교정했다. Git 후보와 실제 파일을 분리하고 안정된 부재만 삭제로 처리한다.
-  권한/IO 오류·관측 중 변동은 BLOCKED이며, 필수 입력과 Check 증거 보호는 유지한다. 파일 자동 복원은 하지 않는다.
-  같은 검토에서 발견한 F10의 TIMED_OUT 취소 분기도 재현 후 보정했다. F11 완료 시 전체 B1은 **215 passed / 0 failed**이며 F11 38개와 F10 후속 경합 2개를 포함한다.
-- 2026-09-17 F12 불완전 backup 검증을 교정했다. 필수 DB·manifest/실제 집합·경로·SQLite schema/무결성·Run/Artifact 소유와 hash/size를 교차 검사한다.
-  원본에 쓰지 않고 고정 DB bytes의 메모리 사본만 검사한다. 검증 성공은 선택 Run payload의 내부 일치이며 진위·최신성·Live GO가 아니다.
-  최종 전체 B1은 **291 passed / 0 failed**이며 F12 76개를 포함한다. 중간 timeout 시간 조건 1회 실패는 안전 상태를 유지했고 분리 관측 2개는 통과했지만 원인은 미확정이다.
+## 미확인과 다음 작업의 한계
 
-최신 추가 결과: 사용자가 잔여 감사의 연속 교정을 승인했고 F1 실제 turn ID, F2 구조화 실패와 mixed 원장 호환,
-F4 Judge 시작 시한, F6 작업 bytes를 교정했다. B1 전체 **292 passed**, 관련 Runner **298 passed / 2 skipped**다.
-2 skip은 실제 Docker opt-in 시험이다. 전체 Runner 전수 통과를 뜻하지 않는다.
-F14는 v1 새 실행/승격 차단 및 v2 행동 oracle/source bundle까지 **부분 교정**했다. 최종 source 검증은 39 passed다.
-실제 격리환경·hostile import/side effect/timeout·실행 qualification이 남아 investigating이며 Live NO-GO다.
-정본 결과: `docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md`.
+- **정식 비교 Live NO-GO.** active candidate·실행 대상은 새로 승인되지 않았다.
+  실제 OS/SDK enforcement·인증·외부 state/seal·동일경로 rehearsal은 새 작업 기준으로 별도 확인해야 한다.
+- 전수 skip 10 중 설정 파서 6개는 별도 native 시험이 통과했다.
+  나머지 Windows symlink 권한 1/Docker opt-in 2/SDK 0-turn 1은 미실행이며 합격 수에 넣지 않는다.
+- 회사 개발 Python 3.12.10/고정 의존성과 별도 새 venv 복원은 확인했지만 다른 PC의 실제 설치·로그인·환경은 미확인이다.
+- Codex 보조 worktree의 기존 수정 3개/untracked 9개는 회사 PC에만 보존했다. 자동 통합·삭제하지 않는다.
+- history·ignored raw·QA wheel/venv·일부 지원 스크립트는 Git 전달 밖이다.
+  과거 원본의 일부 접근 제한 내용과 이전 wall-clock 변동의 역사 원인을 확인한 것으로 바꾸지 않는다.
+- 문서 구조·링크 검사는 독립 새 AI의 이해 정확도나 모든 문장의 의미적 무모순을 보증하지 않는다.
 
-후속 F14 진단 연결: 검토된 reference만 대상으로 clean source/입력/명령/결과 hash를 묶고
-case·선행 조건·합계를 다시 검증하는 경로를 구현했다. 관련 **146 passed**(연결 88, F14 39, Docker 단위 19)다.
-실제 Docker engine은 named pipe 연결 실패이며 exact image와 동일경로 no-op은 미확인이다.
-**후보와 oracle가 같은 Python 프로세스를 공유하는 한계도 남았다.** Container 실행만으로 일반 Worker
-평가가 안전해지는 것은 아니므로 진단 전용이고 F14 investigating/Live NO-GO를 유지한다.
-정본 결과: `docs/operations/audit-f14-integration-preflight-20260917.md`.
+## 과거 기록을 찾는 방법
 
-2026-09-29 재개: v3는 후보를 컨테이너에 두고 판정기는 호스트에 분리하는 새 경로를 구현했다.
-호스트는 Worker Python을 import하지 않고 제한된 JSON 관측만 검사한다. 9종 대조군 준비,
-기록 결합·모의/실제 receipt 구분·1회 실행/실패 보존을 추가했고 부분 fixture의 import 의존성도 명시적으로 보완했다.
-기존 B1 전체 292개와 최종 v3 전용 132개가 통과했다. 관련 중간 276개와는 중복 합산하지 않는다.
-회사 Docker를 시작해 exact image와 **native 동일경로 no-op 11/11 통과**를 확인했다.
-**reference 진단의 환경만 GO**이며 실제 후보 평가/모델 호출은 0이다. 결과는 `docs/operations/audit-f14-isolation-v3-20260929.md`에서 확인한다.
-v2의 같은 프로세스 구조를 일반 평가에 사용하지 않는다. v3 실제 qualification 전까지 F14 investigating/정식 비교 NO-GO다.
-
-기술 근거는 저장소 `docs/README.md`,
-`docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md`,
-`docs/portfolio/local-agent-orchestrator-application-context.md`에서 확인한다.
-이번 코드 수정의 정본 결과는 `docs/operations/audit-f8-f9-f3-remediation-20260916.md`다.
-후속 F5 결과는 `docs/operations/audit-f5-schema-remediation-20260916.md`다.
-후속 F10 결과는 `docs/operations/audit-f10-cancellation-remediation-20260916.md`다.
-후속 F11과 F10 terminal 보정 결과는 `docs/operations/audit-f11-workspace-deletion-remediation-20260916.md`다.
-후속 F12와 중간 실패 기록은 `docs/operations/audit-f12-backup-verification-remediation-20260917.md`다.
-전체 감사 원본은 회사의 ignored 경로
-`benchmarks/.local-r6/independent-audit-20260908-01/report.md`에 있다.
-이 원본과 대화 원문은 Git으로 자동 전달되지 않는다.
-
-## 이번까지 완료한 운영 정리
-
-- 분산된 프로젝트 실행 폴더와 주 저장소를 회사 `C:\LAO` 아래로 통합했다.
-- 중복·캐시로 검증된 일부만 정리했다. 과거 실행·실패·봉인 자료는 보존했다.
-- 경로 기록 commit `630f1e3`, 문서 현재성·학습 맥락 교정 commit `7100817`을 만들었다.
-- 관리 공간과 실행 공간의 역할, 단일 저장소 추적 범위, 관리 문서의 충돌 검사 반영 절차를 정했다.
-- 개발 의존성 버전, 로컬 경로 예제, 환경 진입·읽기 전용 점검, 새 PC 복원 절차를 저장소에 구성했다.
-- 관리 반영 도구의 충돌·삭제·허용 목록·경로·중단 복구 시험 18개와 기존 로그 도구 시험 10개가 통과했다.
-- 회사 개발 환경의 정확한 Python/의존성 버전, 현재 source 경로 2곳, pip dependency check가 통과했다. 이 결과는 Live GO가 아니다.
-
-## 남은 한계
-
-- 회사의 Python 3.12.10 / SDK·번들 CLI 0.144.4 개발 환경은 있으나, 다른 PC의 새 설치 성공은 아직 검증하지 않았다.
-- 정식 비교의 active candidate·실행 대상은 새로 승인되지 않았다. F14 reference 진단의 Docker/image/no-op은 확인했지만 실제 SDK 인증·외부 state/seal·정식 비교 candidate는 별도 미확인이다.
-- **감사·유지보수 CLOSED / 정식 비교 Live NO-GO.** 완료 reference·matrix-1/3과 중단 matrix-2는 재실행하지 않는다.
-- F14 일반 snapshot/관측 위조/요청 binding의 최종 21종과 controller deadline 후속 303개를 검증했다.
-  전수의 10 skip 중 설정 파서 6개는 별도 native 시험이 통과했으며 나머지 4개는 미실행이다.
-  과거 wall-clock 변동의 원인을 소급 단정하지 않는다.
-- Codex 보조 worktree 1개에 기존 수정 3개와 untracked 9개가 남아 있다. 자동 통합하지 않았으며 회사 PC에만 있다.
-- `history`·ignored raw·이전 지원 스크립트는 Git 복원 대상이 아니다. 전부 필요하다고 가정하거나 전부 없어도 된다고 단정하지 않는다.
-- 과거 원본의 일부 접근 제한 경로는 내용 검증이 안 됐다. 봉인·이전 기록의 한계를 지운 채 완전 복원이라고 표현하지 않는다.
+의사결정은 `DECISIONS.md`, 항목별 교정은 종료 보고서의 대응표, 실행 사실은 해당 회차 결과를 읽는다.
+이 문서와 NEXT에서 제거한 지난 대기열은 Git `3558b5b`의 관리 문서에 그대로 남아 있다.
+현재 세션의 작업 지시로 가져오지 않는다. 감사 원본 `benchmarks/.local-r6/independent-audit-20260908-01/report.md`와
+대화·외부 원문은 Git으로 자동 전달되지 않는다.

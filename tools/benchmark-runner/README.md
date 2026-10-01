@@ -1,12 +1,23 @@
 # Benchmark Runner
 
-## 현재 감사 경계 — 2026-09-17
+## 현재 개발 기준
 
-F1/F2/F4/F6 교정을 반영했다. [최신 결과와 한계](../../docs/operations/audit-f1-f2-f4-f6-f14-remediation-20260917.md)를 따른다.
-F14는 부분 교정이다. names-only Profile I v1의 새 matrix 실행과 새 Phase E candidate 생성은 차단한다.
-역사 verifier는 계속 사용할 수 있지만 과거 qualification을 새 실행 승인으로 사용하면 안 된다.
-[v2 행동 oracle/source bundle](qualifications/profile-i-semantic-v2/README.md)은 별도 개발 판본이며,
-실제 격리환경 qualification 전에는 CHALLENGE_READY가 아니다.
+먼저 [새 세션 시작 계약](../../docs/README.md#session-start)을 따른다.
+F1~F14와 후속 유지보수는 2026-09-30 종료했다. 현재 결과·미확인은 [관리 STATUS](../../docs/management/STATUS.md),
+수선·회귀의 항목별 근거는 [종료 보고서](../../docs/operations/audit-maintenance-closure-20260929.md)를 따른다.
+F14 후속 개발의 기준은 [v4 함수 호출·관측 분리 계약](qualifications/profile-i-semantic-v4/README.md)과 관련 코드·시험이다.
+최종 고정 21종 native qualification이 완료됐지만 실제 Windows/SDK enforcement와 정식 비교 승격은 별개다.
+
+| 경로 | 유지 목적 | 새 작업에서의 취급 |
+|---|---|---|
+| names-only v1 matrix/역사 verifier | 기존 봉인 읽기 검증 | 새 matrix·Phase E 승격 차단 유지 |
+| [v2 행동 oracle](qualifications/profile-i-semantic-v2/README.md) | 같은 프로세스의 후보/oracle 한계와 이전 진단 보존 | 일반 Worker 평가의 기본 경로가 아님 |
+| [v3 외부 판정기](qualifications/profile-i-semantic-v3/README.md) | 과거 9종 및 그 원문/검증기 보존 | 후보와 관측 수집기 공유 한계 때문에 v4로 대체 |
+| [v4 호출 경로](qualifications/profile-i-semantic-v4/README.md) | 일반 snapshot·관측 위조·입력 binding 검증 | 감사 수선 기준. 신규 연구 candidate/Live 권한은 없음 |
+
+옛 차단 오류의 `semantic v2 qualification is required` 문구는 v1 승격을 거부하는 역사적 진단 문자열이다.
+v2로 돌아가라는 선택 지시가 아니며, v4 진단을 새 Phase E에 연결하는 승격 계약은 별도 개발·검증 대상이다.
+이 안내를 이유로 차단을 제거하거나 기존 candidate/seal을 수정하지 않는다.
 
 동결된 [범용 Benchmark Runner 설계](../../docs/design/general-benchmark-runner-design.md)의 단계별 reference 구현이다.
 
@@ -56,6 +67,10 @@ F14는 부분 교정이다. names-only Profile I v1의 새 matrix 실행과 새 
 Runner 자동 retry는 의도적으로 제공하지 않는다. R0의 내부 seal은 R5 `seals.json` export와 Git commit을 외부 기준점으로 삼아 검증한다.
 
 ## SDK 통제 비교 구현 상태
+
+아래 실행 예시는 API 사용법과 당시 회차 설명이다. 현재 PC의 Python·소스 진입은
+[복원 계약](../../docs/operations/workspace-portability.md)을 우선한다. 과거 state/root를 그대로 재실행하지 않으며,
+예시의 모델 호출 명령 자체는 실행 승인이 아니다.
 
 C0·C1·C2는 공통 TaskEnvelope renderer와 ResultEnvelope Schema를 사용하는 `SdkBaselineAdapter`로 구현돼 있다. `CodexSdkRuntime`은 `openai-codex==0.144.4`의 ChatGPT 인증만 허용하고, thread와 turn에 model·sandbox·approval·cwd를 명시하며 turn에는 reasoning effort와 output schema도 명시한다. API key 환경 변수나 SDK·계정·설정 불일치는 첫 model turn 전에 거부한다.
 

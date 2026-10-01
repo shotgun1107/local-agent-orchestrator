@@ -1,5 +1,11 @@
 # F14 v2 진단 연결과 회사 사전점검 — 2026-09-17
 
+<!-- DOC-ROLE: historical -->
+
+> 회차 기록 — 현재 실행 지시가 아니다. 아래 승인·미완료·다음 단계·시험 수는 이 보고서 당시 범위다.
+> 현재 수선 상태는 [최종 종료 보고서](audit-maintenance-closure-20260929.md),
+> 새 작업의 읽기 순서는 [새 세션 시작 계약](../README.md#session-start)을 따른다. 원문·실패 분류·seal은 보존한다.
+
 결론: **검토된 기준 코드의 진단 연결부는 구현·단위 검증했고, 실제 실행은 NO-GO다.**
 F14는 계속 investigating이다. 일반 Worker 평가·CHALLENGE_READY·Live GO가 아니다.
 앞선 교정은 [F1/F2/F4/F6/F14 결과](audit-f1-f2-f4-f6-f14-remediation-20260917.md)에 보존한다.

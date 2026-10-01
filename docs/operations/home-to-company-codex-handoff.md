@@ -1,6 +1,12 @@
-# 집 로컬 → 회사 로컬 현재 작업 인수인계
+# 집 로컬 → 회사 로컬 과거 작업 인수인계
 
-- 문서 상태: `current_home_to_company_handoff`
+<!-- DOC-ROLE: historical -->
+
+> 역사 인수인계 — 현재 실행 지시가 아니다. 아래의 “현재/최신/다음”, branch·commit·승인과 재개 프롬프트는 작성 당시 기록이다.
+> 현재 기준은 [새 세션 시작 계약](../README.md#session-start)과 [최신 인수인계 자동 블록](동기화_인수인계.md#sync-current)이다.
+> 다른 과거 handoff의 절을 최신 정본으로 따라가지 않는다. 과거 실행 원본·seal·결과는 보존한다.
+
+- 문서 상태: `historical_home_to_company_handoff` — 현재 정본은 위 SYNC:AUTO 링크
 - revision: 9
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
@@ -17,8 +23,8 @@
 > 사용한다. dirty file, stash, detached HEAD, local-only commit 또는 ignored/tracked 충돌이
 > 있으면 reset·clean·stash·rebase로 숨기지 말고 보고 후 멈춘다.
 >
-> 최신성 경고: §1~§11은 각 시점의 역사 기록이다. 현재 인수 정본은 이 문서 §12와
-> `company-to-home-codex-handoff.md` §33이다. 앞 절의 Cell 재개 또는 readiness v4
+> 당시 최신성 경고: §1~§11 다음에 이 문서 §12와
+> `company-to-home-codex-handoff.md` §33을 참조했지만 지금은 모두 역사 기록이다. 앞 절의 Cell 재개 또는 readiness v4
 > 재심사 지시는 현재 실행 승인으로 사용하지 않는다.
 
 ## 1. 이번 반환의 핵심

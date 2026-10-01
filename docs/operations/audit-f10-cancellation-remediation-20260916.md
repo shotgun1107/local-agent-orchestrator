@@ -1,5 +1,11 @@
 # 감사 F10 — 실행 중 취소 요청과 단일 controller 경계
 
+<!-- DOC-ROLE: historical -->
+
+> 회차 기록 — 현재 실행 지시가 아니다. 아래 승인·미완료·다음 단계·시험 수는 이 보고서 당시 범위다.
+> 현재 수선 상태는 [최종 종료 보고서](audit-maintenance-closure-20260929.md),
+> 새 작업의 읽기 순서는 [새 세션 시작 계약](../README.md#session-start)을 따른다. 원문·실패 분류·seal은 보존한다.
+
 기준일: 2026-09-16. 수정 전 commit: `f9c0208e0b8fa8b9c57cd129d1bdee0cb3ef6cb4`.
 사용자가 다음 항목 F10의 진행을 승인했다. 실제 모델·SDK 세션·과거 실행 원본 없이
 현행 B1 코드와 격리된 Fake/SQLite/로컬 Check로 교정했다.

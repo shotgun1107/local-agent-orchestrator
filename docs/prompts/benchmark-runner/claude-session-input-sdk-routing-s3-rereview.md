@@ -1,5 +1,10 @@
 # Claude 새 세션 입력 — S3 revision 2 closure 재심사
 
+<!-- DOC-ROLE: historical -->
+
+> 역사 심사 입력 — 현재 실행 지시가 아니다. 이 문서는 당시 revision 2 심사 범위만 보존한다.
+> 새 세션의 공통 기준은 [시작 계약](../../README.md#session-start)이다. 아래 심사를 자동으로 다시 수행하지 않는다.
+
 `local-agent-orchestrator` 저장소에서 S3 complex/high-risk 명세 revision 2를 read-only로 집중 재심사한다.
 
 먼저 현재 경로, branch, HEAD와 `git status --short`만 확인한다. 로컬 변경이 있으면 파일을 건드리거나 숨기지 말고 보고 후 멈춘다.

@@ -1,8 +1,18 @@
 # 회사 Codex 시작 프롬프트 — 집 P001~P015 inventory 인수
 
-회사 PC의 기존 `local-agent-orchestrator` 폴더를 Codex로 연 뒤 아래 블록 전체를 붙여넣는다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
+아래는 당시 P001~P015 인수 입력의 보존본이다. 현재 세션의 복사용 입력이 아니다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 너는 회사 PC에서 local-agent-orchestrator 작업을 이어받는 Codex다.
 
 이번 첫 세션의 목표는 두 가지뿐이다.

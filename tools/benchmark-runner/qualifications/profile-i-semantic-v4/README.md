@@ -14,7 +14,7 @@ v3의 호스트 판정기는 보호되지만 candidate와 관측 수집기가 �
 candidate가 완성된 관측 묶음을 흉내 낼 수 있다. 일반 Worker에 연결하기 전에
 관측 수집 자체를 candidate의 메모리·stdout·side effect 자기보고에서 분리해야 한다.
 
-예정 신뢰 경계:
+구현·검증한 신뢰 경계:
 
 - 호스트가 입력 bytes·개별 호출·정상/부정 변형·기대 결과·case 집합·DAG를 소유한다.
 - 제한 컨테이너의 trusted supervisor는 Worker를 import하지 않고 개별 호출을 child에 보낸다.
@@ -26,7 +26,7 @@ candidate가 완성된 관측 묶음을 흉내 낼 수 있다. 일반 Worker에 
 - 일반 Worker snapshot의 정확한 bytes를 받되 호스트 import는 금지한다.
   정상 대안/no-op/상수/관측 전체 위조/부모 FD 접근/exit/timeout/flood/쓰기 대조군을 qualification한다.
 
-첫 `supervisor_boundary.py`는 **경계 탐색 probe만** 구현한다. Linux PR_SET_DUMPABLE=0과
+초기 `supervisor_boundary.py`의 역할은 **경계 탐색 probe**다. Linux PR_SET_DUMPABLE=0과
 stdio capture가 같은 uid child의 부모 fd/mem/environ 접근을 거부하는지 확인한다.
 고정 Linux 이미지·uid 65532·capabilities 0·no-new-privileges·무네트워크·read-only recipe를 유지한다.
 이 probe는 무검토 candidate를 실행하지 않으며 성공해도 F14의 의미 검증/격리 전체 완료는 아니다.
@@ -73,9 +73,11 @@ Landlock 구현 근거: [Linux v6.6 userspace API](https://www.kernel.org/doc/ht
 
 모듈 CLI의 `prepare` → `preflight` → 별도 승인된 `dispatch`는 fresh root를 사용한다.
 `dispatch --authorize-model-free-checker`도 기존 승인·환경 검증을 대체하지 않는다.
-이번 세션의 연속 유지보수 승인 범위 외에서는 저장소의 Live 관문을 먼저 적용한다.
+2026-09-29~30의 연속 유지보수 승인은 완료한 당시 회차에 한정한다. 새 실행은 저장소의 Live 관문을 먼저 적용한다.
 `verify-run --task-id I02`는 public I02와 선행 property, task-id 생략은 전체 평가를 반환한다.
 합성 행동 불합격은 exit 1, 준비/무결성/실행 실패는 exit 2다. 검증 성공과 비교 승격은 다르다.
+
+## 초기 실패·교정 이력 — 현재 실행 지시가 아님
 
 source dcb1baa의 계약·host·경계 **109개**는 통과했지만 첫 native reference는 합격하지 못했다.
 `C:\LAO\evidence\f14-v4-20260929\reference-1`에서 no-op 11개/실제 Landlock ABI 7 거부 검증은 통과했고,
@@ -99,7 +101,8 @@ result SHA `8962fdcaf5da64df51e98e0929e390aa2bac1dddde4b476103f2b8d531c7964a`.
 정상 config/manifest 검증 2호출과 exact 결과 대조를 추가했다. 이제 47호출이며 기존 45호출 증거를
 47호출의 합격으로 재분류하지 않는다. 각 저장 원문의 재검증에는 그때 고정한 verifier revision이 필요하다.
 
-`profile_i_call_qualification`은 정상 2종과 오류/위조/격리 경계 18종의 고정 corpus다.
+당시 `profile_i_call_qualification`은 정상 2종과 오류/위조/격리 경계 18종의 고정 corpus였다.
+후속 요청 binding 반례를 추가한 최종 21종은 이 문서 상단과 최종 결과 보고서를 따른다.
 reference를 새 root에서 먼저 검증하고 그 bytes에서 별도 외부 Worker snapshot을 생성한다.
 관측 전체 위조는 실제 reference의 완전한 v3 관측을 새 nonce에 맞춰 제출하므로 빈 가짜 JSON만 시험하지 않는다.
 각 변형은 same-path native no-op·1회 dispatch·저장 증거 재판정과 **예정한 실패 지점**까지 확인한다.

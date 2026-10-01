@@ -2,6 +2,10 @@
 
 **최종 판정: CLOSED — 2026-09-30 감사·유지보수 공식 종료.**
 
+**2026-10-01 문서 인수 보완:** 이후 새 세션 관점 점검에서 낡은 현재형 안내가 남아 있음을 확인해
+F7 문서 경계를 추가 교정했다. 아래 마지막 절의 보완 범위·검증·미확인을 함께 읽는다.
+9월 30일 구현 수선 결과를 취소하는 것은 아니며, 당시 종료를 문서 전수 무모순이나 새 AI 이해 검증으로 확대하지 않는다.
+
 원 감사 F1~F14, 이후 직접 재현한 controller deadline·v4 bridge/validator/입력 binding·cold checkout
 결함의 교정 및 재검증을 완료했다. 마지막 새 matrix-3은 **21/21 기대 일치**, 소스·별도 설치본의
 전체 증거 재검증도 통과했다. 기준 source는 `665040396e68b90293ec4623518009152fe774c0`이며,
@@ -46,7 +50,7 @@
 | F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | CLOSED. 같은 전수의 전용 6개 통과; 준비·실행 직전 만료 시 workload 0 |
 | F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | CLOSED. 아래 새 설치 근거와 9월 30일 Schema 5개·최신 Python 57모듈·두 RECORD 재대조 PASS |
 | F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 기존 Python OID 일치 유지. 후속 cold checkout의 개행·봉인 Git bytes 결함도 교정했고 fresh checkout 7개 통과; 아래 참조 |
-| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 문서 정정 | CLOSED. 입구·관리 문서·기존 SYNC:AUTO에 최종 결과와 미검증 범위를 구분; 과거 OPEN/대기 지시는 역사 기록으로 표시 |
+| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 정정 + 2026-10-01 인수 보완 | CLOSED(보완). 아래에 남아 있던 안내 누락과 교정을 명시. 공통 시작 계약·과거 직접 링크·현재 대기열 분리·문서 회귀 12개로 검사; 독립 새 AI 이해 시험은 아님 |
 | F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 교정 후 B1 303에 포함·통과 |
 | F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 교정 후 B1 303에 포함·통과 |
 | F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | 후속 deadline 교정까지 B1 303 통과 |
@@ -256,3 +260,35 @@ F13은 9월 30일 [v1 방법론](https://arxiv.org/html/2512.04123v1)과
 [v4 §3.2·§5.2·Figure 7(a)·8](https://arxiv.org/html/2512.04123v4)을 다시 열어 현재 정정과 대조했다.
 전체 306/분석 86/심층 20, 질문별 60·31 및 사례 14/20 구분이 일치한다. 문헌 전수 검증은 아니다.
 incident commit 오타의 실제 commit 존재도 확인했다. 실행 원본·옛 봉인·기존 보조 worktree는 바꾸지 않았다.
+
+## 2026-10-01 — 새 세션 문서 정합성 보완
+
+사용자가 이전 대화 없는 에이전트 인수를 점검하도록 요청했고, 확인된 누락을 모두 교정하도록 승인했다.
+Runner README는 F14 부분 교정/v2를 최신처럼 안내했고, 문서 인덱스 하단에는 감사 미해결 표현이 남아 있었다.
+과거 handoff·재개 프롬프트가 다른 옛 문서를 최신으로 연결했고, STATUS/NEXT의 당시 대기열과
+일부 resolved incident의 남은 위험도 후속 완료와 혼동될 수 있었다. 이 누락을 앞선 F7 완료 표현이 놓쳤다.
+
+### 교정
+
+- 공통 입구는 기존 [docs/README의 새 세션 시작 계약](../README.md#session-start)이다.
+  AGENTS → 관리 status/문서 → 기존 SYNC:AUTO → 맡은 구현 계약·코드·시험의 순서와 문서별 책임을 명시했다.
+- STATUS/NEXT는 현재 상태·다음 범위만 남겼다. 제거한 과거 대기열은 이전 Git `3558b5b`와 원래 회차 보고서에 보존한다.
+- 과거 handoff·resume/심사 세션 입력에는 역사 표지와 현재 입구 직접 링크를 넣었다.
+  복사되는 코드 블록에도 역사 경고를 넣고, 다른 옛 handoff를 현재 정본으로 권하는 안내를 교정했다.
+- v1~v4 경로의 유지 목적을 구분했다. v4 완료와 v1 새 승격 차단은 양립하며,
+  옛 오류 문자열의 `semantic v2`를 v2 개발 재개 지시로 해석하지 않도록 설명했다. 실제 실행 코드는 바꾸지 않았다.
+- 5개 과거 incident의 남은 위험을 당시 범위와 후속 종료 근거로 연결하고 원본 JSON에서 index를 재생성했다.
+  상태·해결 시각·과거 실패 증거는 변경하지 않았으며 외부 CLI 이슈 1건은 계속 investigating이다.
+
+### 검증과 한계
+
+- 새 문서 회귀의 최초 10개는 **9 failed / 1 passed**로 안내 누락을 재현했다.
+  범위를 보강한 최종 **12개 문서 + 18개 관리 + 10개 기록 = 40 passed**다. 제품 전수나 AI 이해 시험 수와 합산하지 않는다.
+- 증거는 Git 밖 `C:\LAO\evidence\session-entry-20261001`이다.
+  `documentation-red.xml` SHA-256 `5df359489a9411fd15932c0af86891998dccf52af43dab450bd2291bf61f56a5`,
+  `documentation-green2.xml` SHA-256 `97c573f40afe70ba39cd67e9b9f3c4deffc5354f1c415351f57b1d81feadff35`.
+- 변경 문서의 상대 링크·새 명시적 anchor, 관리 6개 반영, incident 97건/index 일치와 diff 공백을 검사했다.
+  source/schema/template·benchmarks 원본·환경 pin은 바꾸지 않았다. 새 모델/SDK/Phase F/Docker workload는 0이다.
+- 회사 로컬의 ignored `claude-session-handoff.md`에도 역사 안내만 보완했다. 기존 ignore를 유지하며 Git에 추가하지 않는다.
+- 검사는 문서 탐색·표지·알려진 낡은 문구·근거 연결의 정적 회귀다. 이전 대화를 주지 않은 독립 새 AI의 이해 정확도는
+  측정하지 않았다. 모든 문장·미래 변경의 무모순, 다른 PC 환경, 실제 OS/SDK enforcement까지 증명하지 않는다.

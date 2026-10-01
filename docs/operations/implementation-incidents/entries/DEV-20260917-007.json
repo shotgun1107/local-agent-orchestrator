@@ -43,7 +43,7 @@
     "second.xml 49 passed; final.xml 146 passed이며 연결부 88개 포함. 현재 설치된 Git으로 prepare fixture를 검증했다."
   ],
   "remaining_risks": [
-    "F14 자체의 일반 Worker oracle 격리와 실제 Docker qualification은 별도 미완료다."
+    "당시 미완료였던 F14의 일반 snapshot 관측 분리와 native qualification은 후속 v4 21종에서 완료했다(docs/operations/audit-f14-v4-checker-qualification-20260929.md). 실제 Windows/SDK enforcement와 정식 비교 승격은 별도 미확인이다."
   ],
   "related_commits": [
     "da6224ac7af2c52c6f1a16f7e4d7bf23ee4bc9b0"

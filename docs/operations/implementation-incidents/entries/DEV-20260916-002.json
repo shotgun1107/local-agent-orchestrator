@@ -50,7 +50,7 @@
   "remaining_risks": [
     "JSON Schema는 Python의 모든 교차 필드·실행 전 업무 규칙을 표현하지 않는다.",
     "이 검증은 다른 PC 전체 복원이나 실제 SDK/모델/Live GO를 뜻하지 않는다.",
-    "F10·F11·F12 및 F1·F2·F4·F6·F14는 이번 수정 범위 밖이다. 앞선 timeout 시간 변동의 원인을 해결한 것도 아니다.",
+    "당시 이 항목의 수정 범위에는 F10·F11·F12 및 F1·F2·F4·F6·F14가 포함되지 않았다. 이후 수선 종료는 docs/operations/audit-maintenance-closure-20260929.md를 따른다. 앞선 timeout 시간 변동의 역사 원인은 여전히 미확정이다.",
     "QA wheel은 현재 작업 사본의 검증물이지 과거 봉인 wheel의 대체본이 아니다. 두 QA 빌드는 README 입력이 달라 동일 입력 반복 빌드 증거로 세지 않는다."
   ],
   "related_commits": ["759eba19a4538d1fda6a358dff528552915c2353"],

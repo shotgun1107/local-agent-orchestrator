@@ -1,6 +1,12 @@
-# 회사 로컬 → 집 로컬 현재 작업 인수인계
+# 회사 로컬 → 집 로컬 과거 작업 인수인계
 
-- 문서 상태: `current_company_to_home_handoff`
+<!-- DOC-ROLE: historical -->
+
+> 역사 인수인계 — 현재 실행 지시가 아니다. 아래의 “현재/최신/다음”, branch·commit·승인과 재개 프롬프트는 작성 당시 기록이다.
+> 현재 기준은 [새 세션 시작 계약](../README.md#session-start)과 [최신 인수인계 자동 블록](동기화_인수인계.md#sync-current)이다.
+> 다른 과거 handoff의 절을 최신 정본으로 따라가지 않는다. 과거 실행 원본·seal·결과는 보존한다.
+
+- 문서 상태: `historical_company_to_home_handoff` — 현재 정본은 위 SYNC:AUTO 링크
 - revision: 23
 - 작성일: 2026-08-15
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
@@ -625,7 +631,7 @@ model turn은 계속 `NO_GO`다.
 
 ## 32. 2026-08-15 qualification v13 → Phase E v12 → readiness v4
 
-이 절이 현재 최신 집 PC 정본이다.
+이 절은 작성 당시의 집 PC 인수 기준이었다. 지금의 기준은 문서 상단 SYNC:AUTO 링크를 따른다.
 
 ### 완료
 
@@ -652,7 +658,7 @@ SS1과 B1은 사용자가 각각 별도로 승인해야 하며 자동 continuati
 
 ## 33. 2026-08-15 readiness v4 Pro NO-GO와 model-free closure checkpoint
 
-이 절이 현재 최신 회사→집 관문 정본이다.
+이 절은 작성 당시의 회사→집 관문 기록이다. 지금의 기준은 문서 상단 SYNC:AUTO 링크를 따른다.
 
 ### 과거
 

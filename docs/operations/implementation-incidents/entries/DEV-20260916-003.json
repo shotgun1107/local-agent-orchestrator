@@ -51,7 +51,7 @@
     "반환하지 않는 dispatch RPC/동기 observer 중에는 요청이 pending일 수 있다. terminal 완료와 동시에 도착한 요청은 완료 상태를 되돌리지 않는다.",
     "Windows model-free 검증이며 실제 SDK/model 중단·다른 OS의 process tree·다른 PC 전체 복원·Live GO 증거가 아니다.",
     "marker는 기존 state-root ACL 신뢰 경계이며 악의적 동일 사용자/전원 손실 보장은 아니다. backup 수집 뒤 요청은 그 backup에 포함되지 않는다.",
-    "F11/F12 전체 교정, F1/F2/F4/F6/F14와 과거 timeout 변동 원인은 이번 범위 밖이다."
+    "당시 이 항목의 범위 밖이었던 F11/F12와 F1/F2/F4/F6/F14의 후속 수선은 docs/operations/audit-maintenance-closure-20260929.md에서 완료 여부를 확인한다. 과거 timeout 변동의 역사 원인은 여전히 미확정이다."
   ],
   "related_commits": ["f9c0208e0b8fa8b9c57cd129d1bdee0cb3ef6cb4"],
   "source_references": [

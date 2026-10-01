@@ -1,12 +1,61 @@
 # 문서 안내
 
-이 디렉터리는 문서의 **역할과 현재성**을 기준으로 정리한다. 현재 구현을 위한 기준은 `design/`, 근거 자료는 `research/`, 실행으로 확인한 사실은 `experiments/`에서 읽는다.
+이 디렉터리는 문서의 **역할과 현재성**을 기준으로 정리한다. 폴더명이나 문서 안의 “현재/최신/GO”만으로 최신 기준을 고르지 않는다. `design/`도 적용 범위와 승인된 후속 교정을 대조하고, `experiments/`는 해당 회차의 사실로 읽는다.
 
-## 먼저 읽을 문서
+<a id="session-start"></a>
+
+## 새 세션 시작 계약
+
+이 절은 이전 대화 없이 현재 기준을 찾는 공통 입구다. Codex 외의 작업자도 같은 순서를 따른다.
+관리 폴더에서 시작했다면 연결된 LAO/repo를 먼저 확인한다. 문서에 적힌 경로·명령을 그대로 실행하지 않는다.
+
+1. 실제 저장소의 [AGENTS.md](../AGENTS.md)를 읽고 branch·HEAD·미커밋 변경을 확인한다.
+   공유 브랜치는 `codex/phase-d-artifacts`다. 다른 checkout을 현재본으로 추정하거나 자동 전환·덮어쓰기하지 않는다.
+2. 관리 문서를 읽기 전에 `management_sync.py` 원문을 확인하고 `status`로 양쪽 변경을 검사한다.
+   기존 관리 사본이 없는 새 PC는 [복원 계약](./operations/workspace-portability.md)을 따르며, 이 경우에도 저장소의 관리 전달본부터 읽을 수 있다.
+3. [관리 README](./management/README.md), [STATUS](./management/STATUS.md), [NEXT](./management/NEXT.md),
+   [WORKFLOW](./management/WORKFLOW.md), [DECISIONS](./management/DECISIONS.md)를 읽는다.
+4. [유일한 최신 인수인계](./operations/동기화_인수인계.md#sync-current)의 `SYNC:AUTO` 블록에서
+   전송 work commit·미전송 자료·검증 범위를 확인한다. note-only commit과 work commit을 구분한다.
+5. 아래 표에서 맡은 작업의 구현 계약·코드·회귀·교정 결과만 추가로 읽는다.
+   작업 범위가 이미 승인돼 있으면 그 범위에서 진행한다. 옛 프롬프트 때문에 끝난 작업을 다시 시작하거나 승인을 반복 요청하지 않는다.
+
+### 문서 우선순위와 책임
+
+| 알고 싶은 것 | 기준 | 충돌할 때의 처리 |
+|---|---|---|
+| 허용 작업·안전 관문 | 현재 사용자 요청과 적용되는 AGENTS.md | 과거 승인·프롬프트는 새 승인으로 사용할 수 없다 |
+| 현재 완료/진행/미확인 | 관리 STATUS | 과거 결과의 “현재”보다 우선한다. 날짜만으로 실행 증거를 대체하지 않는다 |
+| 다음 작업·연구 범위 | 관리 NEXT와 해당 결정 | 대기/보류를 임의의 개발 목표로 채우지 않는다 |
+| 인수 commit·로컬에만 있는 것 | 기존 SYNC:AUTO | Git 전달과 환경·원본 전달을 분리한다 |
+| B1 구현 계약 | [동결 B1 명세](./design/b1-minimum-orchestrator-implementation-spec.md), [현재 B1 사용법](../stages/b1-sequential/README.md), [승인된 교정 대응표](./operations/audit-maintenance-closure-20260929.md) | 후속 교정의 해당 항목만 원래 구현을 대체한다. 명세·코드가 다르면 근거를 확인하고 임의로 어느 쪽도 고치지 않는다 |
+| Runner·F14 구현 계약 | [Runner 안내](../tools/benchmark-runner/README.md), [v4 계약](../tools/benchmark-runner/qualifications/profile-i-semantic-v4/README.md), 관련 코드·시험 | v1~v3 보존 경로를 신규 평가의 기본으로 선택하지 않는다. v4 검증 완료도 Phase F 승격 승인은 아니다 |
+| 무엇을 실제 검증했는가 | 해당 회차의 결과·source·시험/원본·외부 hash | 현재 코드와 검증 source의 차이를 확인한다. 원본이 없으면 재검증 미확인으로 보고한다 |
+| 과거에 왜 그랬는가 | DECISIONS, 날짜별 결과·심사·과거 handoff | 역사 자료는 현재 상태나 실행 권한을 덮어쓰지 않는다 |
+
+### 대화 없이 확인할 질문
+
+새 작업자는 아래 질문에 근거 경로를 붙여 답할 수 있어야 한다. 이것은 새 승인 단계가 아니라 작업 전 자기 점검이다.
+
+| 질문 | 찾아야 할 근거 |
+|---|---|
+| 현재 구현 단계와 아직 하지 않는 일은? | STATUS의 구현 범위, NEXT의 보류·사용자 결정 |
+| 감사가 끝났다는 것과 Live가 가능하다는 것은 같은가? | 종료 보고서의 범위와 AGENTS.md 두 턴 관문 |
+| 과거 v25 pair·policy 1 candidate를 이어 써도 되는가? | STATUS, 해당 결과, 현재 source binding 거부 코드 |
+| F14를 수정한다면 어떤 경로가 현재 기준인가? | Runner 안내 → v4 계약 → 관련 실행/판정 코드와 시험 |
+| 현재 코드를 실행하는가, 옛 설치 wheel을 실행하는가? | 복원 계약 → enter.ps1 → check_environment.py |
+| 받은 Git만으로 검증할 수 없는 것은 무엇인가? | SYNC:AUTO의 외부 원본·환경·미전송 자료 |
+
+검증 한계: 이 읽기 경로와 문서 회귀시험은 안내 누락·알려진 낡은 표현을 검사한다.
+독립적인 새 AI의 이해 정확도, 모든 문서의 의미적 무모순, 실제 모델·다른 PC 준비를 보증하지 않는다.
+
+## 상세 문서
+
+### 제품 계약과 결과 요약
 
 제품은 범용 B1 reference 구현이며, 실무 채택·범용성 검증은 완료되지 않았다. 먼저 [범용 목적과 책임 경계](./design/general-local-session-orchestrator-design.md), [B1 구현 계약](./design/b1-minimum-orchestrator-implementation-spec.md), [실제 B1 사용법](../stages/b1-sequential/README.md)을 읽는다. **감사 F1~F14와 후속 유지보수는 2026-09-30 공식 종료했다.** 시험 회차는 [관리 STATUS](./management/STATUS.md), 근거와 한계는 [공식 종료 판정](./operations/audit-maintenance-closure-20260929.md)을 따른다. [F14 v4 일반 snapshot·21종 native 검증](./operations/audit-f14-v4-checker-qualification-20260929.md), cold checkout 전수와 후속 입력 binding 회귀도 완료됐다. API 행동 검증과 역사 실험 무결성을 실제 OS/SDK·범용 실무 채택·Live 검증으로 확대하지 않는다.
 
-회사 PC의 현재 작업 위치는 `C:\LAO\repo`다. 새 세션은 [회사 PC 경로·인수인계](./operations/company-pc-layout-20260916.md)를 먼저 읽는다. 프로젝트를 외부 작성 도구에 설명할 때는 [프로젝트 맥락 학습 자료](./portfolio/local-agent-orchestrator-application-context.md)를 참고하되, 개인 기여·검증 한계를 함께 유지한다.
+회사 PC의 현재 작업 위치는 `C:\LAO\repo`다. 현재 역할과 개발 진입은 [공간·복원 계약](./operations/workspace-portability.md)을 따른다. [회사 PC 이전 기록](./operations/company-pc-layout-20260916.md)은 이동 당시의 사실이다. 외부 작성 도구용 [프로젝트 맥락 학습 자료](./portfolio/local-agent-orchestrator-application-context.md)는 9월 16일 기준 설명 자료이며 이후 감사 결과는 STATUS에서 보완한다. 개인 기여·검증 한계를 유지한다.
 
 실행 이력의 최신 상태는 [v25 SS1 결과](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-ss1-company-v25-result.md), [v25 B1 결과와 pair 격리](./experiments/sdk-routing-realistic-high-difficulty-phase-f-profile-r-b1-company-v25-result.md), [설정 전이·배차 분류 수정 결과](./experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md)를 따른다. v25 Cell 1·2는 이미 봉인됐고 Cell 3·4는 미실행이다. 현행 소스의 policy 2 경계는 과거 policy 1의 [candidate v25](./experiments/sdk-routing-realistic-high-difficulty-phase-e-candidate-company-v25-result.md)를 Live 입력으로 받지 않는다. [readiness v14](./experiments/sdk-routing-realistic-high-difficulty-profile-r-live-readiness-v14-package-result.md)와 acceptance 두 회차는 준비 당시의 역사 증거이며 새 Live 승인이 아니다. 기존 pair 재실행·재분류는 금지하고, 후속 실행이 필요할 때는 새 source와 candidate의 검증 후 Environment Closure와 별도 승인을 거친다.
 
@@ -127,13 +176,13 @@ docs/
 - [SDK 통제 비교 Claude 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-controlled-comparison-spec.md) — 실행 완료한 판본의 심사 지시 기록
 - [SDK 라우팅 테스트 스위트 v1 Claude 심사 프롬프트](./prompts/benchmark-runner/claude-review-prompt-sdk-routing-suite-v1.md) — 실행 완료. 8-Cell 교체·복잡도 profile·단계별 중단 규칙을 검토한 지시 기록
 - [S3 complex/high-risk Claude 심사 프롬프트](./prompts/benchmark-runner/claude-review-prompt-sdk-routing-s3-complex-high-risk-spec.md) — revision 1 동결 가능성 read-only 심사용 정본
-- [S3 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-review.md) — 새 Claude 세션에서 위 심사 정본을 호출하는 짧은 복붙 입력
+- [과거 S3 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-review.md) — 당시 심사를 호출한 입력 보존; 현재 재개 프롬프트가 아님
 - [S3 revision 2 Claude 집중 재심사 프롬프트](./prompts/benchmark-runner/claude-rereview-prompt-sdk-routing-s3-complex-high-risk-spec.md) — 실행 완료. 1차 P0/P1과 수용한 P2 closure만 확인한 read-only 정본
-- [S3 재심사 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-rereview.md) — 새 Claude 세션에서 closure 재심사 정본을 호출하는 짧은 복붙 입력
+- [과거 S3 재심사 Claude 세션 입력](./prompts/benchmark-runner/claude-session-input-sdk-routing-s3-rereview.md) — 당시 closure 심사 입력 보존; 현재 재개 프롬프트가 아님
 - [현실 고난도 Phase D revision 2 Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-sdk-routing-realistic-high-difficulty-phase-d-r2.md) — P1 3건·P2 2건 closure 전용 읽기 정본
-- [회사 Codex 집 inventory 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phaseb-inventory.md) — 최신 branch를 ff-only로 받고 P001~P015 inventory와 현재 gate를 인수하는 첫 세션 입력
+- [과거 회사 Codex 집 inventory 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phaseb-inventory.md) — 당시 branch·P001~P015 인수 지시 보존; 새 세션에 복사하지 않음
 - [과거 회사 Codex 집 작업 인수 프롬프트](./prompts/benchmark-runner/company-codex-resume-after-home-phase-d-r2.md) — 2026-08-09 집→회사 인수에 사용한 역사 입력
-- [집 Codex Profile R 환경 교정 재개 프롬프트](./prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md) — 최신 branch 인수 뒤 축소 환경 교정만 model-free로 진행하는 입력
+- [과거 집 Codex Profile R 환경 교정 재개 프롬프트](./prompts/benchmark-runner/home-codex-resume-after-company-phase-d-profile-r.md) — 당시 축소 환경 교정 지시 보존; 현재 절차는 위 새 세션 시작 계약
 - [Profile R Live readiness Pro 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-live-readiness-v1.md) — qualification v10·Phase E v9·exact acceptance 2회 뒤 한 fresh pair GO/NO-GO만 판정하는 입력
 - [Profile R Live readiness revision 8 재심 프롬프트](./prompts/benchmark-runner/chatgpt-pro-rereview-prompt-profile-r-live-readiness-v8.md) — 중대 문제 발생 시만 쓰는 선택적 q18·v16·acceptance v8 재심 입력
 - [Profile R R01~R08 실패 진단·재설계 Pro 프롬프트](./prompts/benchmark-runner/chatgpt-pro-review-prompt-profile-r-r01-r08-failure-diagnostic-v1.md) — R 전체 유효성·Check/Judge 일치·환경 경계 해결 요청
@@ -147,17 +196,19 @@ docs/
 - [개정·검증 로그](./operations/codex-revision-log.md) — 문서 변경과 검증 이력
 - [구현 오류 해결 로그](./operations/implementation-incidents/index.md) — 구축 중 오류의 증상·원인·해결·회귀시험 기록
 - [Phase B P001~P015 집 원본 inventory](./operations/phase-b-p001-p015-source-inventory.md) — raw를 공개하지 않고 존재·크기·hash·민감도와 P013/P014 미확인을 고정한 정본
-- [회사 종료 동기화·집 작업 인수인계](./operations/동기화_인수인계.md) — 최신 Git checkpoint, 환경 복원법, 비Git 자료와 Pro 재심 재개 프롬프트
-- [회사 로컬 → 집 로컬 누적 작업 인수인계](./operations/company-to-home-codex-handoff.md) — §44가 q18, Phase E v16, acceptance v8과 readiness 재심사 관문을 보존
+- [최신 동기화 인수인계 자동 블록](./operations/동기화_인수인계.md#sync-current) — 전송 work commit, 환경·비Git 자료·다음 범위의 유일한 최신 인수 기록
+- [과거 회사 로컬 → 집 로컬 누적 작업 인수인계](./operations/company-to-home-codex-handoff.md) — 날짜별 이력 보존; 어느 절도 현재 작업 지시가 아님
 - [과거 집 로컬 → 회사 로컬 인수인계](./operations/home-to-company-codex-handoff.md) — SS1 v6 당시 역사 기록; 최신 재개 지시로 사용하지 않음
 - [과거 집 PC 진입 인수인계](./operations/home-codex-handoff.md) — 프로젝트 정신모델 참고용 역사 문서; 현재 재개 지시로 사용하지 않음
-- [B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 설치·실제 Codex smoke·B0/B1 비교 절차
+- [과거 B1 집 PC 테스트 인수인계](./operations/b1-home-test-handoff.md) — 초기 설치·smoke·비교 절차의 역사 기록
 
 ### `archive/`
 
 `fork-based/`는 현재 채택한 “버전 코어 + Project Pack” 이전에 검토한 fork 중심 방향의 심사 자료다. 삭제하지 않지만 현재 구현 기준으로 사용하지 않는다.
 
-## 현재 상태
+## 구현·실험 이력의 빠른 위치 찾기
+
+아래는 기록의 종류를 설명하며 새 실행 대기열이 아니다. 현재 상태는 [STATUS](./management/STATUS.md), 다음 작업은 [NEXT](./management/NEXT.md) 하나씩을 갱신한다.
 
 - 범용 설계: 동결
 - B1 구현 명세: 동결, reference 구현과 실제 Codex smoke 완료
@@ -167,6 +218,6 @@ docs/
 - 기존 수동 B0/B1 비교: 기능 증거만 유지하고 성능·채택 판정은 발행하지 않음
 - SDK 통제 C0/C1/C2/B1 비교 명세: 판본 3 동결, 공통 Check 환경·인증 fail-closed 계약 구현 완료
 - 기존 SDK routing S0~S3: S1/S2 실행과 S3 initial live까지 역사 결과가 존재한다. S3 terminal은 `S3_INCONCLUSIVE`, route 미발행이며 현재 다음 단계로 사용하지 않음
-- 현실 고난도 비교: v23·v24·v25 결과는 각 실행 당시 증거로 보존하며 v25 pair도 정식 비교에서 격리됐다. policy 2 수정과 전체 감사의 미해결 제품 결함을 과거 준비 완료 기록으로 덮지 않는다. 기존 candidate 재실행과 Cell 3·4는 `NO-GO`이며 후속 실행에는 새로 검증된 입력과 별도 승인이 필요하다.
+- 현실 고난도 비교: v23·v24·v25 결과는 각 실행 당시 증거로 보존하며 v25 pair도 정식 비교에서 격리됐다. 감사 수선 완료는 이 pair의 복권이나 policy 1 candidate의 재사용 허가가 아니다. 기존 candidate 재실행과 Cell 3·4는 `NO-GO`이며 후속 실행에는 새로 검증된 입력과 별도 승인이 필요하다.
 
 파일을 새로 추가할 때는 목적에 맞는 하위 디렉터리에 넣고 이 인덱스의 읽기 순서가 바뀌는 경우에만 `README.md`를 갱신한다.

@@ -1,9 +1,19 @@
 # 회사 Codex — 집 Phase F SS1 v6 뒤 재개 프롬프트
 
-아래 블록 전체를 회사 PC의 새 Codex 세션에 붙여넣는다. 채팅에 적힌 최종 remote
-HEAD를 `expected remote HEAD`에 넣는다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
+아래는 당시 회사 PC 인수 입력이다. `expected remote HEAD`는 그 회차의 전달값이었으며
+현재 세션에서 값을 채우거나 이 블록을 복사해 실행하지 않는다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 집 PC에서 진행한 local-agent-orchestrator 작업을 회사 PC의 기존 clone으로 인수하라.
 새 clone이나 기초 설치를 반복하지 마라.
 

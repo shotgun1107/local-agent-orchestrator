@@ -1,6 +1,12 @@
 # 집 PC 작업 인수인계
 
-> 상태: 집 PC 진입 당시의 역사적 인수 문서다. 2026-08-10 회사 작업을 집에서 이어받는 현재 절차는 [회사 로컬 → 집 로컬 인수인계](./company-to-home-codex-handoff.md)를 따른다. 아래 S1/S2 재개 지시는 현재 작업 지시로 사용하지 않는다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 인수인계 — 현재 실행 지시가 아니다. 아래의 “현재/최신/다음”, branch·commit·승인과 재개 프롬프트는 작성 당시 기록이다.
+> 현재 기준은 [새 세션 시작 계약](../README.md#session-start)과 [최신 인수인계 자동 블록](동기화_인수인계.md#sync-current)이다.
+> 다른 과거 handoff의 절을 최신 정본으로 따라가지 않는다. 과거 실행 원본·seal·결과는 보존한다.
+
+> 당시 후속 기록은 [회사 로컬 → 집 로컬 인수인계](./company-to-home-codex-handoff.md)에 보존한다. 그 기록 역시 현재 절차가 아니며 아래 S1/S2 재개 지시를 사용하지 않는다.
 
 - 갱신일: 2026-08-07
 - 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`

@@ -38,7 +38,7 @@
     "WAL header 처리는 SQLite가 문서화한 deserialize용 RAM 사본에만 적용한다. 실제 원본 DB/header/hash는 변경하지 않는다.",
     "파일/용량/depth/SQL 한계 초과는 실패한다. 악의적 동시 filesystem 변경·native SQLite 취약점의 완전한 sandbox나 I/O 정지의 시간 상한은 아니다.",
     "SQLite deserialize/defensive 미지원 플랫폼, 다른 PC 복원·실제 runtime 재연결은 미확인이다. Live NO-GO.",
-    "F1/F2/F4/F6/F14와 반복 관측된 timeout 시간 변동 원인은 남아 있다."
+    "당시 남아 있던 F1/F2/F4/F6/F14의 후속 수선은 docs/operations/audit-maintenance-closure-20260929.md에서 닫았다. 반복 관측된 timeout 시간 변동의 역사 원인은 여전히 미확정이다."
   ],
   "related_commits": ["e384f9d715c71517df0703634fd26d5235c3c1e6"],
   "source_references": ["docs/operations/audit-f12-backup-verification-remediation-20260917.md", "benchmarks/.local-r6/independent-audit-20260908-01/report.md", "related_commits는 작업 전 기준이다. 전달 작업 commit은 기존 동기화_인수인계.md의 최신 자동 블록을 따른다."]

@@ -1,5 +1,11 @@
 # 감사 F11 — 삭제·rename와 실제 workspace 목록
 
+<!-- DOC-ROLE: historical -->
+
+> 회차 기록 — 현재 실행 지시가 아니다. 아래 승인·미완료·다음 단계·시험 수는 이 보고서 당시 범위다.
+> 현재 수선 상태는 [최종 종료 보고서](audit-maintenance-closure-20260929.md),
+> 새 작업의 읽기 순서는 [새 세션 시작 계약](../README.md#session-start)을 따른다. 원문·실패 분류·seal은 보존한다.
+
 기준일: 2026-09-16. 수정 전 commit: `61de49a1ea66674b5a734b5aa5c1dceba2dee9d7`.
 사용자가 F11 진행을 승인했다. 실제 소스·시험은 LAO/repo에서, 결과 인수는 Documents 관리 공간에서 한다.
 실제 모델·SDK 세션·과거 실행 원본 대신 임시 Git 저장소, FakeRuntime과 로컬 Check만 사용했다.

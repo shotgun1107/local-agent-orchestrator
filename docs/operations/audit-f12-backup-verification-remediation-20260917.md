@@ -1,5 +1,11 @@
 # 감사 F12 — 닫힌 백업의 DB·Run·Artifact 검증
 
+<!-- DOC-ROLE: historical -->
+
+> 회차 기록 — 현재 실행 지시가 아니다. 아래 승인·미완료·다음 단계·시험 수는 이 보고서 당시 범위다.
+> 현재 수선 상태는 [최종 종료 보고서](audit-maintenance-closure-20260929.md),
+> 새 작업의 읽기 순서는 [새 세션 시작 계약](../README.md#session-start)을 따른다. 원문·실패 분류·seal은 보존한다.
+
 기준일: 2026-09-17. 수정 전 commit: `e384f9d715c71517df0703634fd26d5235c3c1e6`.
 사용자가 F12 진행을 승인했다. 기존 backup/state/raw/Measurement/seal은 수정하지 않고
 임시 fixture에서만 정상 생성·의도적 손상·검증을 수행했다. 복원/재실행 기능을 추가하지 않았다.
