@@ -6,6 +6,11 @@
 폴더에서, 실제 코드·시험·실험은 LAO/repo에서 한다. 폴더 분리는 저장소 분리가 아니다.
 `docs/management/README.md`, `STATUS.md`, `NEXT.md` 및
 `docs/operations/workspace-portability.md`를 먼저 읽는다.
+새 세션의 문서 읽기 순서·문서 우선순위·근거 대조는 `docs/README.md#session-start`를 따른다.
+현재 상태는 관리 STATUS, 다음 작업은 NEXT, 전송 commit은 기존 SYNC:AUTO가 담당한다.
+과거 결과·심사·재개 프롬프트의 현재형 문장을 새 작업 지시로 재사용하지 않는다.
+새 세션은 이전 대화 대신 이 기준과 관련 코드·시험을 대조한다. 이 읽기 확인은 추가 승인
+관문이 아니며, 이미 승인된 비라이브 개발을 매번 재확인받는 이유로 사용하지 않는다.
 공유 관리 문서는 `docs/management`에 Git 추적하며, 사용자는 Documents의 실제
 관리 사본을 편집한다. `tools/workspace/management_sync.py status`로 양쪽 상태를
 확인하고, 송신 전 collect / 수신 후 refresh한다. 충돌·삭제는 자동 해결하지 않는다.
@@ -20,7 +25,8 @@ sync의 유일한 최신 인수인계 대상은 `docs/operations/동기화_인�
 
 이 회사 PC에서는 실제 저장소가 `C:\LAO\repo`, 개발 Python은
 `C:\LAO\env\v23\Scripts\python.exe`다. 작업을 시작하기 전에
-`docs/operations/company-pc-layout-20260916.md`를 읽는다.
+`docs/operations/workspace-portability.md`의 현재 경로 계약을 읽는다.
+`docs/operations/company-pc-layout-20260916.md`는 이전 당시의 경위가 필요할 때 읽는 역사 기록이다.
 새 임시·실행·Evidence 폴더는 각각 `C:\LAO\tmp`, `C:\LAO\run`,
 `C:\LAO\evidence` 아래로 한정하며 C:\ 직속에 다시 분산 생성하지 않는다.
 `C:\LAO\history`는 이전 원본 보관소이며 과거 state/raw/Measurement/seal과

@@ -42,7 +42,7 @@
     "순변화 관측이지 원자적 filesystem snapshot 또는 관측 사이 삭제·동일 bytes 복원의 이력 증명이 아니다.",
     "악의적인 동시 writer와 OS별 metadata 의미 전체를 증명하지 않는다. 다른 OS와 대규모 repo 성능은 별도 실증이 필요하다.",
     "symlink/reparse·submodule directory·일반 파일의 directory/type 전환은 부재로 취급하지 않고 차단한다.",
-    "F12, F1/F2/F4/F6/F14, 과거 timeout 변동 원인은 미해결이다. Live NO-GO를 유지한다."
+    "당시 미해결이었던 F12와 F1/F2/F4/F6/F14는 후속 수선으로 닫혔다(docs/operations/audit-maintenance-closure-20260929.md). 과거 timeout 변동의 역사 원인은 미확정이며 정식 비교 Live NO-GO는 유지한다."
   ],
   "related_commits": ["61de49a1ea66674b5a734b5aa5c1dceba2dee9d7"],
   "source_references": ["docs/operations/audit-f11-workspace-deletion-remediation-20260916.md", "benchmarks/.local-r6/independent-audit-20260908-01/report.md", "related_commits는 작업 전 기준이다. 전달 작업 commit은 동기화_인수인계.md의 최신 자동 블록에 기록한다."]

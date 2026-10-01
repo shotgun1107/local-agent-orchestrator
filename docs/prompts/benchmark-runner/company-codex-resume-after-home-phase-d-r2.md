@@ -1,10 +1,20 @@
 # 회사 Codex 시작 프롬프트 — 집과 동일한 프로젝트 상태로 맞추기
 
-> 상태: 역사 프롬프트. 현재 회사 복귀에는 [집 P001~P015 inventory 인수 프롬프트](./company-codex-resume-after-home-phaseb-inventory.md)를 사용한다.
+<!-- DOC-ROLE: historical -->
 
-회사 PC에서 기존 `local-agent-orchestrator` 폴더를 Codex로 연 뒤 아래 블록 전체를 붙여넣는다.
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
+> 당시 후속 [집 P001~P015 inventory 인수 프롬프트](./company-codex-resume-after-home-phaseb-inventory.md)도 역사 기록이다. 현재 회사 복귀 입력으로 사용하지 않는다.
+
+아래는 당시 회사 PC 인수에 사용한 입력 원문이다. 현재 세션의 복사용 입력이 아니다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 이 회사 PC의 기존 local-agent-orchestrator clone을 집에서 넘긴 원격 정본과 동일하게 맞춘 뒤 현재 작업을 인수한다.
 
 핵심 목표는 회사와 집의 Git 관리 프로젝트 파일·디렉터리가 같은 branch, commit과 tree를 가지게 하는 것이다. 서로 달라도 되는 것은 Codex의 채팅 기억·컨텍스트와 .venv·cache·외부 state 같은 비정본 로컬 환경뿐이다.

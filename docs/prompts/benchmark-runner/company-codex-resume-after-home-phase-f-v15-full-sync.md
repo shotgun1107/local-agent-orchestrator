@@ -1,9 +1,19 @@
 # 회사 Codex 시작 프롬프트 — Phase F v15 전체 동기화
 
-아래 블록을 회사 PC의 새 Codex 세션에 붙여넣는다. `<PRIVATE_ARCHIVE_PASSWORD>`는 Git이
-아닌 사용자의 비공개 전달값으로만 교체한다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
+아래는 당시 archive 인수 입력의 보존본이다. 현재 세션에 복사하거나
+`<PRIVATE_ARCHIVE_PASSWORD>`를 채우지 않는다. 현재 비밀정보 규칙은 저장소 AGENTS.md를 따른다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 집 PC의 local-agent-orchestrator 작업을 회사 PC의 기존 clone으로 인수하라.
 새 clone이나 기초 설치를 반복하지 마라.
 

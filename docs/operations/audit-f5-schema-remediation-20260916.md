@@ -1,5 +1,11 @@
 # 감사 F5 — 공개 Schema·export·wheel 교정
 
+<!-- DOC-ROLE: historical -->
+
+> 회차 기록 — 현재 실행 지시가 아니다. 아래 승인·미완료·다음 단계·시험 수는 이 보고서 당시 범위다.
+> 현재 수선 상태는 [최종 종료 보고서](audit-maintenance-closure-20260929.md),
+> 새 작업의 읽기 순서는 [새 세션 시작 계약](../README.md#session-start)을 따른다. 원문·실패 분류·seal은 보존한다.
+
 기준일: 2026-09-16. 수정 전 commit: `759eba19a4538d1fda6a358dff528552915c2353`.
 사용자가 F5 교정 제안 뒤 진행을 승인했다. 이 작업은 현행 공개 계약과 생성물의 일치를 바로잡는 범위다.
 `contract.py`의 실행 의미, 과거 candidate·seal·Measurement·동결 wheel은 수정하지 않는다.

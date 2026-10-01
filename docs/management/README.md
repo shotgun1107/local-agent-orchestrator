@@ -34,4 +34,8 @@
 
 현재 세션의 실제 작업 디렉터리가 자동으로 LAO로 바뀌는 것은 아니다.
 관리 작업은 이 폴더, 코드·실험 명령은 LAO/repo를 명시해 실행한다.
+새 세션의 공통 읽기 순서·문서 우선순위는 연결된 저장소의 `docs/README.md#session-start`다.
+이 관리 폴더에서 해당 경로를 직접 실행하지 말고 LAO/repo를 기준으로 읽는다.
+STATUS는 현재 상태, NEXT는 현재/다음 작업, DECISIONS는 날짜별 의사결정을 담당한다.
+과거 실행 지시나 대기열을 STATUS/NEXT에 누적하지 않는다. 상세 회차는 원래 기술 결과와 Git 이력에 보존한다.
 자세한 복원 설명은 저장소의 `docs/operations/workspace-portability.md`에 있다.

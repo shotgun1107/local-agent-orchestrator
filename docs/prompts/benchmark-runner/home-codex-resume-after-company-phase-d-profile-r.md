@@ -1,6 +1,16 @@
 # 집 Codex 동기화·Profile R 실패 진단 인수 시작 프롬프트
 
+<!-- DOC-ROLE: historical -->
+
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 회사 PC에서 끝낸 local-agent-orchestrator 작업을 집 PC의 기존 clone으로 안전하게
 인수하라. 새 clone이나 기초 설치를 먼저 반복하지 마라.
 

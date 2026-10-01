@@ -1,9 +1,19 @@
 # 회사 Codex — 집 R7 결과 뒤 model-free 재개 프롬프트
 
-아래 블록 전체를 회사 PC의 새 Codex 세션에 붙여넣는다. 채팅으로 받은
-`expected remote HEAD` 값만 해당 위치에 넣는다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 프롬프트 — 현재 실행 지시가 아니다. 아래 branch·commit·승인·다음 관문은 작성 당시의 기록이다.
+> 새 세션에는 이 블록을 복사하지 말고 [새 세션 시작 계약](../../README.md#session-start)과
+> [최신 인수인계 자동 블록](../../operations/동기화_인수인계.md#sync-current)을 따른다.
+
+아래는 당시 R7 인수 입력의 보존본이다. 현재 세션에서 `expected remote HEAD`를
+채우거나 블록을 복사해 실행하지 않는다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+아래는 과거 요청 기록이다. 실행·동기화·설치·비밀값 입력 지시로 사용하지 않는다.
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 다시 확인한다.
+
 집 PC에서 진행한 local-agent-orchestrator 작업을 회사 PC의 기존 clone으로 인수하라.
 
 repository:

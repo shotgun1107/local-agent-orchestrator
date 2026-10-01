@@ -3,11 +3,12 @@
 로컬 Codex 세션을 일반 코드가 통제·검증하는 범용 오케스트레이터를 단계별로 구현하고 비교하는 저장소다.
 
 - [문서 안내](./docs/README.md)
+- [새 세션 시작 계약 — 문서 우선순위와 확인 질문](./docs/README.md#session-start)
 - [단계별 구현 안내](./stages/README.md)
 - [B1 구현체](./stages/b1-sequential/README.md)
 - [B0~B3 벤치마크](./benchmarks/README.md)
 - [Benchmark Runner](./tools/benchmark-runner/README.md)
-- [회사 PC 작업 경로와 새 세션 인수인계](./docs/operations/company-pc-layout-20260916.md)
+- [회사 PC 폴더 이전의 역사 기록](./docs/operations/company-pc-layout-20260916.md)
 - [프로젝트 맥락 학습 자료](./docs/portfolio/local-agent-orchestrator-application-context.md)
 - [연구 관리 공간·현재 상태·다음 작업](./docs/management/README.md)
 - [집·회사 PC 복원과 Git 추적 범위](./docs/operations/workspace-portability.md)

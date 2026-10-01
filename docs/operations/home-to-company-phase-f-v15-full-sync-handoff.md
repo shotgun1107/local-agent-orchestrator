@@ -1,10 +1,16 @@
 # Phase F v15 집 PC → 회사 PC 전체 동기화 인수인계
 
+<!-- DOC-ROLE: historical -->
+
+> 역사 인수인계 — 현재 실행 지시가 아니다. 아래의 “현재/최신/다음”, branch·commit·승인과 재개 프롬프트는 작성 당시 기록이다.
+> 현재 기준은 [새 세션 시작 계약](../README.md#session-start)과 [최신 인수인계 자동 블록](동기화_인수인계.md#sync-current)이다.
+> 다른 과거 handoff의 절을 최신 정본으로 따라가지 않는다. 과거 실행 원본·seal·결과는 보존한다.
+
 작성일: 2026-08-24
 대상 branch: `codex/phase-d-artifacts`
 
 이 문서는 Git tracked source뿐 아니라 집 PC에만 있던 Phase F v15 raw state, 독립
-forensic 수정본, 실행 보조 파일과 readiness ZIP까지 회사 PC로 넘기기 위한 현재 정본이다.
+forensic 수정본, 실행 보조 파일과 readiness ZIP까지 회사 PC로 넘기기 위해 당시 사용한 기록이다.
 
 ## 1. Git 정본
 

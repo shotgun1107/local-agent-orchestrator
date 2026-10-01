@@ -1,8 +1,16 @@
 # Claude S3 명세 심사 세션 입력
 
-아래 코드블록 전체를 저장소를 읽을 수 있는 Claude 새 세션에 붙여넣는다. 상세 심사 계약은 별도 prompt 문서를 정본으로 사용하므로 이 짧은 입력을 결과와 함께 수정하지 않는다.
+<!-- DOC-ROLE: historical -->
+
+> 역사 심사 입력 — 현재 실행 지시가 아니다. 이 문서는 당시 S3 명세 심사 범위만 보존한다.
+> 새 세션의 공통 기준은 [시작 계약](../../README.md#session-start)이다. 아래 심사를 자동으로 다시 수행하지 않는다.
+
+아래는 당시 별도 심사 계약으로 연결하던 복사 입력의 보존본이다.
 
 ```text
+[역사 프롬프트 — 현재 실행 지시가 아니다]
+현재 작업은 docs/README.md#session-start와 기존 SYNC:AUTO에서 확인한다. 아래 심사는 자동 실행하지 않는다.
+
 local-agent-orchestrator의 S3 complex/high-risk 명세를 read-only로 심사한다.
 
 먼저 다음 파일을 처음부터 끝까지 읽어라.

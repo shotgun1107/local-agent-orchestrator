@@ -1,5 +1,11 @@
 # Profile I 행동 검증 v2 — 아직 실행 qualification 아님
 
+<!-- DOC-ROLE: historical -->
+
+> 대체된 개발 경로 — 현재 실행 지시가 아니다. 이 판본의 한계·원문·verifier는 보존한다.
+> 후속 기준은 [v4 계약](../profile-i-semantic-v4/README.md), 읽기 순서는 [새 세션 시작 계약](../../../../docs/README.md#session-start)이다.
+> 아래의 미완료·다음 단계는 이 판본 당시의 상태이며, v4 완료도 정식 비교 승격이나 Live 승인이 아니다.
+
 F14의 이름·문자열 존재 검사를 대체하는 **별도 개발 판본**이다.
 과거 v1 checker/reference/mutation/evidence/seal은 수정하지 않는다.
 `test_behavior.py`는 Worker가 쓴 시험이 아니라 저장소가 고정한 독립 oracle다.

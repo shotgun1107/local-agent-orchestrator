@@ -5442,7 +5442,7 @@ run-spec와 task-envelope Schema를 재생성했다. 5개 모델 일치 검사�
 
 - JSON Schema는 Python의 모든 교차 필드·실행 전 업무 규칙을 표현하지 않는다.
 - 이 검증은 다른 PC 전체 복원이나 실제 SDK/모델/Live GO를 뜻하지 않는다.
-- F10·F11·F12 및 F1·F2·F4·F6·F14는 이번 수정 범위 밖이다. 앞선 timeout 시간 변동의 원인을 해결한 것도 아니다.
+- 당시 이 항목의 수정 범위에는 F10·F11·F12 및 F1·F2·F4·F6·F14가 포함되지 않았다. 이후 수선 종료는 docs/operations/audit-maintenance-closure-20260929.md를 따른다. 앞선 timeout 시간 변동의 역사 원인은 여전히 미확정이다.
 - QA wheel은 현재 작업 사본의 검증물이지 과거 봉인 wheel의 대체본이 아니다. 두 QA 빌드는 README 입력이 달라 동일 입력 반복 빌드 증거로 세지 않는다.
 
 ### 추적 정보
@@ -5518,7 +5518,7 @@ Run별 payload-free marker를 read-only CLI에서 publish하고 잠금 소유자
 - 반환하지 않는 dispatch RPC/동기 observer 중에는 요청이 pending일 수 있다. terminal 완료와 동시에 도착한 요청은 완료 상태를 되돌리지 않는다.
 - Windows model-free 검증이며 실제 SDK/model 중단·다른 OS의 process tree·다른 PC 전체 복원·Live GO 증거가 아니다.
 - marker는 기존 state-root ACL 신뢰 경계이며 악의적 동일 사용자/전원 손실 보장은 아니다. backup 수집 뒤 요청은 그 backup에 포함되지 않는다.
-- F11/F12 전체 교정, F1/F2/F4/F6/F14와 과거 timeout 변동 원인은 이번 범위 밖이다.
+- 당시 이 항목의 범위 밖이었던 F11/F12와 F1/F2/F4/F6/F14의 후속 수선은 docs/operations/audit-maintenance-closure-20260929.md에서 완료 여부를 확인한다. 과거 timeout 변동의 역사 원인은 여전히 미확정이다.
 
 ### 추적 정보
 
@@ -5590,7 +5590,7 @@ Git의 후보 이름 목록을 현재 존재하는 일반 파일 목록과 동�
 - 순변화 관측이지 원자적 filesystem snapshot 또는 관측 사이 삭제·동일 bytes 복원의 이력 증명이 아니다.
 - 악의적인 동시 writer와 OS별 metadata 의미 전체를 증명하지 않는다. 다른 OS와 대규모 repo 성능은 별도 실증이 필요하다.
 - symlink/reparse·submodule directory·일반 파일의 directory/type 전환은 부재로 취급하지 않고 차단한다.
-- F12, F1/F2/F4/F6/F14, 과거 timeout 변동 원인은 미해결이다. Live NO-GO를 유지한다.
+- 당시 미해결이었던 F12와 F1/F2/F4/F6/F14는 후속 수선으로 닫혔다(docs/operations/audit-maintenance-closure-20260929.md). 과거 timeout 변동의 역사 원인은 미확정이며 정식 비교 Live NO-GO는 유지한다.
 
 ### 추적 정보
 
@@ -5725,7 +5725,7 @@ backup_verify.py에 schema-1 strict manifest, portable 경로·link/별칭 거�
 - WAL header 처리는 SQLite가 문서화한 deserialize용 RAM 사본에만 적용한다. 실제 원본 DB/header/hash는 변경하지 않는다.
 - 파일/용량/depth/SQL 한계 초과는 실패한다. 악의적 동시 filesystem 변경·native SQLite 취약점의 완전한 sandbox나 I/O 정지의 시간 상한은 아니다.
 - SQLite deserialize/defensive 미지원 플랫폼, 다른 PC 복원·실제 runtime 재연결은 미확인이다. Live NO-GO.
-- F1/F2/F4/F6/F14와 반복 관측된 timeout 시간 변동 원인은 남아 있다.
+- 당시 남아 있던 F1/F2/F4/F6/F14의 후속 수선은 docs/operations/audit-maintenance-closure-20260929.md에서 닫았다. 반복 관측된 timeout 시간 변동의 역사 원인은 여전히 미확정이다.
 
 ### 추적 정보
 
@@ -6121,7 +6121,7 @@ payload tree의 nlink=1 제약을 설치된 실행 파일에도 적용했다. �
 
 ### 남은 위험
 
-- F14 자체의 일반 Worker oracle 격리와 실제 Docker qualification은 별도 미완료다.
+- 당시 미완료였던 F14의 일반 snapshot 관측 분리와 native qualification은 후속 v4 21종에서 완료했다(docs/operations/audit-f14-v4-checker-qualification-20260929.md). 실제 Windows/SDK enforcement와 정식 비교 승격은 별도 미확인이다.
 
 ### 추적 정보
 
