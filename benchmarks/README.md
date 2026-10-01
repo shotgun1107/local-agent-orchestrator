@@ -1,5 +1,9 @@
 # B0~B3 공통 벤치마크
 
+> 아래 12-Cell·F1 revision·SDK routing S1 설명은 해당 회차의 역사 기록이며 현재 실행 대기열이 아니다.
+> 현재 상태·다음 작업은 [STATUS](../docs/management/STATUS.md)와 [NEXT](../docs/management/NEXT.md),
+> 인수 순서는 [새 세션 시작 계약](../docs/README.md#session-start)을 따른다. 과거 root·Cell을 재실행하지 않는다.
+
 단계별 비교에서 입력과 판정 기준이 달라지지 않도록 공통 fixture와 사전 등록 manifest를 보존한다.
 
 - `fixtures/`: 모든 단계가 사용하는 독립 시험 저장소

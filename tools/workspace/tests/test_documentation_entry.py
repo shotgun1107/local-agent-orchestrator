@@ -3,6 +3,7 @@
 These checks validate navigation and known stale guidance, not an AI's understanding.
 They never import product code, start a model, or inspect external runtime evidence.
 """
+import ast
 from pathlib import Path
 import json
 import re
@@ -119,6 +120,47 @@ class DocumentationEntryTests(unittest.TestCase):
         self.assertIn("../../docs/README.md#session-start", runner)
         self.assertNotIn("전체 감사의 미해결 제품 결함", read("docs/README.md"))
 
+    def test_runner_configuration_guidance_matches_source_policy(self):
+        # Parse literal contract fields without importing the SDK/runtime module.
+        source = ast.parse(read("tools/benchmark-runner/src/benchmark_runner/realistic_phase_f_sdk.py"))
+        policy = next(node for node in source.body if isinstance(node, ast.FunctionDef)
+                      and node.name == "phase_f_configuration_compatibility_policy")
+        returned = next(node.value for node in policy.body if isinstance(node, ast.Return))
+        literals = {ast.literal_eval(key): ast.literal_eval(value)
+                    for key, value in zip(returned.keys, returned.values)
+                    if isinstance(value, ast.Constant)}
+        override = next(ast.literal_eval(node.value) for node in source.body
+                        if isinstance(node, ast.Assign) and any(
+                            isinstance(target, ast.Name)
+                            and target.id == "PHASE_F_CONFIGURATION_COMPATIBILITY_OVERRIDE"
+                            for target in node.targets))
+        section = read("tools/benchmark-runner/README.md").split(
+            "### Phase F configuration validation (zero threads)", 1)[1]
+        self.assertIn(f"The current Phase F configuration compatibility policy is **v{literals['version']}**", section)
+        self.assertIn(f"`{literals['workspace_trust_transition']}`", section)
+        self.assertIn(f"`{override}`", section)
+        self.assertIn("phase_f_configuration_compatibility_policy", section)
+        self.assertIn("policy-v1 bindings do not authorize", section)
+        self.assertIn("does not itself approve a new candidate or Live execution", section)
+        self.assertNotIn("Phase F configuration compatibility policy v1 adds", section)
+
+    def test_runner_distinguishes_old_entrypoints_from_active_dependencies(self):
+        intro = read("tools/benchmark-runner/README.md").split("동결된", 1)[0]
+        self.assertIn("평가 입구의 지위", intro)
+        self.assertIn("src/benchmark_runner/profile_i_call_execution.py", intro)
+        self.assertIn("v2/v3", intro)
+        for name in ("probe_fixtures.py", "runner_support.py"):
+            self.assertIn(f"`{name}`", intro)
+            self.assertTrue((ROOT / "tools/benchmark-runner/qualifications/profile-i-semantic-v3" / name).is_file())
+        self.assertIn("삭제하거나 대체하지 않는다", intro)
+
+    def test_benchmark_entry_marks_old_runs_and_routes_current_work(self):
+        intro = "\n".join(read("benchmarks/README.md").splitlines()[:10])
+        for term in ("역사 기록", "현재 실행 대기열이 아니다", "과거 root·Cell을 재실행하지 않는다",
+                     "../docs/management/STATUS.md", "../docs/management/NEXT.md",
+                     "../docs/README.md#session-start"):
+            self.assertIn(term, intro)
+
     def test_handoff_has_one_auto_block_and_prominent_current_target(self):
         text = read("docs/operations/동기화_인수인계.md")
         self.assertEqual(text.count("<!-- SYNC:AUTO:BEGIN -->"), 1)
@@ -132,7 +174,7 @@ class DocumentationEntryTests(unittest.TestCase):
     def test_entry_links_resolve_without_external_evidence(self):
         paths = ("README.md", "docs/README.md", "docs/management/README.md",
                  "docs/management/STATUS.md", "docs/management/NEXT.md",
-                 "tools/benchmark-runner/README.md")
+                 "tools/benchmark-runner/README.md", "benchmarks/README.md")
         for relative in paths:
             for target in re.findall(r"\[[^\]\n]*\]\(([^)\s]+)\)", read(relative)):
                 parsed = urlsplit(target)

@@ -50,7 +50,7 @@ F7 문서 경계를 추가 교정했다. 아래 마지막 절의 보완 범위·
 | F4 준비/manifest/Popen 직전 deadline | test_audit_f4_judge_deadline.py | CLOSED. 같은 전수의 전용 6개 통과; 준비·실행 직전 만료 시 workload 0 |
 | F5 source·공개 Schema·새 wheel export | audit-f5-schema-remediation-20260916.md | CLOSED. 아래 새 설치 근거와 9월 30일 Schema 5개·최신 Python 57모듈·두 RECORD 재대조 PASS |
 | F6 작업 bytes와 Git/source gate/snapshot 일치 | test_audit_f14_behavior_oracle.py 등 | 기존 Python OID 일치 유지. 후속 cold checkout의 개행·봉인 Git bytes 결함도 교정했고 fresh checkout 7개 통과; 아래 참조 |
-| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 정정 + 2026-10-01 인수 보완 | CLOSED(보완). 아래에 남아 있던 안내 누락과 교정을 명시. 공통 시작 계약·과거 직접 링크·현재 대기열 분리·문서 회귀 12개로 검사; 독립 새 AI 이해 시험은 아님 |
+| F7 현재 README/docs/handoff·실행 상태 일치 | 2026-09-16 정정 + 2026-10-01 인수 보완 | CLOSED(보완). 초기 문서 12개 회귀 뒤 실제 새 에이전트 1명 인수에서 남은 README 혼선을 찾아 교정. 최종 문서 15개 회귀와 수정 후 대조. 아래 `blind-handoff-check` 참조; 문서 전수·모든 AI 이해 보증은 아님 |
 | F8 정확한 profile/sandbox 적용 | test_audit_execution_gates.py | 교정 후 B1 303에 포함·통과 |
 | F9 필수 InputRef/Artifact 관계·비용 전 차단 | 같은 회귀 | 교정 후 B1 303에 포함·통과 |
 | F10 소유 controller 취소·terminal/격리·보고 | test_cancel.py | 후속 deadline 교정까지 B1 303 통과 |
@@ -290,5 +290,54 @@ Runner README는 F14 부분 교정/v2를 최신처럼 안내했고, 문서 인�
 - 변경 문서의 상대 링크·새 명시적 anchor, 관리 6개 반영, incident 97건/index 일치와 diff 공백을 검사했다.
   source/schema/template·benchmarks 원본·환경 pin은 바꾸지 않았다. 새 모델/SDK/Phase F/Docker workload는 0이다.
 - 회사 로컬의 ignored `claude-session-handoff.md`에도 역사 안내만 보완했다. 기존 ignore를 유지하며 Git에 추가하지 않는다.
-- 검사는 문서 탐색·표지·알려진 낡은 문구·근거 연결의 정적 회귀다. 이전 대화를 주지 않은 독립 새 AI의 이해 정확도는
-  측정하지 않았다. 모든 문장·미래 변경의 무모순, 다른 PC 환경, 실제 OS/SDK enforcement까지 증명하지 않는다.
+- 위 초기 검사는 문서 탐색·표지·알려진 낡은 문구·근거 연결의 정적 회귀다. 이 시점에는 독립 새 AI 인수를
+  수행하지 않았다. 뒤이어 수행한 실제 인수는 아래에 별도로 기록하며, 초기 회귀의 성격을 소급 변경하지 않는다.
+
+<a id="blind-handoff-check"></a>
+
+## 2026-10-01 후속 — 대화 없는 실제 인수와 좁은 안내 교정
+
+### 방법과 관측
+
+- 사용자 요청에 따라 새 에이전트 1명에게 이전 대화·기대 답·다른 작업자의 기록을 주지 않고,
+  Documents 관리 폴더와 세 확인 질문, 읽기 전용 제한만 전달했다. 기준 HEAD는 `3f5ad75`였다.
+  에이전트는 저장소와 적용 지침을 직접 찾고 파일·코드·Git diff만 읽었다. 시험·모델·SDK·Docker 실행이나 쓰기는 하지 않았다.
+- 인수 결과: B1/Runner와 F14 v4가 현재 구현임을 찾았고, v2/v3 평가 입구의 역사적 지위와
+  v4가 여전히 쓰는 공통 코드의 차이를 식별했다. 과거 wheel·candidate·pair/state/raw/seal 보존을 확인했다.
+- 감사 CLOSED와 B1 303/Runner 1,123·skip 10/후속 152/v4 21종을 회차별로 구분했다.
+  다른 PC·실제 OS/SDK·정식 Live의 미확인과 policy 1 candidate/현행 policy 2 거부도 구분했다.
+- NEXT가 다음 기능을 지정하지 않았음을 정확히 읽었다. B2/B3·외부 pilot·새 experiment를 임의 선택하지 않고,
+  과거 root 재실행·재분류·재봉인·보조 worktree 자동 통합을 금지 범위로 식별했다.
+- 초기 답은 인수 핵심 3영역을 이해했지만 README의 실제 충돌도 지적했다. 이 지적을 숨긴 채 초기 문서를 완전 정합으로 판정하지 않았다.
+
+### 교정과 재확인
+
+1. `tools/benchmark-runner/README.md`의 현행 설정 안내에 남은 policy v1 문구를 소스의 policy v2와
+   `verified_thread_start_exact_addition_only`로 맞췄다. 역사 policy 1은 새 Live 권한이 아니며 새 candidate도 별도 승인 대상이다.
+2. 같은 README에 v4가 v2/v3의 실행·판정 공통 모듈 및 v3 `probe_fixtures.py`/`runner_support.py`를 사용한다는 설명을 추가했다.
+   이전 평가 경로를 삭제 가능한 코드 전체와 혼동하지 않도록 했다.
+3. `benchmarks/README.md`의 F1 등 옛 회차 설명에 역사 표지와 현재 STATUS/NEXT·공통 시작 링크를 붙였다.
+   기존 결과·실행 원본은 바꾸지 않았다.
+
+초기 답 이후 같은 에이전트가 변경한 두 README와 해당 소스만 다시 대조해 지적 사항 해소를 확인했다.
+이는 수정 안내를 받은 후속 검토이며, 두 번째 독립 블라인드 시험이 아니다.
+
+사용자의 후속 수정·시험·일반 push 지시에 따라 기존 `test_documentation_entry.py`에 3개 회귀를 추가했다.
+policy version/전이/override는 SDK를 import하지 않고 현재 소스 AST의 literal과 대조한다.
+나머지는 공유 의존성 보존 설명과 benchmarks 역사 안내를 검사한다. 제품 실행 코드는 바꾸지 않았다.
+
+- 현재 문서·관리·기록: **43 passed**(문서 15 + 관리 18 + 기록 10).
+- 수정 전 두 README의 Git blob을 메모리 입력으로 재생하면 새 3개 검사가 **3 expected failures / 0 errors**다.
+  실제 작업 파일을 되돌리지 않았고, 통과만 하는 장식 검사가 아님을 확인했다.
+- 관련 SDK 경계·Live binding·workspace-trust 단위회귀: **104 passed / 실제 SDK opt-in 1개 제외**.
+  주입 Fake만 사용하며 실제 SDK thread·모델·Docker workload는 실행하지 않는다. 실제 환경 시험으로 합산하지 않는다.
+- 외부 증거 root는 `C:\LAO\evidence\session-entry-20261001`이다.
+  `blind-handoff-docs-round1.xml` SHA-256 `3e3823540c147e4d054418fde4d9e561db4f0a79aa982c90a16b6f8128688d9d`,
+  `blind-handoff-policy-round1.xml` SHA-256 `94b4453767be8e1d36b3d4c57d9f6edafb4dc6ec6fa63154bd89b4a7793268a0`.
+- 관리 기록 반영 후 두 번째 회차도 각각 **43 passed**, **104 passed / 1 deselected**다.
+  `blind-handoff-docs-round2.xml` SHA-256 `d0bc5c0c3b2f40c6a56bd89cfa6328717678cc55f3361010a26aaba03e907f15`,
+  `blind-handoff-policy-round2.xml` SHA-256 `1513f34815c1d2878ed31a0e5a78836011c2db2d744e58f64fa00692e0d0d263`.
+  변경 Markdown 5개의 상대 링크 17개 누락 0, diff 공백 검사와 관리 6개 일치를 확인했다.
+
+판정은 이번 1명의 파일 기반 인수와 발견된 안내 문제의 교정 완료다. 모든 새 AI·모든 문서·미래 변경에서의
+이해 정확도나 환각률, 다른 PC 환경, 실제 OS/SDK enforcement를 보증하지 않는다. 다음 기능개발 범위는 사용자가 정한다.
