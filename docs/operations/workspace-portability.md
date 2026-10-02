@@ -1,6 +1,6 @@
 # 관리 공간·실행 공간과 PC 간 복원 계약
 
-기준: 2026-09-16. 기존 통합의 사실 기록은 `company-pc-layout-20260916.md`에 보존한다.
+기준: 2026-10-02. 기존 통합의 사실 기록은 `company-pc-layout-20260916.md`에 보존한다.
 그 문서의 “옛 문서 폴더는 안내만 남음”은 당시 사실이며, 현재 운영은 이 문서와
 `docs/management/README.md`가 대체한다. 목적은 연구 관리와 실행의 분리 및 집·회사 작업의 연속성이다.
 
@@ -21,9 +21,43 @@
 | Codex 인증·개인 설정·앱/보조 worktree | 이 작업의 Git 추적 범위 아님 | 로그인/소유 작업에서 별도 처리 |
 
 Git 원격은 `https://github.com/shotgun1107/local-agent-orchestrator.git`,
-계속 사용할 브랜치는 `codex/phase-d-artifacts`다. `C:\LAO` 전체에 Git을 초기화하지 않는다.
+대표 통합본과 기본 복원 브랜치는 `main`이다. 작업 브랜치는 CONTRIBUTING.md의 규격을 따른다.
+`C:\LAO` 전체에 Git을 초기화하지 않는다.
 공개 저장소이므로 경로/템플릿도 검토하며, 회사 비공개 데이터·대화 원문·credential을 넣지 않는다.
 기존 `.gitignore`를 바꾸거나 ignored 원본을 force-add하지 않는다.
+
+## 2026-10-02 Git 이력 전환과 기존 PC 수신
+
+사용자가 승인한 이번 이관은 기존 410개 commit의 메시지 규격화와 브랜치 이름 정비다.
+커밋을 합치거나 삭제하지 않으며 tree·작성자·committer·시각·parent 순서는 보존한다.
+원격의 실제 반영 여부와 전송 commit은 기존 SYNC:AUTO를 확인한다.
+
+| 이전 브랜치 | 이관 브랜치 |
+|---|---|
+| codex/phase-d-artifacts | chore/repository-governance |
+| codex/runtime-boundary-p01 | feat/runtime-boundary |
+| codex/s1-execution-freeze | feat/sdk-routing |
+| codex/sdk-measurement-seal | feat/sdk-measurement |
+| codex/sdk-vertical-slice | feat/sdk-comparison |
+| codex/windows-runner-fixes | fix/windows-runner-tests |
+| 회사 local codex/sdk-measurement-hardening | fix/sdk-measurement-evidence |
+
+`main`은 이름을 유지하고 검증한 최신 통합본으로 전환한다. 이전 객체는
+`archive/pre-governance-20261002` 보존 tag에서 도달 가능하게 유지한다.
+[구/신 SHA 대응표](history-rewrite-map.json)는 원래 410개와 같은 tree를 연결한다.
+메시지와 parent가 바뀐 새 commit에는 기존 전자서명을 복사하지 않는다. 원래 서명 객체는 보존된다.
+과거 보고서·봉인·source binding의 SHA는 새 값으로 일괄 치환하지 않는다.
+
+완전한 이력과 보존 tag를 받은 뒤 원문을 확인한 `tools/workspace/verify_history_migration.py`를
+고정 argv로 실행하면 410개 객체의 tree·메타데이터·parent 순서·메시지 규격과 도달성을 읽기 검증한다.
+예: `python -B tools/workspace/verify_history_migration.py`. 전자서명 진위나 Live 준비를 증명하는 도구는 아니다.
+shallow clone 또는 tag를 받지 않은 clone은 이 검증에 충분하지 않다.
+
+기존 PC의 옛 브랜치는 새 이력에 일반 fast-forward할 수 없다. 자동 pull·reset·rebase하지 않는다.
+먼저 dirty 파일·stash·보조 worktree·미전송 commit과 관리 문서를 보존하고 새 원격 SHA를 고정한다.
+대응표와 보존 tag로 기존 작업을 대조한 뒤 새 main/작업 브랜치로 별도 전환한다.
+미전송 변경이 있으면 수신만으로 이관 완료라 하지 않고 개별 반영 범위를 확인한다.
+원본 복구용 before.bundle 및 문서 작업 보존 bundle은 회사 evidence에 있으며 Git으로 자동 전달되지 않는다.
 
 ## 회사 PC와 시작 위치
 

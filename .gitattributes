@@ -20,3 +20,4 @@ docs/management/** text eol=lf
 docs/operations/workspace-portability.md text eol=lf
 CONTRIBUTING.md text eol=lf
 .ai/tasks/** text eol=lf
+docs/operations/history-rewrite-map.json text eol=lf

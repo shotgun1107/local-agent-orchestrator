@@ -78,6 +78,14 @@ class DocumentationEntryTests(unittest.TestCase):
                      "미실행·skip·추정", "원격 교체 직전에"):
             self.assertIn(term, rules)
 
+    def test_restore_target_and_preserved_history_are_explicit(self):
+        self.assertEqual(json.loads(read("config/workspace/layout.json"))["branch"], "main")
+        guide = read("docs/operations/workspace-portability.md")
+        for term in ("history-rewrite-map.json", "archive/pre-governance-20261002",
+                     "verify_history_migration.py", "자동 pull·reset·rebase하지 않는다"):
+            self.assertIn(term, guide)
+        self.assertTrue((ROOT / "tools/workspace/verify_history_migration.py").is_file())
+
     def test_all_historical_handoffs_route_directly_to_current_entry(self):
         paths = sorted((ROOT / "docs/operations").glob("*handoff*.md"))
         self.assertTrue(paths)

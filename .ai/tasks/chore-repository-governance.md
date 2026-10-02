@@ -10,7 +10,11 @@
 
 ## 현재 상태
 
-- 진행 중: 문서 이관. 이력 재작성·브랜치 전환·원격 반영은 아직 미실행.
+- 로컬 문서 이관·이력 재작성·브랜치 전환을 검증했다. 원격 반영은 아직 미실행이다.
+- 로컬 작업 브랜치 chore/repository-governance, main도 문서 이관 후보를 가리킨다.
+  원격은 아직 옛 이력이다. 표시되는 ahead/behind는 승인된 재작성의 결과이며 자동 merge/rebase하지 않는다.
+- 사용자는 이번 작업에서 오래된 sync 스킬을 사용하지 말라고 지시했다. 스킬 자체 수정은 하지 않으며,
+  승인된 저장소 정비와 CONTRIBUTING의 보존·검증 절차를 적용한다.
 - 시작 HEAD와 단일 fetch pin: 48e13b74ae9ae28df261482531a72c7f338239ad.
 - 시작 주 작업 트리 clean, 관리 6개 equal. 원격 7개 브랜치, tag·열린 PR·보호 ruleset 없음을 확인했다.
 - 역사 410개 commit / merge 1개 / 서명 commit 1개. 모두 시작 HEAD에서 도달 가능하다.
@@ -27,19 +31,26 @@
   documentation-round2.xml이다. 기존 안전 1~10절의 정규화 UTF-8 hash가 그대로이며 진입 링크도 통과했다.
 - 개발 환경 점검 PASS: Python 3.12.10·고정 의존성 19종·현재 source 두 곳·pip check.
   제품 source·Schema·prompt/template·실험 projection은 변경하지 않았다. 실제 SDK·model·Docker workload는 0이다.
-- 410개 기존 commit의 메시지와 변경 경로를 대조해 한국어 규격화를 준비했다. 현재 branch·원격 이력은 아직 그대로다.
+- 410개 기존 commit 중 메시지 353개를 한국어 규격화했고 이미 적합한 메시지는 유지했다.
+  별도 임시 bare Git에서 문서 이관 commit까지 411개 tree·메타데이터·parent 순서 동일성을 검증했다.
+  문서 이관의 재작성 전/후는 7d2d4d392fcfa94d716a877f7cee1f6686c5465c / 22411e9448dbb8b3c474d98d52e657e749a87e1b다.
+- 기존 410개 대응표는 docs/operations/history-rewrite-map.json이며 새 읽기 전용 검증 도구도 추가했다.
+  원래 서명 commit 1개는 archive/pre-governance-20261002에 남는다. 새 commit의 서명 검증을 주장하지 않는다.
+- 이력 도구의 양성·음성 대조와 문서·관리·기록 검사 총 56 passed, 기존 정책 model-free 104 passed / 1 deselected,
+  봉인 bytes·개행별 cold checkout 4 passed를 확인했다. 원문은 migration-round1.xml,
+  policy-after-rewrite.xml, sealed-bytes.xml이다. 실제 SDK opt-in은 명시 제외했다.
+- 로컬 전환 전 보조 worktree의 HEAD·변경 목록·12개 수정/untracked hash가 시작 기준과 같음을 재확인했다.
 
 ## 보존 대상과 미해결
 
 - 기존 Codex 보조 worktree 수정 3개/untracked 9개, QA/AppData checkout, raw/state/seal·환경은 그대로 둔다.
 - 기존 서명은 새 commit에서 재사용할 수 없다. 원래 서명 객체는 보존 이력에서 검증한다.
-- 옛 SHA 검증을 위한 원래 공개 이력 보존과 새 commit 대응표, cold clone 재검증이 필요하다.
+- 승인된 원격 정비의 대상 tip 재확인과 cold clone 재검증이 남았다.
 - 다른 PC의 수신·환경·인증과 Live는 이번 정비의 완료 주장에 포함하지 않는다.
 
 ## 다음 행동
 
-1. 검증한 문서 역할 이관을 독립 commit으로 보존한다. 관리 6개는 collect 후 equal이다.
-2. commit별 실제 변경을 검토해 한국어 메시지를 정하고 별도 임시 Git에서 재작성·대조한다.
-3. 원래 tree·작성자·시각·parent 순서와 서명 보존 경로를 검증한다.
-4. 승인된 브랜치 전환·원격 반영 후 실제 remote tip과 cold clone·역사 참조를 재검증한다.
-5. 이 파일만 최종 상태로 갱신하고, PC 전달 결과는 기존 SYNC:AUTO에 기록한다.
+1. 검증한 이력 대응표·읽기 전용 검증 도구·기본 복원 main 변경을 독립 commit으로 보존한다.
+2. 예상 원격 tip이 그대로일 때만 승인된 브랜치 개명·원자적 이력 교체를 진행한다.
+3. 실제 remote tip과 cold clone·옛 SHA·봉인 bytes를 재검증한다.
+4. 이 파일만 최종 상태로 갱신하고, PC 전달 결과는 기존 SYNC:AUTO에 기록한다.
