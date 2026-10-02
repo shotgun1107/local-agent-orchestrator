@@ -1,22 +1,60 @@
 # Local Agent Orchestrator
 
-로컬 Codex 세션을 일반 코드가 통제·검증하는 범용 오케스트레이터를 단계별로 구현하고 비교하는 저장소다.
+로컬 AI 작업 세션을 일반 코드로 제어하고, 실행 결과와 실패를 검증 가능한 기록으로 남기는
+오케스트레이션 연구 프로젝트다. 현재 구현은 **B1 순차 오케스트레이터**와 **Benchmark Runner**다.
 
-- [문서 안내](./docs/README.md)
-- [새 세션 시작 계약 — 문서 우선순위와 확인 질문](./docs/README.md#session-start)
-- [단계별 구현 안내](./stages/README.md)
-- [B1 구현체](./stages/b1-sequential/README.md)
-- [B0~B3 벤치마크](./benchmarks/README.md)
-- [Benchmark Runner](./tools/benchmark-runner/README.md)
-- [회사 PC 폴더 이전의 역사 기록](./docs/operations/company-pc-layout-20260916.md)
-- [프로젝트 맥락 학습 자료](./docs/portfolio/local-agent-orchestrator-application-context.md)
-- [연구 관리 공간·현재 상태·다음 작업](./docs/management/README.md)
-- [집·회사 PC 복원과 Git 추적 범위](./docs/operations/workspace-portability.md)
+## 주요 기능
 
-이 프로젝트의 운영 목적은 **연구 기획과 실험·검증의 연속성**이다. Documents 관리 폴더에서 연구를 총괄하고 LAO에서 실제 작업을 수행한다. 두 공간의 공유 내용은 이 저장소 하나로 버전 관리하며, 기기별 환경·인증·실행 원본은 별도로 관리한다.
+- 한 번에 하나의 Worker Session을 실행하는 순차 scheduler와 SQLite 실행 원장
+- Project Pack·Run Spec·입력·작업 범위·산출물 검증
+- 제한 재시도, 실행 중 취소, deadline, 복구·백업 검증
+- 사용량과 실행 결과의 구조화 보고, 공개 JSON Schema
+- 독립 Judge와 Evidence·Measurement hash 검증을 갖춘 비교 실행기
 
-현재 제품 단계는 **B1 순차 오케스트레이터**다. 버전 코어와 Project Pack을 분리하는 설계는 유지하지만, 범용 실무 도구의 채택 조건을 모두 충족한 상태는 아니다. **감사 F1~F14와 후속 유지보수는 2026-09-30 공식 종료했다.** 시험 회차는 [관리 STATUS](./docs/management/STATUS.md), 근거와 적용 범위는 [공식 종료 판정](./docs/operations/audit-maintenance-closure-20260929.md)을 따른다. 다음 기능개발은 아직 시작하지 않았으며 B2·B3는 계속 보류한다.
+B2 병렬 Worker와 B3 Reviewer는 아직 구현 범위에 포함하지 않는다.
+단위시험 통과와 과거 pilot 성공은 B1의 일반적인 우월성이나 범용 실무 채택을 뜻하지 않는다.
+현재 검증 범위와 미확인은 [연구 현황](docs/management/STATUS.md),
+설계·실험·교정 근거는 [문서 안내](docs/README.md)에서 확인할 수 있다.
 
-앞선 F1~F12 교정과 [F14 v3 고정 9종 진단](./docs/operations/audit-f14-native-qualification-20260929.md)은 역사 근거로 보존한다. 최신 [F14 v4 일반 snapshot·21종 native 검증](./docs/operations/audit-f14-v4-checker-qualification-20260929.md)은 실제 함수 호출·파일 효과·관측 위조·요청 입력 binding과 public/hidden 소비 경로를 검증했다. 실제 Windows/SDK enforcement·정식 비교 승격과는 구분한다. 과거 보고서의 시험 수와 실행 대기 지시는 현재 실행 지시가 아니다.
+## 설치와 개발 환경
 
-비교 실행기의 R0~R6 및 SDK 비교에는 이미 실행한 역사 자료가 있다. 기존 12-Cell 결과를 미실행으로 취급하거나 B1 우월성의 증거로 확대하지 않는다. 최신 v25의 SS1/B1 pair는 정식 비교에서 격리됐고, 현행 소스의 policy 2 경계는 과거 policy 1 candidate의 Live 실행을 거부한다. 실제 실행 상태와 후속 제한은 [문서 안내](./docs/README.md)와 [설정·배차 수정 결과](./docs/experiments/sdk-routing-realistic-high-difficulty-workspace-trust-dispatch-fix-result.md)를 따른다. 문서·임시자료 정리는 코드 결함 수정이나 새 Live 승인을 뜻하지 않는다.
+공통 개발 환경은 Windows / Python 3.12.10이며 의존성은
+[고정 명세](config/workspace/requirements-dev.lock)로 관리한다.
+새 PC의 설치·경로·관리 문서 복원은 [환경 복원 안내](docs/operations/workspace-portability.md)를 따른다.
+회사 PC에 이미 구성된 환경의 진입과 점검은 다음과 같다.
+
+~~~powershell
+. C:\LAO\repo\tools\workspace\enter.ps1
+python -B tools/workspace/check_environment.py
+~~~
+
+이 점검은 개발 Python·의존성·현재 소스 경로 확인이며 모델을 호출하지 않는다.
+독립 패키지 설치와 CLI 사용법은 [B1 사용 안내](stages/b1-sequential/README.md)에 있다.
+
+## 기본 사용법
+
+설치된 B1 CLI에서 프로젝트와 실행 명세를 검증하고 결과를 조회한다.
+
+~~~powershell
+lao doctor --project C:\path\to\project --json
+lao run validate --project C:\path\to\project --spec C:\path\to\run.yaml
+lao run status RUN_ID --json
+lao report RUN_ID --format md
+~~~
+
+Run Spec 준비와 FakeRuntime 예제는 B1 사용 안내, 비교 실행은
+[Runner 사용 안내](tools/benchmark-runner/README.md)를 따른다.
+실제 모델·SDK·Docker workload에는 [실행 안전 규약](CONTRIBUTING.md#live-safety)이 별도로 적용된다.
+
+## 구조와 개발 참여
+
+| 위치 | 내용 |
+|---|---|
+| stages/b1-sequential | B1 소스·시험·Schema·Project Pack |
+| tools/benchmark-runner | 비교 실행·평가·무결성 검증 |
+| tools/workspace | 개발 환경 점검·관리 문서 동기화 |
+| benchmarks | fixture·manifest·보존된 실험 projection |
+| docs | 설계·운영·연구 관리·검증 결과 |
+
+공통 개발·브랜치·커밋 규약은 [CONTRIBUTING.md](CONTRIBUTING.md)에 있다.
+프로젝트는 연구 관리와 실행 공간을 분리하며, Git 전달과 실제 실행환경 준비를 별도로 확인한다.

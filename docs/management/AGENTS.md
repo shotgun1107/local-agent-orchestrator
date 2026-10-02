@@ -1,17 +1,15 @@
-# 연구 관리 폴더의 작업자 지침
+# 연구 관리 폴더의 AI 진입점
 
-이 폴더는 연구 총괄·운영 공간이다. 단순 이동 안내나 폐기된 폴더가 아니다.
-`README.md`, `STATUS.md`, `NEXT.md`, `WORKFLOW.md`, `DECISIONS.md`를 읽고 시작한다.
+이 폴더는 사람용 연구 총괄·운영 공간이며 실행 저장소가 아니다.
+연결된 LAO/repo의 AGENTS.md와 **CONTRIBUTING.md 전체를 먼저 읽는다**.
+회사 저장소는 C:\LAO\repo다. 다른 PC는 로컬 .lao-management.json 또는
+LAO/local/machine.json으로 확인하며 경로를 명령으로 평가하지 않는다.
 
-- 연구 목표·가설·계획·우선순위·결과 해석은 여기서 관리한다. 상용화 로드맵을 임의로 대신 정하지 않는다.
-- 소스 변경·시험·실험은 연결된 LAO/repo에서 한다. 이 폴더에 또 다른 소스·venv·raw/state 사본을 만들지 않는다.
-- 회사의 실행 저장소는 `C:\LAO\repo`다. 다른 PC의 실제 경로는 로컬 `.lao-management.json` 또는 `LAO/local/machine.json`으로 확인한다. 경로 문자열을 명령으로 평가하지 않는다.
-- 새 세션의 읽기 순서와 문서 우선순위는 연결된 저장소의 `docs/README.md#session-start`를 따른다. STATUS/NEXT는 현재 상태·작업, DECISIONS와 과거 handoff는 날짜별 근거다. 옛 재개 프롬프트를 현재 승인으로 사용하지 않는다.
-- 실제 작업 전 해당 저장소 루트 `AGENTS.md` 전체를 읽는다. Live 2턴 관문, 실패 pair 보존, 비밀정보 금지 규칙을 여기서도 적용한다. 이 파일은 실행 승인이 아니다.
-- 관리 문서를 읽거나 수정하기 전에 `management_sync.py status`로 양쪽 상태를 확인한다. 미반영 변경을 버리지 않는다. 도구 원문을 읽고 고정 argv로 호출한다.
-- 관리 문서를 편집하면 변경 내용을 검토한 후 `collect`한다. `refresh`로 덮어쓰거나 수동으로 기준 해시를 바꾸지 않는다.
-- `sync`를 여기서 요청받아도 실제 Git 대상은 연결된 LAO/repo다. 기존 저장소를 먼저 찾고, 문서 폴더가 Git이 아니라고 새 저장소를 만들지 않는다.
-- PC를 떠나기 전 관리 문서 반영·Git 송신·현재 인수인계를 확인한다. 다른 PC에서 수신한 뒤 `refresh`한다. 충돌은 사용자가 내용을 결정할 때까지 보존한다.
-- 기존 handoff 정본은 저장소 `docs/operations/동기화_인수인계.md`의 `SYNC:AUTO` 블록이다. 새 handoff 정본을 만들지 않는다.
-- 결과는 검증한 사실, 해석, 미확인, 다음 제안을 구분한다. Git 전달 완료와 실행환경 준비 완료를 혼동하지 않는다.
-- 새 관리 문서는 임의 복사하지 않는다. `config/workspace/layout.json`의 허용 목록과 이관 절차를 먼저 갱신한다. 이 목록 밖의 파일은 자동 전송되지 않는다.
+1. 관리 문서 읽기·편집 전에 연결된 저장소의 management_sync.py 원문을 읽고 고정 argv로 status를 확인한다.
+2. README.md, STATUS.md, NEXT.md, WORKFLOW.md, DECISIONS.md를 읽고 관련 작업의 .ai/tasks 기록과 실제 Git 상태를 대조한다.
+3. 관리 편집 후 검토·collect하며 충돌·삭제·반대쪽 변경은 보존한다. 전체 절차는 CONTRIBUTING.md를 따른다.
+4. 코드·시험은 LAO/repo에서 한다. 여기서 새 Git·소스·venv·raw/state 사본을 만들지 않는다.
+5. Live·실패 pair·비밀정보·Git 승인 규칙은 CONTRIBUTING.md의 정본을 적용한다. 이 파일은 실행 승인이 아니다.
+
+현재 연구 범위는 STATUS/NEXT, 작업별 AI 상태는 저장소 .ai/tasks, PC 전달은 기존 SYNC:AUTO가 담당한다.
+옛 docs/README.md#session-start는 새 AI 진입점으로 연결하는 호환 경로다. 과거 실행 지시를 재사용하지 않는다.

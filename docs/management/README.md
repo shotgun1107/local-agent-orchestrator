@@ -23,7 +23,8 @@
 
 저장소: `https://github.com/shotgun1107/local-agent-orchestrator.git`
 
-이어갈 브랜치: `codex/phase-d-artifacts`. 다른 저장소나 원격 브랜치를 새로 만들지 않는다.
+대표본은 `main`, 작업 브랜치·커밋 규격은 연결된 저장소의 `CONTRIBUTING.md`가 정본이다.
+2026-10-02 승인한 이관의 실제 반영 상태는 기존 동기화 인수인계에서 확인한다.
 회사 PC는 관리 공간이 `C:\Users\SSAFY\Documents\간단한 ai 오케스트라 구축하기`,
 작업 공간이 `C:\LAO\repo`다. 다른 PC는 자기 경로를 `LAO/local/machine.json`에 기록한다.
 
@@ -34,8 +35,8 @@
 
 현재 세션의 실제 작업 디렉터리가 자동으로 LAO로 바뀌는 것은 아니다.
 관리 작업은 이 폴더, 코드·실험 명령은 LAO/repo를 명시해 실행한다.
-새 세션의 공통 읽기 순서·문서 우선순위는 연결된 저장소의 `docs/README.md#session-start`다.
-이 관리 폴더에서 해당 경로를 직접 실행하지 말고 LAO/repo를 기준으로 읽는다.
+개발 참여 규약은 연결된 저장소의 `CONTRIBUTING.md`, AI 진입점은 `AGENTS.md`다.
+작업별 AI 상태는 저장소의 `.ai/tasks/`에서 관리하며 이 관리 폴더에 중복 복사하지 않는다.
 STATUS는 현재 상태, NEXT는 현재/다음 작업, DECISIONS는 날짜별 의사결정을 담당한다.
 과거 실행 지시나 대기열을 STATUS/NEXT에 누적하지 않는다. 상세 회차는 원래 기술 결과와 Git 이력에 보존한다.
 자세한 복원 설명은 저장소의 `docs/operations/workspace-portability.md`에 있다.

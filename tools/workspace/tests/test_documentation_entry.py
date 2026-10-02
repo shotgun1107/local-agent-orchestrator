@@ -4,6 +4,7 @@ These checks validate navigation and known stale guidance, not an AI's understan
 They never import product code, start a model, or inspect external runtime evidence.
 """
 import ast
+import hashlib
 from pathlib import Path
 import json
 import re
@@ -21,18 +22,61 @@ def read(relative):
 
 
 class DocumentationEntryTests(unittest.TestCase):
-    def test_shared_entry_has_explicit_priority_and_acceptance_questions(self):
+    def test_historical_entry_routes_to_canonical_rules_and_ai_entry(self):
         text = read("docs/README.md")
         self.assertIn(SESSION_ANCHOR, text)
         start = text.split(SESSION_ANCHOR, 1)[1].split("## 상세 문서", 1)[0]
-        for term in ("문서 우선순위", "대화 없이 확인할 질문", "STATUS.md", "NEXT.md",
-                     "SYNC:AUTO", "구현 계약", "검증 한계"):
+        for term in ("../CONTRIBUTING.md", "../AGENTS.md", "호환성", "복제하지 않는다"):
             self.assertIn(term, start)
+        self.assertNotIn("## 새 세션 시작 계약", start)
+        entry = read("AGENTS.md")
+        for term in ("CONTRIBUTING.md 전체", "STATUS.md", "NEXT.md", "SYNC:AUTO",
+                     ".ai/tasks/", "구현 계약", "현재 코드/보존본", "완료/미확인", "다음 범위/금지 영역"):
+            self.assertIn(term, entry)
 
     def test_repository_and_management_instructions_route_to_same_entry(self):
         for path in ("AGENTS.md", "docs/management/AGENTS.md"):
             with self.subTest(path=path):
+                self.assertIn("CONTRIBUTING.md", read(path))
+                self.assertIn("전체", read(path))
                 self.assertIn("docs/README.md#session-start", read(path))
+
+    def test_live_safety_clauses_survive_migration_without_changes(self):
+        rules = read("CONTRIBUTING.md")
+        block = rules[rules.index("## 1. Live"):].rstrip()
+        # Normalized UTF-8 SHA of sections 1–10 in pre-migration AGENTS.md.
+        self.assertEqual(hashlib.sha256(block.encode()).hexdigest(),
+                         "3a5ad7e4cdc84a17e41c47a617b102b22ad603a7ab6512c6350f1a4c6d62830f")
+        self.assertNotIn("## 1. Live", read("AGENTS.md"))
+        self.assertIn('id="live-safety"', rules)
+
+    def test_ai_entry_is_short_and_human_readme_is_usage_oriented(self):
+        self.assertLessEqual(len(read("AGENTS.md").splitlines()), 60)
+        intro = read("README.md")
+        for term in ("## 주요 기능", "## 설치와 개발 환경", "## 기본 사용법", "CONTRIBUTING.md"):
+            self.assertIn(term, intro)
+        self.assertNotIn("새 세션 시작 계약", intro)
+        self.assertNotIn(".ai/tasks/", intro)
+
+    def test_task_records_are_bounded_and_not_management_copies(self):
+        tasks = sorted((ROOT / ".ai/tasks").glob("*.md"))
+        self.assertTrue(tasks)
+        for task in tasks:
+            self.assertRegex(task.stem, r"^(feat|fix|refactor|docs|test|chore)-[a-z0-9]+(?:-[a-z0-9]+)*$")
+            text = task.read_text(encoding="utf-8")
+            for term in ("## 목표와 완료 조건", "## 현재 상태", "## 실제 변경과 검증", "## 보존 대상과 미해결", "## 다음 행동"):
+                self.assertIn(term, text)
+        contract = json.loads(read("config/workspace/layout.json"))
+        self.assertEqual(contract["management_source"], "docs/management")
+        self.assertEqual(set(contract["management_files"]),
+                         {"README.md", "AGENTS.md", "STATUS.md", "NEXT.md", "WORKFLOW.md", "DECISIONS.md"})
+
+    def test_contribution_rules_separate_authority_and_migration(self):
+        rules = read("CONTRIBUTING.md")
+        for term in ("<type>: <한국어 변경 요약>", "staged diff 전체", "일회성 정비",
+                     "기존→신규 commit 대응표", "실행 프롬프트·Project Pack", "정보 차단 경계",
+                     "미실행·skip·추정", "원격 교체 직전에"):
+            self.assertIn(term, rules)
 
     def test_all_historical_handoffs_route_directly_to_current_entry(self):
         paths = sorted((ROOT / "docs/operations").glob("*handoff*.md"))
@@ -172,7 +216,7 @@ class DocumentationEntryTests(unittest.TestCase):
         self.assertIn('id="sync-current"', current)
 
     def test_entry_links_resolve_without_external_evidence(self):
-        paths = ("README.md", "docs/README.md", "docs/management/README.md",
+        paths = ("README.md", "AGENTS.md", "CONTRIBUTING.md", "docs/README.md", "docs/management/README.md",
                  "docs/management/STATUS.md", "docs/management/NEXT.md",
                  "tools/benchmark-runner/README.md", "benchmarks/README.md")
         for relative in paths:
@@ -183,7 +227,7 @@ class DocumentationEntryTests(unittest.TestCase):
                 with self.subTest(source=relative, target=target):
                     path = (ROOT / relative).parent / unquote(parsed.path) if parsed.path else ROOT / relative
                     self.assertTrue(path.exists(), f"missing local link: {path}")
-                    if parsed.fragment in {"session-start", "sync-current"}:
+                    if parsed.fragment in {"session-start", "sync-current", "live-safety"}:
                         self.assertIn(f'id="{parsed.fragment}"', path.read_text(encoding="utf-8"))
 
 

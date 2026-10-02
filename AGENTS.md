@@ -1,232 +1,35 @@
-# Codex 운영 안전 규칙
+# AI 작업 진입점
 
-## 연구 관리 공간과 실행 공간 — 2026-09-16
+공통 규칙 정본은 [CONTRIBUTING.md](CONTRIBUTING.md)다. 작업 전에 **전체를 읽는다**.
+이 파일과 작업 기록은 그 규칙을 대체하거나 실행 권한을 추가하지 않는다.
 
-이 프로젝트는 연구 중심이다. 총괄·계획·의사결정은 사용자의 기존 Documents 관리
-폴더에서, 실제 코드·시험·실험은 LAO/repo에서 한다. 폴더 분리는 저장소 분리가 아니다.
-`docs/management/README.md`, `STATUS.md`, `NEXT.md` 및
-`docs/operations/workspace-portability.md`를 먼저 읽는다.
-새 세션의 문서 읽기 순서·문서 우선순위·근거 대조는 `docs/README.md#session-start`를 따른다.
-현재 상태는 관리 STATUS, 다음 작업은 NEXT, 전송 commit은 기존 SYNC:AUTO가 담당한다.
-과거 결과·심사·재개 프롬프트의 현재형 문장을 새 작업 지시로 재사용하지 않는다.
-새 세션은 이전 대화 대신 이 기준과 관련 코드·시험을 대조한다. 이 읽기 확인은 추가 승인
-관문이 아니며, 이미 승인된 비라이브 개발을 매번 재확인받는 이유로 사용하지 않는다.
-공유 관리 문서는 `docs/management`에 Git 추적하며, 사용자는 Documents의 실제
-관리 사본을 편집한다. `tools/workspace/management_sync.py status`로 양쪽 상태를
-확인하고, 송신 전 collect / 수신 후 refresh한다. 충돌·삭제는 자동 해결하지 않는다.
-기기 경로는 Git 밖 `LAO/local/machine.json`, 공유 요구사항은 `.sync.yml`과
-`config/workspace`에 둔다. 실행 보조 도구 정본은 `tools/workspace`다.
-sync의 유일한 최신 인수인계 대상은 `docs/operations/동기화_인수인계.md`의
-`SYNC:AUTO` 블록이다. 다른 과거 handoff의 실행 지시를 현재 승인으로 취급하지 않는다.
-회사에서 기본 관리 경로는 `C:\Users\SSAFY\Documents\간단한 ai 오케스트라 구축하기`다.
-관리 폴더가 Git이 아니라고 새 저장소를 만들지 않으며 실제 대상 repo 경로를 확인한다.
+## 작업 시작 순서
 
-## 회사 PC의 현재 작업 경로 — 2026-09-16
+1. 현재 사용자 요청과 적용되는 지침을 확인하고 CONTRIBUTING.md 전체를 읽는다.
+2. 실제 LAO/repo, branch·HEAD·staged/unstaged/untracked 변경을 확인한다.
+3. 관리 문서를 읽기 전에 tools/workspace/management_sync.py 원문을 확인하고 고정 argv로 status를 실행한다.
+4. [관리 README](docs/management/README.md), [STATUS](docs/management/STATUS.md),
+   [NEXT](docs/management/NEXT.md), [WORKFLOW](docs/management/WORKFLOW.md),
+   [DECISIONS](docs/management/DECISIONS.md)를 읽는다.
+5. [기존 SYNC:AUTO](docs/operations/동기화_인수인계.md#sync-current)에서 전송 commit·환경·미전달 자료를 확인한다.
+6. .ai/tasks/에서 해당 작업 기록 하나를 읽고 현재 파일·Git과 대조한다. 없으면 승인된 작업 범위에서 하나만 만든다.
+7. 관련 구현 계약·코드·시험을 대조하고 완료 조건을 확인한다. 이미 승인된 비라이브 작업을 불필요하게 재승인받지 않는다.
 
-이 회사 PC에서는 실제 저장소가 `C:\LAO\repo`, 개발 Python은
-`C:\LAO\env\v23\Scripts\python.exe`다. 작업을 시작하기 전에
-`docs/operations/workspace-portability.md`의 현재 경로 계약을 읽는다.
-`docs/operations/company-pc-layout-20260916.md`는 이전 당시의 경위가 필요할 때 읽는 역사 기록이다.
-새 임시·실행·Evidence 폴더는 각각 `C:\LAO\tmp`, `C:\LAO\run`,
-`C:\LAO\evidence` 아래로 한정하며 C:\ 직속에 다시 분산 생성하지 않는다.
-`C:\LAO\history`는 이전 원본 보관소이며 과거 state/raw/Measurement/seal과
-고정 절대경로 스크립트를 수정하거나 그대로 재실행하지 않는다.
-폴더 통합과 개발 단위시험 통과는 Live GO가 아니며, 아래의 별도 환경 검증과
-사용자 실행 승인 관문은 그대로 유지한다.
+회사 실행 저장소는 C:\LAO\repo다. 다른 PC 경로는 로컬 연결 파일로 확인한다.
+Documents 관리 폴더를 새 Git 저장소나 실행 사본으로 만들지 않는다.
+코드 작업 전 개발 진입과 환경 점검은 CONTRIBUTING.md 및 복원 계약을 따른다.
 
-이 파일은 저장소 전체에 적용되는 Codex 작업 규칙이다. 특히 실제 model, SDK,
-Docker, Phase F state와 외부 실행환경을 다루는 모든 세션은 이 규칙을 다른 작업
-체크리스트보다 먼저 적용한다.
+## 문서 책임과 근거 대조
 
-## 1. Live 실행은 반드시 두 개의 사용자 턴으로 분리한다
-
-환경 검증과 실제 실행을 같은 사용자 턴에서 연속 수행하지 않는다.
-
-### 턴 A — Environment Closure
-
-이 턴에서는 검증만 수행한다. 다음 행동은 금지한다.
-
-- model turn
-- SDK thread/start 또는 turn/start
-- 실제 Worker 실행
-- 실제 Judge workload
-- Phase F Cell claim
-- Controller state 변경
-- 자동 continuation
-
-검증을 마치면 아래 형식으로 보고하고 반드시 사용자에게 제어권을 돌려준다.
-
-```text
-실행 대상:
-봉인된 요구사항:
-현재 환경:
-일치:
-불일치:
-미확인:
-model-free 동일경로 예행연습:
-state 변경 수:
-model turn 수:
-최종 판정: GO / NO-GO
-```
-
-GO여도 이 턴에서 실제 실행하지 않는다.
-
-### 턴 B — 별도 실행 승인
-
-사용자가 턴 A의 결과를 본 뒤 새 메시지로 실제 실행을 승인한 경우에만 실행한다.
-실행 직전에 변하기 쉬운 항목을 다시 확인한다.
-
-- branch, HEAD, tree, clean status
-- candidate seal과 source binding
-- 다음 Cell과 claim 부재
-- API-key 환경 이름 부재
-- ChatGPT 인증과 pinned SDK
-- Docker daemon/context/platform
-- candidate가 요구하는 exact image digest 존재
-- 외부 root의 fresh/existing 계약
-- automatic continuation false
-
-하나라도 턴 A와 달라졌으면 Cell을 claim하거나 model을 호출하지 않고 NO-GO로 멈춘다.
-
-## 2. 짧은 사용자 지시의 의미
-
-`ㄱㄱ`, `진행`, `실행` 같은 짧은 지시는 안전 관문을 생략하라는 뜻이 아니다.
-
-- 직전 완료 턴에 Environment Closure GO 보고가 없으면: 턴 A만 수행한다.
-- 직전 완료 턴에 GO 보고가 있고 사용자가 새로 승인하면: 선언한 Cell 하나만 수행한다.
-- 사용자가 한 메시지에서 검증과 실행을 모두 요청해도: 턴 A에서 멈추고 결과를 먼저
-  보여준다.
-
-## 3. 요구 환경은 candidate에서 역산한다
-
-현재 PC에서 동작하는 임의의 환경을 확인하는 것으로 충분하지 않다. 봉인 candidate와
-Plan에서 요구사항을 먼저 추출하고 현재 환경을 exact 비교한다.
-
-필수 대조 항목:
-
-| 영역 | exact 대조 대상 |
+| 확인 내용 | 정본 |
 |---|---|
-| Git | repository, branch, commit, tree, clean status |
-| Candidate | source commit, Plan hash, candidate seal, Cell 순서 |
-| State | experiment ID, predecessor seal, next ordinal, claim 부재 |
-| Python | executable 경로·hash·버전 |
-| SDK/CLI | package·binary 버전과 hash |
-| 인증 | ChatGPT 구독, API-key 환경 이름 부재 |
-| Docker | daemon, context, OS/arch, **candidate의 exact image digest** |
-| VM/DB | candidate가 요구하는 실제 runtime identity와 상태 |
-| 외부 root | state, raw, artifact, TEMP, workspace, 권한, 경로 길이 |
-| 제어 | one-cell scope, retry 계약, automatic continuation false |
+| 개발·Git·검증·권한·Live 안전 | CONTRIBUTING.md 전체, 특히 #live-safety |
+| 연구 상태와 다음 범위 | docs/management/STATUS.md, NEXT.md, 해당 DECISIONS.md |
+| PC 간 전달 | 기존 동기화_인수인계.md의 SYNC:AUTO |
+| 작업 재개 | 해당 .ai/tasks/<type>-<task-name>.md 하나 |
+| 구현 계약 | docs/README.md의 문서 안내 → 관련 명세·현재 코드·시험 |
+| 과거 결과 | 날짜·source·회차가 고정된 결과와 원본·외부 hash |
 
-`Docker가 동작한다`, `이미지가 하나 있다`, `SDK가 설치됐다`는 통과 근거가 아니다.
-candidate가 요구하는 값과 현재값이 같아야 한다.
-
-## 4. 미확인은 실패다
-
-- `미확인`, `추정`, `아마 같음`, 문서에만 기록됨: NO-GO
-- exact digest가 없는 Docker image: NO-GO
-- source와 runtime identity를 결합할 수 없음: NO-GO
-- 복원된 state의 predecessor seal을 검증하지 못함: NO-GO
-- 동일경로 model-free rehearsal을 하지 못함: NO-GO
-
-미확인 값을 기본값이나 과거 성공 기록으로 대체하지 않는다.
-
-## 5. 동기화 완료의 정의
-
-Git pull만으로 전체 동기화라고 부르지 않는다. 다음 여섯 평면을 각각 확인한다.
-
-1. Git source·문서·봉인 projection
-2. Controller state·raw·seal
-3. Python·SDK·CLI executable
-4. Docker image·VM·DB
-5. 인증·권한·경로·host capability
-6. support script·외부 evidence·복원 verifier
-
-하나라도 빠지면 `부분 동기화`라고 보고하고 Live NO-GO로 둔다. Docker image는 Git
-archive에 포함되지 않았다는 사실을 명시하고, exact image가 필요하면 `docker save/load`
-또는 동일 digest를 보장하는 별도 전달 증거를 요구한다.
-
-## 6. 동일경로 model-free rehearsal
-
-Live 전에 단순 daemon 확인이 아니라 실제 candidate와 같은 경로를 model 0회로
-관통한다.
-
-최소 확인:
-
-1. candidate와 Plan 독립 재검증
-2. exact Docker image `inspect`
-3. 동일 image·mount·network·read-only·capability 인자로 no-op Judge 기동
-4. Python/SDK 0-turn preflight
-5. TEMP·workspace·artifact·state write/read/cleanup
-6. Controller state와 claim이 변하지 않았음
-7. model turn과 SDK thread가 0임
-8. 잔여 container/process가 0임
-
-production과 다른 Fake 경로나 다른 image를 사용한 성공은 Live GO 근거가 아니다.
-
-## 7. 실패 처리
-
-환경 오류나 불명확한 실패가 발생하면 다음을 지킨다.
-
-- 같은 Cell을 자동 또는 수동 재실행하지 않는다.
-- state, raw, Measurement와 seal을 수정·삭제·재봉인하지 않는다.
-- 성공으로 재분류하지 않는다.
-- 사용자 승인 없이 새 experiment를 만들지 않는다.
-- 먼저 `사전검증에서 왜 잡지 못했는가`를 기록한다.
-- 제품 실패와 환경 실패를 분리한다.
-- 환경을 고친 뒤에도 기존 pair는 정식 비교 자료로 재사용하지 않는다.
-
-## 8. 비밀정보
-
-- API key를 생성·요구·입력·출력하지 않는다.
-- 비밀번호와 credential 값을 terminal, 응답, 파일, 환경변수, 문서 또는 Git에 남기지
-  않는다.
-- 인증은 프로젝트 명세가 허용한 ChatGPT 구독 경계만 사용한다.
-
-## 9. 현재 세션에서의 적용 원칙
-
-Codex는 실행 권한을 받았다는 사실과 환경 준비가 끝났다는 사실을 구분한다. 사용자
-승인은 필수 검증을 통과한 뒤에만 소비할 수 있다. 검증이 불완전하면 승인을 보유한
-상태에서도 실행하지 않는다.
-
-## 10. 외부 AI 심사는 기본 관문이 아니다
-
-로컬 명세·회귀시험·동일경로 예행연습·무결성 검증이 통과했다면 외부 ChatGPT,
-Claude 또는 다른 AI 심사를 매 단계의 필수 선행 조건으로 삼지 않는다.
-
-외부 AI는 다음 경우에만 사용자와 범위를 합의한 뒤 사용한다.
-
-- 큰 기획·설계를 동결하기 전
-- 내부 재현과 검증으로 해결하지 못한 중대 버그
-- 같은 유형의 실패가 반복되어 검증 방식 자체를 재설계해야 할 때
-- 사용자가 특정 심사를 명시적으로 요청했을 때
-
-외부 AI 심사를 생략했다는 이유만으로 Live를 NO-GO로 두지 않는다. 단, 동결 명세가
-특정 독립 심사를 필수로 규정했거나 사용자가 그 심사를 지시했다면 그 범위에서만
-관문을 유지한다. 외부 서비스에 파일이나 프롬프트를 전송하기 전에는 사용자의
-명시적 승인을 받는다.
-
-## 11. 이 저장소의 일반 Git push는 사전 승인된 작업이다
-
-사용자는 2026-09-08에 이 저장소가 공개임과 이번 변경에 내부 경로·진단 정보가 포함됨을
-안내받은 뒤, 현재 변경의 push 및 이후 통상적인 push의 자동 처리를 명시적으로 요청했다.
-다음 범위의 push는 매번 새 승인을 요구하지 않고 사용자 승인된 작업으로 처리한다.
-
-- 대상 repository: `https://github.com/shotgun1107/local-agent-orchestrator.git`
-- 대상 remote/branch: `origin` / `codex/phase-d-artifacts`
-- 허용 작업: 사용자가 요청한 개발 작업의 검증된 커밋을 해당 branch에 일반 push
-- 허용 자료: 프로젝트 source·test·문서·봉인 projection 및 그 기록에 필요한 내부 경로·진단 정보
-- 실행 전 확인: 실제 remote URL, branch, 전송할 commit과 파일 범위, 비밀정보 부재
-
-자동 심사가 필요한 경우 위 목적지와 자료 범위에 대한 사용자의 사전 승인을 심사 요청에
-명시한다. 공개 저장소이거나 기록에 내부 경로가 있다는 이유만으로 사용자에게 같은 승인을
-반복 요청하지 않는다. 단, 이것은 심사기의 상위 정책 변경이나 무조건적인 승인 보장이 아니다.
-
-다음은 사전 승인 범위에 포함되지 않는다.
-
-- force push·branch 삭제·history 재작성·remote 변경 또는 다른 저장소/branch로의 push
-- 비밀번호·API key·token·cookie·credential·제3자 비공개 자료의 전송
-- ignored/local raw·state·인증·runtime·Docker image를 새로 Git에 추가하는 행위
-- 외부 AI 심사로의 파일 전송 또는 실제 Live 실행
-
-새로운 범위나 위험이 발견되면 별도로 확인한다. 명시적인 심사 거절은 우회하지 않는다.
-Git push 승인은 §1의 Environment Closure와 별도 Live 승인 절차를 대체하지 않는다.
+새 세션은 현재 코드/보존본, 완료/미확인, 다음 범위/금지 영역을 근거로 구분한다.
+과거 handoff·프롬프트·GO는 현재 명령이나 새 승인이 아니다. 미확인은 미확인으로 남긴다.
+옛 입구 docs/README.md#session-start는 이 파일을 가리키는 호환 링크이며 규칙 사본이 아니다.

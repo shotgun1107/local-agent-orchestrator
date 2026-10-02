@@ -50,7 +50,7 @@ Git 사본, Documents 사본, 마지막 일치 해시를 대조한다. 내용이
 
 1. 작업 중인 기존 clone·관리 문서·worktree가 있는지 확인한다. 있으면 새 clone으로 덮지 않는다.
 2. 기존 원격을 `--no-checkout`으로 짧은 경로 `C:\LAO\repo`에 clone한다.
-   origin의 위 브랜치 commit을 고정하고 그 commit의 AGENTS.md 등 정책을 먼저 읽는다.
+   origin의 대상 브랜치 commit을 고정하고 그 commit의 AGENTS.md·CONTRIBUTING.md 등 정책을 먼저 읽는다.
 3. 정책 확인 후 repository-local `core.autocrlf=true`, `core.longpaths=true`를 설정하고
    승인된 브랜치가 고정 commit과 일치하도록 checkout한다. 전역 설정·기존 파일 재정규화는 하지 않는다.
    새 공유 경로는 `.gitattributes`로 LF 고정, 역사 원본은 기존 byte 규칙을 유지한다.
@@ -117,7 +117,7 @@ manifest에는 원본 상대경로·파일 수·bytes·SHA-256·source/candidate
 - 인수인계 정본은 `docs/operations/동기화_인수인계.md`의 `SYNC:AUTO` 블록 하나다.
 - work commit을 전송·remote tip 확인한 후 그 SHA로 note-only commit을 만들고 다시 전송·확인한다.
 - 받기만 한 PC는 sender note를 덮어쓰지 않는다. 로컬 경로/설치 관측은 `local` 및 sync ledger에 둔다.
-- 일반 공개 push는 AGENTS.md §11 범위에서 사전 승인돼 있다. 명시적인 현재 push 금지 지시는 우선한다.
+- 일반 공개 push의 승인 범위는 CONTRIBUTING.md가 정본이다. 명시적인 현재 push 금지 지시는 우선한다.
 - dirty 보조 worktree, 미전송 원본, 새 PC 미검증 환경이 있으면 해당 범위를 명확히 **부분 인수**로 보고한다.
 
 ## 현재와 다음

@@ -2,7 +2,7 @@
 
 ## 현재 개발 기준
 
-먼저 [새 세션 시작 계약](../../docs/README.md#session-start)을 따른다.
+개발 규약은 [CONTRIBUTING.md](../../CONTRIBUTING.md), 기존 문서 입구는 [개발 참여 안내](../../docs/README.md#session-start)다.
 F1~F14와 후속 유지보수는 2026-09-30 종료했다. 현재 결과·미확인은 [관리 STATUS](../../docs/management/STATUS.md),
 수선·회귀의 항목별 근거는 [종료 보고서](../../docs/operations/audit-maintenance-closure-20260929.md)를 따른다.
 F14 후속 개발의 기준은 [v4 함수 호출·관측 분리 계약](qualifications/profile-i-semantic-v4/README.md)과 관련 코드·시험이다.
@@ -430,7 +430,7 @@ hashes, request methods, and a result. It does not create a thread or Phase F st
 Run it under the actual execution account: a sandbox may resolve a different user
 config. `CONFIG_VALIDATED_NOT_LIVE_AUTHORIZED` validates only configuration, not the
 complete Environment Closure. Run the complete zero-turn preflight before state
-initialization/claim and retain AGENTS.md's separate execution-approval turn.
+initialization/claim and retain CONTRIBUTING.md's separate execution-approval turn.
 
 `test_realistic_phase_f_config_load.py` uses the real pinned CLI with synthetic config
 homes only when `LAO_PHASE_F_CONFIG_LOAD_PREFLIGHT=1`. It allowlists initialization

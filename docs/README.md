@@ -4,50 +4,12 @@
 
 <a id="session-start"></a>
 
-## 새 세션 시작 계약
+## 개발 참여 안내
 
-이 절은 이전 대화 없이 현재 기준을 찾는 공통 입구다. Codex 외의 작업자도 같은 순서를 따른다.
-관리 폴더에서 시작했다면 연결된 LAO/repo를 먼저 확인한다. 문서에 적힌 경로·명령을 그대로 실행하지 않는다.
-
-1. 실제 저장소의 [AGENTS.md](../AGENTS.md)를 읽고 branch·HEAD·미커밋 변경을 확인한다.
-   공유 브랜치는 `codex/phase-d-artifacts`다. 다른 checkout을 현재본으로 추정하거나 자동 전환·덮어쓰기하지 않는다.
-2. 관리 문서를 읽기 전에 `management_sync.py` 원문을 확인하고 `status`로 양쪽 변경을 검사한다.
-   기존 관리 사본이 없는 새 PC는 [복원 계약](./operations/workspace-portability.md)을 따르며, 이 경우에도 저장소의 관리 전달본부터 읽을 수 있다.
-3. [관리 README](./management/README.md), [STATUS](./management/STATUS.md), [NEXT](./management/NEXT.md),
-   [WORKFLOW](./management/WORKFLOW.md), [DECISIONS](./management/DECISIONS.md)를 읽는다.
-4. [유일한 최신 인수인계](./operations/동기화_인수인계.md#sync-current)의 `SYNC:AUTO` 블록에서
-   전송 work commit·미전송 자료·검증 범위를 확인한다. note-only commit과 work commit을 구분한다.
-5. 아래 표에서 맡은 작업의 구현 계약·코드·회귀·교정 결과만 추가로 읽는다.
-   작업 범위가 이미 승인돼 있으면 그 범위에서 진행한다. 옛 프롬프트 때문에 끝난 작업을 다시 시작하거나 승인을 반복 요청하지 않는다.
-
-### 문서 우선순위와 책임
-
-| 알고 싶은 것 | 기준 | 충돌할 때의 처리 |
-|---|---|---|
-| 허용 작업·안전 관문 | 현재 사용자 요청과 적용되는 AGENTS.md | 과거 승인·프롬프트는 새 승인으로 사용할 수 없다 |
-| 현재 완료/진행/미확인 | 관리 STATUS | 과거 결과의 “현재”보다 우선한다. 날짜만으로 실행 증거를 대체하지 않는다 |
-| 다음 작업·연구 범위 | 관리 NEXT와 해당 결정 | 대기/보류를 임의의 개발 목표로 채우지 않는다 |
-| 인수 commit·로컬에만 있는 것 | 기존 SYNC:AUTO | Git 전달과 환경·원본 전달을 분리한다 |
-| B1 구현 계약 | [동결 B1 명세](./design/b1-minimum-orchestrator-implementation-spec.md), [현재 B1 사용법](../stages/b1-sequential/README.md), [승인된 교정 대응표](./operations/audit-maintenance-closure-20260929.md) | 후속 교정의 해당 항목만 원래 구현을 대체한다. 명세·코드가 다르면 근거를 확인하고 임의로 어느 쪽도 고치지 않는다 |
-| Runner·F14 구현 계약 | [Runner 안내](../tools/benchmark-runner/README.md), [v4 계약](../tools/benchmark-runner/qualifications/profile-i-semantic-v4/README.md), 관련 코드·시험 | v1~v3 보존 경로를 신규 평가의 기본으로 선택하지 않는다. v4 검증 완료도 Phase F 승격 승인은 아니다 |
-| 무엇을 실제 검증했는가 | 해당 회차의 결과·source·시험/원본·외부 hash | 현재 코드와 검증 source의 차이를 확인한다. 원본이 없으면 재검증 미확인으로 보고한다 |
-| 과거에 왜 그랬는가 | DECISIONS, 날짜별 결과·심사·과거 handoff | 역사 자료는 현재 상태나 실행 권한을 덮어쓰지 않는다 |
-
-### 대화 없이 확인할 질문
-
-새 작업자는 아래 질문에 근거 경로를 붙여 답할 수 있어야 한다. 이것은 새 승인 단계가 아니라 작업 전 자기 점검이다.
-
-| 질문 | 찾아야 할 근거 |
-|---|---|
-| 현재 구현 단계와 아직 하지 않는 일은? | STATUS의 구현 범위, NEXT의 보류·사용자 결정 |
-| 감사가 끝났다는 것과 Live가 가능하다는 것은 같은가? | 종료 보고서의 범위와 AGENTS.md 두 턴 관문 |
-| 과거 v25 pair·policy 1 candidate를 이어 써도 되는가? | STATUS, 해당 결과, 현재 source binding 거부 코드 |
-| F14를 수정한다면 어떤 경로가 현재 기준인가? | Runner 안내 → v4 계약 → 관련 실행/판정 코드와 시험 |
-| 현재 코드를 실행하는가, 옛 설치 wheel을 실행하는가? | 복원 계약 → enter.ps1 → check_environment.py |
-| 받은 Git만으로 검증할 수 없는 것은 무엇인가? | SYNC:AUTO의 외부 원본·환경·미전송 자료 |
-
-검증 한계: 이 읽기 경로와 문서 회귀시험은 안내 누락·알려진 낡은 표현을 검사한다.
-독립적인 새 AI의 이해 정확도, 모든 문서의 의미적 무모순, 실제 모델·다른 PC 준비를 보증하지 않는다.
+공통 개발 규약은 [CONTRIBUTING.md](../CONTRIBUTING.md), AI 작업 진입점은 [AGENTS.md](../AGENTS.md)다.
+이 절의 기존 anchor는 과거 문서 링크의 호환성을 위해 보존한다. 규칙 원문이나 AI 작업 지시를 복제하지 않는다.
+연구 상태·다음 범위는 [관리 문서](./management/README.md), PC 간 전달은
+[기존 인수인계](./operations/동기화_인수인계.md#sync-current), 작업별 AI 상태는 저장소의 .ai/tasks/로 구분한다.
 
 ## 상세 문서
 
