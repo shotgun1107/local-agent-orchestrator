@@ -2,9 +2,10 @@
 
 ## 현재 우선순위
 
-개발 규약·문서 경계·Git 이력 정비를 진행 중이다. 구현·검증·전달의 실제 상태와 다음 작업 행동은
-연결된 저장소의 .ai/tasks/chore-repository-governance.md에서 관리한다.
-전송 commit·환경·미전달 자료는 기존 동기화_인수인계.md의 SYNC:AUTO가 정본이다.
+개발 규약·문서 경계·Git 이력 정비는 완료했다. 다음 기능개발·연구 범위는 아직 지정하지 않았다.
+원격 대표본은 main이다. 기존 PC의 옛 브랜치는 미전송 변경을 보존하고 새 이력으로 별도 전환해야 한다.
+절차는 docs/operations/workspace-portability.md, 전송 commit·환경·미전달 자료는
+기존 동기화_인수인계.md의 SYNC:AUTO가 정본이다.
 
 ## 이후 기능개발·연구
 

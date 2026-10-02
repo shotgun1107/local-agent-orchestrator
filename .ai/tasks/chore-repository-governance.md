@@ -10,9 +10,10 @@
 
 ## 현재 상태
 
-- 로컬 문서 이관·이력 재작성·브랜치 전환을 검증했다. 원격 반영은 아직 미실행이다.
-- 로컬 작업 브랜치 chore/repository-governance, main도 문서 이관 후보를 가리킨다.
-  원격은 아직 옛 이력이다. 표시되는 ahead/behind는 승인된 재작성의 결과이며 자동 merge/rebase하지 않는다.
+- 문서 역할 분리·로컬/원격 이력 전환·원격 새 사본 검증을 완료했다.
+- main이 대표 통합본이며 chore/repository-governance가 이번 작업 브랜치다.
+  a84eae37a63de95e5d598982fbf437265ba21e45를 두 원격 브랜치에 반영하고 tip 일치를 확인했다.
+  나머지 원격 작업 브랜치 5개도 새 이름·대응 commit으로 전환했다. 완료 기록·최신 전달은 기존 SYNC:AUTO를 참조한다.
 - 사용자는 이번 작업에서 오래된 sync 스킬을 사용하지 말라고 지시했다. 스킬 자체 수정은 하지 않으며,
   승인된 저장소 정비와 CONTRIBUTING의 보존·검증 절차를 적용한다.
 - 시작 HEAD와 단일 fetch pin: 48e13b74ae9ae28df261482531a72c7f338239ad.
@@ -40,17 +41,23 @@
   봉인 bytes·개행별 cold checkout 4 passed를 확인했다. 원문은 migration-round1.xml,
   policy-after-rewrite.xml, sealed-bytes.xml이다. 실제 SDK opt-in은 명시 제외했다.
 - 로컬 전환 전 보조 worktree의 HEAD·변경 목록·12개 수정/untracked hash가 시작 기준과 같음을 재확인했다.
+- GitHub의 첫 개명은 비동기 반영 지연으로 후속 검사를 잠시 멈췄다. SHA 불변·개명 완료를 별도 조회한 뒤
+  완료 요청을 반복하지 않고 나머지를 진행했다. 7개 브랜치와 보존 tag는 exact SHA lease·atomic push로 함께 반영했다.
+- 실제 GitHub cold clone에서 기본 main·보존 tag 자동 수신, 원래/새 410개 Git 객체·전체 도달성·fsck를 확인했다.
+  새 사본의 source 경로로 환경 점검 PASS, 문서·관리·이력·봉인 60 passed, 정책 104 passed / 1 deselected다.
+  cold-remote-documentation-seals.xml, cold-remote-policy.xml이 원문이며 재검증을 새 제품 전수 회차로 부르지 않는다.
+- 제품 source·Schema·prompt/template·원본 fixture·qualifications·실험 projection의 Git diff는 시작 기준과 동일하다.
+  코드 경로 이동은 없고, 새 도구는 이력의 읽기 전용 검증과 그 회귀시험뿐이다.
 
 ## 보존 대상과 미해결
 
 - 기존 Codex 보조 worktree 수정 3개/untracked 9개, QA/AppData checkout, raw/state/seal·환경은 그대로 둔다.
 - 기존 서명은 새 commit에서 재사용할 수 없다. 원래 서명 객체는 보존 이력에서 검증한다.
-- 승인된 원격 정비의 대상 tip 재확인과 cold clone 재검증이 남았다.
+- 원격 정비·cold clone 검증에는 미해결 사항이 없다. 기존 PC의 옛 이력 수신은 개별 전환이 필요하다.
 - 다른 PC의 수신·환경·인증과 Live는 이번 정비의 완료 주장에 포함하지 않는다.
 
 ## 다음 행동
 
-1. 검증한 이력 대응표·읽기 전용 검증 도구·기본 복원 main 변경을 독립 commit으로 보존한다.
-2. 예상 원격 tip이 그대로일 때만 승인된 브랜치 개명·원자적 이력 교체를 진행한다.
-3. 실제 remote tip과 cold clone·옛 SHA·봉인 bytes를 재검증한다.
-4. 이 파일만 최종 상태로 갱신하고, PC 전달 결과는 기존 SYNC:AUTO에 기록한다.
+1. 최종 전달 commit·환경·미전달 자료는 기존 SYNC:AUTO에서 확인한다. 이 정비의 추가 구현은 없다.
+2. 다음 기능개발·연구는 새 사용자 범위를 따른다. 새 기능·모델 실험을 자동 시작하지 않는다.
+3. 다른 PC에서는 옛 작업을 보존한 뒤 복원 계약의 이력 전환 절차를 따른다. 오래된 sync 스킬은 사용자 지시 이후 적용을 중단했다.
